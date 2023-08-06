@@ -6,15 +6,23 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "scripts": {
+    "start": "node dist/main.js",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "dev": "nodemon dist/main.js"
+  },
   "devDependencies": {
     "@types/express": "^4.17.17",
     "@types/node": "^20.4.8",
-    "~client": "file:../client"
+    "~client": "file:../client",
+    "nodemon": "^3.0.1",
+    "typescript": "^5.1.6"
   },
   "dependencies": {
     "@vicimpa/nick-name": "^1.0.3",
     "express": "^4.18.2",
-    "socket.io": "^4.7.2",
-    "socket-api": "file:../socket-api"
+    "socket-api": "file:../socket-api",
+    "socket.io": "^4.7.2"
   }
 }
