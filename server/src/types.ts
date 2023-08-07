@@ -4,7 +4,9 @@ import type { TPlayer, EAnimate, EDir } from "~client";
 export type TServer = {
   setPosition(x: number, y: number, dir: EDir, animate: EAnimate): void;
   setBomb(): void;
-  setBlock(x: number, y: number): void;
+  setBlock(): void;
+  getTestInfo(): string;
+  setName(name: string): void;
 };
 
 export type TPoint = [x: number, y: number];
