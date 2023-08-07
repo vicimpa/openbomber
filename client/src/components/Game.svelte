@@ -25,10 +25,6 @@
       {/each}
     {/each}
 
-    {#each gamemap.bombs as bomb}
-      <Bomb {bomb} />
-    {/each}
-
     {#each gamemap.map as val}
       <div class="item">
         {#if val === 1}
@@ -39,6 +35,10 @@
           <Frame src={sprite} x={4} y={3} />
         {/if}
       </div>
+    {/each}
+
+    {#each gamemap.bombs as bomb}
+      <Bomb {bomb} />
     {/each}
 
     {#each gamemap.explodes as expl}
