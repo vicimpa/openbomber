@@ -1,4 +1,4 @@
-export type TApi = { [key: string]: (...args: any[]) => any; };
+export type TApi = { [key: string | symbol]: (...args: any[]) => any; };
 export type TPromiseApi<T extends TApi> = {
   [key in keyof T]: (...args: Parameters<T[key]>) => Promise<ReturnType<T[key]>>
 };
@@ -8,7 +8,7 @@ export type TSocket = {
   emit(name: string, ...args: any[]): any;
 };
 
-const useApi = <T extends TApi>(socket: TSocket): T => {
+const useApi = <T extends TApi>(socket: TSocket): TPromiseApi<T> => {
   return new Proxy({} as T, {
     get(_, key) {
       if (typeof key !== 'string')
