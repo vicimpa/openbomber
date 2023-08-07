@@ -7,10 +7,10 @@
   import { makeController } from "library/makeController";
   import { onMount } from "svelte";
   import { forwardApi, useApi } from "socket-api/src/index";
-  import type { IPlayer, TPlayer, TServer } from "~server";
   import { isEqual } from "library/isEqual";
   import Game from "components/Game.svelte";
   import { GameMap } from "class/GameMap";
+  import type { IPlayer, TPlayer, TServer } from "~server";
 
   const keys = makeController({
     block: ["KeyE"],
@@ -35,6 +35,8 @@
     bombs: 0,
     exp: 0,
   };
+  let name = localStorage.getItem("name") ?? "";
+  let editname = false;
 
   function grid(n: number, grid = 1) {
     return ((n * grid) | 0) / grid;
@@ -106,6 +108,8 @@
     player = player;
     gamemap.update();
 
+    if (playerInfo.name !== name) api.setName(name);
+
     if (keys.bomb.isSingle()) {
       api.setBomb();
     }
@@ -120,6 +124,23 @@
   });
 </script>
 
+<p>
+  <span>Nick: </span>
+  {#if editname}
+    <input
+      placeholder="Name"
+      maxlength="18"
+      bind:value={name}
+      on:input={() => {
+        localStorage.setItem("name", name);
+      }}
+    />
+    <button on:click={() => (editname = false)}>Close</button>
+  {:else}
+    <span>{name}</span>
+    <button on:click={() => (editname = true)}>Edit</button>
+  {/if}
+</p>
 <p>Bomb: {playerInfo.bombs}, Expo: {playerInfo.exp}</p>
 
 <Game gamemap={$gamemap}>
@@ -135,3 +156,14 @@
     </Move>
   {/if}
 </Game>
+
+<style>
+  button {
+    font-size: 8px;
+    padding: 0px 1px;
+  }
+  p {
+    display: flex;
+    gap: 2px;
+  }
+</style>

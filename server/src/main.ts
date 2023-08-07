@@ -15,11 +15,11 @@ const socketio = new SocketIO(server, { cors: { origin: '*' } });
 const width = 17;
 const height = 17;
 
-const players = new ReactiveSet<IPlayer>();
 const map = new Uint8Array(width * height);
 const bombs = new ReactiveSet<IBomb>();
 const achivments = new ReactiveSet<IAchivment>();
 const explodes = new ReactiveSet<IExplode>();
+const players = new ReactiveSet<IPlayer>();
 
 const colors = [
   0,
@@ -105,6 +105,7 @@ for (let i = 0; i < map.length * .3; i++) {
 
 const achivment = new Set(empty);
 const achivmentHave = new Set<number>();
+
 for (let i = 0; i < map.length * .05; i++) {
   const j = achivment.size * Math.random() | 0;
   const n = [...achivment][j];
@@ -216,7 +217,7 @@ function explode(bomb: IBomb) {
 
 
         if (bombFind) {
-          explode(bombFind);
+          bombFind.time = Date.now() - 1950;
           expo.points.slice(-1)[0][3] = 1;
           break;
         }
@@ -395,15 +396,22 @@ socketio.on('connection', (socket) => {
       player.bombs.push(bomb);
       bombs.add(bomb);
     },
-    setBlock(x, y) {
+    setBlock() {
 
     },
+    getTestInfo() {
+      return process.argv.join(', ');
+    },
+    setName(name) {
+      player.data.name = name;
+      players.update();
+    }
   });
 
   players.add(player);
   updateMap();
   achivments.update();
-  player.api.updateBombs([...bombs]);
+  bombs.update();
 
   socket.once('disconnect', () => {
     positionsUse.delete(position);
