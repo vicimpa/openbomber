@@ -76,9 +76,9 @@ export class Game {
     startPositions: TPoint[] = defaultStartPositions
   ) {
     this.#settings = { ...defaultConfig, ...settings };
-    this.restart();
     this.startPositions = startPositions
       .map(([x, y]) => [x * (width - 1) | 0, y * (height - 1) | 0]);
+    this.restart();
   }
 
   restart() {
