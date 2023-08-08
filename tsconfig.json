@@ -1,0 +1,42 @@
+{
+  "extends": "@tsconfig/svelte/tsconfig.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "resolveJsonModule": true,
+    "strict": true,
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "declaration": false,
+    "isolatedModules": true,
+    "baseUrl": "./src",
+    "types": [
+      "vite/client",
+      "svelte"
+    ],
+    "paths": {
+      "@server/*": [
+        "../server/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*.d.ts",
+    "src/**/*.ts",
+    "src/**/*.js",
+    "src/**/*.mts",
+    "src/**/*.svelte",
+    "src/types.ts",
+    "src/types.ts"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./tsconfig.vite.json"
+    }
+  ]
+}

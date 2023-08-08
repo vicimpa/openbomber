@@ -1,0 +1,44 @@
+{
+  "name": "client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "src/types.mts",
+  "scripts": {
+    "dev": "vite",
+    "build:server": "tsc -p ./tsconfig.node.json",
+    "dev:frontend": "vite",
+    "dev:backend": "ts-node -r tsconfig-paths/register -P ./tsconfig.node.json server/main.ts",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^2.0.4",
+    "@tsconfig/svelte": "^4.0.1",
+    "@types/deep-equal": "^1.0.1",
+    "@types/express": "^4.17.17",
+    "@types/node": "^20.4.8",
+    "i": "^0.3.7",
+    "nodemon": "^3.0.1",
+    "npm": "^9.8.1",
+    "sass": "^1.64.2",
+    "socket-api": "file:../socket-api",
+    "socket.io-client": "^4.7.2",
+    "svelte": "^3.58.0",
+    "svelte-check": "^3.3.1",
+    "ts-node": "^10.9.1",
+    "tslib": "^2.5.0",
+    "typescript": "^5.0.2",
+    "vite": "^4.3.9",
+    "vite-plugin-commonjs": "^0.8.2",
+    "vite-tsconfig-paths": "^4.2.0"
+  },
+  "dependencies": {
+    "@vicimpa/nick-name": "^1.0.3",
+    "deep-equal": "^2.2.2",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "tsconfig-paths": "^4.2.0"
+  }
+}

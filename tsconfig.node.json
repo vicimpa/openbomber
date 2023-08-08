@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "target": "ESNext",
+    "module": "CommonJS",
+    "esModuleInterop": true,
+    "moduleResolution": "Node",
+    "experimentalDecorators": true,
+    "outDir": "./server-dist",
+    "noEmit": false,
+    "baseUrl": "./",
+    "paths": {
+      "@types": [
+        "./src/types"
+      ],
+      "@server/*": [
+        "./server/*"
+      ]
+    }
+  },
+  "include": [
+    "./server",
+    "./src/types.ts",
+    "./src/library/socketApi.ts"
+  ],
+  "ts-node": {
+    "swc": true
+  }
+}
