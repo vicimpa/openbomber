@@ -6,6 +6,7 @@
   let left = 0;
 
   onFrame(() => {
+    if (!container || !element) return;
     const { offsetWidth: WIDTH } = container;
     const { offsetWidth: width } = element;
 

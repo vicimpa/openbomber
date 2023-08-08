@@ -14,6 +14,8 @@ export type TPlayer = {
   updateLocalInfo(localInfo: Player['localInfo']): void;
   updateGameInfo(info: TInfo<Game>): void;
   updateWaitForRestart(count: number): void;
+  actionBonus(): void;
+  actionDeath(): void;
 };
 
 export type TServer = {

@@ -33,14 +33,15 @@ export class Achivment extends Entity {
       }
 
       case EAchivment.RANDOM: {
-        this.accept(player, random(STORE));
-        break;
+        return this.accept(player, random(STORE));
       }
 
       default: {
         console.log('Unknow', type);
       }
     }
+
+    player.api.actionBonus();
   }
 
 

@@ -102,6 +102,7 @@ export class Player extends Entity implements TServer {
   death() {
     this.isAnimated = true;
     this.isDeath = true;
+    this.api.actionDeath();
   }
 
   setBomb = () => {

@@ -16,6 +16,7 @@
   import type { Player as TypePlayer } from "../server/class/Player";
   import type { Game as TypeGame } from "../server/class/Game";
   import type { TPlayer, TServer } from "types";
+  import { sounds } from "library/sounds";
 
   const keys = makeController({
     block: ["KeyE"],
@@ -47,6 +48,7 @@
 
   const playerEffect = makeEffect();
   const gameSizeEffect = makeEffect();
+  const winEffect = makeEffect<boolean>();
 
   onMount(() => {
     observer.observe(container);
@@ -87,6 +89,7 @@
         player = new PlayerController(width, height);
         player.x = x;
         player.y = y;
+        if (info?.inGame) sounds.newLife.play();
       },
       updatePlayers(newPlayers) {
         if (!gamemap) return;
@@ -103,6 +106,12 @@
       updateWaitForRestart(count) {
         restartAfter = count;
       },
+      actionBonus() {
+        sounds.bonus.play();
+      },
+      actionDeath() {
+        sounds.death.play();
+      },
     });
 
     return () => {
@@ -115,7 +124,11 @@
     if (!player || !gamemap || !info) return;
     if (restartAfter >= 0) return;
     const { bomb, block } = keys;
-    const { isDeath, inGame } = info;
+    const { isDeath } = info;
+
+    winEffect(!isDeath && restartAfter >= 0, (isWin) => {
+      sounds.win.play();
+    });
 
     if (!isDeath) player.tick(deltaTime, time, gamemap);
 

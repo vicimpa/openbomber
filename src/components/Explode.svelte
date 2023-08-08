@@ -6,6 +6,8 @@
   import Sprite from "./Sprite.svelte";
   import type { EExplodeDir, TInfo } from "types";
   import type { Explode } from "../../server/class/Explode";
+  import { onMount } from "svelte";
+  import { sounds } from "library/sounds";
 
   export let expl: TInfo<Explode> | null = null;
 
@@ -14,6 +16,10 @@
   function getDir(dir: EExplodeDir) {
     return EXPODER_DIRS[dir];
   }
+
+  onMount(() => {
+    sounds.explode.play();
+  });
 </script>
 
 {#if expl}
