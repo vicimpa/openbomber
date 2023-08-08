@@ -14,6 +14,7 @@ export type TPlayer = {
   updateAchivments(achivments: TInfo<Achivment>[]): void;
   updateLocalInfo(localInfo: Player['localInfo']): void;
   updateGameInfo(info: TInfo<Game>): void;
+  updateWaitForRestart(count: number): void;
 };
 
 

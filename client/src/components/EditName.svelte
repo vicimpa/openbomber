@@ -11,15 +11,14 @@
 </script>
 
 <p>
-  <span>Nick: </span>
   {#if editName}
     <input placeholder="Name" maxlength="18" bind:value={name} />
-    <button on:click={() => (editName = false)}>Close</button>
+    <button on:click={() => ((editName = false), dispatch("save", name))}
+      >Close</button
+    >
   {:else}
     <span>{name}</span>
-    <button on:click={() => ((editName = true), dispatch("save", name))}>
-      Edit
-    </button>
+    <button on:click={() => (editName = true)}> Edit </button>
   {/if}
 </p>
 

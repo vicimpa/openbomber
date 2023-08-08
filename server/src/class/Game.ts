@@ -4,6 +4,7 @@ import { Socket } from "socket.io";
 import { delay } from "../lib/delay";
 import { effectObject } from "../lib/effectObject";
 import { find } from "../lib/find";
+import { map } from "../lib/map";
 import { pick } from "../lib/pick";
 import { random } from "../lib/random";
 import { Achivment } from "./Achivment";
@@ -26,7 +27,7 @@ export class Game {
 
   #settings: TConfig;
 
-  map: GameMap;
+  map!: GameMap;
   bombs = new Set<Bomb>();
   explodes = new Set<Explode>();
   achivments = new Set<Achivment>();
@@ -36,6 +37,8 @@ export class Game {
   usedPositions = new Set<TPoint>();
 
   running = false;
+
+  waitForRestart = -1;
 
   getFreePosition() {
     const free = this.startPositions
@@ -60,7 +63,6 @@ export class Game {
     public height: number,
     settings?: Partial<TConfig>
   ) {
-    this.map = new GameMap(width, height, this);
     this.startPositions = [
       [0, 0],
       [width - 1, 0],
@@ -68,6 +70,29 @@ export class Game {
       [0, height - 1]
     ];
     this.#settings = { ...defaultConfig, ...settings };
+    this.restart();
+  }
+
+  restart() {
+    const { width, height } = this;
+
+    this.waitForRestart = -1;
+
+    for (const player of this.players) {
+      const { startPosition } = player;
+      player.isDeath = false;
+      player.blocks = 0;
+      player.bombs = 1;
+      player.radius = 1;
+      [player.x, player.y] = startPosition;
+      effectObject(player, 'startPosition', [-1, -1], () => { });
+    }
+
+    this.bombs.clear();
+    this.achivments.clear();
+    this.explodes.clear();
+
+    this.map = new GameMap(width, height, this);
     this.map.generate(this.settings);
   }
 
@@ -108,6 +133,7 @@ export class Game {
 
   async loop() {
     while (this.running) {
+
       effectObject(
         this,
         'playersCount',
@@ -131,6 +157,26 @@ export class Game {
 
       for (const player of this.players) {
         player.update();
+      }
+
+      effectObject(
+        this,
+        'restartGame',
+        this.players.size >= 2 && map(this.players, e => e, e => !e.isDeath).length <= 1,
+        (isRestart) => {
+          if (isRestart) {
+
+            this.waitForRestart = Date.now() + 3000;
+          } else {
+            this.waitForRestart = -1;
+          }
+        }
+      );
+
+      if (this.waitForRestart > 0) {
+        if (Date.now() > this.waitForRestart) {
+          this.restart();
+        }
       }
 
       await delay(20);

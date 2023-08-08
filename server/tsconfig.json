@@ -13,8 +13,5 @@
   },
   "include": [
     "./src"
-  ],
-  "exclude": [
-    "./src/old.ts"
   ]
 }

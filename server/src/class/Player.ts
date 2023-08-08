@@ -30,7 +30,7 @@ export class Player extends Entity implements TServer {
 
   bombs = 1;
   radius = 1;
-  blocks = 10;
+  blocks = 0;
 
   startPosition!: TPoint;
 
@@ -42,7 +42,6 @@ export class Player extends Entity implements TServer {
     this.api = useApi<TPlayer>(socket);
   }
 
-
   get info() {
     return pick(this, [
       'x',
@@ -52,7 +51,10 @@ export class Player extends Entity implements TServer {
       'name',
       'color',
       'inGame',
-      'isDeath'
+      'isDeath',
+      'bombs',
+      'radius',
+      'blocks'
     ]);
   }
 
@@ -75,8 +77,7 @@ export class Player extends Entity implements TServer {
     let x = Math.round(this.x);
     let y = Math.round(this.y);
 
-    const { dir, game: { width, map, bombs, players } } = this;
-
+    const { game: { width, map, bombs, players } } = this;
 
     const index = x + y * width;
 
@@ -200,6 +201,15 @@ export class Player extends Entity implements TServer {
       info,
       info => {
         this.api.updateGameInfo(info);
+      }
+    );
+
+    effectObject(
+      this,
+      'waitForRestart',
+      this.game.waitForRestart > 0 ? (this.game.waitForRestart - Date.now()) / 1000 | 0 : -1,
+      time => {
+        this.api.updateWaitForRestart(time);
       }
     );
 
