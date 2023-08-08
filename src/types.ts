@@ -21,6 +21,8 @@ export type TServer = {
   setBomb(): void;
   setBlock(): void;
   setName(name: string): void;
+  toGame(): void;
+  toLeave(): void;
 };
 
 export type TInfo<T extends { info: any; }> = T['info'];

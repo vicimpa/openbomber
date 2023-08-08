@@ -27,6 +27,7 @@
   export let color = 0;
   export let name = "";
   export let marker = "transparent";
+  export let isAnimated = false;
 
   $: isLeave = animate !== EAnimate.DEATH;
 </script>
@@ -39,7 +40,9 @@
 
 <div style={stylesVariable({ c: color, m: isLeave ? marker : "transparent" })}>
   {#if !isLeave}
-    <Sprite frames={DEATH} isFinite speed={100} src={sprite} />
+    {#if isAnimated}
+      <Sprite frames={DEATH} isFinite speed={100} src={sprite} />
+    {/if}
   {:else}
     <Sprite
       frames={animate === EAnimate.IDLE ? IDLE[dir] : RUNNING[dir]}

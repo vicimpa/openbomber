@@ -64,6 +64,7 @@ export class Game {
 
   get spectratorsCount() { return map(this.players, e => e, e => !e.inGame).length; }
   get playersCount() { return map(this.players, e => e, e => e.inGame).length; }
+  get slotLimits() { return this.startPositions.length; }
 
   get settings() {
     return { ...this.#settings };
@@ -87,11 +88,13 @@ export class Game {
     this.waitForRestart = -1;
 
     for (const player of this.players) {
+      if (!player.inGame) continue;
       const { startPosition } = player;
       player.isDeath = false;
       player.blocks = 0;
       player.bombs = 1;
       player.radius = 1;
+      player.isAnimated = false;
 
       if (startPosition) {
         [player.x, player.y] = startPosition;

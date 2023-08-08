@@ -64,6 +64,10 @@
       },
       updateLocalInfo(localInfo) {
         info = localInfo;
+
+        if (!localInfo.inGame) {
+          player = null;
+        }
       },
       updateBombs(newBombs) {
         if (!gamemap) return;
@@ -111,7 +115,7 @@
     if (!player || !gamemap || !info) return;
     if (restartAfter >= 0) return;
     const { bomb, block } = keys;
-    const { isDeath } = info;
+    const { isDeath, inGame } = info;
 
     if (!isDeath) player.tick(deltaTime, time, gamemap);
 
@@ -141,7 +145,7 @@
     <div class="item">
       Список игроков:
       <ul>
-        {#if info}
+        {#if info?.inGame}
           <li data-death={info.isDeath}>
             : {info.name || "noname"} (me)
           </li>
@@ -165,19 +169,16 @@
   <div class="container">
     <div class="header">
       {#if gameInfo}
-        {#if info}
+        {#if info?.inGame}
           <p>Bombs: {info.bombs}</p>
           <p>Radius: {info.radius}</p>
           <p>Blocks: {info.blocks}</p>
+
+          <button on:click={() => api.toLeave()}> Отключится </button>
         {:else}
           <p>Вы наблюдатель</p>
-          {#if gameInfo.startPositions.length > gameInfo.playersCount}
-            <button
-              on:click={() => {
-                socket.disconnect();
-                socket.connect();
-              }}>Подключиться</button
-            >
+          {#if info?.canJoin}
+            <button on:click={() => api.toGame()}> Подключиться </button>
           {/if}
         {/if}
       {/if}
@@ -197,6 +198,7 @@
                 name={info.name}
                 dir={player.dir}
                 animate={info.isDeath ? EAnimate.DEATH : player.animate}
+                isAnimated={info.isAnimated}
                 marker={"#fff"}
               />
             </Move>

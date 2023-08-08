@@ -50,9 +50,9 @@
       </Move>
     {/each}
 
-    {#each gamemap.players as { x, y, dir, animate, name, color }}
+    {#each gamemap.players as { x, y, dir, animate, name, color, isAnimated }}
       <Move {x} {y}>
-        <Player {dir} {animate} {color} {name} />
+        <Player {dir} {animate} {color} {name} {isAnimated} />
       </Move>
     {/each}w
 
