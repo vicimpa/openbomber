@@ -5,8 +5,10 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "watch": "tsc -w"
+    "watch": "tsc -w",
+    "postinstall": "npm run build"
   },
+  "types": "./types",
   "keywords": [],
   "author": "",
   "license": "ISC",

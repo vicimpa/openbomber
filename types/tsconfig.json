@@ -6,9 +6,10 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "declaration": true,
+    "declarationDir": "./types",
     "experimentalDecorators": true,
     "lib": [
-      "ESNext"
+      "ESNext",
     ],
     "outDir": "./dist"
   },
