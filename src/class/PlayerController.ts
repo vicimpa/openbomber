@@ -23,6 +23,18 @@ export class PlayerController {
 
   onBomb(x: number, y: number, i: number) { }
 
+  circle(value: number, block: number, move: number, d: number) {
+    if (move) return move;
+
+    const over = .4;
+    const delta = value - block;
+
+    if (delta < -over) return -Math.abs(d);
+    if (delta > over) return Math.abs(d);
+
+    return 0;
+  }
+
   collision(
     [moveX, moveY]: TPoint,
     [x, y]: TPoint,
@@ -31,12 +43,19 @@ export class PlayerController {
     down = .2
   ) {
     if (y > Y - top && y < Y + top) {
-      if (moveX > 0 && x > X - 1 && x < X - down) moveX = 0;
-      if (moveX < 0 && x < X + 1 && x > X + down) moveX = 0;
+      if (
+        false
+        || (moveX > 0 && x > X - 1 && x < X - down)
+        || (moveX < 0 && x < X + 1 && x > X + down)
+      ) (moveY = this.circle(y, Y, moveY, moveX), moveX = 0);
     }
+
     if (x > X - top && x < X + top) {
-      if (moveY > 0 && y > Y - 1 && y < Y - down) moveY = 0;
-      if (moveY < 0 && y < Y + 1 && y > Y + down) moveY = 0;
+      if (
+        false
+        || (moveY > 0 && y > Y - 1 && y < Y - down)
+        || (moveY < 0 && y < Y + 1 && y > Y + down)
+      ) (moveX = this.circle(x, X, moveX, moveY), moveY = 0);
     }
 
     return [moveX, moveY] as TPoint;
