@@ -5,16 +5,6 @@ import paths from "vite-tsconfig-paths";
 
 import { game } from "./server/main";
 
-const gameServer = {
-  name: "WebSocketServer",
-  configurePreviewServer(server) {
-    game(server.httpServer);
-  },
-  configureServer(server) {
-    game(server.httpServer);
-  }
-} as PluginOption;
-
 export default defineConfig({
   base: './',
   root: './src',
@@ -34,6 +24,14 @@ export default defineConfig({
     commonjs(),
     svelte({ configFile: '../svelte.config.js' }),
     paths(),
-    gameServer
+    {
+      name: "WebSocketServer",
+      configurePreviewServer(server) {
+        game(server.httpServer);
+      },
+      configureServer(server) {
+        game(server.httpServer);
+      }
+    }
   ],
 });
