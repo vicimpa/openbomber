@@ -1,4 +1,5 @@
 import { Socket } from "socket.io";
+import { createLogger } from "vite";
 
 import { delay } from "../lib/delay";
 import { effectObject } from "../lib/effectObject";
@@ -14,6 +15,8 @@ import { Player } from "./Player";
 
 import type { TPoint } from "../../src/types";
 
+const logger = createLogger('info', { allowClearScreen: true });
+
 export const defaultConfig = {
   fillBlocks: .5,
   fillAchivments: .1,
@@ -25,7 +28,6 @@ export const defaultConfig = {
 export type TConfig = typeof defaultConfig;
 
 export class Game {
-
   #settings: TConfig;
 
   map!: GameMap;
@@ -140,7 +142,7 @@ export class Game {
         'playersCount',
         this.playersCount,
         count => {
-          console.log(new Date(), 'Players count', count);
+          logger.info('Players count ' + count);
         }
       );
 
