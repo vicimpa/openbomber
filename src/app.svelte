@@ -17,6 +17,7 @@
   import type { Game as TypeGame } from "../server/class/Game";
   import type { TPlayer, TServer } from "types";
   import { sounds } from "library/sounds";
+  import Volume from "components/Volume.svelte";
 
   const keys = makeController({
     block: ["KeyE"],
@@ -177,6 +178,9 @@
     </div>
     <div class="item">
       Наблюдателей: {gameInfo?.spectratorsCount ?? 0}
+    </div>
+    <div class="item">
+      <Volume />
     </div>
   </div>
   <div class="container">

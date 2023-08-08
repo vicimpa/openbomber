@@ -1,8 +1,11 @@
+import { writable } from "svelte/store";
+
 const audioCtx = new (AudioContext || (window as any)['webkitAudioContext']) as AudioContext;
-const gainNode = audioCtx.createGain();
+export const gainNode = audioCtx.createGain();
 
 export class Sound {
   #buffer!: AudioBuffer;
+  static #current = 0;
 
   constructor(src = '') {
     this.loadSound(src);
@@ -31,9 +34,13 @@ export class Sound {
       src.onended = null;
     };
   }
+
+  static test() {
+    const values = Object.values(sounds);
+    values[this.#current++ % values.length]?.play();
+  }
 }
 
-gainNode.gain.value = .2;
 gainNode.connect(audioCtx.destination);
 
 export const soundStore = {
