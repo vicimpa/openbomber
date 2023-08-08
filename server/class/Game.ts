@@ -25,6 +25,13 @@ export const defaultConfig = {
   startLiveCount: 1,
 };
 
+export const defaultStartPositions: TPoint[] = [
+  [0, 0],
+  [1, 0],
+  [1, 1],
+  [0, 1]
+];
+
 export type TConfig = typeof defaultConfig;
 
 export class Game {
@@ -65,16 +72,13 @@ export class Game {
   constructor(
     public width: number,
     public height: number,
-    settings?: Partial<TConfig>
+    settings?: Partial<TConfig>,
+    startPositions: TPoint[] = defaultStartPositions
   ) {
-    this.startPositions = [
-      [0, 0],
-      [width - 1, 0],
-      [width - 1, height - 1],
-      [0, height - 1]
-    ];
     this.#settings = { ...defaultConfig, ...settings };
     this.restart();
+    this.startPositions = startPositions
+      .map(([x, y]) => [x * (width - 1) | 0, y * (height - 1) | 0]);
   }
 
   restart() {
