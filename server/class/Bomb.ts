@@ -28,9 +28,9 @@ export class Bomb extends Entity {
   }
 
   update(): void {
-    const { time, liveTime } = this;
+    const { time, liveTime, game: { waitForRestart } } = this;
 
-    if (Date.now() > time + liveTime) {
+    if (Date.now() > time + liveTime && waitForRestart < 0) {
       Explode.run(this);
     }
   }
