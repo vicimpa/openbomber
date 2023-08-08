@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "client"
+		},
+		{
+			"path": "server"
+		},
+		{
+			"path": "socket-api"
+		},
+		{
+			"path": "types"
+		},
+		{
+			"path": ".",
+			"name": "other"
+		},
+	],
+	"settings": {
+		"typescript.tsserver.experimental.enableProjectDiagnostics": false
+	}
+}
