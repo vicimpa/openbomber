@@ -165,7 +165,7 @@
       <p>Blocks: {info?.blocks}</p>
     </div>
     <div class="content" bind:this={container}>
-      {#if restartAfter > 0}
+      {#if restartAfter >= 0}
         <div class="restart">
           <p>Новая игра через {restartAfter} сек</p>
         </div>
