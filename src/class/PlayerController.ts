@@ -40,14 +40,19 @@ export class PlayerController {
     [x, y]: TPoint,
     [X, Y]: TPoint,
     top = .8,
-    down = .2
+    down = .2,
+    canCircle = false
   ) {
     if (y > Y - top && y < Y + top) {
       if (
         false
         || (moveX > 0 && x > X - 1 && x < X - down)
         || (moveX < 0 && x < X + 1 && x > X + down)
-      ) (moveY = this.circle(y, Y, moveY, moveX), moveX = 0);
+      ) {
+        if (canCircle)
+          moveY = this.circle(y, Y, moveY, moveX);
+        moveX = 0;
+      }
     }
 
     if (x > X - top && x < X + top) {
@@ -55,7 +60,11 @@ export class PlayerController {
         false
         || (moveY > 0 && y > Y - 1 && y < Y - down)
         || (moveY < 0 && y < Y + 1 && y > Y + down)
-      ) (moveX = this.circle(x, X, moveX, moveY), moveY = 0);
+      ) {
+        if (canCircle)
+          moveX = this.circle(x, X, moveX, moveY);
+        moveY = 0;
+      }
     }
 
     return [moveX, moveY] as TPoint;
@@ -101,7 +110,10 @@ export class PlayerController {
       [moveX, moveY] = this.collision(
         [moveX, moveY],
         [x, y],
-        [X, Y]
+        [X, Y],
+        undefined,
+        undefined,
+        map[i] == 1
       );
     }
 
