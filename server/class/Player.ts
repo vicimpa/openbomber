@@ -205,7 +205,7 @@ export class Player extends Entity implements TServer {
       }
     } = this.game;
 
-    if (!this.isDeath) {
+    if (!this.isDeath && this.inGame) {
       for (const explode of explodes) {
         if (this.isDeath) continue;
 
@@ -219,7 +219,7 @@ export class Player extends Entity implements TServer {
       }
     }
 
-    if (!this.isDeath) {
+    if (!this.isDeath && this.inGame) {
       for (const achivment of achivments) {
         const { x, y } = achivment;
         if (this.checkCollision(x, y, .9)) {

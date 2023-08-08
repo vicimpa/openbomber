@@ -40,8 +40,7 @@
   });
 
   beforeUpdate(() => {
-    if (volume < 0) volume = 0;
-    if (volume > 1) volume = 1;
+    volume = toLimit(volume, 0, 1);
     gainNode.gain.value = volume;
     localStorage.setItem("volume", `${volume}`);
   });
