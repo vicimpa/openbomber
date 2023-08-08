@@ -55,7 +55,8 @@ export class Game {
     this.usedPositions.delete(position);
   }
 
-  get playersCount() { return this.players.size; }
+  get spectratorsCount() { return map(this.players, e => e, e => !e.inGame).length; }
+  get playersCount() { return map(this.players, e => e, e => e.inGame).length; }
 
   get settings() {
     return { ...this.#settings };
@@ -87,8 +88,11 @@ export class Game {
       player.blocks = 0;
       player.bombs = 1;
       player.radius = 1;
-      [player.x, player.y] = startPosition;
-      effectObject(player, 'startPosition', [-1, -1], () => { });
+
+      if (startPosition) {
+        [player.x, player.y] = startPosition;
+        effectObject(player, 'startPosition', [-1, -1], () => { });
+      }
     }
 
     this.bombs.clear();
@@ -130,7 +134,9 @@ export class Game {
     return pick(this, [
       'width',
       'height',
-      'playersCount'
+      'playersCount',
+      'startPositions',
+      'spectratorsCount'
     ]);
   }
 
@@ -169,7 +175,7 @@ export class Game {
         playersCount && map(
           players,
           e => e,
-          e => !e.isDeath
+          e => !e.isDeath && e.inGame
         ).length <= +!!(playersCount - 1),
         (isRestart) => {
           if (isRestart) {

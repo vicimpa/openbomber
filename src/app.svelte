@@ -158,12 +158,29 @@
         {/if}
       </ul>
     </div>
+    <div class="item">
+      Наблюдателей: {gameInfo?.spectratorsCount ?? 0}
+    </div>
   </div>
   <div class="container">
     <div class="header">
-      <p>Bombs: {info?.bombs}</p>
-      <p>Radius: {info?.radius}</p>
-      <p>Blocks: {info?.blocks}</p>
+      {#if gameInfo}
+        {#if info}
+          <p>Bombs: {info.bombs}</p>
+          <p>Radius: {info.radius}</p>
+          <p>Blocks: {info.blocks}</p>
+        {:else}
+          <p>Вы наблюдатель</p>
+          {#if gameInfo.startPositions.length > gameInfo.playersCount}
+            <button
+              on:click={() => {
+                socket.disconnect();
+                socket.connect();
+              }}>Подключиться</button
+            >
+          {/if}
+        {/if}
+      {/if}
     </div>
     <div class="content" bind:this={container}>
       {#if restartAfter >= 0}

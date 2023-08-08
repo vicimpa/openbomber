@@ -142,7 +142,14 @@ export class Player extends Entity implements TServer {
       setPosition
     });
 
-    this.startPosition = this.game.getFreePosition();
+    const startPosition = this.game.getFreePosition();
+
+    if (!startPosition) {
+      this.inGame = false;
+      return;
+    }
+
+    this.startPosition = startPosition;
     [this.x, this.y] = this.startPosition;
   }
 
@@ -210,23 +217,25 @@ export class Player extends Entity implements TServer {
       }
     );
 
-    effectObject(
-      this,
-      'startPosition',
-      this.startPosition,
-      ([x, y]) => {
-        this.api.setStartPosition(x, y);
-      }
-    );
+    if (this.inGame)
+      effectObject(
+        this,
+        'startPosition',
+        this.startPosition,
+        ([x, y]) => {
+          this.api.setStartPosition(x, y);
+        }
+      );
 
-    effectObject(
-      this,
-      'localInfo',
-      this.localInfo,
-      localInfo => {
-        this.api.updateLocalInfo(localInfo);
-      }
-    );
+    if (this.inGame)
+      effectObject(
+        this,
+        'localInfo',
+        this.localInfo,
+        localInfo => {
+          this.api.updateLocalInfo(localInfo);
+        }
+      );
 
     effectObject(
       this,
