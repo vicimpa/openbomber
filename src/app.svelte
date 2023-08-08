@@ -109,6 +109,7 @@
 
   onFrame((deltaTime, time) => {
     if (!player || !gamemap || !info) return;
+    if (restartAfter >= 0) return;
     const { bomb, block } = keys;
     const { isDeath } = info;
 
@@ -166,6 +167,7 @@
     </div>
     <div class="content" bind:this={container}>
       {#if restartAfter >= 0}
+        <div class="restart-back" />
         <div class="restart">
           <p>Новая игра через {restartAfter} сек</p>
         </div>
@@ -237,6 +239,14 @@
         font-size: 30px
         z-index: 1
 
+      .restart-back
+        position: absolute
+        top: 0
+        left: 0
+        right: 0
+        bottom: 0
+        z-index: 1
+
     .header
       display: flex
       padding: 10px
@@ -251,6 +261,7 @@
       align-items: center
       overflow: hidden
       padding: 20px
+      position: relative
 
     .zoom
       box-shadow: 5px 5px 10px #000
