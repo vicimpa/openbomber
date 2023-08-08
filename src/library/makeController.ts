@@ -1,9 +1,11 @@
 const keymap = new Map<string, boolean>();
 
-addEventListener('keydown', ({ code }) => {
+addEventListener('keydown', ({ code, target }) => {
+  if (target instanceof HTMLInputElement) return;
   keymap.set(code, true);
 });
-addEventListener('keyup', ({ code }) => {
+addEventListener('keyup', ({ code, target }) => {
+  if (target instanceof HTMLInputElement) return;
   keymap.set(code, false);
 });
 
