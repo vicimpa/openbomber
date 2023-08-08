@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Bomb } from "@server/class/Bomb";
+  import type { Bomb } from "../../server/class/Bomb";
   import Move from "./Move.svelte";
   import sprite from "images/sprite.png";
   import { points } from "library/point";

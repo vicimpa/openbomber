@@ -1,5 +1,4 @@
-import { EAchivment } from "src/types";
-
+import { EAchivment } from "../../src/types";
 import { pick } from "../lib/pick";
 import { random } from "../lib/random";
 import { Entity } from "./Entity";

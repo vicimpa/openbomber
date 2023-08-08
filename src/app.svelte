@@ -8,12 +8,14 @@
   import { forwardApi, useApi } from "library/socketApi";
   import Game from "components/Game.svelte";
   import { GameMap } from "class/GameMap";
-  import { type Player as TypePlayer } from "@server/class/Player";
-  import { Game as TypeGame } from "@server/class/Game";
-  import { type TPlayer, type TServer, EAnimate } from "types";
+  import { EAnimate } from "types";
   import { makeEffect } from "library/makeEffect";
   import { socket } from "socket";
   import EditName from "components/EditName.svelte";
+
+  import type { Player as TypePlayer } from "../server/class/Player";
+  import type { Game as TypeGame } from "../server/class/Game";
+  import type { TPlayer, TServer } from "types";
 
   const keys = makeController({
     block: ["KeyE"],

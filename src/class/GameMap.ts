@@ -1,8 +1,8 @@
 import type { TInfo } from "types";
-import type { Achivment } from "@server/class/Achivment";
-import type { Bomb } from "@server/class/Bomb";
-import type { Explode } from "@server/class/Explode";
-import type { Player } from "@server/class/Player";
+import type { Achivment } from "../../server/class/Achivment";
+import type { Bomb } from "../../server/class/Bomb";
+import type { Explode } from "../../server/class/Explode";
+import type { Player } from "../../server/class/Player";
 
 export class GameMap {
   #subs = new Set<(m: GameMap) => any>();

@@ -1,9 +1,7 @@
 import { Socket } from "socket.io";
-import { forwardApi, TPromiseApi, useApi } from "src/library/socketApi";
-import { EAnimate, EDir, TPlayer, TPoint } from "src/types";
-import { TServer } from "src/types";
 
-import { bind } from "../decorator/bind";
+import { forwardApi, useApi } from "../../src/library/socketApi";
+import { EAnimate, EDir } from "../../src/types";
 import { effectObject } from "../lib/effectObject";
 import { find } from "../lib/find";
 import { map } from "../lib/map";
@@ -11,6 +9,9 @@ import { pick } from "../lib/pick";
 import { Bomb } from "./Bomb";
 import { Entity } from "./Entity";
 import { Game } from "./Game";
+
+import type { TPromiseApi } from "../../src/library/socketApi";
+import type { TPlayer, TPoint, TServer } from "../../src/types";
 
 export class Player extends Entity implements TServer {
   api!: TPromiseApi<TPlayer>;
@@ -70,8 +71,7 @@ export class Player extends Entity implements TServer {
     ]);
   }
 
-  @bind()
-  setBlock() {
+  setBlock = () => {
     if (this.isDeath) return;
     if (!this.blocks) return;
     let x = Math.round(this.x);
@@ -92,10 +92,9 @@ export class Player extends Entity implements TServer {
 
     map[index] = 2;
     this.blocks--;
-  }
+  };
 
-  @bind()
-  setBomb() {
+  setBomb = () => {
     if (this.isDeath) return;
 
     const { bombs } = this.game;
@@ -109,21 +108,19 @@ export class Player extends Entity implements TServer {
       return;
 
     bombs.add(newBomb);
-  }
+  };
 
-  @bind()
-  setPosition(x: number, y: number, dir: EDir, animate: EAnimate) {
+  setPosition = (x: number, y: number, dir: EDir, animate: EAnimate) => {
     if (this.isDeath) return;
     this.x = x;
     this.y = y;
     this.dir = dir;
     this.animate = animate;
-  }
+  };
 
-  @bind()
-  setName(name: string) {
+  setName = (name: string) => {
     this.name = name;
-  }
+  };
 
   connect() {
     if (this.unforward) {

@@ -1,8 +1,8 @@
-import type { Game } from "@server/class/Game";
-import type { Player } from "@server/class/Player";
-import type { Bomb } from "@server/class/Bomb";
-import type { Achivment } from "@server/class/Achivment";
-import type { Explode } from "@server/class/Explode";
+import type { Game } from "../server/class/Game";
+import type { Player } from "../server/class/Player";
+import type { Bomb } from "../server/class/Bomb";
+import type { Achivment } from "../server/class/Achivment";
+import type { Explode } from "../server/class/Explode";
 
 export type TPlayer = {
   setStartPosition(x: number, y: number): void;

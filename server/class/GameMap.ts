@@ -1,7 +1,8 @@
-import { DIRECTIONS } from "src/types";
-
+import { DIRECTIONS } from "../../src/types";
 import { random } from "../lib/random";
-import { Game, TConfig } from "./Game";
+import { Game } from "./Game";
+
+import type { TConfig } from "./Game";
 
 export class GameMap extends Uint8Array {
   achivments = new Set<number>();

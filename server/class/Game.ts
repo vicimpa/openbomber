@@ -1,5 +1,4 @@
 import { Socket } from "socket.io";
-import { TPoint } from "src/types";
 
 import { delay } from "../lib/delay";
 import { effectObject } from "../lib/effectObject";
@@ -12,6 +11,8 @@ import { Bomb } from "./Bomb";
 import { Explode } from "./Explode";
 import { GameMap } from "./GameMap";
 import { Player } from "./Player";
+
+import type { TPoint } from "../../src/types";
 
 export const defaultConfig = {
   fillBlocks: .5,

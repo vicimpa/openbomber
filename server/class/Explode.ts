@@ -1,5 +1,4 @@
-import { EExplodeDir, EXPODER_DIRS } from "src/types";
-
+import { EExplodeDir, EXPODER_DIRS } from "../../src/types";
 import { find } from "../lib/find";
 import { pick } from "../lib/pick";
 import { Achivment } from "./Achivment";

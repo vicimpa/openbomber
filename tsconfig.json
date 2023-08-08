@@ -15,12 +15,7 @@
     "types": [
       "vite/client",
       "svelte"
-    ],
-    "paths": {
-      "@server/*": [
-        "../server/*"
-      ]
-    }
+    ]
   },
   "include": [
     "src/**/*.d.ts",
@@ -34,9 +29,6 @@
   "references": [
     {
       "path": "./tsconfig.node.json"
-    },
-    {
-      "path": "./tsconfig.vite.json"
     }
   ]
 }
