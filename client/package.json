@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "main": "src/types.ts",
+  "main": "src/types.mts",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -11,17 +11,24 @@
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {
+    "@root/types": "file:../types",
     "@sveltejs/vite-plugin-svelte": "^2.0.4",
     "@tsconfig/svelte": "^4.0.1",
+    "@types/deep-equal": "^1.0.1",
+    "i": "^0.3.7",
+    "npm": "^9.8.1",
     "sass": "^1.64.2",
+    "socket-api": "file:../socket-api",
     "socket.io-client": "^4.7.2",
     "svelte": "^3.58.0",
     "svelte-check": "^3.3.1",
     "tslib": "^2.5.0",
     "typescript": "^5.0.2",
     "vite": "^4.3.9",
-    "vite-tsconfig-paths": "^4.2.0",
-    "~server": "file:../server",
-    "socket-api": "file:../socket-api"
+    "vite-plugin-commonjs": "^0.8.2",
+    "vite-tsconfig-paths": "^4.2.0"
+  },
+  "dependencies": {
+    "deep-equal": "^2.2.2"
   }
 }

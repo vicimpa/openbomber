@@ -7,56 +7,49 @@
   import { makeController } from "library/makeController";
   import { onMount } from "svelte";
   import { forwardApi, useApi } from "socket-api/src/index";
-  import { isEqual } from "library/isEqual";
   import Game from "components/Game.svelte";
   import { GameMap } from "class/GameMap";
-  import type { IPlayer, TPlayer, TServer } from "~server";
+  import {
+    type Player as TypePlayer,
+    type TPlayer,
+    type TServer,
+    type Game as TypeGame,
+    EAnimate,
+  } from "@root/types";
+  import { makeEffect } from "library/makeEffect";
+  import EditName from "components/EditName.svelte";
+  import { socket } from "socket";
 
   const keys = makeController({
     block: ["KeyE"],
     bomb: ["Space"],
   });
 
-  const socket = connect(`ws://${location.hostname}:3001`, {
-    reconnectionDelay: 500,
-    reconnectionDelayMax: 500,
-    autoConnect: false,
-  });
-
   const api = useApi<TServer>(socket);
 
   let gamemap: GameMap | null = null;
   let player: PlayerController | null = null;
-  let playerInfo: Omit<IPlayer["data"], "x" | "y"> = {
-    name: "",
-    dir: 0,
-    color: 0,
-    animate: 0,
-    bombs: 0,
-    exp: 0,
-  };
-  let name = localStorage.getItem("name") ?? "";
-  let editname = false;
+  let info: TypePlayer["localInfo"] | null = null;
+  let gameInfo: TypeGame["info"] | null = null;
 
-  function grid(n: number, grid = 1) {
-    return ((n * grid) | 0) / grid;
-  }
-
-  function info() {
-    return {
-      x: grid(player?.x ?? 0, 16),
-      y: grid(player?.y ?? 0, 16),
-      dir: player?.dir ?? 0,
-      animate: player?.animate ?? 0,
-    };
-  }
-
-  let previewPlayer: ReturnType<typeof info> | null = null;
+  const playerEffect = makeEffect();
+  const gameSizeEffect = makeEffect();
 
   onMount(() => {
     socket.connect();
 
     forwardApi<TPlayer>(socket, {
+      updateGameInfo(info) {
+        const { width, height } = info;
+        gameInfo = info;
+
+        gameSizeEffect({ width: width, height: height }, () => {
+          gamemap = new GameMap(width, height);
+        });
+      },
+      updateLocalInfo(localInfo) {
+        info = localInfo;
+      },
       updateBombs(newBombs) {
         if (!gamemap) return;
         gamemap.bombs = newBombs;
@@ -69,18 +62,16 @@
           gamemap.map[i] = newMap[i];
         }
       },
+      setStartPosition(x, y) {
+        if (!gameInfo) return;
+        const { width, height } = gameInfo;
+        player = new PlayerController(width, height);
+        player.x = x;
+        player.y = y;
+      },
       updatePlayers(newPlayers) {
         if (!gamemap) return;
         gamemap.players = newPlayers;
-      },
-      setInfo(info) {
-        if (player) player.animate = info.animate;
-        playerInfo = info;
-      },
-      setPosition({ x, y }) {
-        if (!player) return;
-        player.x = x;
-        player.y = y;
       },
       updateExposes(newExposes) {
         if (!gamemap) return;
@@ -90,10 +81,6 @@
         if (!gamemap) return;
         gamemap.achivments = newAchivments;
       },
-      setGameInfo(width, height) {
-        gamemap = new GameMap(width, height);
-        player = new PlayerController(width, height);
-      },
     });
 
     return () => {
@@ -102,68 +89,33 @@
   });
 
   onFrame((deltaTime, time) => {
-    if (!player || !gamemap) return;
+    if (!player || !gamemap || !info) return;
+    const { bomb, block } = keys;
+    const { isDeath } = info;
 
-    player.tick(deltaTime, time, gamemap);
+    if (!isDeath) player.tick(deltaTime, time, gamemap);
     player = player;
     gamemap.update();
-
-    if (playerInfo.name !== name) api.setName(name);
-
-    if (keys.bomb.isSingle()) {
-      api.setBomb();
-    }
-
-    const newInfo = info();
-
-    if (!isEqual(newInfo, previewPlayer)) {
-      previewPlayer = newInfo;
-      const { x, y, dir, animate } = newInfo;
+    bomb.isSingle() && api.setBomb();
+    block.isSingle() && api.setBlock();
+    const { x, y, dir, animate } = player;
+    playerEffect({ x, y, dir, animate }, () => {
       api.setPosition(x, y, dir, animate);
-    }
+    });
   });
 </script>
 
-<p>
-  <span>Nick: </span>
-  {#if editname}
-    <input
-      placeholder="Name"
-      maxlength="18"
-      bind:value={name}
-      on:input={() => {
-        localStorage.setItem("name", name);
-      }}
-    />
-    <button on:click={() => (editname = false)}>Close</button>
-  {:else}
-    <span>{name}</span>
-    <button on:click={() => (editname = true)}>Edit</button>
-  {/if}
-</p>
-<p>Bomb: {playerInfo.bombs}, Expo: {playerInfo.exp}</p>
+<p>Bombs: {info?.bombs} Radius: {info?.radius} Blocks: {info?.blocks}</p>
 
 <Game gamemap={$gamemap}>
-  {#if player}
+  {#if player && info}
     <Move x={player.x} y={player.y}>
       <Player
-        name={playerInfo.name}
+        name={info.name}
         dir={player.dir}
-        animate={player.animate}
-        color={playerInfo.color}
+        animate={info.isDeath ? EAnimate.DEATH : player.animate}
         marker={"#fff"}
       />
     </Move>
   {/if}
 </Game>
-
-<style>
-  button {
-    font-size: 8px;
-    padding: 0px 1px;
-  }
-  p {
-    display: flex;
-    gap: 2px;
-  }
-</style>

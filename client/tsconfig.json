@@ -25,7 +25,9 @@
     "src/**/*.d.ts",
     "src/**/*.ts",
     "src/**/*.js",
-    "src/**/*.svelte"
+    "src/**/*.mts",
+    "src/**/*.svelte",
+    "src/types.ts"
   ],
   "references": [
     {

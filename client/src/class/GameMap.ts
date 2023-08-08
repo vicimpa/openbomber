@@ -1,13 +1,14 @@
-import type { IAchivment, IBomb, IExplode, IPlayer } from "~server";
+import type { TInfo } from "@root/types";
+import type { Achivment, Bomb, Explode, Player } from "@root/types";
 
 export class GameMap {
   #subs = new Set<(m: GameMap) => any>();
 
   #map!: Uint8Array;
-  #bombs!: IBomb[];
-  #achivments!: IAchivment[];
-  #explodes!: IExplode[];
-  #players!: IPlayer['data'][];
+  #bombs!: TInfo<Bomb>[];
+  #achivments!: TInfo<Achivment>[];
+  #explodes!: TInfo<Explode>[];
+  #players!: TInfo<Player>[];
 
   get map() { return this.#map; }
   get bombs() { return this.#bombs; }

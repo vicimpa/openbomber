@@ -5,6 +5,7 @@
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
+    "declaration": true,
     "experimentalDecorators": true,
     "lib": [
       "ESNext"
@@ -15,6 +16,6 @@
     "./src"
   ],
   "exclude": [
-    "./src/old.ts"
+    "./dist"
   ]
 }

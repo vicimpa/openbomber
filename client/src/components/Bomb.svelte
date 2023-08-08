@@ -1,11 +1,12 @@
 <script lang="ts">
-  import type { IBomb } from "~server";
+  import type { Bomb } from "@root/types";
   import Move from "./Move.svelte";
   import sprite from "images/sprite.png";
   import { points } from "library/point";
   import Sprite from "./Sprite.svelte";
+  import type { TInfo } from "@root/types";
 
-  export let bomb: IBomb | null = null;
+  export let bomb: TInfo<Bomb> | null = null;
 </script>
 
 {#if bomb}

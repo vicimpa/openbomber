@@ -7,7 +7,6 @@
   import Bomb from "components/Bomb.svelte";
   import Explode from "components/Explode.svelte";
   import type { GameMap } from "class/GameMap";
-  import Short from "./Short.svelte";
   import Player from "./Player.svelte";
 
   export let gamemap: GameMap | null = null;
@@ -45,9 +44,9 @@
       <Explode {expl} />
     {/each}
 
-    {#each gamemap.achivments as { x, y, value }}
+    {#each gamemap.achivments as { x, y, type }}
       <Move {x} {y}>
-        <Frame src={sprite} x={value} y={14} />
+        <Frame src={sprite} x={type} y={14} />
       </Move>
     {/each}
 

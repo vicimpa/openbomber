@@ -1,6 +1,6 @@
+import { EAnimate, EDir } from "@root/types";
 import { makeController } from "library/makeController";
 import { toLimit } from "library/toLimit";
-import { EAnimate, EDir } from "types";
 
 import type { GameMap } from "./GameMap";
 import type { TPoint } from "library/point";
@@ -27,8 +27,8 @@ export class PlayerController {
     [moveX, moveY]: TPoint,
     [x, y]: TPoint,
     [X, Y]: TPoint,
-    top = .9,
-    down = .1
+    top = .8,
+    down = .2
   ) {
     if (y > Y - top && y < Y + top) {
       if (moveX > 0 && x > X - 1 && x < X - down) moveX = 0;

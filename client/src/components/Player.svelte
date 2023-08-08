@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EAnimate, EDir } from "types";
+  import { EAnimate, EDir } from "@root/types";
   import sprite from "images/sprite.png";
   import Sprite from "./Sprite.svelte";
   import { points } from "library/point";
