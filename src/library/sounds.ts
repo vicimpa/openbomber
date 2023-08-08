@@ -33,7 +33,7 @@ export class Sound {
   }
 }
 
-gainNode.gain.value = .3;
+gainNode.gain.value = .2;
 gainNode.connect(audioCtx.destination);
 
 export const soundStore = {
