@@ -1,11 +1,20 @@
 import { Server } from "http";
 import { Server as SocketIO } from "socket.io";
 
-import { Game } from "./class/Game";
+import { defaultStartPositions, Game } from "./class/Game";
 
 export function game(server: Server) {
   const socketio = new SocketIO(server, { cors: { origin: '*' } });
-  const game = new Game(21, 21);
+  const game = new Game(25, 25, {
+    fillAchivments: .3,
+    fillBlocks: .7
+  }, [
+    ...defaultStartPositions,
+    [.5, 0],
+    [1, .5],
+    [.5, 1],
+    [0, .5]
+  ]);
 
   socketio.on('connection', socket => {
     game.join(socket);
