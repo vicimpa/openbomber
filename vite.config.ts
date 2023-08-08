@@ -9,7 +9,8 @@ export default defineConfig({
   base: './',
   root: './src',
   build: {
-    outDir: '../dist'
+    outDir: '../dist',
+    target: 'esnext'
   },
   preview: {
     host: '0.0.0.0',
