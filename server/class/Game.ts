@@ -95,6 +95,7 @@ export class Game {
       player.bombs = 1;
       player.radius = 1;
       player.isAnimated = false;
+      player.randomPosition();
 
       if (startPosition) {
         [player.x, player.y] = startPosition;

@@ -105,6 +105,14 @@ export class Player extends Entity implements TServer {
     this.api.actionDeath();
   }
 
+  randomPosition() {
+    if (this.startPosition) {
+      this.game.releaseFreePosition(this.startPosition);
+    }
+
+    this.startPosition = this.game.getFreePosition();
+  }
+
   setBomb = () => {
     if (this.isDeath) return;
 
@@ -135,9 +143,8 @@ export class Player extends Entity implements TServer {
 
   toGame = () => {
     if (this.startPosition) return;
-    const position = this.game.getFreePosition();
-    if (!position) return;
-    this.startPosition = position;
+    this.randomPosition();
+    if (!this.startPosition) return;
     this.isDeath = true;
     this.blocks = 0;
     this.bombs = 1;
@@ -240,7 +247,7 @@ export class Player extends Entity implements TServer {
       }
     );
 
-    if (this.inGame)
+    if (this.inGame && !this.isDeath)
       effectObject(
         this,
         'startPosition',
