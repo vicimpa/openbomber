@@ -34,9 +34,10 @@
   let restartAfter = -1;
 
   const resize = () => {
+    const offset = 60;
     const min = Math.min(
-      container.offsetWidth / zoom.offsetWidth,
-      container.offsetHeight / zoom.offsetHeight
+      (container.offsetWidth - offset) / zoom.offsetWidth,
+      (container.offsetHeight - offset) / zoom.offsetHeight
     );
 
     zoom.style.transform = `scale(${min})`;
@@ -46,7 +47,6 @@
 
   const playerEffect = makeEffect();
   const gameSizeEffect = makeEffect();
-  const nameEffect = makeEffect<string>();
 
   onMount(() => {
     observer.observe(container);
@@ -236,6 +236,7 @@
         padding: 20px 50px
         font-size: 30px
         z-index: 1
+
     .header
       display: flex
       padding: 10px
@@ -249,4 +250,9 @@
       justify-content: center
       align-items: center
       overflow: hidden
+      padding: 20px
+
+    .zoom
+      box-shadow: 5px 5px 10px #000
+      position: absolute
 </style>
