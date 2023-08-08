@@ -165,7 +165,7 @@ export class Game {
       effectObject(
         this,
         'restartGame',
-        this.players.size >= 2 && map(this.players, e => e, e => !e.isDeath).length <= 1,
+        map(this.players, e => e, e => !e.isDeath).length <= (this.players.size > 1 ? 1 : 0),
         (isRestart) => {
           if (isRestart) {
 
