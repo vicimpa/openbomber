@@ -5,7 +5,7 @@ import { Game } from "./class/Game";
 
 export function game(server: Server) {
   const socketio = new SocketIO(server, { cors: { origin: '*' } });
-  const game = new Game(21, 17);
+  const game = new Game(15, 15);
 
   socketio.on('connection', socket => {
     game.join(socket);
