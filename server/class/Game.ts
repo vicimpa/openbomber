@@ -136,6 +136,7 @@ export class Game {
 
   async loop() {
     while (this.running) {
+      const { players, playersCount } = this;
 
       effectObject(
         this,
@@ -165,7 +166,11 @@ export class Game {
       effectObject(
         this,
         'restartGame',
-        map(this.players, e => e, e => !e.isDeath).length <= (this.players.size > 1 ? 1 : 0),
+        playersCount && map(
+          players,
+          e => e,
+          e => !e.isDeath
+        ).length <= +!!(playersCount - 1),
         (isRestart) => {
           if (isRestart) {
 
