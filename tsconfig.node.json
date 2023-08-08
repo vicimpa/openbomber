@@ -25,6 +25,9 @@
     "./src/library/socketApi.ts"
   ],
   "ts-node": {
-    "swc": true
+    "esm": true,
+    "compilerOptions": {
+      "module": "nodenext",
+    }
   }
 }
