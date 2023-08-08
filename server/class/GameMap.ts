@@ -32,7 +32,7 @@ export class GameMap extends Uint8Array {
 
     for (let i = 0; i < this.length; i++) {
       let x = i % width;
-      let y = i / height | 0;
+      let y = i / width;
 
       if (x & 1 && y & 1) {
         this[i] = 1;
