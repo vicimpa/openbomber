@@ -173,16 +173,20 @@ export class Game {
         ).length <= +!!(playersCount - 1),
         (isRestart) => {
           if (isRestart) {
-
+            logger.info("Wait restart");
             this.waitForRestart = Date.now() + 3000;
           } else {
+            if (this.waitForRestart > 0) {
+              logger.info("Cancel restart");
+            }
             this.waitForRestart = -1;
           }
         }
       );
 
       if (this.waitForRestart > 0) {
-        if (Date.now() > this.waitForRestart) {
+        if (Date.now() > this.waitForRestart + 500) {
+          logger.info("Restart");
           this.restart();
         }
       }
