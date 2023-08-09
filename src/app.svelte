@@ -20,6 +20,7 @@
   import Volume from "components/Volume.svelte";
   import { ChatEvent } from "class/ChatEvent";
   import Chat from "components/Chat.svelte";
+  import { NICK_LENGTH } from "config";
 
   const keys = makeController({
     block: ["KeyE"],
@@ -129,7 +130,7 @@
   onFrame((deltaTime, time) => {
     if (!info) return;
     if (name !== info.name) {
-      name = name.slice(0, 10);
+      name = name.slice(0, NICK_LENGTH);
       info.name = name;
       api.setName(name);
       localStorage.setItem("name", name);

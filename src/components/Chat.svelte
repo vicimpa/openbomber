@@ -4,6 +4,7 @@
   import type { Player } from "../../server/class/Player";
   import { FDate } from "library/FDate";
   import { sounds } from "library/sounds";
+  import { MESSAGE_LENGTH } from "config";
 
   let message: string = "";
 
@@ -57,7 +58,12 @@
     {/each}
   </div>
   <div class="input">
-    <input bind:value={message} on:keydown={keydown} placeholder="Message" />
+    <input
+      maxlength={MESSAGE_LENGTH}
+      bind:value={message}
+      on:keydown={keydown}
+      placeholder="Message"
+    />
     <button on:click={sendMessage}>Send (Enter)</button>
   </div>
 </div>

@@ -1,5 +1,6 @@
 import { Socket } from "socket.io";
 
+import { MESSAGE_LENGTH, NICK_LENGTH } from "../../src/config";
 import { forwardApi, useApi } from "../../src/library/socketApi";
 import { EAnimate, EDir } from "../../src/types";
 import { effectObject } from "../lib/effectObject";
@@ -110,8 +111,9 @@ export class Player extends Entity {
 
     sendMessage: (message) => {
       if (!message) return;
+      message = message.slice(0, MESSAGE_LENGTH);
       for (const player of this.game.players) {
-        player.api.onMessage(message.slice(0, 1000), this.chatInfo, player === this);
+        player.api.onMessage(message, this.chatInfo, player === this);
       }
     },
 
@@ -146,7 +148,7 @@ export class Player extends Entity {
 
     setName: (name: string) => {
       if (!name) return;
-      this.name = name.slice(0, 10);
+      this.name = name.slice(0, NICK_LENGTH);
     },
 
     toGame: () => {
