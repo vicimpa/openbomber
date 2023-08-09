@@ -12,7 +12,7 @@ import { Game } from "./Game";
 
 import type { TPlayer, TPoint, TServer } from "../../src/types";
 
-export class Player extends Entity implements TServer {
+export class Player extends Entity {
   api!: TPlayer;
   unforward?: () => {};
 
@@ -36,13 +36,7 @@ export class Player extends Entity implements TServer {
   isAnimated = false;
   startPosition!: TPoint;
 
-  constructor(
-    game: Game,
-    public socket: Socket
-  ) {
-    super(game, 0, 0);
-    this.api = useApi<TPlayer>(socket);
-  }
+
 
   get info() {
     return pick(this, [
@@ -75,27 +69,96 @@ export class Player extends Entity implements TServer {
     ]);
   }
 
-  setBlock = () => {
-    if (this.isDeath) return;
-    if (!this.blocks) return;
-    let x = Math.round(this.x);
-    let y = Math.round(this.y);
+  get chatInfo() {
+    return pick(this, [
+      'name',
+      'color',
+      'inGame',
+      'isDeath'
+    ]);
+  }
 
-    const { game: { width, map, bombs, players } } = this;
+  constructor(
+    game: Game,
+    public socket: Socket
+  ) {
+    super(game, 0, 0);
+    this.api = useApi<TPlayer>(socket);
+  }
 
-    const index = x + y * width;
+  methods: TServer = {
+    setBlock: () => {
+      if (this.isDeath) return;
+      if (!this.blocks) return;
+      let x = Math.round(this.x);
+      let y = Math.round(this.y);
 
-    if (map[index])
-      return;
+      const { game: { width, map, bombs, players } } = this;
 
-    if (find(bombs, { x, y }))
-      return;
+      const index = x + y * width;
 
-    if (find(players, e => e != this && e.checkCollision(x, y, .8)))
-      return;
+      if (map[index])
+        return;
 
-    map[index] = 2;
-    this.blocks--;
+      if (find(bombs, { x, y }))
+        return;
+
+      if (find(players, e => e != this && e.checkCollision(x, y, .8)))
+        return;
+
+      map[index] = 2;
+      this.blocks--;
+    },
+
+    sendMessage: (message) => {
+      for (const player of this.game.players) {
+        player.api.onMessage(message.slice(0, 1000), this.info, player === this);
+      }
+    },
+
+    setBomb: () => {
+      if (this.isDeath) return;
+
+      const { bombs } = this.game;
+      const newBomb = new Bomb(this);
+      const { x, y } = newBomb;
+
+      if (find(bombs, { x, y }))
+        return;
+
+      if (map(bombs, e => e, e => e.player === this).length >= this.bombs)
+        return;
+
+      bombs.add(newBomb);
+    },
+
+    setPosition: (x: number, y: number, dir: EDir, animate: EAnimate) => {
+      if (this.isDeath) return;
+      this.x = (x * 16 | 0) / 16;
+      this.y = (y * 16 | 0) / 16;
+      this.dir = dir;
+      this.animate = animate;
+    },
+
+    setName: (name: string) => {
+      this.name = name.slice(0, 10);
+    },
+
+    toGame: () => {
+      if (this.startPosition) return;
+      this.randomPosition();
+      if (!this.startPosition) return;
+      this.isDeath = true;
+      this.blocks = 0;
+      this.bombs = 1;
+      this.radius = 1;
+    },
+
+    toLeave: () => {
+      if (!this.startPosition) return;
+      this.game.releaseFreePosition(this.startPosition);
+      this.startPosition = null;
+    }
   };
 
   death() {
@@ -112,78 +175,18 @@ export class Player extends Entity implements TServer {
     this.startPosition = this.game.getFreePosition();
   }
 
-  setBomb = () => {
-    if (this.isDeath) return;
-
-    const { bombs } = this.game;
-    const newBomb = new Bomb(this);
-    const { x, y } = newBomb;
-
-    if (find(bombs, { x, y }))
-      return;
-
-    if (map(bombs, e => e, e => e.player === this).length >= this.bombs)
-      return;
-
-    bombs.add(newBomb);
-  };
-
-  setPosition = (x: number, y: number, dir: EDir, animate: EAnimate) => {
-    if (this.isDeath) return;
-    this.x = (x * 16 | 0) / 16;
-    this.y = (y * 16 | 0) / 16;
-    this.dir = dir;
-    this.animate = animate;
-  };
-
-  setName = (name: string) => {
-    this.name = name.slice(0, 10);
-  };
-
-  toGame = () => {
-    if (this.startPosition) return;
-    this.randomPosition();
-    if (!this.startPosition) return;
-    this.isDeath = true;
-    this.blocks = 0;
-    this.bombs = 1;
-    this.radius = 1;
-  };
-
-
-  toLeave = () => {
-    if (!this.startPosition) return;
-    this.game.releaseFreePosition(this.startPosition);
-    this.startPosition = null;
-  };
-
   connect() {
     if (this.unforward) {
       this.unforward();
       delete this.unforward;
     }
 
-    const {
-      setBlock,
-      setBomb,
-      setName,
-      setPosition,
-      toGame,
-      toLeave,
-    } = this;
 
-    forwardApi<TServer>(this.socket, {
-      setBlock,
-      setBomb,
-      setName,
-      setPosition,
-      toGame,
-      toLeave
-    });
+    forwardApi<TServer>(this.socket, this.methods);
   }
 
   disconnect() {
-    this.toLeave();
+    this.methods.toLeave();
     this.unforward?.();
   }
 

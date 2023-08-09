@@ -4,12 +4,12 @@
   import sprite from "images/sprite.png";
   import { plus, points } from "library/point";
   import Sprite from "./Sprite.svelte";
-  import type { EExplodeDir, TInfo } from "types";
+  import type { EExplodeDir } from "types";
   import type { Explode } from "../../server/class/Explode";
   import { onMount } from "svelte";
   import { sounds } from "library/sounds";
 
-  export let expl: TInfo<Explode> | null = null;
+  export let expl: Explode["info"] | null = null;
 
   const center = points("2,6;7,6;2,11;7,11");
 

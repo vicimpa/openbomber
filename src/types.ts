@@ -7,15 +7,16 @@ import type { Explode } from "../server/class/Explode";
 export type TPlayer = {
   setStartPosition(x: number, y: number): void;
   updateMap(map: number[]): void;
-  updateBombs(bombs: TInfo<Bomb>[]): void;
-  updatePlayers(players: TInfo<Player>[]): void;
-  updateExposes(exposes: TInfo<Explode>[]): void;
-  updateAchivments(achivments: TInfo<Achivment>[]): void;
+  updateBombs(bombs: Bomb['info'][]): void;
+  updatePlayers(players: Player['info'][]): void;
+  updateExposes(exposes: Explode['info'][]): void;
+  updateAchivments(achivments: Achivment['info'][]): void;
   updateLocalInfo(localInfo: Player['localInfo']): void;
-  updateGameInfo(info: TInfo<Game>): void;
+  updateGameInfo(info: Game['info']): void;
   updateWaitForRestart(count: number): void;
   actionBonus(): void;
   actionDeath(): void;
+  onMessage(message: string, player: Player['chatInfo'], isMe: boolean): void;
 };
 
 export type TServer = {
@@ -25,9 +26,8 @@ export type TServer = {
   setName(name: string): void;
   toGame(): void;
   toLeave(): void;
+  sendMessage(message: string): void;
 };
-
-export type TInfo<T extends { info: any; }> = T['info'];
 
 export enum EDir {
   TOP,

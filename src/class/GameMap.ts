@@ -1,4 +1,3 @@
-import type { TInfo } from "types";
 import type { Achivment } from "../../server/class/Achivment";
 import type { Bomb } from "../../server/class/Bomb";
 import type { Explode } from "../../server/class/Explode";
@@ -8,10 +7,10 @@ export class GameMap {
   #subs = new Set<(m: GameMap) => any>();
 
   #map!: Uint8Array;
-  #bombs!: TInfo<Bomb>[];
-  #achivments!: TInfo<Achivment>[];
-  #explodes!: TInfo<Explode>[];
-  #players!: TInfo<Player>[];
+  #bombs!: Bomb['info'][];
+  #achivments!: Achivment['info'][];
+  #explodes!: Explode['info'][];
+  #players!: Player['info'][];
 
   get map() { return this.#map; }
   get bombs() { return this.#bombs; }

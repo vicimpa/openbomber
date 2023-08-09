@@ -18,6 +18,8 @@
   import type { TPlayer, TServer } from "types";
   import { sounds } from "library/sounds";
   import Volume from "components/Volume.svelte";
+  import { ChatEvent } from "class/ChatEvent";
+  import Chat from "components/Chat.svelte";
 
   const keys = makeController({
     block: ["KeyE"],
@@ -113,6 +115,9 @@
       actionDeath() {
         sounds.death.play();
       },
+      onMessage(message, player, isMe) {
+        ChatEvent.dispatch(message, player, isMe);
+      },
     });
 
     return () => {
@@ -122,7 +127,15 @@
   });
 
   onFrame((deltaTime, time) => {
-    if (!player || !gamemap || !info) return;
+    if (!info) return;
+    if (name !== info.name) {
+      name = name.slice(0, 10);
+      info.name = name;
+      api.setName(name);
+      localStorage.setItem("name", name);
+    }
+
+    if (!player || !gamemap) return;
     if (restartAfter >= 0) return;
     const { bomb, block } = keys;
     const { isDeath } = info;
@@ -132,13 +145,6 @@
     });
 
     if (!isDeath) player.tick(deltaTime, time, gamemap);
-
-    if (name !== info.name) {
-      name = name.slice(0, 10);
-      info.name = name;
-      api.setName(name);
-      localStorage.setItem("name", name);
-    }
 
     player = player;
     gamemap.update();
@@ -184,6 +190,14 @@
     </div>
     <div class="item">
       <Volume />
+    </div>
+    <div class="item">
+      Чат
+      <Chat
+        on:message={({ detail }) => {
+          api.sendMessage(detail);
+        }}
+      />
     </div>
   </div>
   <div class="container">
