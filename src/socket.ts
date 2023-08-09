@@ -5,3 +5,9 @@ export const socket = connect({
   reconnectionDelayMax: 500,
   autoConnect: false,
 });
+
+socket.once('disconnect', () => {
+  socket.once('connect', () => {
+    location.reload();
+  });
+});

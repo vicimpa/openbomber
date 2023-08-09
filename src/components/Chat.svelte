@@ -1,10 +1,10 @@
 <script lang="ts">
   import { ChatEvent } from "class/ChatEvent";
   import { createEventDispatcher, onMount } from "svelte";
-  import type { Player } from "../../server/class/Player";
   import { FDate } from "library/FDate";
   import { sounds } from "library/sounds";
   import { MESSAGE_LENGTH } from "config";
+  import type { TChatInfo } from "types";
 
   let message: string = "";
 
@@ -27,7 +27,7 @@
 
   let messages: {
     message: string;
-    player: Player["chatInfo"];
+    player: TChatInfo;
     isMe: boolean;
     date: Date;
   }[] = [];

@@ -4,6 +4,10 @@ import type { Bomb } from "../server/class/Bomb";
 import type { Achivment } from "../server/class/Achivment";
 import type { Explode } from "../server/class/Explode";
 
+export type TChatInfo = {
+  name: string;
+};
+
 export type TPlayer = {
   setStartPosition(x: number, y: number): void;
   updateMap(map: number[]): void;
@@ -16,7 +20,7 @@ export type TPlayer = {
   updateWaitForRestart(count: number): void;
   actionBonus(): void;
   actionDeath(): void;
-  onMessage(message: string, player: Player['chatInfo'], isMe: boolean): void;
+  onMessage(message: string, player: TChatInfo, isMe: boolean): void;
 };
 
 export type TServer = {

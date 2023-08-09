@@ -1,16 +1,17 @@
+import type { TChatInfo } from "types";
 import type { Player } from "../../server/class/Player";
 
 export class ChatEvent extends Event {
 
   constructor(
     public message: string,
-    public player: Player['chatInfo'],
+    public player: TChatInfo,
     public isMe: boolean
   ) {
     super(ChatEvent.name);
   }
 
-  static dispatch(message: string, player: Player['chatInfo'], isMe: boolean) {
+  static dispatch(message: string, player: TChatInfo, isMe: boolean) {
     const event = new ChatEvent(message, player, isMe);
     dispatchEvent(event);
   }

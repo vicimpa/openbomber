@@ -4,6 +4,7 @@ import { pick } from "../lib/pick";
 import { Achivment } from "./Achivment";
 import { Bomb } from "./Bomb";
 import { Entity } from "./Entity";
+import { Player } from "./Player";
 
 export interface IExplodePoin {
   x: number;
@@ -18,10 +19,12 @@ export class Explode extends Entity {
   time = Date.now();
   liveTime = 500;
   radius = 1;
+  player: Player;
 
   constructor(bomb: Bomb) {
     super(bomb.game, bomb.x, bomb.y);
     this.radius = bomb.radius;
+    this.player = bomb.player;
     this.explode();
   }
 
@@ -83,6 +86,7 @@ export class Explode extends Entity {
         }
 
         if (bombFind) {
+          bombFind.player = this.player;
           bombFind.time = Date.now();
           bombFind.liveTime = 50;
           points.slice(-1)[0].isFinaly = true;

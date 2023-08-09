@@ -113,9 +113,7 @@ export class Player extends Entity {
     sendMessage: (message) => {
       if (!message) return;
       message = message.slice(0, MESSAGE_LENGTH);
-      for (const player of this.game.players) {
-        player.api.onMessage(message, this.chatInfo, player === this);
-      }
+      this.game.message(message, this);
     },
 
     setBomb: () => {
@@ -162,19 +160,41 @@ export class Player extends Entity {
       this.bombs = 1;
       this.radius = 1;
       this.lastAction = Date.now();
+      this.game.message(`${this.name} подключился`);
     },
 
     toLeave: () => {
       if (!this.startPosition) return;
       this.game.releaseFreePosition(this.startPosition);
       this.startPosition = null;
+      this.game.message(`${this.name} отключился`);
     }
   };
 
-  death() {
+  reset() {
+    const { startPosition } = this;
+    this.isDeath = false;
+    this.blocks = 0;
+    this.bombs = 1;
+    this.radius = 1;
+    this.isAnimated = false;
+    this.lastAction = Date.now();
+    this.randomPosition();
+
+    if (startPosition) {
+      [this.x, this.y] = startPosition;
+      effectObject(this, 'startPosition', [-1, -1], () => { });
+    }
+  }
+
+  death(player?: Player) {
     this.isAnimated = true;
     this.isDeath = true;
     this.api.actionDeath();
+    if (player) {
+      const target = player === this ? 'самоубился' : `убит ${player.name}`;
+      this.game.message(`${this.name} ${target}`);
+    }
   }
 
   randomPosition() {
@@ -236,7 +256,7 @@ export class Player extends Entity {
           if (this.isDeath) continue;
 
           if (this.checkCollision(x, y, .8)) {
-            this.death();
+            this.death(explode.player);
           }
         }
       }

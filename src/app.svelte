@@ -54,10 +54,15 @@
   const gameSizeEffect = makeEffect();
   const winEffect = makeEffect<boolean>();
 
+  let isRestarting = false;
+
   onMount(() => {
     observer.observe(container);
     observer.observe(zoom);
     socket.connect();
+    socket.once("disconnect", () => {
+      isRestarting = true;
+    });
 
     forwardApi<TPlayer>(socket, {
       updateGameInfo(info) {
@@ -138,6 +143,7 @@
 
     if (!player || !gamemap) return;
     if (restartAfter >= 0) return;
+    if (isRestarting) return;
     const { bomb, block } = keys;
     const { isDeath } = info;
 
@@ -223,6 +229,12 @@
         <div class="restart-back" />
         <div class="restart">
           <p>Новая игра через {restartAfter} сек</p>
+        </div>
+      {/if}
+      {#if isRestarting}
+        <div class="restart-back" />
+        <div class="restart">
+          <p>Сервер перезагружается. Подождите.</p>
         </div>
       {/if}
       <div class="zoom" bind:this={zoom}>

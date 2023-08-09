@@ -13,7 +13,7 @@ import { Explode } from "./Explode";
 import { GameMap } from "./GameMap";
 import { Player } from "./Player";
 
-import type { TPoint } from "../../src/types";
+import type { TChatInfo, TPoint } from "../../src/types";
 
 const logger = createLogger('info', { allowClearScreen: true });
 
@@ -89,19 +89,7 @@ export class Game {
 
     for (const player of this.players) {
       if (!player.inGame) continue;
-      const { startPosition } = player;
-      player.isDeath = false;
-      player.blocks = 0;
-      player.bombs = 1;
-      player.radius = 1;
-      player.isAnimated = false;
-      player.lastAction = Date.now();
-      player.randomPosition();
-
-      if (startPosition) {
-        [player.x, player.y] = startPosition;
-        effectObject(player, 'startPosition', [-1, -1], () => { });
-      }
+      player.reset();
     }
 
     this.bombs.clear();
@@ -110,6 +98,15 @@ export class Game {
 
     this.map = new GameMap(width, height, this);
     this.map.generate(this.settings);
+  }
+
+  message(message: string, sender?: Player) {
+    for (const player of this.players)
+      player.api.onMessage(
+        message,
+        sender instanceof Player ? ({ name: sender.name }) : ({ name: 'server' }),
+        sender === player
+      );
   }
 
   join(socket: Socket) {
@@ -190,6 +187,15 @@ export class Game {
           if (isRestart) {
             logger.info("Wait restart");
             this.waitForRestart = Date.now() + 3000;
+
+            if (this.playersCount > 1) {
+              const winPlayer = find(this.players, e => !e.isDeath);
+              if (winPlayer) {
+                this.message(`${winPlayer.name} победил`);
+              } else {
+                this.message(`Никто не выиграл`);
+              }
+            }
           } else {
             if (this.waitForRestart > 0) {
               logger.info("Cancel restart");
