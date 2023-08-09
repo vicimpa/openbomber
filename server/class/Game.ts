@@ -189,7 +189,7 @@ export class Game {
             this.waitForRestart = Date.now() + 3000;
 
             if (this.playersCount > 1) {
-              const winPlayer = find(this.players, e => !e.isDeath);
+              const winPlayer = find(this.players, e => e.inGame && !e.isDeath);
               if (winPlayer) {
                 this.message(`${winPlayer.name} победил`);
               } else {
