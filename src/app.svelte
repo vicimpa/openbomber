@@ -243,7 +243,9 @@
         <div class="restart">
           <p>Введите имя</p>
           <input bind:value={name} maxlength={NICK_LENGTH} />
-          <button on:click={() => (isOpenEditName = false)}>Сохранить</button>
+          <button disabled={!name} on:click={() => (isOpenEditName = false)}>
+            Сохранить
+          </button>
         </div>
       {/if}
       <div class="zoom" bind:this={zoom}>
