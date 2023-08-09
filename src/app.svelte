@@ -174,6 +174,19 @@
       <EditName bind:name />
     </div>
     <div class="item">
+      Подключение
+
+      {#if gameInfo}
+        {#if !info?.inGame}
+          <button disabled={!info?.canJoin} on:click={() => api.toGame()}>
+            Подключиться
+          </button>
+        {:else}
+          <button on:click={() => api.toLeave()}> Отключится </button>
+        {/if}
+      {/if}
+    </div>
+    <div class="item">
       Список игроков:
       <ul>
         {#if info?.inGame}
@@ -199,14 +212,6 @@
     <div class="item">
       <Volume />
     </div>
-    <div class="item">
-      Чат
-      <Chat
-        on:message={({ detail }) => {
-          api.sendMessage(detail);
-        }}
-      />
-    </div>
   </div>
   <div class="container">
     <div class="header">
@@ -215,13 +220,8 @@
           <p>Bombs: {info.bombs}</p>
           <p>Radius: {info.radius}</p>
           <p>Blocks: {info.blocks}</p>
-
-          <button on:click={() => api.toLeave()}> Отключится </button>
         {:else}
           <p>Вы наблюдатель</p>
-          {#if info?.canJoin}
-            <button on:click={() => api.toGame()}> Подключиться </button>
-          {/if}
         {/if}
       {/if}
     </div>
@@ -265,6 +265,33 @@
       </div>
     </div>
   </div>
+
+  <div class="side">
+    <div class="item">
+      Чат:
+      <Chat
+        on:message={({ detail }) => {
+          api.sendMessage(detail);
+        }}
+      />
+    </div>
+    <div class="item">
+      <p>Ссылки:</p>
+      <ul>
+        <li>
+          <a href="https://github.com/vicimpa/openbomber/">
+            Репозиторий GitHub
+          </a>
+        </li>
+        <li>
+          <a href="https://vk.com/club221966053"> Группа в VK </a>
+        </li>
+        <li>
+          <a href="https://t.me/gameopenbomber"> Группа в TG </a>
+        </li>
+      </ul>
+    </div>
+  </div>
 </div>
 
 <style lang="sass">
@@ -275,6 +302,9 @@
 
   ul
     padding: 10px
+
+    a
+      color: #fff
 
 
   li[data-death="true"]
@@ -292,10 +322,11 @@
       background-color: rgba(0,0,0,0.3)
       box-shadow: 0 0 10px #000
       padding: 10px
-      min-width: 300px
+      width: 300px
       display: flex
       flex-direction: column
       gap: 10px
+      overflow-y: auto
 
       .item
         background-color: rgba(0,0,0,0.3)
