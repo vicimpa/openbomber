@@ -36,8 +36,6 @@ export class Player extends Entity {
   isAnimated = false;
   startPosition!: TPoint;
 
-
-
   get info() {
     return pick(this, [
       'x',
@@ -133,7 +131,12 @@ export class Player extends Entity {
     },
 
     setPosition: (x: number, y: number, dir: EDir, animate: EAnimate) => {
-      if (this.isDeath) return;
+      if (this.isDeath && !this.inGame) return;
+      if (Math.sqrt((this.x - x) ** 2 + (this.y - y) ** 2) > 1) {
+        this.api.setStartPosition(this.x, this.y);
+        return;
+      }
+
       this.x = (x * 16 | 0) / 16;
       this.y = (y * 16 | 0) / 16;
       this.dir = dir;
