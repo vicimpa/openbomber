@@ -130,8 +130,8 @@ export class Player extends Entity implements TServer {
 
   setPosition = (x: number, y: number, dir: EDir, animate: EAnimate) => {
     if (this.isDeath) return;
-    this.x = x;
-    this.y = y;
+    this.x = (x * 16 | 0) / 16;
+    this.y = (y * 16 | 0) / 16;
     this.dir = dir;
     this.animate = animate;
   };
