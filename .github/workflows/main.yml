@@ -30,5 +30,5 @@ jobs:
           rm -rf current
           mv testing current
           cd current
-          pm2 start npm --name "app name" -- start
+          pm2 start npm --name "openbomber" -- run preview
           pm2 save
