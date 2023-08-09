@@ -55,6 +55,7 @@
   const winEffect = makeEffect<boolean>();
 
   let isRestarting = false;
+  let isOpenEditName = !name;
 
   onMount(() => {
     observer.observe(container);
@@ -237,6 +238,14 @@
           <p>Сервер перезагружается. Подождите.</p>
         </div>
       {/if}
+      {#if isOpenEditName}
+        <div class="restart-back" />
+        <div class="restart">
+          <p>Введите имя</p>
+          <input bind:value={name} maxlength={NICK_LENGTH} />
+          <button on:click={() => (isOpenEditName = false)}>Сохранить</button>
+        </div>
+      {/if}
       <div class="zoom" bind:this={zoom}>
         <Game gamemap={$gamemap}>
           {#if player && info}
@@ -304,6 +313,10 @@
         padding: 20px 50px
         font-size: 30px
         z-index: 1
+        display: flex
+        flex-direction: column
+        align-items: center
+        gap: 20px
 
       .restart-back
         position: absolute
