@@ -226,6 +226,16 @@
       {/if}
     </div>
     <div class="content" bind:this={container}>
+      {#if isOpenEditName}
+        <div class="restart-back" />
+        <div class="restart">
+          <p>Введите имя</p>
+          <input bind:value={name} maxlength={NICK_LENGTH} />
+          <button disabled={!name} on:click={() => (isOpenEditName = false)}>
+            Сохранить
+          </button>
+        </div>
+      {/if}
       {#if restartAfter >= 0}
         <div class="restart-back" />
         <div class="restart">
@@ -236,16 +246,6 @@
         <div class="restart-back" />
         <div class="restart">
           <p>Сервер перезагружается. Подождите.</p>
-        </div>
-      {/if}
-      {#if isOpenEditName}
-        <div class="restart-back" />
-        <div class="restart">
-          <p>Введите имя</p>
-          <input bind:value={name} maxlength={NICK_LENGTH} />
-          <button disabled={!name} on:click={() => (isOpenEditName = false)}>
-            Сохранить
-          </button>
         </div>
       {/if}
       <div class="zoom" bind:this={zoom}>
