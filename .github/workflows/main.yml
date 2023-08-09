@@ -25,9 +25,10 @@ jobs:
           cd testing
           npm install
           npm run build
-          pm2 delete openbomber
+          pm2 describe openbomber && pm2 delete openbomber
           cd ..
           rm -rf current
           mv testing current
           cd current
           pm2 start npm --name "app name" -- start
+          pm2 save
