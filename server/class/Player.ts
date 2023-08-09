@@ -1,6 +1,6 @@
 import { Socket } from "socket.io";
 
-import { MESSAGE_LENGTH, NICK_LENGTH } from "../../src/config";
+import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT } from "../../src/config";
 import { forwardApi, useApi } from "../../src/library/socketApi";
 import { EAnimate, EDir } from "../../src/types";
 import { effectObject } from "../lib/effectObject";
@@ -36,6 +36,7 @@ export class Player extends Entity {
 
   isAnimated = false;
   startPosition!: TPoint;
+  lastAction = Date.now();
 
   get info() {
     return pick(this, [
@@ -140,6 +141,7 @@ export class Player extends Entity {
         return;
       }
 
+      this.lastAction = Date.now();
       this.x = (x * 16 | 0) / 16;
       this.y = (y * 16 | 0) / 16;
       this.dir = dir;
@@ -213,6 +215,17 @@ export class Player extends Entity {
         info: gameMap
       }
     } = this.game;
+
+    if (!this.isDeath && this.inGame)
+      effectObject(
+        this,
+        'timeout',
+        Date.now() - this.lastAction > PLAYER_TIMEOUT && !this.isDeath,
+        (result) => {
+          if (result)
+            this.methods.toLeave();
+        }
+      );
 
     if (!this.isDeath && this.inGame) {
       for (const explode of explodes) {
