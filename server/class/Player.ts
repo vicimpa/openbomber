@@ -111,7 +111,7 @@ export class Player extends Entity {
     sendMessage: (message) => {
       if (!message) return;
       for (const player of this.game.players) {
-        player.api.onMessage(message.slice(0, 1000), this.info, player === this);
+        player.api.onMessage(message.slice(0, 1000), this.chatInfo, player === this);
       }
     },
 
