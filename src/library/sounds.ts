@@ -50,6 +50,7 @@ export const soundStore = {
   putBomb: await import('sound/put_bomb.mp3?url'),
   explode: await import('sound/explode.mp3?url'),
   newLife: await import('sound/new_life.wav?url'),
+  message: await import('sound/message.mp3?url'),
 };
 
 type TUrl = typeof import('*?url');

@@ -3,6 +3,7 @@
   import { createEventDispatcher, onMount } from "svelte";
   import type { Player } from "../../server/class/Player";
   import { FDate } from "library/FDate";
+  import { sounds } from "library/sounds";
 
   let message: string = "";
 
@@ -34,6 +35,7 @@
     return ChatEvent.subscribe(({ player, message, isMe }) => {
       messages.push({ player, message, isMe, date: new Date() });
       messages = messages;
+      sounds.message.play();
     });
   });
 </script>

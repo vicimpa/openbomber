@@ -109,6 +109,7 @@ export class Player extends Entity {
     },
 
     sendMessage: (message) => {
+      if (!message) return;
       for (const player of this.game.players) {
         player.api.onMessage(message.slice(0, 1000), this.info, player === this);
       }
@@ -144,6 +145,7 @@ export class Player extends Entity {
     },
 
     setName: (name: string) => {
+      if (!name) return;
       this.name = name.slice(0, 10);
     },
 
