@@ -226,6 +226,12 @@
       {/if}
     </div>
     <div class="content" bind:this={container}>
+      {#if restartAfter >= 0}
+        <div class="restart-back" />
+        <div class="restart">
+          <p>Новая игра через {restartAfter} сек</p>
+        </div>
+      {/if}
       {#if isOpenEditName}
         <div class="restart-back" />
         <div class="restart">
@@ -234,12 +240,6 @@
           <button disabled={!name} on:click={() => (isOpenEditName = false)}>
             Сохранить
           </button>
-        </div>
-      {/if}
-      {#if restartAfter >= 0}
-        <div class="restart-back" />
-        <div class="restart">
-          <p>Новая игра через {restartAfter} сек</p>
         </div>
       {/if}
       {#if isRestarting}
