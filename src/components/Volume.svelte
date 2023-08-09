@@ -13,7 +13,7 @@
   let startVolume = volume;
 
   const change = (val = 0) => {
-    volume += val;
+    volume = toLimit(volume + val, 0, 1);
   };
 
   const mouseDown = ({ x, y }: MouseEvent) => {
@@ -40,7 +40,6 @@
   });
 
   beforeUpdate(() => {
-    volume = toLimit(volume, 0, 1);
     gainNode.gain.value = volume;
     localStorage.setItem("volume", `${volume}`);
   });
