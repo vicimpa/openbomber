@@ -134,6 +134,7 @@
     if (!isDeath) player.tick(deltaTime, time, gamemap);
 
     if (name !== info.name) {
+      name = name.slice(0, 10);
       info.name = name;
       api.setName(name);
       localStorage.setItem("name", name);
@@ -143,7 +144,9 @@
     gamemap.update();
     bomb.isSingle() && api.setBomb();
     block.isSingle() && api.setBlock();
-    const { x, y, dir, animate } = player;
+    let { x, y, dir, animate } = player;
+    x = ((x * 16) | 0) / 16;
+    y = ((y * 16) | 0) / 16;
     playerEffect({ x, y, dir, animate }, () => {
       api.setPosition(x, y, dir, animate);
     });

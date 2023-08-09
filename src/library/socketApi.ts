@@ -1,14 +1,11 @@
-export type TApi = { [key: string | symbol]: (...args: any[]) => any; };
-export type TPromiseApi<T extends TApi> = {
-  [key in keyof T]: (...args: Parameters<T[key]>) => Promise<ReturnType<T[key]>>
-};
+export type TApi = { [key: string | symbol]: (...args: any[]) => void; };
 export type TSocket = {
   on(name: string, callback: (...args: any[]) => any): any;
   off(name: string, callback: (...args: any[]) => any): any;
   emit(name: string, ...args: any[]): any;
 };
 
-const useApi = <T extends TApi>(socket: TSocket): TPromiseApi<T> => {
+const useApi = <T extends TApi>(socket: TSocket): T => {
   return new Proxy({} as T, {
     get(_, key) {
       if (typeof key !== 'string')
@@ -16,10 +13,7 @@ const useApi = <T extends TApi>(socket: TSocket): TPromiseApi<T> => {
 
       return (...args: any) => {
         return new Promise((resolve, reject) => {
-          socket.emit(key, args, (err: Error | null, result: any) => {
-            if (err) return reject(err);
-            resolve(result);
-          });
+          socket.emit(key, ...args);
         });
       };
     }
@@ -31,11 +25,10 @@ const forwardApi = <T extends TApi>(socket: TSocket, api: Partial<T>) => {
 
   for (const key in api) {
     if (api[key] instanceof Function) {
-      const func = (args: any[], callback: (err: Error | null, result: any) => any) => {
+      const func = (...args: any[]) => {
         Promise.resolve()
           .then(() => (api as any)[key](...args))
-          .then(result => callback(null, result))
-          .catch(err => callback(err, null));
+          .catch(console.error);
       };
 
       socket.on(key, func);

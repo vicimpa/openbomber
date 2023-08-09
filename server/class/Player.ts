@@ -10,11 +10,10 @@ import { Bomb } from "./Bomb";
 import { Entity } from "./Entity";
 import { Game } from "./Game";
 
-import type { TPromiseApi } from "../../src/library/socketApi";
 import type { TPlayer, TPoint, TServer } from "../../src/types";
 
 export class Player extends Entity implements TServer {
-  api!: TPromiseApi<TPlayer>;
+  api!: TPlayer;
   unforward?: () => {};
 
   get inGame() { return !!this.startPosition; };
@@ -138,7 +137,7 @@ export class Player extends Entity implements TServer {
   };
 
   setName = (name: string) => {
-    this.name = name;
+    this.name = name.slice(0, 10);
   };
 
   toGame = () => {
