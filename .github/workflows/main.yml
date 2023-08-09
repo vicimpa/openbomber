@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Running deploy on remote
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ secrets.SSH_PORT }}
+        script_stop: true
+        script: |
+          mkdir /root/deploy -f
+          cd /root/deploy
+          rm -rf testing
+          git clone git@github.com:vicimpa/openbomber.git testing
+          cd testing
+          npm install
+          npm run build
+          pm2 delete openbomber
+          cd ..
+          rm -rf current
+          mv testing current
+          cd current
+          pm2 start npm --name "app name" -- start
