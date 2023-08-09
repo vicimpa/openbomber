@@ -42,7 +42,7 @@ export class GameMap extends Uint8Array {
     }
 
     for (const [X, Y] of this.game.startPositions) {
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i <= 2; i++) {
         for (const [, dir] of Object.entries(DIRECTIONS)) {
           let [dx, dy] = dir;
           let x = X + dx * i;
