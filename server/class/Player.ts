@@ -161,6 +161,7 @@ export class Player extends Entity {
       this.blocks = 0;
       this.bombs = 1;
       this.radius = 1;
+      this.lastAction = Date.now();
     },
 
     toLeave: () => {
