@@ -293,7 +293,6 @@
 
   <div class="side">
     <div class="item">
-      Чат:
       <Chat
         on:message={({ detail }) => {
           api.sendMessage(detail);

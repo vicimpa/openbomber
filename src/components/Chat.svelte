@@ -7,6 +7,7 @@
   import type { TChatInfo } from "types";
 
   let message: string = "";
+  let isHide = false;
 
   const format = FDate.makeFormat("hh:mm:ss DD.MM.YYYY");
 
@@ -41,8 +42,18 @@
   });
 </script>
 
+<p class="header">
+  Чат:
+  <button
+    on:click={() => {
+      isHide = !isHide;
+    }}
+  >
+    {isHide ? "Показать" : "Скрыть"}
+  </button>
+</p>
 <div class="chat">
-  <div class="list">
+  <div class="list" data-hide={isHide}>
     {#each messages as { player, message, isMe, date }}
       <div class="item" data-isme={isMe}>
         <div class="name">
@@ -69,12 +80,18 @@
 </div>
 
 <style lang="sass">
+  .header
+    display: flex
+    justify-content: space-between
   .chat
     display: flex
     flex-direction: column
     gap: 10px
     max-width: 300px
     height: 370px
+
+    .list[data-hide="true"] .item
+      filter: blur(10px)
 
     .list
       overflow-y: scroll
