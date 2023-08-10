@@ -272,6 +272,7 @@ export class Player extends Entity {
           if (this.checkCollision(x, y, .6)) {
             if (this.shields) {
               this.shields--;
+              this.game.message(`${this.name} потратил щит`);
               explode.ignore.add(this);
               continue;
             }
