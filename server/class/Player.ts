@@ -2,6 +2,7 @@ import { Socket } from "socket.io";
 
 import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT } from "../../src/config";
 import { forwardApi, useApi } from "../../src/library/socketApi";
+import { PlayerPositionsProto } from "../../src/proto";
 import { EAnimate, EDir } from "../../src/types";
 import { effectObject } from "../lib/effectObject";
 import { find } from "../lib/find";
@@ -357,7 +358,9 @@ export class Player extends Entity {
     effectObject(
       this,
       'positions',
-      map(players, e => e.posInfo, (e, d) => e !== this && d.id !== -1),
+      PlayerPositionsProto.to(
+        map(players, e => e.posInfo, (e, d) => e !== this && d.id !== -1)
+      ),
       positions => {
         this.api.updatePlayerPositions(positions);
       }

@@ -21,6 +21,7 @@
   import { ChatEvent } from "class/ChatEvent";
   import Chat from "components/Chat.svelte";
   import { NICK_LENGTH } from "config";
+  import { PlayerPositionsProto } from "proto";
 
   const keys = makeController({
     block: ["KeyE"],
@@ -104,7 +105,7 @@
       },
       updatePlayerPositions(newPositions) {
         if (!gamemap) return;
-        gamemap.positions = newPositions;
+        gamemap.positions = PlayerPositionsProto.from(newPositions);
       },
       updateExposes(newExposes) {
         if (!gamemap) return;
