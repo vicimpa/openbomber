@@ -16,6 +16,8 @@
     "./src/types.ts",
     "./src/library/socketApi.ts",
     "./vite.config.ts",
-    "./src/config.ts"
+    "./src/config.ts",
+    "./src/proto.ts",
+    "./src/library/Buffers.ts",
   ]
 }
