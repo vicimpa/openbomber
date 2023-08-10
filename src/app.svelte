@@ -191,17 +191,18 @@
       <ul>
         {#if info?.inGame}
           <li data-death={info.isDeath}>
-            : {info.name || "noname"} (me)
+            {info.name || "noname"} (me)
           </li>
         {/if}
         {#if gamemap}
           {#each gamemap.players as player}
             <li data-death={player.isDeath}>
-              : {player.name || "noname"}
+              {player.name || "noname"}
               <small>
                 <span>💣 x {player.bombs}</span>
                 <span>🔥 x {player.radius}</span>
-                <span>💀 x {player.kills}</span>
+                <span>🔫 x {player.kills}</span>
+                <span>💀 x {player.deaths}</span>
               </small>
             </li>
           {/each}
@@ -221,7 +222,8 @@
         {#if info?.inGame}
           <span>💣 x {info.bombs}</span>
           <span>🔥 x {info.radius}</span>
-          <span>💀 x {info.kills}</span>
+          <span>🔫 x {info.kills}</span>
+          <span>💀 x {info.deaths}</span>
         {:else}
           <p>Вы наблюдатель</p>
         {/if}

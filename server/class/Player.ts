@@ -35,6 +35,7 @@ export class Player extends Entity {
   blocks = 0;
 
   kills = 0;
+  deaths = 0;
 
   isAnimated = false;
   startPosition!: TPoint;
@@ -54,7 +55,8 @@ export class Player extends Entity {
       'radius',
       'isAnimated',
       'blocks',
-      'kills'
+      'kills',
+      'deaths'
     ]);
   }
 
@@ -69,7 +71,8 @@ export class Player extends Entity {
       'isAnimated',
       'blocks',
       'canJoin',
-      'kills'
+      'kills',
+      'deaths'
     ]);
   }
 
@@ -164,6 +167,7 @@ export class Player extends Entity {
       this.bombs = 1;
       this.radius = 1;
       this.kills = 0;
+      this.deaths = 0;
       this.lastAction = Date.now();
       this.game.message(`${this.name} подключился`);
     },
@@ -173,6 +177,7 @@ export class Player extends Entity {
       this.game.releaseFreePosition(this.startPosition);
       this.startPosition = null;
       this.kills = 0;
+      this.deaths = 0;
       this.game.message(`${this.name} отключился`);
     }
   };
@@ -263,9 +268,10 @@ export class Player extends Entity {
 
           if (this.checkCollision(x, y, .8)) {
             this.death(explode.player);
+            this.deaths++;
 
             if (explode.player !== this)
-              this.kills++;
+              explode.player.kills++;
           }
         }
       }

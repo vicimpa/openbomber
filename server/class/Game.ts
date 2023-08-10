@@ -81,7 +81,6 @@ export class Game {
       .map(([x, y]) => [x * (width - 1) | 0, y * (height - 1) | 0])
       .map(([x, y]) => [(x & 1) ? x - 1 : x, (y & 1) ? y - 1 : y]);
 
-    console.log(this.startPositions);
     this.restart();
   }
 
