@@ -8,6 +8,7 @@
   import Explode from "components/Explode.svelte";
   import type { GameMap } from "class/GameMap";
   import Player from "./Player.svelte";
+  import { EMapItem } from "types";
 
   export let gamemap: GameMap | null = null;
 </script>
@@ -26,12 +27,28 @@
 
     {#each gamemap.map as val}
       <div class="item">
-        {#if val === 1}
+        {#if val === EMapItem.CLEAR}
+          <Frame src={sprite} x={6} y={0} />
+        {/if}
+
+        {#if val === EMapItem.WALL}
           <Frame src={sprite} x={3} y={3} />
         {/if}
 
-        {#if val === 2}
+        {#if val === EMapItem.BLOCK}
           <Frame src={sprite} x={4} y={3} />
+        {/if}
+
+        {#if val === EMapItem.GRAS}
+          <Frame src={sprite} x={6} y={1} />
+        {/if}
+
+        {#if val === EMapItem.SAND}
+          <Frame src={sprite} x={7} y={0} />
+        {/if}
+
+        {#if val === EMapItem.WATER}
+          <Frame src={sprite} x={7} y={1} />
         {/if}
       </div>
     {/each}

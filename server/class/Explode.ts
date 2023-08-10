@@ -1,4 +1,4 @@
-import { EExplodeDir, EXPODER_DIRS } from "../../src/types";
+import { EExplodeDir, EMapItem, EXPODER_DIRS } from "../../src/types";
 import { find } from "../lib/find";
 import { pick } from "../lib/pick";
 import { Achivment } from "./Achivment";
@@ -68,9 +68,9 @@ export class Explode extends Entity {
         if (x < 0 || x > width - 1 || y < 0 || y > height - 1)
           break;
 
-        if (map[index]) {
-          if (map[index] == 2) {
-            map[index] = 0;
+        if (map[index] === EMapItem.WALL || map[index] === EMapItem.BLOCK) {
+          if (map[index] == EMapItem.BLOCK) {
+            map[index] = EMapItem.CLEAR;
 
             if (map.achivments.delete(index)) {
               this.game.achivments.add(
@@ -100,6 +100,12 @@ export class Explode extends Entity {
         }
 
         points.push({ x, y, dir, isFinaly: radius === i });
+      }
+
+      for (const { x, y } of points) {
+        const index = y * width + x;
+        if (map[index] === EMapItem.CLEAR)
+          map[index] = EMapItem.GRAS;
       }
     }
   }

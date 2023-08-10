@@ -1,6 +1,6 @@
 import { makeController } from "library/makeController";
 import { toLimit } from "library/toLimit";
-import { EAnimate, EDir } from "types";
+import { EAnimate, EDir, EMapItem } from "types";
 
 import type { GameMap } from "./GameMap";
 import type { TPoint } from "library/point";
@@ -102,7 +102,12 @@ export class PlayerController {
     moveY *= speed;
 
     for (let i = 0; i < size; i++) {
-      if (!map[i]) continue;
+      if (
+        false
+        || map[i] === EMapItem.CLEAR
+        || map[i] === EMapItem.GRAS
+        || map[i] === EMapItem.SAND
+      ) continue;
 
       const X = i % width;
       const Y = (i - X) / width;
@@ -113,7 +118,7 @@ export class PlayerController {
         [X, Y],
         undefined,
         undefined,
-        map[i] == 1
+        map[i] == EMapItem.WALL
       );
     }
 

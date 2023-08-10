@@ -8,6 +8,15 @@ export type TChatInfo = {
   name: string;
 };
 
+export enum EMapItem {
+  CLEAR,
+  WALL,
+  BLOCK,
+  GRAS,
+  SAND,
+  WATER,
+}
+
 export type TPlayer = {
   setStartPosition(x: number, y: number): void;
   updateMap(map: number[]): void;

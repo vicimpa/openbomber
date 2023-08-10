@@ -1,4 +1,4 @@
-import { DIRECTIONS } from "../../src/types";
+import { DIRECTIONS, EMapItem } from "../../src/types";
 import { random } from "../lib/random";
 import { Game } from "./Game";
 
@@ -35,8 +35,9 @@ export class GameMap extends Uint8Array {
       let y = i / width;
 
       if (x & 1 && y & 1) {
-        this[i] = 1;
+        this[i] = EMapItem.WALL;
       } else {
+        this[i] = Math.random() > .7 ? EMapItem.SAND : EMapItem.CLEAR;
         positions.add(i);
       }
     }
@@ -59,7 +60,7 @@ export class GameMap extends Uint8Array {
       const p = random([...positions]);
       positions.delete(p);
       blocksStore.add(p);
-      this[p] = 2;
+      this[p] = EMapItem.BLOCK;
     }
 
     const achivmentsCount = (fillAchivments % 1) * blocksStore.size;
@@ -68,7 +69,7 @@ export class GameMap extends Uint8Array {
       const p = random([...blocksStore]);
       blocksStore.delete(p);
       this.achivments.add(p);
-      this[p] = 2;
+      this[p] = EMapItem.BLOCK;
     }
 
   }
