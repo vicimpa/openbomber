@@ -53,6 +53,7 @@
   const playerEffect = makeEffect();
   const gameSizeEffect = makeEffect();
   const winEffect = makeEffect<boolean>();
+  const shieldEffect = makeEffect<boolean>();
 
   let isRestarting = false;
   let isOpenEditName = !name;
@@ -138,6 +139,12 @@
   });
 
   onFrame((deltaTime, time) => {
+    shieldEffect(!!info?.effects?.haveShield, () => {
+      if (info) {
+        sounds.shield.play();
+      }
+    });
+
     if (!info) return;
     if (name !== info.name) {
       name = name.slice(0, NICK_LENGTH);
