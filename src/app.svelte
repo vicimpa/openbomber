@@ -89,6 +89,7 @@
       updateMap(buffer) {
         if (!gamemap) return;
         gamemap.map = new Uint8Array(buffer);
+        gamemap = gamemap;
       },
       setStartPosition(x, y) {
         if (!gameInfo) return;
