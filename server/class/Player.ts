@@ -266,7 +266,7 @@ export class Player extends Entity {
         for (const { x, y } of explode.points) {
           if (this.isDeath) continue;
 
-          if (this.checkCollision(x, y, .8)) {
+          if (this.checkCollision(x, y, .6)) {
             this.death(explode.player);
             this.deaths++;
 
