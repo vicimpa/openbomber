@@ -311,6 +311,7 @@
   li
     display: flex
     gap: 10px
+    justify-content: space-between
     small
       gap: 5px
       display: flex
