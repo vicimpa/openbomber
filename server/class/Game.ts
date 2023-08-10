@@ -47,6 +47,7 @@ export class Game {
   usedPositions = new Set<number>();
 
   running = false;
+  kills = 0;
 
   waitForRestart = -1;
 
@@ -97,7 +98,7 @@ export class Game {
     this.bombs.clear();
     this.achivments.clear();
     this.explodes.clear();
-
+    this.kills = 0;
     this.map = new GameMap(width, height, this);
     this.map.generate(this.settings);
   }
@@ -190,7 +191,7 @@ export class Game {
             logger.info("Wait restart");
             this.waitForRestart = Date.now() + 3000;
 
-            if (this.playersCount > 1) {
+            if (this.playersCount > 1 && this.kills > 0) {
               const winPlayer = find(this.players, e => e.inGame && !e.isDeath);
               if (winPlayer) {
                 this.message(`${winPlayer.name} победил`);

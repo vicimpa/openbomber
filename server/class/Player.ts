@@ -252,6 +252,7 @@ export class Player extends Entity {
 
             this.death(explode.player);
             this.deaths++;
+            this.game.kills++;
 
             if (explode.player !== this)
               explode.player.kills++;
