@@ -6,7 +6,7 @@ import { defaultStartPositions, Game } from "./class/Game";
 export function game(server: Server) {
   const socketio = new SocketIO(server, { cors: { origin: '*' } });
   const game = new Game(21, 17, {
-    fillAchivments: .2,
+    fillAchivments: .19,
     fillBlocks: .7
   }, [
     ...defaultStartPositions,
