@@ -31,7 +31,7 @@
 
   let gamemap: GameMap | null = null;
   let player: PlayerController | null = null;
-  let info: TypePlayer["localInfo"] | null = null;
+  let info: TypePlayer["info"] | null = null;
   let gameInfo: TypeGame["info"] | null = null;
   let container: HTMLDivElement;
   let zoom: HTMLDivElement;
@@ -105,6 +105,10 @@
         if (!gamemap) return;
         gamemap.players = newPlayers;
       },
+      updatePlayerPositions(newPositions) {
+        if (!gamemap) return;
+        gamemap.positions = newPositions;
+      },
       updateExposes(newExposes) {
         if (!gamemap) return;
         gamemap.explodes = newExposes;
@@ -157,7 +161,6 @@
     player = player;
     gamemap.update();
     bomb.isSingle() && api.setBomb();
-    block.isSingle() && api.setBlock();
     let { x, y, dir, animate } = player;
     x = ((x * 16) | 0) / 16;
     y = ((y * 16) | 0) / 16;
@@ -199,11 +202,16 @@
             <li data-death={player.isDeath}>
               {player.name || "noname"}
               <small>
-                <span class="stat">💣 {player.bombs}</span>
-                <span class="stat">🔥 {player.radius}</span>
-                <span class="stat">🛡️ {player.shields}</span>
+                <span class="stat">💣 {player.effects.bombs}</span>
+                <span class="stat">🔥 {player.effects.radius}</span>
                 <span class="stat">🔫 {player.kills}</span>
                 <span class="stat">💀 {player.deaths}</span>
+
+                <span class="stat">
+                  {#if player.effects.haveShield}
+                    🛡️
+                  {/if}
+                </span>
               </small>
             </li>
           {/each}
@@ -221,11 +229,17 @@
     <div class="header">
       {#if gameInfo}
         {#if info?.inGame}
-          <span>💣 x {info.bombs}</span>
-          <span>🔥 x {info.radius}</span>
-          <span>🛡️ x {info.shields}</span>
+          <span>💣 x {info.effects.bombs}</span>
+          <span>🔥 x {info.effects.radius}</span>
           <span>🔫 x {info.kills}</span>
           <span>💀 x {info.deaths}</span>
+          <span>
+            <span>
+              {#if info.effects.haveShield}
+                🛡️
+              {/if}
+            </span>
+          </span>
         {:else}
           <p>Вы наблюдатель</p>
         {/if}
@@ -261,7 +275,7 @@
               <Player
                 name={info.name}
                 dir={player.dir}
-                haveShield={info.shields > 0}
+                haveShield={info.effects.haveShield}
                 animate={info.isDeath ? EAnimate.DEATH : player.animate}
                 isAnimated={info.isAnimated}
                 marker={"#fff"}

@@ -24,7 +24,8 @@ export type TPlayer = {
   updatePlayers(players: Player['info'][]): void;
   updateExposes(exposes: Explode['info'][]): void;
   updateAchivments(achivments: Achivment['info'][]): void;
-  updateLocalInfo(localInfo: Player['localInfo']): void;
+  updateLocalInfo(localInfo: Player['info']): void;
+  updatePlayerPositions(positions: Player['posInfo'][]): void;
   updateGameInfo(info: Game['info']): void;
   updateWaitForRestart(count: number): void;
   actionBonus(): void;
@@ -35,7 +36,6 @@ export type TPlayer = {
 export type TServer = {
   setPosition(x: number, y: number, dir: EDir, animate: EAnimate): void;
   setBomb(): void;
-  setBlock(): void;
   setName(name: string): void;
   toGame(): void;
   toLeave(): void;

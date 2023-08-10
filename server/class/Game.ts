@@ -44,21 +44,21 @@ export class Game {
   players = new Set<Player>();
 
   startPositions: TPoint[];
-  usedPositions = new Set<TPoint>();
+  usedPositions = new Set<number>();
 
   running = false;
 
   waitForRestart = -1;
 
   getFreePosition() {
-    const free = this.startPositions
+    const free = Array.from({ length: this.startPositions.length }, (_, i) => i)
       .filter(e => !this.usedPositions.has(e));
     const position = random(free);
     this.usedPositions.add(position);
     return position;
   }
 
-  releaseFreePosition(position: TPoint) {
+  releaseFreePosition(position: number) {
     this.usedPositions.delete(position);
   }
 

@@ -31,7 +31,7 @@ export default defineConfig({
         game(server.httpServer);
       },
       configureServer(server) {
-        game(server.httpServer);
+        game(server.httpServer!);
       }
     }
   ],

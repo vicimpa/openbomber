@@ -72,7 +72,7 @@ export class PlayerController {
 
   tick(deltaTime: number, time: number, game: GameMap) {
     const { keys, width, height } = this;
-    const { map, bombs, players } = game;
+    const { map, bombs, playersWidthPositions } = game;
     const size = width * height;
 
     let { x, y, animate, dir } = this;
@@ -136,9 +136,9 @@ export class PlayerController {
       );
     }
 
-    for (const player of players) {
-      const X = player.x;
-      const Y = player.y;
+    for (const player of playersWidthPositions) {
+      const X = player.x ?? 0;
+      const Y = player.y ?? 0;
 
       if (player.animate === 2)
         continue;

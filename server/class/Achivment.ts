@@ -1,9 +1,12 @@
 import { EAchivment } from "../../src/types";
 import { pick } from "../lib/pick";
 import { random } from "../lib/random";
+import { BombEffect } from "./BombEffect";
 import { Entity } from "./Entity";
 import { Game } from "./Game";
 import { Player } from "./Player";
+import { RadiusEffect } from "./RadiusEffect";
+import { ShieldEffect } from "./ShieldEffect";
 
 const STORE = [
   EAchivment.APPEND_BOMB,
@@ -21,20 +24,20 @@ export class Achivment extends Entity {
     super(game, x, y);
   }
 
-  accept(player: Player, type = this.type) {
+  accept(player: Player, type = this.type): void {
     switch (type) {
       case EAchivment.APPEND_BOMB: {
-        player.bombs++;
+        BombEffect.append(player);
         break;
       }
 
       case EAchivment.APPEND_EXPO: {
-        player.radius++;
+        RadiusEffect.append(player);
         break;
       }
 
       case EAchivment.APPEND_SHIELD: {
-        player.shields++;
+        ShieldEffect.append(player);
         break;
       }
 

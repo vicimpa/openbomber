@@ -8,74 +8,73 @@ import { find } from "../lib/find";
 import { map } from "../lib/map";
 import { pick } from "../lib/pick";
 import { Bomb } from "./Bomb";
+import { BombEffect } from "./BombEffect";
 import { Entity } from "./Entity";
 import { Game } from "./Game";
+import { PlayerEffect } from "./PlayerEffect";
+import { RadiusEffect } from "./RadiusEffect";
+import { ShieldEffect } from "./ShieldEffect";
 
 import type { TPlayer, TPoint, TServer } from "../../src/types";
-
 export class Player extends Entity {
+  #id = -1;
   api!: TPlayer;
   unforward?: () => {};
 
-  get inGame() { return !!this.startPosition; };
   isDeath = false;
 
   dir = EDir.BOTTOM;
   #animate = EAnimate.IDLE;
 
+  get id() { return this.#id; }
+  get inGame() { return this.#id !== -1; };
   get canJoin() { return this.game.slotLimits > this.game.playersCount; }
   get animate() { return this.isDeath ? EAnimate.DEATH : this.#animate; }
   set animate(v) { this.#animate = v; }
+  get startPosition(): TPoint | undefined { return this.game.startPositions[this.#id]; };
 
   name = '';
   color = 0;
 
-  bombs = 1;
-  radius = 1;
-  blocks = 0;
-  shields = 0;
+  get effects() {
+    return {
+      bombs: BombEffect.count(this) + 1,
+      radius: RadiusEffect.count(this) + 1,
+      haveShield: ShieldEffect.hasShield(this)
+    };
+  }
 
   kills = 0;
   deaths = 0;
 
   isAnimated = false;
-  startPosition!: TPoint;
   lastAction = Date.now();
+
+  get posInfo() {
+    return pick(
+      this,
+      [
+        'id',
+        'x',
+        'y',
+        'dir',
+        'animate',
+      ]
+    );
+  }
 
   get info() {
     return pick(this, [
-      'x',
-      'y',
-      'dir',
-      'animate',
+      'id',
       'name',
       'color',
       'inGame',
       'isDeath',
-      'bombs',
-      'radius',
       'isAnimated',
-      'blocks',
-      'kills',
-      'deaths',
-      'shields'
-    ]);
-  }
-
-  get localInfo() {
-    return pick(this, [
-      'name',
-      'color',
-      'inGame',
-      'isDeath',
-      'bombs',
-      'radius',
-      'isAnimated',
-      'blocks',
       'canJoin',
       'kills',
       'deaths',
-      'shields'
+      'effects',
     ]);
   }
 
@@ -97,29 +96,6 @@ export class Player extends Entity {
   }
 
   methods: TServer = {
-    setBlock: () => {
-      if (this.isDeath) return;
-      if (!this.blocks) return;
-      let x = Math.round(this.x);
-      let y = Math.round(this.y);
-
-      const { game: { width, map, bombs, players } } = this;
-
-      const index = x + y * width;
-
-      if (map[index])
-        return;
-
-      if (find(bombs, { x, y }))
-        return;
-
-      if (find(players, e => e != this && e.checkCollision(x, y, .8)))
-        return;
-
-      map[index] = 2;
-      this.blocks--;
-    },
-
     sendMessage: (message) => {
       if (!message) return;
       message = message.slice(0, MESSAGE_LENGTH);
@@ -136,7 +112,7 @@ export class Player extends Entity {
       if (find(bombs, { x, y }))
         return;
 
-      if (map(bombs, e => e, e => e.player === this).length >= this.bombs)
+      if (map(bombs, e => e, e => e.player === this).length >= this.effects.bombs)
         return;
 
       bombs.add(newBomb);
@@ -162,24 +138,21 @@ export class Player extends Entity {
     },
 
     toGame: () => {
-      if (this.startPosition) return;
+      if (this.#id >= 0) return;
       this.randomPosition();
-      if (!this.startPosition) return;
+      if (this.#id === -1) return;
       this.isDeath = true;
-      this.blocks = 0;
-      this.bombs = 1;
-      this.radius = 1;
       this.kills = 0;
       this.deaths = 0;
-      this.shields = 0;
       this.lastAction = Date.now();
+      PlayerEffect.clearEffets(this);
       this.game.message(`${this.name} подключился`);
     },
 
     toLeave: () => {
       if (!this.startPosition) return;
-      this.game.releaseFreePosition(this.startPosition);
-      this.startPosition = null;
+      this.game.releaseFreePosition(this.#id);
+      this.#id = -1;
       this.game.message(`${this.name} отключился`);
     }
   };
@@ -187,13 +160,10 @@ export class Player extends Entity {
   reset() {
     const { startPosition } = this;
     this.isDeath = false;
-    this.blocks = 0;
-    this.bombs = 1;
-    this.radius = 1;
-    this.shields = 0;
     this.isAnimated = false;
     this.lastAction = Date.now();
     this.randomPosition();
+    PlayerEffect.clearEffets(this);
 
     if (startPosition) {
       [this.x, this.y] = startPosition;
@@ -213,10 +183,10 @@ export class Player extends Entity {
 
   randomPosition() {
     if (this.startPosition) {
-      this.game.releaseFreePosition(this.startPosition);
+      this.game.releaseFreePosition(this.#id);
     }
 
-    this.startPosition = this.game.getFreePosition();
+    this.#id = this.game.getFreePosition();
   }
 
   connect() {
@@ -250,6 +220,10 @@ export class Player extends Entity {
         info: gameMap
       }
     } = this.game;
+    if (!this.isDeath && this.inGame) {
+      for (const effect of PlayerEffect.effects(this))
+        effect.update();
+    }
 
     if (!this.isDeath && this.inGame)
       effectObject(
@@ -270,9 +244,8 @@ export class Player extends Entity {
           if (this.isDeath) continue;
 
           if (this.checkCollision(x, y, .6)) {
-            if (this.shields) {
-              this.shields--;
-              this.game.message(`${this.name} потратил щит`);
+            if (this.effects.haveShield) {
+              ShieldEffect.delete(this);
               explode.ignore.add(this);
               continue;
             }
@@ -319,7 +292,7 @@ export class Player extends Entity {
       effectObject(
         this,
         'startPosition',
-        this.startPosition,
+        this.startPosition ?? [0, 0],
         ([x, y]) => {
           this.x = x;
           this.y = y;
@@ -330,7 +303,7 @@ export class Player extends Entity {
     effectObject(
       this,
       'localInfo',
-      this.localInfo,
+      this.info,
       localInfo => {
         this.api.updateLocalInfo(localInfo);
       }
@@ -378,6 +351,14 @@ export class Player extends Entity {
       map(players, e => e.info, (e, d) => e !== this && d.inGame),
       players => {
         this.api.updatePlayers(players);
+      }
+    );
+    effectObject(
+      this,
+      'positions',
+      map(players, e => e.posInfo, (e, d) => e !== this && d.id !== -1),
+      positions => {
+        this.api.updatePlayerPositions(positions);
       }
     );
   }

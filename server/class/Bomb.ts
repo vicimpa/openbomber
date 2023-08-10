@@ -16,7 +16,7 @@ export class Bomb extends Entity {
     const y = Math.round(player.y);
 
     super(player.game, x, y);
-    this.radius = player.radius;
+    this.radius = player.effects.radius;
   }
 
   get info() {
