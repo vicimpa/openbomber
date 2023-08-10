@@ -171,6 +171,7 @@ export class Player extends Entity {
       this.radius = 1;
       this.kills = 0;
       this.deaths = 0;
+      this.shields = 0;
       this.lastAction = Date.now();
       this.game.message(`${this.name} подключился`);
     },
@@ -179,8 +180,6 @@ export class Player extends Entity {
       if (!this.startPosition) return;
       this.game.releaseFreePosition(this.startPosition);
       this.startPosition = null;
-      this.kills = 0;
-      this.deaths = 0;
       this.game.message(`${this.name} отключился`);
     }
   };
@@ -191,6 +190,7 @@ export class Player extends Entity {
     this.blocks = 0;
     this.bombs = 1;
     this.radius = 1;
+    this.shields = 0;
     this.isAnimated = false;
     this.lastAction = Date.now();
     this.randomPosition();
