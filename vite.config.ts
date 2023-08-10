@@ -1,5 +1,5 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
-import { defineConfig, PluginOption } from "vite";
+import { defineConfig } from "vite";
 import commonjs from "vite-plugin-commonjs";
 import paths from "vite-tsconfig-paths";
 
@@ -18,8 +18,7 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 3000,
-    cors: { origin: '*' }
+    port: 3000
   },
   plugins: [
     commonjs(),
