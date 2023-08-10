@@ -21,6 +21,8 @@ export class Explode extends Entity {
   radius = 1;
   player: Player;
 
+  ignore = new Set<Player>();
+
   constructor(bomb: Bomb) {
     super(bomb.game, bomb.x, bomb.y);
     this.radius = bomb.radius;
@@ -116,6 +118,7 @@ export class Explode extends Entity {
 
     if (Date.now() > time + liveTime) {
       explodes.delete(this);
+      this.ignore.clear();
     }
   }
 

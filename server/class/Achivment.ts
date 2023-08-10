@@ -7,7 +7,8 @@ import { Player } from "./Player";
 
 const STORE = [
   EAchivment.APPEND_BOMB,
-  EAchivment.APPEND_EXPO
+  EAchivment.APPEND_EXPO,
+  EAchivment.APPEND_SHIELD,
 ];
 
 export class Achivment extends Entity {
@@ -29,6 +30,11 @@ export class Achivment extends Entity {
 
       case EAchivment.APPEND_EXPO: {
         player.radius++;
+        break;
+      }
+
+      case EAchivment.APPEND_SHIELD: {
+        player.shields++;
         break;
       }
 

@@ -199,10 +199,11 @@
             <li data-death={player.isDeath}>
               {player.name || "noname"}
               <small>
-                <span>💣 x {player.bombs}</span>
-                <span>🔥 x {player.radius}</span>
-                <span>🔫 x {player.kills}</span>
-                <span>💀 x {player.deaths}</span>
+                <span class="stat">💣 {player.bombs}</span>
+                <span class="stat">🔥 {player.radius}</span>
+                <span class="stat">🛡️ {player.shields}</span>
+                <span class="stat">🔫 {player.kills}</span>
+                <span class="stat">💀 {player.deaths}</span>
               </small>
             </li>
           {/each}
@@ -222,6 +223,7 @@
         {#if info?.inGame}
           <span>💣 x {info.bombs}</span>
           <span>🔥 x {info.radius}</span>
+          <span>🛡️ x {info.shields}</span>
           <span>🔫 x {info.kills}</span>
           <span>💀 x {info.deaths}</span>
         {:else}
@@ -259,6 +261,7 @@
               <Player
                 name={info.name}
                 dir={player.dir}
+                haveShield={info.shields > 0}
                 animate={info.isDeath ? EAnimate.DEATH : player.animate}
                 isAnimated={info.isAnimated}
                 marker={"#fff"}
@@ -314,10 +317,11 @@
     display: flex
     gap: 10px
     justify-content: space-between
+
     small
-      gap: 5px
+      gap: 3px
       display: flex
-      font-size: 10px
+      font-size: 9px
 
 
   li[data-death="true"]

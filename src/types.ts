@@ -67,7 +67,7 @@ export enum EAchivment {
   APPEND_EXPO,
   ROLLERS,
   APPEND_SPEED,
-  APPEND_LIVE,
+  APPEND_SHIELD,
   MOVING_BOMB,
   FIRE,
   RANDOM,

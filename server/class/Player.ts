@@ -33,6 +33,7 @@ export class Player extends Entity {
   bombs = 1;
   radius = 1;
   blocks = 0;
+  shields = 0;
 
   kills = 0;
   deaths = 0;
@@ -56,7 +57,8 @@ export class Player extends Entity {
       'isAnimated',
       'blocks',
       'kills',
-      'deaths'
+      'deaths',
+      'shields'
     ]);
   }
 
@@ -72,7 +74,8 @@ export class Player extends Entity {
       'blocks',
       'canJoin',
       'kills',
-      'deaths'
+      'deaths',
+      'shields'
     ]);
   }
 
@@ -261,12 +264,18 @@ export class Player extends Entity {
 
     if (!this.isDeath && this.inGame) {
       for (const explode of explodes) {
-        if (this.isDeath) continue;
+        if (this.isDeath || explode.ignore.has(this)) continue;
 
         for (const { x, y } of explode.points) {
           if (this.isDeath) continue;
 
           if (this.checkCollision(x, y, .6)) {
+            if (this.shields) {
+              this.shields--;
+              explode.ignore.add(this);
+              continue;
+            }
+
             this.death(explode.player);
             this.deaths++;
 

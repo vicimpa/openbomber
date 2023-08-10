@@ -67,9 +67,16 @@
       </Move>
     {/each}
 
-    {#each gamemap.players as { x, y, dir, animate, name, color, isAnimated }}
+    {#each gamemap.players as { x, y, dir, animate, name, color, shields, isAnimated }}
       <Move {x} {y}>
-        <Player {dir} {animate} {color} {name} {isAnimated} />
+        <Player
+          {dir}
+          {animate}
+          {color}
+          {name}
+          {isAnimated}
+          haveShield={shields > 0}
+        />
       </Move>
     {/each}w
 

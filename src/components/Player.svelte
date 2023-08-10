@@ -28,6 +28,7 @@
   export let name = "";
   export let marker = "transparent";
   export let isAnimated = false;
+  export let haveShield = true;
 
   $: isLeave = animate !== EAnimate.DEATH;
 </script>
@@ -44,6 +45,9 @@
       <Sprite frames={DEATH} isFinite speed={100} src={sprite} />
     {/if}
   {:else}
+    {#if haveShield}
+      <div class="shield" />
+    {/if}
     <Sprite
       frames={animate === EAnimate.IDLE ? IDLE[dir] : RUNNING[dir]}
       speed={150}
@@ -57,4 +61,17 @@
     filter:  hue-rotate(calc(var(--c) * 100deg))
     box-shadow: 0 0 3px var(--m), inset 0 0 3px var(--m)
     border-radius: 5px
+
+    .shield
+      $size: -2px
+      position: absolute
+      top: $size
+      left: $size
+      right: $size
+      bottom: $size
+      border-radius: 100%
+
+      box-shadow: 0 0 5px blue, inset 0 0 5px blue
+      background-color: blue
+      opacity: 0.5
 </style>
