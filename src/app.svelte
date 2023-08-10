@@ -198,9 +198,11 @@
           {#each gamemap.players as player}
             <li data-death={player.isDeath}>
               : {player.name || "noname"}
-              <small
-                >(B: {player.bombs} R: {player.radius} D: {player.blocks})</small
-              >
+              <small>
+                <span>💣 x {player.bombs}</span>
+                <span>🔥 x {player.radius}</span>
+                <span>💀 x {player.kills}</span>
+              </small>
             </li>
           {/each}
         {/if}
@@ -217,9 +219,9 @@
     <div class="header">
       {#if gameInfo}
         {#if info?.inGame}
-          <p>Bombs: {info.bombs}</p>
-          <p>Radius: {info.radius}</p>
-          <p>Blocks: {info.blocks}</p>
+          <span>💣 x {info.bombs}</span>
+          <span>🔥 x {info.radius}</span>
+          <span>💀 x {info.kills}</span>
         {:else}
           <p>Вы наблюдатель</p>
         {/if}
@@ -305,6 +307,14 @@
 
     a
       color: #fff
+  
+  li
+    display: flex
+    gap: 10px
+    small
+      gap: 5px
+      display: flex
+      font-size: 10px
 
 
   li[data-death="true"]
@@ -364,7 +374,7 @@
       padding: 10px
       background-color: rgba(0,0,0,0.3)
       justify-content: center
-      gap: 10px
+      gap: 20px
 
     .content
       flex-grow: 1
