@@ -19,7 +19,7 @@ export enum EMapItem {
 
 export type TPlayer = {
   setStartPosition(x: number, y: number): void;
-  updateMap(map: number[]): void;
+  updateMap(arrayBuffer: ArrayBuffer): void;
   updateBombs(bombs: Bomb['info'][]): void;
   updatePlayers(players: Player['info'][]): void;
   updateExposes(exposes: Explode['info'][]): void;

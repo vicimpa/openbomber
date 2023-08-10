@@ -86,13 +86,9 @@
         if (!gamemap) return;
         gamemap.bombs = newBombs;
       },
-      updateMap(newMap) {
+      updateMap(buffer) {
         if (!gamemap) return;
-        gamemap.map.fill(0);
-
-        for (let i = 0; i < gamemap.map.length; i++) {
-          gamemap.map[i] = newMap[i];
-        }
+        gamemap.map = new Uint8Array(buffer);
       },
       setStartPosition(x, y) {
         if (!gameInfo) return;

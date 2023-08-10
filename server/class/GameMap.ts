@@ -75,6 +75,6 @@ export class GameMap extends Uint8Array {
   }
 
   get info() {
-    return [...this];
+    return this.buffer;
   }
 }
