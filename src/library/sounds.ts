@@ -1,7 +1,15 @@
-import { writable } from "svelte/store";
-
 const audioCtx = new (AudioContext || (window as any)['webkitAudioContext']) as AudioContext;
 export const gainNode = audioCtx.createGain();
+
+let connected = false;
+
+addEventListener('mousedown', () => {
+  connected = true;
+}, { once: true });
+
+addEventListener('touchstart', () => {
+  connected = true;
+}, { once: true });
 
 export class Sound {
   #buffer!: AudioBuffer;
@@ -25,6 +33,7 @@ export class Sound {
   }
 
   play() {
+    if (!connected) return;
     const src = audioCtx.createBufferSource();
     src.buffer = this.#buffer;
     src.connect(gainNode);
