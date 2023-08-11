@@ -4,13 +4,16 @@ addEventListener('keydown', ({ code, target }) => {
   if (target instanceof HTMLInputElement) return;
   keymap.set(code, true);
 });
+
 addEventListener('keyup', ({ code, target }) => {
   if (target instanceof HTMLInputElement) return;
   keymap.set(code, false);
 });
+
 addEventListener('contextmenu', () => {
   keymap.clear();
 });
+
 addEventListener('blur', () => {
   keymap.clear();
 });
