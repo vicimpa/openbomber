@@ -22,6 +22,7 @@
   import Chat from "components/Chat.svelte";
   import { NICK_LENGTH } from "config";
   import { PlayerPositionsProto } from "proto";
+  import PlayerList from "components/PlayerList.svelte";
 
   const keys = makeController({
     bomb: ["Space", "Enter"],
@@ -192,35 +193,13 @@
         {/if}
       {/if}
     </div>
-    <div class="item">
-      Список игроков:
-      <ul>
-        {#if info?.inGame}
-          <li data-death={info.isDeath}>
-            {info.name || "noname"} (me)
-          </li>
-        {/if}
-        {#if gamemap}
-          {#each gamemap.players as player}
-            <li data-death={player.isDeath}>
-              {player.name || "noname"}
-              <small>
-                <span class="stat">💣 {player.effects.bombs}</span>
-                <span class="stat">🔥 {player.effects.radius}</span>
-                <span class="stat">🔫 {player.kills}</span>
-                <span class="stat">💀 {player.deaths}</span>
-
-                <span class="stat">
-                  {#if player.effects.haveShield}
-                    🛡️
-                  {/if}
-                </span>
-              </small>
-            </li>
-          {/each}
-        {/if}
-      </ul>
-    </div>
+    {#if gamemap && info}
+      <div class="item">
+        <PlayerList
+          players={[...(info.inGame ? [info] : []), ...gamemap.players]}
+        />
+      </div>
+    {/if}
     <div class="item">
       Наблюдателей: {gameInfo?.spectratorsCount ?? 0}
     </div>
@@ -279,8 +258,9 @@
                 name={info.name}
                 dir={player.dir}
                 haveShield={info.effects.haveShield}
-                animate={info.isDeath ? EAnimate.DEATH : player.animate}
-                isAnimated={info.isAnimated}
+                isDeath={info.isDeath}
+                color={info.color}
+                animate={player.animate}
                 marker={"#fff"}
               />
             </Move>
@@ -319,32 +299,12 @@
 
 <style lang="sass">
   ul, li
-    padding: 0
-    margin: 0
     list-style: none
 
   ul
-    padding: 10px
-
-    a
-      color: #fff
-  
-  li
-    display: flex
-    gap: 10px
-    justify-content: space-between
-
-    small
-      gap: 3px
-      display: flex
-      font-size: 9px
-
-
-  li[data-death="true"]
-    color: red
-
-  li[data-death="false"]
-    color: green
+    padding: 5px 0
+  a
+    color: #fff
 
   .ui 
     width: 100%

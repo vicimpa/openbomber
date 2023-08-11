@@ -46,6 +46,9 @@ export class Game {
   startPositions: TPoint[];
   usedPositions = new Set<number>();
 
+  playerColors: number[] = [];
+  usedColors = new Set<number>();
+
   running = false;
   kills = 0;
 
@@ -59,8 +62,21 @@ export class Game {
     return position;
   }
 
-  releaseFreePosition(position: number) {
+  getFreeColor() {
+    const free = Array.from({ length: this.playerColors.length }, (_, i) => i)
+      .filter(e => !this.usedColors.has(e));
+
+    const color = random(free);
+    this.usedColors.add(color);
+    return color;
+  }
+
+  releasePosition(position: number) {
     this.usedPositions.delete(position);
+  }
+
+  releaseColor(color: number) {
+    this.usedColors.delete(color);
   }
 
   get spectratorsCount() { return map(this.players, e => e, e => !e.inGame).length; }
@@ -81,6 +97,9 @@ export class Game {
     this.startPositions = startPositions
       .map(([x, y]) => [x * (width - 1) | 0, y * (height - 1) | 0])
       .map(([x, y]) => [(x & 1) ? x - 1 : x, (y & 1) ? y - 1 : y]);
+
+    for (let i = 0; i < 10; i++)
+      this.playerColors.push(i);
 
     this.restart();
   }

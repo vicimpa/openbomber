@@ -1,58 +1,54 @@
 <script lang="ts">
-  import { EAnimate, EDir } from "types";
+  import { EAnimate, EDir, type TPoint } from "types";
   import sprite from "images/sprite.png";
   import Sprite from "./Sprite.svelte";
-  import { points } from "library/point";
+  import { plus, points } from "library/point";
+  import generic from "images/generic.png";
   import { stylesVariable } from "library/stylesVariable";
   import Short from "./Short.svelte";
 
   const IDLE = {
-    [EDir.TOP]: points("4,1"),
-    [EDir.LEFT]: points("1,0"),
-    [EDir.RIGHT]: points("1,1"),
-    [EDir.BOTTOM]: points("4,0"),
+    [EDir.TOP]: points("1,3"),
+    [EDir.LEFT]: points("1,1"),
+    [EDir.RIGHT]: points("1,2"),
+    [EDir.BOTTOM]: points("1,0"),
   };
 
   const RUNNING = {
-    [EDir.TOP]: points("4,1;3,1;4,1;5,1"),
-    [EDir.LEFT]: points("1,0;0,0;1,0;2,0"),
-    [EDir.RIGHT]: points("1,1;0,1;1,1;2,1"),
-    [EDir.BOTTOM]: points("4,0;3,0;4,0;5,0"),
+    [EDir.TOP]: points("1,3;0,3;1,3;2,3"),
+    [EDir.LEFT]: points("1,1;0,1;1,1;2,1"),
+    [EDir.RIGHT]: points("1,2;0,2;1,2;2,2"),
+    [EDir.BOTTOM]: points("1,0;0,0;1,0;2,0"),
   };
-
-  const DEATH = points("0,2;1,2;2,2;3,2;4,2;5,2;6,2;0,4");
 
   export let dir: EDir = EDir.BOTTOM;
   export let animate: EAnimate = EAnimate.IDLE;
-  export let color = 0;
+  export let color = -1;
   export let name = "";
   export let marker = "transparent";
-  export let isAnimated = false;
-  export let haveShield = true;
+  export let haveShield = false;
+  export let isDeath = true;
 
-  $: isLeave = animate !== EAnimate.DEATH;
+  $: frames = animate === EAnimate.IDLE ? IDLE[dir] : RUNNING[dir];
+
+  const COLORS = Array.from({ length: 10 }, (_, i) => i)
+    .map((e) => [e % 5, (e / 5) | 0])
+    .map(([x, y]) => [x * 3, y * 4] as TPoint);
 </script>
 
-{#if name && isLeave}
+{#if name && !isDeath && COLORS[color]}
   <Short>
     {name}
   </Short>
 {/if}
 
-<div style={stylesVariable({ c: color, m: isLeave ? marker : "transparent" })}>
-  {#if !isLeave}
-    {#if isAnimated}
-      <Sprite frames={DEATH} isFinite speed={100} src={sprite} />
-    {/if}
-  {:else}
+<div style={stylesVariable({ c: color, m: !isDeath ? marker : "transparent" })}>
+  {#if !isDeath && COLORS[color]}
     {#if haveShield}
       <div class="shield" />
     {/if}
-    <Sprite
-      frames={animate === EAnimate.IDLE ? IDLE[dir] : RUNNING[dir]}
-      speed={150}
-      src={sprite}
-    />
+
+    <Sprite frames={plus(frames, COLORS[color])} speed={150} src={generic} />
   {/if}
 </div>
 

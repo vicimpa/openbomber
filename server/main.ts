@@ -17,6 +17,7 @@ export function game(server: Server) {
     [.5, .5]
   ]);
 
+
   socketio.on('connection', socket => {
     game.join(socket);
 

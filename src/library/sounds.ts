@@ -11,6 +11,10 @@ addEventListener('touchstart', () => {
   connected = true;
 }, { once: true });
 
+addEventListener('keydown', () => {
+  connected = true;
+}, { once: true });
+
 export class Sound {
   #buffer!: AudioBuffer;
   static #current = 0;

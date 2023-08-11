@@ -4,6 +4,7 @@ import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT } from "../../src/config";
 import { forwardApi, useApi } from "../../src/library/socketApi";
 import { PlayerPositionsProto } from "../../src/proto";
 import { EAnimate, EDir } from "../../src/types";
+import { IS_DEV } from "../env";
 import { effectObject } from "../lib/effectObject";
 import { find } from "../lib/find";
 import { map } from "../lib/map";
@@ -35,7 +36,7 @@ export class Player extends Entity {
   get startPosition(): TPoint | undefined { return this.game.startPositions[this.#id]; };
 
   name = '';
-  color = 0;
+  color = -1;
 
   get effects() {
     return {
@@ -48,7 +49,6 @@ export class Player extends Entity {
   kills = 0;
   deaths = 0;
 
-  isAnimated = false;
   lastAction = Date.now();
 
   get posInfo() {
@@ -71,11 +71,11 @@ export class Player extends Entity {
       'color',
       'inGame',
       'isDeath',
-      'isAnimated',
       'canJoin',
       'kills',
       'deaths',
       'effects',
+      'color'
     ]);
   }
 
@@ -94,6 +94,8 @@ export class Player extends Entity {
   ) {
     super(game, 0, 0);
     this.api = useApi<TPlayer>(socket);
+    if (IS_DEV)
+      this.methods.toGame();
   }
 
   methods: TServer = {
@@ -147,13 +149,16 @@ export class Player extends Entity {
       this.deaths = 0;
       this.lastAction = Date.now();
       PlayerEffect.clearEffets(this);
+      this.randomColor();
       this.game.message(`${this.name} подключился`);
     },
 
     toLeave: () => {
       if (!this.startPosition) return;
-      this.game.releaseFreePosition(this.#id);
+      this.game.releasePosition(this.#id);
+      this.game.releaseColor(this.color);
       this.#id = -1;
+      this.color = -1;
       this.game.message(`${this.name} отключился`);
     }
   };
@@ -161,7 +166,6 @@ export class Player extends Entity {
   reset() {
     const { startPosition } = this;
     this.isDeath = false;
-    this.isAnimated = false;
     this.lastAction = Date.now();
     this.randomPosition();
     PlayerEffect.clearEffets(this);
@@ -173,7 +177,6 @@ export class Player extends Entity {
   }
 
   death(player?: Player) {
-    this.isAnimated = true;
     this.isDeath = true;
     this.api.actionDeath();
     if (player) {
@@ -184,10 +187,17 @@ export class Player extends Entity {
 
   randomPosition() {
     if (this.startPosition) {
-      this.game.releaseFreePosition(this.#id);
+      this.game.releasePosition(this.#id);
     }
 
     this.#id = this.game.getFreePosition();
+  }
+
+  randomColor() {
+    if (this.color !== -1)
+      this.game.releaseColor(this.color);
+
+    this.color = this.game.getFreeColor();
   }
 
   connect() {
@@ -195,7 +205,6 @@ export class Player extends Entity {
       this.unforward();
       delete this.unforward;
     }
-
 
     forwardApi<TServer>(this.socket, this.methods);
   }
@@ -230,7 +239,7 @@ export class Player extends Entity {
       effectObject(
         this,
         'timeout',
-        Date.now() - this.lastAction > PLAYER_TIMEOUT && !this.isDeath,
+        Date.now() - this.lastAction > PLAYER_TIMEOUT && !this.isDeath && !IS_DEV,
         (result) => {
           if (result)
             this.methods.toLeave();
