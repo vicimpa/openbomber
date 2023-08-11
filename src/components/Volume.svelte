@@ -81,6 +81,7 @@
       text-align: center
       cursor: pointer
       position: relative
+      user-select: none
 
       .slider
         position: absolute
