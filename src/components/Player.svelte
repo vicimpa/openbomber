@@ -54,7 +54,6 @@
 
 <style lang="sass">
   div
-    filter:  hue-rotate(calc(var(--c) * 100deg))
     box-shadow: 0 0 3px var(--m), inset 0 0 3px var(--m)
     border-radius: 5px
 
