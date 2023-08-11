@@ -11,12 +11,14 @@ import { map } from "../lib/map";
 import { pick } from "../lib/pick";
 import { Bomb } from "./Bomb";
 import { BombEffect } from "./BombEffect";
+import { CrasyBombEffect } from "./CrasyBombEffect";
 import { Effect } from "./Effect";
 import { Entity } from "./Entity";
 import { Game } from "./Game";
 import { PlayerEffect } from "./PlayerEffect";
 import { RadiusEffect } from "./RadiusEffect";
 import { ShieldEffect } from "./ShieldEffect";
+import { SpeedEffect } from "./SpeedEffect";
 
 import type { TPlayer, TPoint, TServer } from "../../src/types";
 export class Player extends Entity {
@@ -43,7 +45,9 @@ export class Player extends Entity {
     return {
       bombs: BombEffect.count(this) + 1,
       radius: RadiusEffect.count(this) + 1,
-      haveShield: ShieldEffect.hasShield(this)
+      haveShield: ShieldEffect.hasShield(this),
+      speed: SpeedEffect.getValue(this),
+      crazyBomb: CrasyBombEffect.hasCrasyBomb(this),
     };
   }
 
@@ -110,7 +114,7 @@ export class Player extends Entity {
       if (this.isDeath) return;
 
       const { bombs } = this.game;
-      const newBomb = new Bomb(this);
+      const newBomb = new Bomb(this, CrasyBombEffect.hasCrasyBomb(this));
       const { x, y } = newBomb;
 
       if (find(bombs, { x, y }))

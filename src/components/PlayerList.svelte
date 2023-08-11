@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Player as TypePlayer } from "../../server/class/Player";
+  import Effects from "./Effects.svelte";
   import Player from "./Player.svelte";
   export let players: TypePlayer["info"][] = [];
 </script>
@@ -21,9 +22,7 @@
         <span class="stat">💀 {player.deaths}</span>
 
         <span class="stat">
-          {#if player.effects.haveShield}
-            🛡️
-          {/if}
+          <Effects effects={player.effects} />
         </span>
       </small>
     </li>

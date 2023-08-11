@@ -23,6 +23,7 @@
   import { NICK_LENGTH } from "config";
   import { PlayerPositionsProto } from "proto";
   import PlayerList from "components/PlayerList.svelte";
+  import Effects from "components/Effects.svelte";
 
   const keys = makeController({
     bomb: ["Space", "Enter"],
@@ -165,6 +166,7 @@
       sounds.win.play();
     });
 
+    if (!isDeath) player.speedMulti = info.effects.speed;
     if (!isDeath) player.tick(deltaTime, time, gamemap);
 
     player = player;
@@ -221,11 +223,7 @@
           <span>🔫 x {info.kills}</span>
           <span>💀 x {info.deaths}</span>
           <span>
-            <span>
-              {#if info.effects.haveShield}
-                🛡️
-              {/if}
-            </span>
+            <Effects effects={info.effects} />
           </span>
         {:else}
           <p>Вы наблюдатель</p>

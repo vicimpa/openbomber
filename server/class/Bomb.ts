@@ -1,3 +1,4 @@
+import { CRAZY_BOMB_MAX, CRAZY_BOMB_MIN } from "../../src/config";
 import { pick } from "../lib/pick";
 import { Entity } from "./Entity";
 import { Explode } from "./Explode";
@@ -10,12 +11,17 @@ export class Bomb extends Entity {
   public radius = 1;
 
   constructor(
-    public player: Player
+    public player: Player, public isCrazy = false
   ) {
     const x = Math.round(player.x);
     const y = Math.round(player.y);
 
     super(player.game, x, y);
+    if (isCrazy) {
+      this.liveTime = CRAZY_BOMB_MIN + (
+        Math.random() * (CRAZY_BOMB_MAX - CRAZY_BOMB_MIN)
+      );
+    }
     this.radius = player.effects.radius;
   }
 
@@ -23,7 +29,8 @@ export class Bomb extends Entity {
     return pick(this, [
       'x',
       'y',
-      'radius'
+      'radius',
+      'isCrazy',
     ]);
   }
 

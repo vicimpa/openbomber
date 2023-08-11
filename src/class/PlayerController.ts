@@ -11,6 +11,7 @@ export class PlayerController {
 
   dir: EDir = EDir.BOTTOM;
   animate: EAnimate = EAnimate.IDLE;
+  speedMulti = 1;
 
   keys = makeController({
     up: ["KeyW", "ArrowUp"],
@@ -76,7 +77,7 @@ export class PlayerController {
     const size = width * height;
 
     let { x, y, animate, dir } = this;
-    let speed = deltaTime * 0.003;
+    let speed = deltaTime * 0.003 * this.speedMulti;
 
     let moveX = 0;
     let moveY = 0;

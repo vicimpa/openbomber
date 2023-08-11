@@ -73,6 +73,7 @@ export enum EAchivment {
   MOVING_BOMB,
   FIRE,
   RANDOM,
+  CRAZY_BOMB,
 }
 
 export enum EEffect {

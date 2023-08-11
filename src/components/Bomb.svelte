@@ -16,6 +16,10 @@
 
 {#if bomb}
   <Move x={bomb.x} y={bomb.y}>
-    <Sprite src={sprite} frames={points("0,3;1,3;2,3;1,3")} />
+    <Sprite
+      src={sprite}
+      speed={bomb.isCrazy ? 70 : 100}
+      frames={points("0,3;1,3;2,3;1,3")}
+    />
   </Move>
 {/if}

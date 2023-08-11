@@ -2,16 +2,21 @@ import { EAchivment } from "../../src/types";
 import { pick } from "../lib/pick";
 import { random } from "../lib/random";
 import { BombEffect } from "./BombEffect";
+import { CrasyBombEffect } from "./CrasyBombEffect";
 import { Entity } from "./Entity";
 import { Game } from "./Game";
 import { Player } from "./Player";
 import { RadiusEffect } from "./RadiusEffect";
 import { ShieldEffect } from "./ShieldEffect";
+import { SpeedEffect } from "./SpeedEffect";
 
 const STORE = [
   EAchivment.APPEND_BOMB,
   EAchivment.APPEND_EXPO,
   EAchivment.APPEND_SHIELD,
+  EAchivment.APPEND_SPEED,
+  EAchivment.FIRE,
+  EAchivment.CRAZY_BOMB,
 ];
 
 export class Achivment extends Entity {
@@ -38,6 +43,21 @@ export class Achivment extends Entity {
 
       case EAchivment.APPEND_SHIELD: {
         ShieldEffect.append(player);
+        break;
+      }
+
+      case EAchivment.APPEND_SPEED: {
+        SpeedEffect.append(player, 1.5);
+        break;
+      }
+
+      case EAchivment.FIRE: {
+        SpeedEffect.append(player, 0.5);
+        break;
+      }
+
+      case EAchivment.CRAZY_BOMB: {
+        CrasyBombEffect.append(player);
         break;
       }
 
