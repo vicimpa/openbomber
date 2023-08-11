@@ -245,9 +245,9 @@
         <div class="restart">
           <p>Введите имя</p>
           <input bind:value={name} maxlength={NICK_LENGTH} />
-          <button disabled={!name} on:click={() => (isOpenEditName = false)}>
+          <Button disabled={!name} on:click={() => (isOpenEditName = false)}>
             Сохранить
-          </button>
+          </Button>
         </div>
       {/if}
       {#if isRestarting}
