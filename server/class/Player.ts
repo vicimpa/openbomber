@@ -275,7 +275,7 @@ export class Player extends Entity {
         if (player.effects.speed >= 1)
           continue;
 
-        if (this.checkCollision(player.x, player.y, 0.8))
+        if (this.checkCollision(player.x, player.y, 1))
           this.death(player);
       }
 
