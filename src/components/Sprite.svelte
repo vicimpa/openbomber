@@ -22,6 +22,8 @@
   export let sx = scale ?? 1;
   export let sy = scale ?? 1;
 
+  export let deltaTime = 0;
+
   let previewFrames: TPoint[] | null = null;
   let startAnimation = 0;
 
@@ -31,7 +33,7 @@
   onFrame((_, time) => {
     if (!isEqual(previewFrames, frames)) {
       previewFrames = frames;
-      startAnimation = time;
+      startAnimation = time - deltaTime;
     }
 
     const size = frames.length;

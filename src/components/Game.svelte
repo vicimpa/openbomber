@@ -57,10 +57,10 @@
       </div>
     {/each}
 
-    {#each gamemap.effects as { type, x, y }}
+    {#each gamemap.effects as { type, x, y, deltaTime }}
       <Move {x} {y}>
         {#if type === EEffect.DEATH}
-          <Sprite src={sprite} isFinite={true} frames={DEATH} />
+          <Sprite src={sprite} isFinite={true} frames={DEATH} {deltaTime} />
         {/if}
       </Move>
     {/each}

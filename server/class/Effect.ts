@@ -5,6 +5,8 @@ import { Player } from "./Player";
 
 export class Effect extends Entity {
   type: EEffect;
+  time = Date.now();
+  get deltaTime() { return Date.now() - this.time; }
 
   constructor(player: Player, type: EEffect) {
     super(player.game, player.x, player.y);
@@ -17,7 +19,8 @@ export class Effect extends Entity {
       [
         'x',
         'y',
-        'type'
+        'type',
+        'deltaTime'
       ]
     );
   }
