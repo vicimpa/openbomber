@@ -293,6 +293,11 @@
           </a>
         </li>
         <li>
+          <a tabindex="-1" href="https://discord.gg/gwh58DTe">
+            Дискорд Сервер
+          </a>
+        </li>
+        <li>
           <a tabindex="-1" href="https://vk.com/club221966053"> Группа в VK </a>
         </li>
         <li>
