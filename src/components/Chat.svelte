@@ -46,7 +46,7 @@
 <div class="header">
   Чат:
   <Button
-    on:mousedown={() => {
+    on:click={() => {
       isHide = !isHide;
     }}
   >
