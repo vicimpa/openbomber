@@ -13,10 +13,10 @@ export class PlayerController {
   animate: EAnimate = EAnimate.IDLE;
 
   keys = makeController({
-    up: ["KeyW"],
-    left: ["KeyA"],
-    right: ["KeyD"],
-    bottom: ["KeyS"]
+    up: ["KeyW", "ArrowUp"],
+    left: ["KeyA", "ArrowLeft"],
+    right: ["KeyD", "ArrowRight"],
+    bottom: ["KeyS", "ArrowDown"]
   });
 
   constructor(public width = 0, public height = width) { }

@@ -24,8 +24,7 @@
   import { PlayerPositionsProto } from "proto";
 
   const keys = makeController({
-    block: ["KeyE"],
-    bomb: ["Space"],
+    bomb: ["Space", "Enter"],
   });
 
   const api = useApi<TServer>(socket);
@@ -153,7 +152,7 @@
     if (!player || !gamemap) return;
     if (restartAfter >= 0) return;
     if (isRestarting) return;
-    const { bomb, block } = keys;
+    const { bomb } = keys;
     const { isDeath } = info;
 
     winEffect(!isDeath && restartAfter >= 0, (isWin) => {
