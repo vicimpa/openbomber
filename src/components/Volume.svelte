@@ -6,7 +6,7 @@
   import { onMount } from "svelte";
   import type { TPoint } from "types";
 
-  let volume = +(localStorage.getItem("volume") ?? 0.2);
+  let volume = toLimit(+(localStorage.getItem("volume") ?? 0.2), 0, 1);
   let step = 0.01;
   let span: HTMLDivElement;
   let start: TPoint | null = null;
