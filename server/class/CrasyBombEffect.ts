@@ -15,14 +15,6 @@ export class CrasyBombEffect extends PlayerEffect {
       this.delete();
   }
 
-  delete(): boolean {
-    const result = super.delete();
-    if (result) {
-      this.player.game.message(`${this.player.name} потерял щит`);
-    }
-    return result;
-  }
-
   static get(player: Player): CrasyBombEffect | null {
     return this.getEffects(player, this)[0];
   }
