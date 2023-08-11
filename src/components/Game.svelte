@@ -87,6 +87,7 @@
           {color}
           {name}
           {isDeath}
+          isFire={effects.speed < 1}
           haveShield={effects.haveShield}
         />
       </Move>

@@ -6,6 +6,7 @@
   import generic from "images/generic.png";
   import { stylesVariable } from "library/stylesVariable";
   import Short from "./Short.svelte";
+  import Move from "./Move.svelte";
 
   const IDLE = {
     [EDir.TOP]: points("1,3"),
@@ -21,6 +22,8 @@
     [EDir.BOTTOM]: points("1,0;0,0;1,0;2,0"),
   };
 
+  const FIRE = points("0,2;1,2;2,2;3,2;2,2;1,2;0,2");
+
   export let dir: EDir = EDir.BOTTOM;
   export let animate: EAnimate = EAnimate.IDLE;
   export let color = -1;
@@ -28,6 +31,7 @@
   export let marker = "transparent";
   export let haveShield = false;
   export let isDeath = true;
+  export let isFire = false;
 
   $: frames = animate === EAnimate.IDLE ? IDLE[dir] : RUNNING[dir];
 
@@ -46,6 +50,12 @@
   {#if !isDeath && COLORS[color]}
     {#if haveShield}
       <div class="shield" />
+    {/if}
+
+    {#if isFire}
+      <Move>
+        <Sprite frames={FIRE} src={sprite} />
+      </Move>
     {/if}
 
     <Sprite frames={plus(frames, COLORS[color])} speed={150} src={generic} />

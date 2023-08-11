@@ -191,6 +191,15 @@ export class Player extends Entity {
     this.game.effects.add(
       new Effect(this, EEffect.DEATH)
     );
+
+    if (player) {
+      this.deaths++;
+      this.game.kills++;
+
+      if (player !== this)
+        player.kills++;
+    }
+
     if (player) {
       const target = player === this ? 'самоубился' : `убит ${player.name}`;
       this.game.message(`${this.name} ${target}`);
@@ -259,6 +268,17 @@ export class Player extends Entity {
       );
 
     if (!this.isDeath && this.inGame) {
+      for (const player of this.game.players) {
+        if (player === this || !player.inGame || player.isDeath)
+          continue;
+
+        if (player.effects.speed >= 1)
+          continue;
+
+        if (this.checkCollision(player.x, player.y, 0.8))
+          this.death(player);
+      }
+
       for (const explode of explodes) {
         if (this.isDeath || explode.ignore.has(this)) continue;
 
@@ -273,11 +293,7 @@ export class Player extends Entity {
             }
 
             this.death(explode.player);
-            this.deaths++;
-            this.game.kills++;
 
-            if (explode.player !== this)
-              explode.player.kills++;
           }
         }
       }

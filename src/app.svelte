@@ -261,6 +261,7 @@
           {#if player && info}
             <Move x={player.x} y={player.y}>
               <Player
+                isFire={info.effects.speed < 1}
                 name={info.name}
                 dir={player.dir}
                 haveShield={info.effects.haveShield}
