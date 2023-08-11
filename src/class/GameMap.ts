@@ -1,5 +1,6 @@
 import type { Achivment } from "../../server/class/Achivment";
 import type { Bomb } from "../../server/class/Bomb";
+import type { Effect } from "../../server/class/Effect";
 import type { Explode } from "../../server/class/Explode";
 import type { Player } from "../../server/class/Player";
 
@@ -12,6 +13,7 @@ export class GameMap {
   #explodes!: Explode['info'][];
   #players!: Player['info'][];
   #positions!: Player['posInfo'][];
+  #effects!: Effect['info'][];
 
   get map() { return this.#map; }
   get bombs() { return this.#bombs; }
@@ -19,6 +21,7 @@ export class GameMap {
   get explodes() { return this.#explodes; }
   get players() { return this.#players; }
   get positions() { return this.#positions; }
+  get effects() { return this.#effects; }
 
   set map(v) { this.#map = v; this.update(); }
   set bombs(v) { this.#bombs = v; this.update(); }
@@ -26,6 +29,7 @@ export class GameMap {
   set explodes(v) { this.#explodes = v; this.update(); }
   set players(v) { this.#players = v; this.update(); }
   set positions(v) { this.#positions = v; this.update(); }
+  set effects(v) { this.#effects = v; this.update(); }
 
   constructor(
     public width: number,
@@ -41,6 +45,7 @@ export class GameMap {
     this.#explodes = [];
     this.#players = [];
     this.#positions = [];
+    this.#effects = [];
   }
 
   get playersWidthPositions() {

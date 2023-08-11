@@ -3,6 +3,7 @@ import type { Player } from "../server/class/Player";
 import type { Bomb } from "../server/class/Bomb";
 import type { Achivment } from "../server/class/Achivment";
 import type { Explode } from "../server/class/Explode";
+import type { Effect } from "../server/class/Effect";
 
 export type TChatInfo = {
   name: string;
@@ -28,6 +29,7 @@ export type TPlayer = {
   updatePlayerPositions(positions: ArrayBuffer): void;
   updateGameInfo(info: Game['info']): void;
   updateWaitForRestart(count: number): void;
+  updateEffects(effects: Effect['info'][]): void;
   actionBonus(): void;
   actionDeath(): void;
   onMessage(message: string, player: TChatInfo, isMe: boolean): void;
@@ -71,6 +73,10 @@ export enum EAchivment {
   MOVING_BOMB,
   FIRE,
   RANDOM,
+}
+
+export enum EEffect {
+  DEATH
 }
 
 export type TPoint = [x: number, y: number];

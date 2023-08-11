@@ -3,7 +3,7 @@ import { Socket } from "socket.io";
 import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT } from "../../src/config";
 import { forwardApi, useApi } from "../../src/library/socketApi";
 import { PlayerPositionsProto } from "../../src/proto";
-import { EAnimate, EDir } from "../../src/types";
+import { EAnimate, EDir, EEffect } from "../../src/types";
 import { IS_DEV } from "../env";
 import { effectObject } from "../lib/effectObject";
 import { find } from "../lib/find";
@@ -11,6 +11,7 @@ import { map } from "../lib/map";
 import { pick } from "../lib/pick";
 import { Bomb } from "./Bomb";
 import { BombEffect } from "./BombEffect";
+import { Effect } from "./Effect";
 import { Entity } from "./Entity";
 import { Game } from "./Game";
 import { PlayerEffect } from "./PlayerEffect";
@@ -177,8 +178,12 @@ export class Player extends Entity {
   }
 
   death(player?: Player) {
+    if (this.isDeath) return;
     this.isDeath = true;
     this.api.actionDeath();
+    this.game.effects.add(
+      new Effect(this, EEffect.DEATH)
+    );
     if (player) {
       const target = player === this ? 'самоубился' : `убит ${player.name}`;
       this.game.message(`${this.name} ${target}`);
@@ -364,6 +369,7 @@ export class Player extends Entity {
         this.api.updatePlayers(players);
       }
     );
+
     effectObject(
       this,
       'positions',
@@ -372,6 +378,15 @@ export class Player extends Entity {
       ),
       positions => {
         this.api.updatePlayerPositions(positions);
+      }
+    );
+
+    effectObject(
+      this,
+      'effects',
+      map(this.game.effects, e => e.info),
+      effects => {
+        this.api.updateEffects(effects);
       }
     );
   }

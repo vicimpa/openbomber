@@ -8,9 +8,13 @@
   import Explode from "components/Explode.svelte";
   import type { GameMap } from "class/GameMap";
   import Player from "./Player.svelte";
-  import { EMapItem } from "types";
+  import { EEffect, EMapItem } from "types";
+  import { points } from "library/point";
+  import Sprite from "./Sprite.svelte";
 
   export let gamemap: GameMap | null = null;
+
+  const DEATH = points("0,2;1,2;2,2;3,2;4,2;5,2;6,2;7,2");
 </script>
 
 {#if gamemap}
@@ -51,6 +55,14 @@
           <Frame src={sprite} x={7} y={1} />
         {/if}
       </div>
+    {/each}
+
+    {#each gamemap.effects as { type, x, y }}
+      <Move {x} {y}>
+        {#if type === EEffect.DEATH}
+          <Sprite src={sprite} isFinite={true} frames={DEATH} />
+        {/if}
+      </Move>
     {/each}
 
     {#each gamemap.bombs as bomb}

@@ -83,6 +83,11 @@
           player = null;
         }
       },
+      updateEffects(newEffects) {
+        if (!gamemap) return;
+        console.log(newEffects);
+        gamemap.effects = newEffects;
+      },
       updateBombs(newBombs) {
         if (!gamemap) return;
         gamemap.bombs = newBombs;

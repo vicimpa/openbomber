@@ -9,12 +9,12 @@ import { pick } from "../lib/pick";
 import { random } from "../lib/random";
 import { Achivment } from "./Achivment";
 import { Bomb } from "./Bomb";
+import { Effect } from "./Effect";
 import { Explode } from "./Explode";
 import { GameMap } from "./GameMap";
 import { Player } from "./Player";
 
 import type { TChatInfo, TPoint } from "../../src/types";
-
 const logger = createLogger('info', { allowClearScreen: true });
 
 export const defaultConfig = {
@@ -42,6 +42,7 @@ export class Game {
   explodes = new Set<Explode>();
   achivments = new Set<Achivment>();
   players = new Set<Player>();
+  effects = new Set<Effect>();
 
   startPositions: TPoint[];
   usedPositions = new Set<number>();
@@ -117,6 +118,7 @@ export class Game {
     this.bombs.clear();
     this.achivments.clear();
     this.explodes.clear();
+    this.effects.clear();
     this.kills = 0;
     this.map = new GameMap(width, height, this);
     this.map.generate(this.settings);
