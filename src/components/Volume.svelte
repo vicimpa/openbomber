@@ -5,6 +5,7 @@
   import { beforeUpdate } from "svelte";
   import { onMount } from "svelte";
   import type { TPoint } from "types";
+  import Button from "./Button.svelte";
 
   let volume = toLimit(+(localStorage.getItem("volume") ?? 0.2), 0, 1);
   let step = 0.01;
@@ -47,26 +48,25 @@
   $: persent = (volume * 100) | 0;
 </script>
 
-<p>Громкость: <button on:click={() => Sound.test()}>ТЕСТ</button></p>
+<div class="header">
+  Громкость: <Button on:click={() => Sound.test()}>ТЕСТ</Button>
+</div>
 <div class="container">
-  <button on:click={() => change(-step)}>-</button>
+  <Button on:click={() => change(-step)}>-</Button>
   <div class="volume" bind:this={span} on:mousedown={mouseDown}>
     <div class="slider" style="{stylesVariable({ w: `${persent}%` })})}" />
     <span title="Тест звука">
       {persent}%
     </span>
   </div>
-  <button on:click={() => change(+step)}>+</button>
+  <Button on:click={() => change(+step)}>+</Button>
 </div>
 
 <style lang="sass">
-  p
+  .header
     display: flex
     justify-content: space-between
     margin-bottom: 5px
-
-    button
-      padding: 0 5px
 
   .container
     display: flex
@@ -93,8 +93,4 @@
 
       span
         z-index: 2
-  
-  button
-    cursor: pointer
-    padding: 5px 10px
 </style>

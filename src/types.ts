@@ -42,6 +42,7 @@ export type TServer = {
   toGame(): void;
   toLeave(): void;
   sendMessage(message: string): void;
+  randomColor(): void;
 };
 
 export enum EDir {

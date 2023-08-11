@@ -104,6 +104,9 @@ export class Player extends Entity {
   }
 
   methods: TServer = {
+    randomColor: () => {
+      this.randomColor();
+    },
     sendMessage: (message) => {
       if (!message) return;
       message = message.slice(0, MESSAGE_LENGTH);

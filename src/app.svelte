@@ -24,6 +24,7 @@
   import { PlayerPositionsProto } from "proto";
   import PlayerList from "components/PlayerList.svelte";
   import Effects from "components/Effects.svelte";
+  import Button from "components/Button.svelte";
 
   const keys = makeController({
     bomb: ["Space", "Enter"],
@@ -185,18 +186,20 @@
   <div class="side">
     <div class="item">
       Имя:
-      <EditName bind:name />
+      <EditName bind:name>
+        <Button on:click={() => api.randomColor()}>Аватар</Button>
+      </EditName>
     </div>
     <div class="item">
       Подключение
 
       {#if gameInfo}
         {#if !info?.inGame}
-          <button disabled={!info?.canJoin} on:click={() => api.toGame()}>
+          <Button disabled={!info?.canJoin} on:click={() => api.toGame()}>
             Подключиться
-          </button>
+          </Button>
         {:else}
-          <button on:click={() => api.toLeave()}> Отключится </button>
+          <Button on:click={() => api.toLeave()}>Отключится</Button>
         {/if}
       {/if}
     </div>
@@ -285,15 +288,15 @@
       <p>Ссылки:</p>
       <ul>
         <li>
-          <a href="https://github.com/vicimpa/openbomber/">
+          <a tabindex="-1" href="https://github.com/vicimpa/openbomber/">
             Репозиторий GitHub
           </a>
         </li>
         <li>
-          <a href="https://vk.com/club221966053"> Группа в VK </a>
+          <a tabindex="-1" href="https://vk.com/club221966053"> Группа в VK </a>
         </li>
         <li>
-          <a href="https://t.me/gameopenbomber"> Группа в TG </a>
+          <a tabindex="-1" href="https://t.me/gameopenbomber"> Группа в TG </a>
         </li>
       </ul>
     </div>

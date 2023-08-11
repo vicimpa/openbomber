@@ -5,6 +5,7 @@
   import { sounds } from "library/sounds";
   import { MESSAGE_LENGTH } from "config";
   import type { TChatInfo } from "types";
+  import Button from "./Button.svelte";
 
   let message: string = "";
   let isHide = false;
@@ -42,16 +43,16 @@
   });
 </script>
 
-<p class="header">
+<div class="header">
   Чат:
-  <button
-    on:click={() => {
+  <Button
+    on:mousedown={() => {
       isHide = !isHide;
     }}
   >
     {isHide ? "Показать" : "Скрыть"}
-  </button>
-</p>
+  </Button>
+</div>
 <div class="chat">
   <div class="list" data-hide={isHide}>
     {#each messages as { player, message, isMe, date }}
@@ -74,8 +75,9 @@
       bind:value={message}
       on:keydown={keydown}
       placeholder="Message"
+      tabindex="-1"
     />
-    <button on:click={sendMessage}>Send (Enter)</button>
+    <Button on:click={sendMessage}>Send (Enter)</Button>
   </div>
 </div>
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { NICK_LENGTH } from "config";
   import { createEventDispatcher } from "svelte";
+  import Button from "./Button.svelte";
 
   export let name = "";
 
@@ -14,20 +15,17 @@
 <p>
   {#if editName}
     <input placeholder="Name" maxlength={NICK_LENGTH} bind:value={name} />
-    <button on:click={() => ((editName = false), dispatch("save", name))}
-      >Close</button
-    >
+    <Button on:click={() => ((editName = false), dispatch("save", name))}>
+      Close
+    </Button>
   {:else}
     <span>{name}</span>
-    <button on:click={() => (editName = true)}> Edit </button>
+    <Button on:click={() => (editName = true)}>Edit</Button>
   {/if}
+  <slot />
 </p>
 
 <style>
-  button {
-    font-size: 8px;
-    padding: 0px 1px;
-  }
   p {
     display: flex;
     gap: 2px;
