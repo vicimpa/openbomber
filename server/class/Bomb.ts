@@ -1,4 +1,4 @@
-import { CRAZY_BOMB_MAX, CRAZY_BOMB_MIN } from "../../src/config";
+import { CRAZY_BOMB_MAX, CRAZY_BOMB_MIN, CRAZY_BOMB_RADIUS_MAX } from "../../src/config";
 import { pick } from "../lib/pick";
 import { Entity } from "./Entity";
 import { Explode } from "./Explode";
@@ -17,12 +17,16 @@ export class Bomb extends Entity {
     const y = Math.round(player.y);
 
     super(player.game, x, y);
+    this.radius = player.effects.radius;
+
     if (isCrazy) {
       this.liveTime = CRAZY_BOMB_MIN + (
         Math.random() * (CRAZY_BOMB_MAX - CRAZY_BOMB_MIN)
       );
+      this.radius = 1 + (
+        Math.random() * (CRAZY_BOMB_RADIUS_MAX - 1)
+      ) | 0;
     }
-    this.radius = player.effects.radius;
   }
 
   get info() {
