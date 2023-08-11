@@ -25,6 +25,7 @@
   import PlayerList from "components/PlayerList.svelte";
   import Effects from "components/Effects.svelte";
   import Button from "components/Button.svelte";
+  import Link from "components/Link.svelte";
 
   const keys = makeController({
     bomb: ["Space", "Enter"],
@@ -289,20 +290,18 @@
       <p>Ссылки:</p>
       <ul>
         <li>
-          <a tabindex="-1" href="https://github.com/vicimpa/openbomber/">
+          <Link url="https://github.com/vicimpa/openbomber/">
             Репозиторий GitHub
-          </a>
+          </Link>
         </li>
         <li>
-          <a tabindex="-1" href="https://discord.gg/gwh58DTe">
-            Дискорд Сервер
-          </a>
+          <Link url="https://discord.gg/gwh58DTe">Наш сервер в Discord</Link>
         </li>
         <li>
-          <a tabindex="-1" href="https://vk.com/club221966053"> Группа в VK </a>
+          <Link url="https://vk.com/club221966053">Группа игроков в VK</Link>
         </li>
         <li>
-          <a tabindex="-1" href="https://t.me/gameopenbomber"> Группа в TG </a>
+          <Link url="https://t.me/gameopenbomber">Группа игроков в TG</Link>
         </li>
       </ul>
     </div>
