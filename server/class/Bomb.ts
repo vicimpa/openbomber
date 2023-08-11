@@ -1,4 +1,4 @@
-import { CRAZY_BOMB_MAX, CRAZY_BOMB_MIN, CRAZY_BOMB_RADIUS_MAX } from "../../src/config";
+import { CRAZY_BOMB_BOOST, CRAZY_BOMB_MAX, CRAZY_BOMB_MIN } from "../../src/config";
 import { pick } from "../lib/pick";
 import { Entity } from "./Entity";
 import { Explode } from "./Explode";
@@ -23,8 +23,9 @@ export class Bomb extends Entity {
       this.liveTime = CRAZY_BOMB_MIN + (
         Math.random() * (CRAZY_BOMB_MAX - CRAZY_BOMB_MIN)
       );
-      this.radius = 1 + (
-        Math.random() * (CRAZY_BOMB_RADIUS_MAX - 1)
+
+      this.radius = this.radius + (
+        Math.random() * (this.radius * CRAZY_BOMB_BOOST - this.radius)
       ) | 0;
     }
   }
