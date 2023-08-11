@@ -268,15 +268,17 @@ export class Player extends Entity {
       );
 
     if (!this.isDeath && this.inGame) {
-      for (const player of this.game.players) {
-        if (player === this || !player.inGame || player.isDeath)
-          continue;
+      if (this.effects.speed >= 1) {
+        for (const player of this.game.players) {
+          if (player === this || !player.inGame || player.isDeath)
+            continue;
 
-        if (player.effects.speed >= 1)
-          continue;
+          if (player.effects.speed >= 1)
+            continue;
 
-        if (this.checkCollision(player.x, player.y, 1))
-          this.death(player);
+          if (this.checkCollision(player.x, player.y, 1))
+            this.death(player);
+        }
       }
 
       for (const explode of explodes) {
