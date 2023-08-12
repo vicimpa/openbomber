@@ -210,7 +210,7 @@ export class Game {
         (isRestart) => {
           if (isRestart) {
             logger.info("Wait restart");
-            this.waitForRestart = Date.now() + 3000;
+            this.waitForRestart = Date.now() + 5000;
 
             if (this.playersCount > 1 && this.kills > 0) {
               const winPlayer = find(this.players, e => e.inGame && !e.isDeath);

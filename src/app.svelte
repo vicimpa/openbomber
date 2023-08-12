@@ -235,7 +235,7 @@
       {/if}
     </div>
     <div class="content" bind:this={container}>
-      {#if restartAfter >= 0}
+      {#if restartAfter >= 0 && restartAfter <= 3}
         <div class="restart-back" />
         <div class="restart">
           <p>Новая игра через {restartAfter} сек</p>
