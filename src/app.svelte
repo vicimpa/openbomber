@@ -342,6 +342,7 @@
       display: flex
       flex-direction: column
       position: relative
+      user-select: none
 
       .restart
         position: absolute
