@@ -189,7 +189,7 @@ export class Player extends Entity {
     this.isDeath = true;
     this.api.actionDeath();
     this.game.effects.add(
-      new Effect(this, EEffect.DEATH)
+      new Effect(this.game, this.x, this.y, EEffect.DEATH)
     );
 
     if (player) {

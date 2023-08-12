@@ -64,7 +64,9 @@ export const soundStore = {
   explode: await import('sound/explode.mp3?url'),
   newLife: await import('sound/new_life.wav?url'),
   message: await import('sound/message.mp3?url'),
-  shield: await import('sound/shield.mp3?url')
+  shield: await import('sound/shield.mp3?url'),
+  crazy: await import('sound/crazy.mp3?url'),
+  explodeFail: await import('sound/explode_fail.mp3?url')
 };
 
 type TUrl = typeof import('*?url');

@@ -58,6 +58,7 @@
   const gameSizeEffect = makeEffect();
   const winEffect = makeEffect<boolean>();
   const shieldEffect = makeEffect<boolean>();
+  const crazyEffect = makeEffect<boolean>();
 
   let isRestarting = false;
   let isOpenEditName = !name;
@@ -143,12 +144,6 @@
   });
 
   onFrame((deltaTime, time) => {
-    shieldEffect(!!info?.effects?.haveShield, () => {
-      if (info) {
-        sounds.shield.play();
-      }
-    });
-
     if (!info) return;
     if (name !== info.name) {
       name = name.slice(0, NICK_LENGTH);
@@ -157,15 +152,26 @@
       localStorage.setItem("name", name);
     }
 
-    if (!player || !gamemap) return;
-    if (restartAfter >= 0) return;
-    if (isRestarting) return;
     const { bomb } = keys;
     const { isDeath } = info;
 
-    winEffect(!isDeath && restartAfter >= 0, (isWin) => {
-      sounds.win.play();
+    if (!info.inGame) return;
+
+    shieldEffect(info.effects.haveShield, () => {
+      if (!isDeath) sounds.shield.play();
     });
+
+    winEffect(restartAfter >= 0, (isWin) => {
+      if (isWin && !isDeath) sounds.win.play();
+    });
+
+    crazyEffect(info.effects.crazyBomb, (isCrazy) => {
+      if (isCrazy && !isDeath) sounds.crazy.play();
+    });
+
+    if (!player || !gamemap) return;
+    if (restartAfter >= 0) return;
+    if (isRestarting) return;
 
     if (!isDeath) player.speedMulti = info.effects.speed;
     if (!isDeath) player.tick(deltaTime, time, gamemap);

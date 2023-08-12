@@ -11,6 +11,7 @@
   import { EEffect, EMapItem } from "types";
   import { points } from "library/point";
   import Sprite from "./Sprite.svelte";
+  import FakeExplode from "./FakeExplode.svelte";
 
   export let gamemap: GameMap | null = null;
 
@@ -71,6 +72,12 @@
 
     {#each gamemap.explodes as expl}
       <Explode {expl} />
+    {/each}
+
+    {#each gamemap.effects as { type, x, y, deltaTime }}
+      {#if type === EEffect.FAKE_EXPLODE}
+        <FakeExplode {x} {y} {deltaTime} />
+      {/if}
     {/each}
 
     {#each gamemap.achivments as { x, y, type }}

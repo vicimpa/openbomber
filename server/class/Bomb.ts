@@ -1,5 +1,7 @@
 import { CRAZY_BOMB_BOOST, CRAZY_BOMB_MAX, CRAZY_BOMB_MIN } from "../../src/config";
+import { EEffect } from "../../src/types";
 import { pick } from "../lib/pick";
+import { Effect } from "./Effect";
 import { Entity } from "./Entity";
 import { Explode } from "./Explode";
 import { Player } from "./Player";
@@ -8,6 +10,7 @@ export class Bomb extends Entity {
   time = Date.now();
   liveTime = 2000;
 
+  isFake = false;
   public radius = 1;
 
   constructor(
@@ -20,6 +23,8 @@ export class Bomb extends Entity {
     this.radius = player.effects.radius;
 
     if (isCrazy) {
+      this.isFake = Math.random() < .1 ? true : false;
+
       this.liveTime = CRAZY_BOMB_MIN + (
         Math.random() * (CRAZY_BOMB_MAX - CRAZY_BOMB_MIN)
       );
@@ -43,6 +48,13 @@ export class Bomb extends Entity {
     const { time, liveTime, game: { waitForRestart } } = this;
 
     if (Date.now() > time + liveTime && waitForRestart < 0) {
+      if (this.isFake) {
+        this.game.bombs.delete(this);
+        this.game.effects.add(
+          new Effect(this.game, this.x, this.y, EEffect.FAKE_EXPLODE)
+        );
+        return;
+      }
       Explode.run(this);
     }
   }

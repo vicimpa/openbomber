@@ -78,7 +78,8 @@ export enum EAchivment {
 }
 
 export enum EEffect {
-  DEATH
+  DEATH,
+  FAKE_EXPLODE,
 }
 
 export type TPoint = [x: number, y: number];

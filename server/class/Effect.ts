@@ -1,6 +1,7 @@
 import { EEffect } from "../../src/types";
 import { pick } from "../lib/pick";
 import { Entity } from "./Entity";
+import { Game } from "./Game";
 import { Player } from "./Player";
 
 export class Effect extends Entity {
@@ -8,8 +9,8 @@ export class Effect extends Entity {
   time = Date.now();
   get deltaTime() { return Date.now() - this.time; }
 
-  constructor(player: Player, type: EEffect) {
-    super(player.game, player.x, player.y);
+  constructor(game: Game, x: number, y: number, type: EEffect) {
+    super(game, x, y);
     this.type = type;
   }
 
