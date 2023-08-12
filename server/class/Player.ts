@@ -353,9 +353,9 @@ export class Player extends Entity {
     effectObject(
       this,
       'map',
-      new Uint8Array(gameMap),
+      gameMap,
       map => {
-        this.api.updateMap(map.buffer);
+        this.api.updateMap(map);
       }
     );
 
