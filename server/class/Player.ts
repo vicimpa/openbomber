@@ -404,13 +404,15 @@ export class Player extends Entity {
       }
     );
 
+    const positions = PlayerPositionsProto.to(
+      map(players, e => e.posInfo, (e, d) => e !== this && d.id !== -1)
+    );
+
     effectObject(
       this,
       'positions',
-      PlayerPositionsProto.to(
-        map(players, e => e.posInfo, (e, d) => e !== this && d.id !== -1)
-      ),
-      positions => {
+      [...new Uint8Array(positions)],
+      () => {
         this.api.updatePlayerPositions(positions);
       }
     );
