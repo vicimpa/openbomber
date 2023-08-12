@@ -39,6 +39,7 @@
 
   .name
     flex-grow: 1
+    
   ul, li
     padding: 0
     margin: 0
