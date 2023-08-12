@@ -1,3 +1,4 @@
+import { copyBuffer } from "../../src/library/copyBuffer";
 import { DIRECTIONS, EMapItem } from "../../src/types";
 import { random } from "../lib/random";
 import { Game } from "./Game";
@@ -71,10 +72,9 @@ export class GameMap extends Uint8Array {
       this.achivments.add(p);
       this[p] = EMapItem.BLOCK;
     }
-
   }
 
   get info() {
-    return this.buffer.slice(0);
+    return copyBuffer(this.buffer);
   }
 }

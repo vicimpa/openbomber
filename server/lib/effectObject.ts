@@ -1,4 +1,4 @@
-import { makeEffect } from "./effect";
+import { makeEffect } from "../../src/library/makeEffect";
 
 const SYMBOLS_MAP = new Map<string, symbol>;
 

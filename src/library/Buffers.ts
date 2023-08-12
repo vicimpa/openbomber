@@ -1,3 +1,5 @@
+import { copyBuffer } from "./copyBuffer";
+
 const types = {
   int8: new Int8Array(1),
   uint8: new Uint8Array(1),
@@ -40,7 +42,7 @@ export class WriteBuffer {
   flush(): ArrayBuffer {
     const buffer = this.concat();
     this.#buffers.splice(0);
-    return buffer;
+    return copyBuffer(buffer);
   }
 }
 
