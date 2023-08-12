@@ -11,6 +11,7 @@
     "noEmit": true,
     "declaration": false,
     "isolatedModules": true,
+    "experimentalDecorators": true,
     "baseUrl": "./src",
     "types": [
       "vite/client",
