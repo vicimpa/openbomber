@@ -6,15 +6,15 @@
 
 {#if effects}
   {#if effects.haveShield}
-    🛡️
+    <span>🛡️</span>
   {/if}
   {#if effects.speed > 1}
-    ⏫
+    <span>⏫</span>
   {/if}
   {#if effects.speed < 1}
-    ⏬
+    <span>⏬</span>
   {/if}
   {#if effects.crazyBomb}
-    💥
+    <span>💥</span>
   {/if}
 {/if}

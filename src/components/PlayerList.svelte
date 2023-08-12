@@ -3,25 +3,26 @@
   import Effects from "./Effects.svelte";
   import Player from "./Player.svelte";
   export let players: TypePlayer["info"][] = [];
+  export let current: TypePlayer["info"] | null = null;
 </script>
 
 Список игроков:
 <ul>
   {#each players as player}
-    <li data-death={player.isDeath}>
+    <li data-death={player.isDeath} data-me={player === current}>
       <div class="player">
         <Player color={player.color} isDeath={false} />
       </div>
       <span class="name">
         {player.name || "noname"}
       </span>
-      <small>
-        <span class="stat">💣 {player.effects.bombs}</span>
-        <span class="stat">🔥 {player.effects.radius}</span>
-        <span class="stat">🔫 {player.kills}</span>
-        <span class="stat">💀 {player.deaths}</span>
+      <small class="stats">
+        <span class="stat">💣<b>{player.effects.bombs}</b></span>
+        <span class="stat">🔥<b>{player.effects.radius}</b></span>
+        <span class="stat">🔫<b>{player.kills}</b></span>
+        <span class="stat">💀<b>{player.deaths}</b></span>
 
-        <span class="stat">
+        <span class="stat effects">
           <Effects effects={player.effects} />
         </span>
       </small>
@@ -34,7 +35,7 @@
     position: relative
     width: 16px
     height: 16px
-    transform: scale(1.3)
+    transform: scale(1.5)
 
   .name
     flex-grow: 1
@@ -44,12 +45,42 @@
     list-style: none
 
   ul
-    padding: 10px
+    padding: 0px
+    display: flex
+    flex-direction: column
+    gap: 5px
   
   li
     display: flex
     gap: 10px
     justify-content: space-between
+    align-items: center
+    border-radius: 10px
+    padding: 10px 5px
+    background-color: rgba(0,0,0,0.2)
+
+    .stats
+      display: flex
+      gap: 10px
+
+      .stat
+        transform: scale(1.4)
+        display: flex
+        flex-direction: column
+        align-items: center
+        justify-content: center
+        flex-wrap: wrap
+        height: 30px
+
+        &.effects
+          font-size: 6px
+        b
+          margin-top: -2px
+          color: #fff
+          
+
+    &[data-me="true"]
+      background-color: rgba(255,255,255,0.1)
 
     small
       gap: 3px

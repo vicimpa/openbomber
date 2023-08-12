@@ -207,6 +207,7 @@
     {#if gamemap && info}
       <div class="item">
         <PlayerList
+          current={info}
           players={[...(info.inGame ? [info] : []), ...gamemap.players]}
         />
       </div>
@@ -269,7 +270,7 @@
                 isDeath={info.isDeath}
                 color={info.color}
                 animate={player.animate}
-                marker={"#fff"}
+                marker
               />
             </Move>
           {/if}
@@ -323,12 +324,13 @@
     .side
       background-color: rgba(0,0,0,0.3)
       box-shadow: 0 0 10px #000
-      padding: 10px
+      padding: 0px
       width: 300px
       display: flex
       flex-direction: column
       gap: 10px
       overflow-y: auto
+      font-size: 12px
 
       .item
         background-color: rgba(0,0,0,0.3)

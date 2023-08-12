@@ -7,6 +7,8 @@
   import { stylesVariable } from "library/stylesVariable";
   import Short from "./Short.svelte";
   import Move from "./Move.svelte";
+  import Frame from "./Frame.svelte";
+  import crosshair from "images/crosshair.png";
 
   const IDLE = {
     [EDir.TOP]: points("1,3"),
@@ -28,7 +30,7 @@
   export let animate: EAnimate = EAnimate.IDLE;
   export let color = -1;
   export let name = "";
-  export let marker = "transparent";
+  export let marker = false;
   export let haveShield = false;
   export let isDeath = true;
   export let isFire = false;
@@ -46,7 +48,7 @@
   </Short>
 {/if}
 
-<div style={stylesVariable({ c: color, m: !isDeath ? marker : "transparent" })}>
+<div style={stylesVariable({ c: color })}>
   {#if !isDeath && COLORS[color]}
     {#if haveShield}
       <div class="shield" />
@@ -58,14 +60,34 @@
       </Move>
     {/if}
 
+    {#if marker}
+      <Move>
+        <div class="marker">
+          <Frame src={crosshair} />
+        </div>
+      </Move>
+    {/if}
+
     <Sprite frames={plus(frames, COLORS[color])} speed={150} src={generic} />
   {/if}
 </div>
 
 <style lang="sass">
   div
-    box-shadow: 0 0 3px var(--m), inset 0 0 3px var(--m)
     border-radius: 5px
+
+    @keyframes marker 
+      0%
+        opacity: 0
+
+      50%
+        opacity: 1
+
+      100%
+        opacity: 0
+
+    .marker
+      animation: marker 1s infinite linear
 
     .shield
       $size: -2px
