@@ -58,7 +58,7 @@
     {#each messages as { player, message, isMe, date }}
       <div class="item" data-isme={isMe}>
         <div class="name">
-          {player.name}
+          {player.name ?? "noname"}
           <span class="date">
             {format(date)}
           </span>

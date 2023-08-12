@@ -19,7 +19,7 @@
       Close
     </Button>
   {:else}
-    <span>{name}</span>
+    <span>{name ?? "noname"}</span>
     <Button on:click={() => (editName = true)}>Edit</Button>
   {/if}
   <slot />

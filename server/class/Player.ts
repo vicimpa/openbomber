@@ -158,7 +158,7 @@ export class Player extends Entity {
       this.lastAction = Date.now();
       PlayerEffect.clearEffets(this);
       this.randomColor();
-      this.game.message(`${this.name} подключился`);
+      this.game.message(`${this.name ?? 'noname'} подключился`);
     },
 
     toLeave: () => {
@@ -167,7 +167,7 @@ export class Player extends Entity {
       this.game.releaseColor(this.color);
       this.#id = -1;
       this.color = -1;
-      this.game.message(`${this.name} отключился`);
+      this.game.message(`${this.name ?? 'noname'} отключился`);
     }
   };
 
@@ -202,7 +202,7 @@ export class Player extends Entity {
 
     if (player) {
       const target = player === this ? 'самоубился' : `убит ${player.name}`;
-      this.game.message(`${this.name} ${target}`);
+      this.game.message(`${this.name ?? 'noname'} ${target}`);
     }
   }
 
