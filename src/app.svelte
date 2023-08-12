@@ -88,7 +88,6 @@
       },
       updateEffects(newEffects) {
         if (!gamemap) return;
-        console.log(newEffects);
         gamemap.effects = newEffects;
       },
       updateBombs(newBombs) {
