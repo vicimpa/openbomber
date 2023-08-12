@@ -1,4 +1,4 @@
-import equal from "deep-equal";
+import equal from "fast-deep-equal";
 
 export const makeEffect = <T>() => {
   let previewValue: T | null = null;
