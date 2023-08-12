@@ -314,8 +314,6 @@
 
   ul
     padding: 5px 0
-  a
-    color: #fff
 
   .ui 
     width: 100%
