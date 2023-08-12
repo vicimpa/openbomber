@@ -1,11 +1,10 @@
 # Классический Bomberman
 
-Демо версии пока нет, запускайте всё локально!
+Запустил игрульку [тут](https://openbomber.ru)
 
 ## Скриншоты
 ![](screen/image1.png)
 ![](screen/image2.png)
-![](screen/image3.png)
 
 ## Для запуска 
 ```bash
