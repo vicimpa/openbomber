@@ -3,6 +3,17 @@ name: CI
 on:
   push:
     branches: [ main ]
+    paths:
+      - '.github/workflows/main.yml'
+      - 'public/**'
+      - 'server/**'
+      - 'src/**'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - 'tsconfig.node.json'
+      - 'svelte.config.js'
+      - 'package.json'
+      - '.swcrc'
 
 jobs:
   build:
