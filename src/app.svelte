@@ -313,7 +313,7 @@
           <Link url="https://discord.gg/gwh58DTe">Наш сервер в Discord</Link>
         </li>
         <li>
-          <Link url="https://vk.com/club221966053">Группа игроков в VK</Link>
+          <Link url="https://vk.com/openbobmer">Группа игроков в VK</Link>
         </li>
         <li>
           <Link url="https://t.me/gameopenbomber">Группа игроков в TG</Link>
