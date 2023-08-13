@@ -91,7 +91,7 @@ export class Explode extends Entity {
           bombFind.player = this.player;
           bombFind.time = Date.now();
           bombFind.liveTime = 50;
-          points.slice(-1)[0].isFinaly = true;
+          points.push({ x, y, dir, isFinaly: true });
           break;
         }
 
