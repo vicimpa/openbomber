@@ -6,9 +6,6 @@
   "main": "src/types.mts",
   "scripts": {
     "dev": "vite",
-    "build:server": "tsc -p ./tsconfig.node.json",
-    "dev:frontend": "vite",
-    "dev:backend": "ts-node -r tsconfig-paths/register -P ./tsconfig.node.json server/main.ts",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json"
