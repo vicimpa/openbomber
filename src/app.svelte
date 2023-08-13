@@ -174,8 +174,8 @@
       if (isWin && !isDeath) sounds.win.play();
     });
 
-    crazyEffect(info.effects.crazyBomb, (isCrazy) => {
-      if (isCrazy && !isDeath) sounds.crazy.play();
+    crazyEffect(info.effects.crazyBomb, () => {
+      if (!isDeath) sounds.crazy.play();
     });
 
     if (!player || !gamemap) return;
