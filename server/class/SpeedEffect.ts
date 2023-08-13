@@ -1,4 +1,5 @@
 import { SPEED_TIME } from "../../src/config";
+import { ESounds } from "../../src/types";
 import { Player } from "./Player";
 import { PlayerEffect } from "./PlayerEffect";
 
@@ -30,7 +31,17 @@ export class SpeedEffect extends PlayerEffect {
   }
 
   static delete(player: Player) {
-    this.get(player)?.delete();
+    const currentEffect = this.get(player);
+
+    if (currentEffect) {
+      if (currentEffect.value > 1)
+        player.api.playSound(ESounds.speedOn);
+
+      if (currentEffect.value < 1)
+        player.api.playSound(ESounds.fireOn);
+
+      currentEffect.delete();
+    }
   }
 
   static append(player: Player, value = 1) {
@@ -40,6 +51,14 @@ export class SpeedEffect extends PlayerEffect {
     if (value !== currentEffect.value) {
       currentEffect.shieldTime -= SPEED_TIME;
       return;
+    }
+
+    if (!effets.has(currentEffect)) {
+      if (currentEffect.value > 1)
+        player.api.playSound(ESounds.speedOn);
+
+      if (currentEffect.value < 1)
+        player.api.playSound(ESounds.fireOn);
     }
 
     currentEffect.value = value;

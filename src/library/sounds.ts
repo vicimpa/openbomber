@@ -1,3 +1,5 @@
+import { ESounds } from "types";
+
 const audioCtx = new (AudioContext || (window as any)['webkitAudioContext']) as AudioContext;
 export const gainNode = audioCtx.createGain();
 
@@ -57,20 +59,21 @@ export class Sound {
 gainNode.connect(audioCtx.destination);
 
 export const soundStore = {
-  win: await import('sound/win.mp3?url'),
-  bonus: await import('sound/bonus.wav?url'),
-  death: await import('sound/death.wav?url'),
-  putBomb: await import('sound/put_bomb.mp3?url'),
-  explode: await import('sound/explode.mp3?url'),
-  newLife: await import('sound/new_life.wav?url'),
-  message: await import('sound/message.mp3?url'),
-  shield: await import('sound/shield.mp3?url'),
-  crazy: await import('sound/crazy.mp3?url'),
-  explodeFail: await import('sound/explode_fail.mp3?url'),
-  fireOn: await import('sound/fire_on.mp3?url'),
-  fireOff: await import('sound/fire_off.mp3?url'),
-  speedOn: await import('sound/speed_on.mp3?url'),
-  speedOff: await import('sound/speed_off.mp3?url')
+  [ESounds.win]: await import('sound/win.mp3?url'),
+  [ESounds.bonus]: await import('sound/bonus.wav?url'),
+  [ESounds.death]: await import('sound/death.wav?url'),
+  [ESounds.putBomb]: await import('sound/put_bomb.mp3?url'),
+  [ESounds.explode]: await import('sound/explode.mp3?url'),
+  [ESounds.newLife]: await import('sound/new_life.wav?url'),
+  [ESounds.message]: await import('sound/message.mp3?url'),
+  [ESounds.shield]: await import('sound/shield.mp3?url'),
+  [ESounds.crazy]: await import('sound/crazy.mp3?url'),
+  [ESounds.explodeFail]: await import('sound/explode_fail.mp3?url'),
+  [ESounds.fireOn]: await import('sound/fire_on.mp3?url'),
+  [ESounds.fireOff]: await import('sound/fire_off.mp3?url'),
+  [ESounds.speedOn]: await import('sound/speed_on.mp3?url'),
+  [ESounds.speedOff]: await import('sound/speed_off.mp3?url'),
+  [ESounds.kill]: await import('sound/kill.mp3?url'),
 };
 
 type TUrl = typeof import('*?url');
@@ -87,3 +90,7 @@ export const sounds = (
       }, {} as { [key in keyof T]: Sound });
   }
 )(soundStore);
+
+export const playSound = (sound: ESounds) => {
+  sounds[sound]?.play();
+};

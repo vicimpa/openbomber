@@ -1,5 +1,5 @@
 import { CRAZY_BOMB_BOOST, CRAZY_BOMB_MAX, CRAZY_BOMB_MIN } from "../../src/config";
-import { EEffect } from "../../src/types";
+import { EEffect, ESounds } from "../../src/types";
 import { pick } from "../lib/pick";
 import { Effect } from "./Effect";
 import { Entity } from "./Entity";
@@ -53,8 +53,10 @@ export class Bomb extends Entity {
         this.game.effects.add(
           new Effect(this.game, this.x, this.y, EEffect.FAKE_EXPLODE)
         );
+        this.player.game.playersApi.playSound(ESounds.explodeFail);
         return;
       }
+      this.player.game.playersApi.playSound(ESounds.explode);
       Explode.run(this);
     }
   }

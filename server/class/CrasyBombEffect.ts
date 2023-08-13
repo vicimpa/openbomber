@@ -1,4 +1,5 @@
 import { CRAZY_BOMB_TIME } from "../../src/config";
+import { ESounds } from "../../src/types";
 import { Player } from "./Player";
 import { PlayerEffect } from "./PlayerEffect";
 
@@ -25,6 +26,7 @@ export class CrasyBombEffect extends PlayerEffect {
 
   static delete(player: Player) {
     this.get(player)?.delete();
+    player.api.playSound(ESounds.crazy);
   }
 
   static append(player: Player) {
@@ -33,5 +35,6 @@ export class CrasyBombEffect extends PlayerEffect {
 
     currentEffect.appendTime();
     effets.add(currentEffect);
+    player.api.playSound(ESounds.crazy);
   }
 }

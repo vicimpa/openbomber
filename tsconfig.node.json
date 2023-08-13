@@ -21,6 +21,6 @@
     "./src/library/Buffers.ts",
     "./src/library/copyBuffer.ts",
     "./src/library/isEqualBuffer.ts",
-    "src/library/makeEffect.ts",
+    "./src/library/makeEffect.ts"
   ]
 }

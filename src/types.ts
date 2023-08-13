@@ -30,10 +30,27 @@ export type TPlayer = {
   updateGameInfo(info: Game['info']): void;
   updateWaitForRestart(count: number): void;
   updateEffects(effects: Effect['info'][]): void;
-  actionBonus(): void;
-  actionDeath(): void;
+  playSound(sound: ESounds): void;
   onMessage(message: string, player: TChatInfo, isMe: boolean): void;
 };
+
+export enum ESounds {
+  win,
+  bonus,
+  death,
+  putBomb,
+  explode,
+  newLife,
+  message,
+  shield,
+  crazy,
+  explodeFail,
+  fireOn,
+  fireOff,
+  speedOn,
+  speedOff,
+  kill,
+}
 
 export type TServer = {
   setPosition(x: number, y: number, dir: EDir, animate: EAnimate): void;

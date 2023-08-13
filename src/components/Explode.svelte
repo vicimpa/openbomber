@@ -16,10 +16,6 @@
   function getDir(dir: EExplodeDir) {
     return EXPODER_DIRS[dir];
   }
-
-  onMount(() => {
-    sounds.explode.play();
-  });
 </script>
 
 {#if expl}

@@ -1,6 +1,7 @@
 import { Socket } from "socket.io";
 import { createLogger } from "vite";
 
+import { ESounds, TPlayer, TPoint } from "../../src/types";
 import { delay } from "../lib/delay";
 import { effectObject } from "../lib/effectObject";
 import { find } from "../lib/find";
@@ -14,7 +15,6 @@ import { Explode } from "./Explode";
 import { GameMap } from "./GameMap";
 import { Player } from "./Player";
 
-import type { TChatInfo, TPoint } from "../../src/types";
 const logger = createLogger('info', { allowClearScreen: true });
 
 export const defaultConfig = {
@@ -52,8 +52,19 @@ export class Game {
 
   running = false;
   kills = 0;
+  winPlayerId: Player['id'] | null = null;
 
   waitForRestart = -1;
+
+  playersApi: TPlayer = new Proxy({}, {
+    get: <T extends keyof TPlayer>(_: any, key: T) => {
+      return (...args: Parameters<TPlayer[T]>) => {
+        for (const player of this.players) {
+          (player.api[key] as any)?.apply(player.api, args);
+        }
+      };
+    }
+  }) as any;
 
   getFreePosition() {
     const free = Array.from({ length: this.startPositions.length }, (_, i) => i)
@@ -122,15 +133,18 @@ export class Game {
     this.kills = 0;
     this.map = new GameMap(width, height, this);
     this.map.generate(this.settings);
+    this.winPlayerId = null;
   }
 
   message(message: string, sender?: Player) {
-    for (const player of this.players)
+    for (const player of this.players) {
+      player.api.playSound(ESounds.message);
       player.api.onMessage(
         message,
         sender instanceof Player ? ({ name: sender.name }) : ({ name: 'server' }),
         sender === player
       );
+    }
   }
 
   join(socket: Socket) {
@@ -164,6 +178,7 @@ export class Game {
     return pick(this, [
       'width',
       'height',
+      'winPlayerId',
       'playersCount',
       'startPositions',
       'spectratorsCount'
@@ -215,6 +230,9 @@ export class Game {
             if (this.playersCount > 1 && this.kills > 0) {
               const winPlayer = find(this.players, e => e.inGame && !e.isDeath);
               if (winPlayer) {
+                winPlayer.wins++;
+                winPlayer.api.playSound(ESounds.win);
+                this.winPlayerId = winPlayer.id;
                 this.message(`${winPlayer.name} победил`);
               } else {
                 this.message(`Никто не выиграл`);

@@ -1,4 +1,4 @@
-import { EAchivment } from "../../src/types";
+import { EAchivment, ESounds } from "../../src/types";
 import { pick } from "../lib/pick";
 import { random } from "../lib/random";
 import { BombEffect } from "./BombEffect";
@@ -70,7 +70,7 @@ export class Achivment extends Entity {
       }
     }
 
-    player.api.actionBonus();
+    player.api.playSound(ESounds.bonus);
   }
 
 

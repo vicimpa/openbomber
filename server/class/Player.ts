@@ -3,7 +3,7 @@ import { Socket } from "socket.io";
 import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT } from "../../src/config";
 import { forwardApi, useApi } from "../../src/library/socketApi";
 import { PlayerPositionsProto } from "../../src/proto";
-import { EAnimate, EDir, EEffect } from "../../src/types";
+import { EAnimate, EDir, EEffect, ESounds } from "../../src/types";
 import { IS_DEV } from "../env";
 import { effectObject } from "../lib/effectObject";
 import { find } from "../lib/find";
@@ -51,6 +51,7 @@ export class Player extends Entity {
     };
   }
 
+  wins = 0;
   kills = 0;
   deaths = 0;
 
@@ -77,6 +78,7 @@ export class Player extends Entity {
       'inGame',
       'isDeath',
       'canJoin',
+      'wins',
       'kills',
       'deaths',
       'effects',
@@ -127,6 +129,7 @@ export class Player extends Entity {
         return;
 
       bombs.add(newBomb);
+      this.game.playersApi.playSound(ESounds.putBomb);
     },
 
     setPosition: (x: number, y: number, dir: EDir, animate: EAnimate) => {
@@ -187,7 +190,7 @@ export class Player extends Entity {
   death(player?: Player) {
     if (this.isDeath) return;
     this.isDeath = true;
-    this.api.actionDeath();
+    this.api.playSound(ESounds.death);
     this.game.effects.add(
       new Effect(this.game, this.x, this.y, EEffect.DEATH)
     );
@@ -195,6 +198,7 @@ export class Player extends Entity {
     if (player) {
       this.deaths++;
       this.game.kills++;
+      player.api.playSound(ESounds.kill);
 
       if (player !== this)
         player.kills++;
@@ -295,7 +299,6 @@ export class Player extends Entity {
             }
 
             this.death(explode.player);
-
           }
         }
       }
@@ -338,6 +341,7 @@ export class Player extends Entity {
           this.x = x;
           this.y = y;
           this.api.setStartPosition(x, y);
+          this.api.playSound(ESounds.newLife);
         }
       );
 

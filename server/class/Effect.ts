@@ -2,7 +2,6 @@ import { EEffect } from "../../src/types";
 import { pick } from "../lib/pick";
 import { Entity } from "./Entity";
 import { Game } from "./Game";
-import { Player } from "./Player";
 
 export class Effect extends Entity {
   type: EEffect;

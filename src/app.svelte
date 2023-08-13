@@ -80,6 +80,9 @@
           gamemap = new GameMap(width, height);
         });
       },
+      playSound(sound) {
+        sounds[sound]?.play();
+      },
       updateLocalInfo(localInfo) {
         info = localInfo;
 
@@ -105,7 +108,6 @@
         player = new PlayerController(width, height);
         player.x = x;
         player.y = y;
-        if (info?.inGame) sounds.newLife.play();
       },
       updatePlayers(newPlayers) {
         if (!gamemap) return;
@@ -125,12 +127,6 @@
       },
       updateWaitForRestart(count) {
         restartAfter = count;
-      },
-      actionBonus() {
-        sounds.bonus.play();
-      },
-      actionDeath() {
-        sounds.death.play();
       },
       onMessage(message, player, isMe) {
         ChatEvent.dispatch(message, player, isMe);
@@ -156,27 +152,6 @@
     const { isDeath } = info;
 
     if (!info.inGame) return;
-
-    shieldEffect(info.effects.haveShield, () => {
-      if (!isDeath) sounds.shield.play();
-    });
-
-    speedEffect(info.effects.speed, (now, preview) => {
-      if (!info?.inGame || info?.isDeath) return;
-      if (preview === null) return;
-      if (now > 1 && preview == 1) sounds.speedOn.play();
-      if (now === 1 && preview > 1) sounds.speedOff.play();
-      if (now < 1 && preview === 1) sounds.fireOn.play();
-      if (now === 1 && preview < 1) sounds.fireOff.play();
-    });
-
-    winEffect(restartAfter >= 0, (isWin) => {
-      if (isWin && !isDeath) sounds.win.play();
-    });
-
-    crazyEffect(info.effects.crazyBomb, () => {
-      if (!isDeath) sounds.crazy.play();
-    });
 
     if (!player || !gamemap) return;
     if (restartAfter >= 0) return;

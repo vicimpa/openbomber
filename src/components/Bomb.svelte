@@ -4,14 +4,8 @@
   import sprite from "images/sprite.png";
   import { points } from "library/point";
   import Sprite from "./Sprite.svelte";
-  import { onMount } from "svelte";
-  import { sounds } from "library/sounds";
 
   export let bomb: Bomb["info"] | null = null;
-
-  onMount(() => {
-    sounds.putBomb.play();
-  });
 </script>
 
 {#if bomb}

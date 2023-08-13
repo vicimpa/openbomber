@@ -1,4 +1,5 @@
 import { SHIELD_TIME } from "../../src/config";
+import { ESounds } from "../../src/types";
 import { Player } from "./Player";
 import { PlayerEffect } from "./PlayerEffect";
 
@@ -32,12 +33,22 @@ export class ShieldEffect extends PlayerEffect {
   }
 
   static delete(player: Player) {
-    this.get(player)?.delete();
+    const currentEffect = this.get(player);
+
+    if (currentEffect) {
+      player.api.playSound(ESounds.shield);
+
+      currentEffect.delete();
+    }
   }
 
   static append(player: Player) {
     const effets = this.effects(player);
     const currentEffect = this.get(player) ?? new this(player);
+
+    if (!effets.has(currentEffect)) {
+      player.api.playSound(ESounds.shield);
+    }
 
     currentEffect.appendTime();
     effets.add(currentEffect);

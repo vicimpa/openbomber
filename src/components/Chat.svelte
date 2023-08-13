@@ -38,7 +38,6 @@
     return ChatEvent.subscribe(({ player, message, isMe }) => {
       messages.push({ player, message, isMe, date: new Date() });
       messages = messages;
-      sounds.message.play();
     });
   });
 </script>
