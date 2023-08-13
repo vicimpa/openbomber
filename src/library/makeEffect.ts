@@ -5,7 +5,7 @@ import { isEqualBuffer } from "./isEqualBuffer";
 export const makeEffect = <T>() => {
   let previewValue: T | null = null;
 
-  return (newValue: T, callback: (value: T) => any) => {
+  return (newValue: T, callback: (value: T, previewValue: T | null) => any) => {
     if (newValue instanceof ArrayBuffer && previewValue instanceof ArrayBuffer) {
       if (isEqualBuffer(previewValue, newValue))
         return;
@@ -14,7 +14,7 @@ export const makeEffect = <T>() => {
         return;
     }
 
+    callback(newValue, previewValue);
     previewValue = newValue;
-    callback(newValue);
   };
 };

@@ -2,11 +2,12 @@ import { Server } from "http";
 import { Server as SocketIO } from "socket.io";
 
 import { defaultStartPositions, Game } from "./class/Game";
+import { IS_DEV } from "./env";
 
 export function game(server: Server) {
   const socketio = new SocketIO(server, { cors: { origin: '*' } });
   const game = new Game(21, 17, {
-    fillAchivments: .15,
+    fillAchivments: IS_DEV ? .999 : .15,
     fillBlocks: .7
   }, [
     ...defaultStartPositions,

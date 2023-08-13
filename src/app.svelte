@@ -8,7 +8,6 @@
   import { forwardApi, useApi } from "library/socketApi";
   import Game from "components/Game.svelte";
   import { GameMap } from "class/GameMap";
-  import { EAnimate } from "types";
   import { makeEffect } from "library/makeEffect";
   import { socket } from "socket";
   import EditName from "components/EditName.svelte";
@@ -59,6 +58,7 @@
   const winEffect = makeEffect<boolean>();
   const shieldEffect = makeEffect<boolean>();
   const crazyEffect = makeEffect<boolean>();
+  const speedEffect = makeEffect<number>();
 
   let isRestarting = false;
   let isOpenEditName = !name;
@@ -159,6 +159,15 @@
 
     shieldEffect(info.effects.haveShield, () => {
       if (!isDeath) sounds.shield.play();
+    });
+
+    speedEffect(info.effects.speed, (now, preview) => {
+      if (!info?.inGame || info?.isDeath) return;
+      if (preview === null) return;
+      if (now > 1 && preview == 1) sounds.speedOn.play();
+      if (now === 1 && preview > 1) sounds.speedOff.play();
+      if (now < 1 && preview === 1) sounds.fireOn.play();
+      if (now === 1 && preview < 1) sounds.fireOff.play();
     });
 
     winEffect(restartAfter >= 0, (isWin) => {
