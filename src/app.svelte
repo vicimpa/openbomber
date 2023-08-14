@@ -311,6 +311,9 @@
         <li>
           <Link url="https://t.me/gameopenbomber">Группа игроков в TG</Link>
         </li>
+        <li>
+          <Link url="/new.html">Тут я делаю новый двигло</Link>
+        </li>
       </ul>
     </div>
   </div>

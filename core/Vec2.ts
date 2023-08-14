@@ -33,8 +33,8 @@ export const vec2 = <F extends TVec2Callback>(
 };
 
 export class Vec2 {
-  x!: number;
-  y!: number;
+  x: number = 0;
+  y: number = 0;
 
   #plus = (x: number, y: number) => {
     this.x += x;
@@ -108,9 +108,11 @@ export class Vec2 {
     );
   }
 
+  toLog() { return `Vec2<x: ${this.x}, y: ${this.y}>`; }
+
   sum() { return this.x + this.y; }
   clone() { return new Vec2(this); }
-  normalize() { return this.div(this.length()); }
+  normalize() { return this.div(this.length() || 1); }
   round() { return this.set(round(this.x), round(this.y)); }
   floor() { return this.set(floor(this.x), floor(this.y)); }
   ceil() { return this.set(ceil(this.x), ceil(this.y)); }

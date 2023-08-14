@@ -1,7 +1,6 @@
 import type { TChatInfo } from "@/types";
 
 export class ChatEvent extends Event {
-
   constructor(
     public message: string,
     public player: TChatInfo,
