@@ -1,10 +1,11 @@
 <script lang="ts">
   import { onFrame } from "library/onFrame";
-  import { type TPoint } from "library/point";
-  import { toLimit } from "library/toLimit";
+  import { toLimit } from "@/core/toLimit";
   import Frame from "./Frame.svelte";
-  import { isEqual } from "library/isEqual";
+  import { isEqual } from "@/core/isEqual";
   import { createEventDispatcher } from "svelte";
+  import { Vec2 } from "@/core/Vec2";
+  import { point } from "@/core/point";
 
   const dispatch = createEventDispatcher<{
     end: [];
@@ -15,7 +16,7 @@
   export let isFinite = false;
 
   export let speed = 100;
-  export let frames: TPoint[] = [[0, 0]];
+  export let frames: Vec2[] = [point(0, 0)];
 
   export let scale: number | undefined = undefined;
 
@@ -24,7 +25,7 @@
 
   export let deltaTime = 0;
 
-  let previewFrames: TPoint[] | null = null;
+  let previewFrames: Vec2[] | null = null;
   let startAnimation = 0;
 
   let x = 0;
@@ -40,8 +41,8 @@
     const delta = time - startAnimation;
     const pFrame = (delta / speed) | 0;
     const frame = isFinite ? toLimit(pFrame, 0, size - 1) : pFrame % size;
-
-    [x, y] = frames[frame];
+    x = frames[frame].x;
+    y = frames[frame].y;
 
     if (isFinite && frame === size - 1) {
       dispatch("end");

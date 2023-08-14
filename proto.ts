@@ -1,6 +1,6 @@
-import { ReadBuffer, WriteBuffer } from "./library/Buffers";
+import { ReadBuffer, WriteBuffer } from "./core/Buffers";
 
-import type { Player } from "../server/class/Player";
+import type { Player } from "./server/class/Player";
 
 export class PlayerPositionsProto {
   static readable = new ReadBuffer();

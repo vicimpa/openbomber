@@ -1,9 +1,11 @@
-import type { Game } from "../server/class/Game";
-import type { Player } from "../server/class/Player";
-import type { Bomb } from "../server/class/Bomb";
-import type { Achivment } from "../server/class/Achivment";
-import type { Explode } from "../server/class/Explode";
-import type { Effect } from "../server/class/Effect";
+import { point } from "./core/point";
+
+import type { Game } from "./server/class/Game";
+import type { Player } from "./server/class/Player";
+import type { Bomb } from "./server/class/Bomb";
+import type { Achivment } from "./server/class/Achivment";
+import type { Explode } from "./server/class/Explode";
+import type { Effect } from "./server/class/Effect";
 
 export type TChatInfo = {
   name: string;
@@ -71,15 +73,14 @@ export enum EDir {
 
 export enum EAnimate {
   IDLE,
-  RUNNING,
-  DEATH
+  RUNNING
 }
 
 export const DIRECTIONS = {
-  [EDir.TOP]: [0, -1] as TPoint,
-  [EDir.LEFT]: [-1, 0] as TPoint,
-  [EDir.RIGHT]: [1, 0] as TPoint,
-  [EDir.BOTTOM]: [0, 1] as TPoint
+  [EDir.TOP]: point(0, -1),
+  [EDir.LEFT]: point(-1, 0),
+  [EDir.RIGHT]: point(1, 0),
+  [EDir.BOTTOM]: point(0, 1)
 };
 
 export enum EAchivment {
@@ -99,8 +100,6 @@ export enum EEffect {
   FAKE_EXPLODE,
 }
 
-export type TPoint = [x: number, y: number];
-
 export enum EExplodeDir {
   CENTER,
   TOP,
@@ -109,9 +108,9 @@ export enum EExplodeDir {
   BOTTOM
 }
 export const EXPODER_DIRS = {
-  [EExplodeDir.CENTER]: [0, 0] as TPoint,
-  [EExplodeDir.TOP]: [0, -1] as TPoint,
-  [EExplodeDir.LEFT]: [-1, 0] as TPoint,
-  [EExplodeDir.RIGHT]: [1, 0] as TPoint,
-  [EExplodeDir.BOTTOM]: [0, 1] as TPoint
+  [EExplodeDir.CENTER]: point(0, 0),
+  [EExplodeDir.TOP]: point(0, -1),
+  [EExplodeDir.LEFT]: point(-1, 0),
+  [EExplodeDir.RIGHT]: point(1, 0),
+  [EExplodeDir.BOTTOM]: point(0, 1)
 };

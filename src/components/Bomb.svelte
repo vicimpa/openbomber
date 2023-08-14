@@ -1,8 +1,9 @@
 <script lang="ts">
-  import type { Bomb } from "../../server/class/Bomb";
+  import type { Bomb } from "@/server/class/Bomb";
+  import { points } from "@/core/point";
+
   import Move from "./Move.svelte";
   import sprite from "images/sprite.png";
-  import { points } from "library/point";
   import Sprite from "./Sprite.svelte";
 
   export let bomb: Bomb["info"] | null = null;

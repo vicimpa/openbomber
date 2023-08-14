@@ -1,5 +1,5 @@
-import { EEffect } from "../../src/types";
-import { pick } from "../lib/pick";
+import { pick } from "../../core/pick";
+import { EEffect } from "../../types";
 import { Entity } from "./Entity";
 import { Game } from "./Game";
 

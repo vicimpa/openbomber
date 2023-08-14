@@ -1,16 +1,17 @@
 <script lang="ts">
-  import { Sound, gainNode, sounds } from "library/sounds";
+  import { Sound, gainNode } from "library/sounds";
   import { stylesVariable } from "library/stylesVariable";
-  import { toLimit } from "library/toLimit";
+  import { toLimit } from "@/core/toLimit";
   import { beforeUpdate } from "svelte";
   import { onMount } from "svelte";
-  import type { TPoint } from "types";
   import Button from "./Button.svelte";
+  import { Vec2 } from "@/core/Vec2";
+  import { point } from "@/core/point";
 
   let volume = toLimit(+(localStorage.getItem("volume") ?? 0.2), 0, 1);
   let step = 0.01;
   let span: HTMLDivElement;
-  let start: TPoint | null = null;
+  let start: Vec2 | null = null;
   let startVolume = volume;
 
   const change = (val = 0) => {
@@ -19,14 +20,14 @@
 
   const mouseDown = ({ x, y }: MouseEvent) => {
     startVolume = volume;
-    start = [x, y];
+    start = point(x, y);
   };
   const mouseUp = ({ x, y }: MouseEvent) => {
     start = null;
   };
   const mouseMove = ({ x, y }: MouseEvent) => {
     if (!start) return;
-    const delta = (start[0] - x) / span.offsetWidth;
+    const delta = (start.x - x) / span.offsetWidth;
     volume = toLimit(startVolume - delta, 0, 1);
   };
 

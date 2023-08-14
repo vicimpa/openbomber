@@ -1,13 +1,14 @@
 import { Socket } from "socket.io";
 import { createLogger } from "vite";
 
-import { ESounds, TPlayer, TPoint } from "../../src/types";
-import { delay } from "../lib/delay";
-import { effectObject } from "../lib/effectObject";
-import { find } from "../lib/find";
-import { map } from "../lib/map";
-import { pick } from "../lib/pick";
-import { random } from "../lib/random";
+import { delay } from "../../core/delay";
+import { effectObject } from "../../core/effectObject";
+import { find } from "../../core/find";
+import { map } from "../../core/map";
+import { pick } from "../../core/pick";
+import { random } from "../../core/random";
+import { ESounds, TPlayer, TPoint } from "../../types";
+import { IS_DEV } from "../env";
 import { Achivment } from "./Achivment";
 import { Bomb } from "./Bomb";
 import { Effect } from "./Effect";
@@ -225,7 +226,7 @@ export class Game {
         (isRestart) => {
           if (isRestart) {
             logger.info("Wait restart");
-            this.waitForRestart = Date.now() + 5000;
+            this.waitForRestart = Date.now() + (IS_DEV ? 0 : 5000);
 
             if (this.playersCount > 1 && this.kills > 0) {
               const winPlayer = find(this.players, e => e.inGame && !e.isDeath);

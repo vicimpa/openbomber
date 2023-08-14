@@ -7,12 +7,10 @@ on:
       - '.github/workflows/main.yml'
       - 'public/**'
       - 'server/**'
+      - 'core/**'
       - 'src/**'
-      - 'vite.config.ts'
-      - 'tsconfig.json'
-      - 'tsconfig.node.json'
-      - 'svelte.config.js'
-      - 'package.json'
+      - '*.ts'
+      - '*.json'
       - '.swcrc'
 
 jobs:

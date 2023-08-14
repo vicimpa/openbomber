@@ -1,15 +1,16 @@
 <script lang="ts">
+  import { arange } from "@/core/range";
+  import { EEffect, EMapItem } from "@/types";
+  import { points } from "@/core/point";
+
   import sprite from "images/sprite.png";
   import Frame from "components/Frame.svelte";
   import Map from "components/Map.svelte";
   import Move from "components/Move.svelte";
-  import { arange } from "library/range";
   import Bomb from "components/Bomb.svelte";
   import Explode from "components/Explode.svelte";
   import type { GameMap } from "class/GameMap";
   import Player from "./Player.svelte";
-  import { EEffect, EMapItem } from "types";
-  import { points } from "library/point";
   import Sprite from "./Sprite.svelte";
   import FakeExplode from "./FakeExplode.svelte";
 
@@ -98,7 +99,7 @@
           haveShield={effects.haveShield}
         />
       </Move>
-    {/each}w
+    {/each}
 
     <slot />
   </Map>

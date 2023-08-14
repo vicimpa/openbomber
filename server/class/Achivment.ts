@@ -1,6 +1,6 @@
-import { EAchivment, ESounds } from "../../src/types";
-import { pick } from "../lib/pick";
-import { random } from "../lib/random";
+import { pick } from "../../core/pick";
+import { random } from "../../core/random";
+import { EAchivment, ESounds } from "../../types";
 import { BombEffect } from "./BombEffect";
 import { CrasyBombEffect } from "./CrasyBombEffect";
 import { Entity } from "./Entity";

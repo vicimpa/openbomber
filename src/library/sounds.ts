@@ -1,4 +1,4 @@
-import { ESounds } from "types";
+import { ESounds } from "@/types";
 
 const audioCtx = new (AudioContext || (window as any)['webkitAudioContext']) as AudioContext;
 export const gainNode = audioCtx.createGain();

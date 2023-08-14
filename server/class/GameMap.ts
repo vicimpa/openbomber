@@ -1,6 +1,6 @@
-import { copyBuffer } from "../../src/library/copyBuffer";
-import { DIRECTIONS, EMapItem } from "../../src/types";
-import { random } from "../lib/random";
+import { copyBuffer } from "../../core/copyBuffer";
+import { random } from "../../core/random";
+import { DIRECTIONS, EMapItem } from "../../types";
 import { Game } from "./Game";
 
 import type { TConfig } from "./Game";
@@ -46,7 +46,7 @@ export class GameMap extends Uint8Array {
     for (const [X, Y] of this.game.startPositions) {
       for (let i = 0; i <= 2; i++) {
         for (const [, dir] of Object.entries(DIRECTIONS)) {
-          let [dx, dy] = dir;
+          const { x: dx, y: dy } = dir;
           let x = X + dx * i;
           let y = Y + dy * i;
           positions.delete(x + y * width);

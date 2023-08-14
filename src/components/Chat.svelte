@@ -1,10 +1,9 @@
 <script lang="ts">
   import { ChatEvent } from "class/ChatEvent";
   import { createEventDispatcher, onMount } from "svelte";
-  import { FDate } from "library/FDate";
-  import { sounds } from "library/sounds";
-  import { MESSAGE_LENGTH } from "config";
-  import type { TChatInfo } from "types";
+  import { FDate } from "@/core/FDate";
+  import { MESSAGE_LENGTH } from "@/config";
+  import type { TChatInfo } from "@/types";
   import Button from "./Button.svelte";
 
   let message: string = "";

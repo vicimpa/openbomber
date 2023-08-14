@@ -1,26 +1,17 @@
-import { makeController } from "library/makeController";
-import { toLimit } from "library/toLimit";
-import { EAnimate, EDir, EMapItem } from "types";
+import { Vec2 } from "@/core/Vec2";
+import { EAnimate, EDir, EMapItem } from "@/types";
 
 import type { GameMap } from "./GameMap";
-import type { TPoint } from "library/point";
 
-export class PlayerController {
-  x = 0;
-  y = 0;
-
+export class PlayerController extends Vec2 {
   dir: EDir = EDir.BOTTOM;
   animate: EAnimate = EAnimate.IDLE;
   speedMulti = 1;
+  move = new Vec2();
 
-  keys = makeController({
-    up: ["KeyW", "ArrowUp"],
-    left: ["KeyA", "ArrowLeft"],
-    right: ["KeyD", "ArrowRight"],
-    bottom: ["KeyS", "ArrowDown"]
-  });
-
-  constructor(public width = 0, public height = width) { }
+  constructor(public width = 0, public height = width) {
+    super();
+  }
 
   onBomb(x: number, y: number, i: number) { }
 
@@ -37,70 +28,57 @@ export class PlayerController {
   }
 
   collision(
-    [moveX, moveY]: TPoint,
-    [x, y]: TPoint,
-    [X, Y]: TPoint,
+    move: Vec2,
+    obj: Vec2,
+    col: Vec2,
     top = .8,
     down = .2,
     canCircle = false
   ) {
-    if (y > Y - top && y < Y + top) {
+    if (obj.y > col.y - top && obj.y < col.y + top) {
       if (
         false
-        || (moveX > 0 && x > X - 1 && x < X - down)
-        || (moveX < 0 && x < X + 1 && x > X + down)
+        || (move.x > 0 && obj.x > col.x - 1 && obj.x < col.x - down)
+        || (move.x < 0 && obj.x < col.x + 1 && obj.x > col.x + down)
       ) {
         if (canCircle)
-          moveY = this.circle(y, Y, moveY, moveX);
-        moveX = 0;
+          move.y = this.circle(obj.y, col.y, move.y, move.x);
+        move.x = 0;
       }
     }
 
-    if (x > X - top && x < X + top) {
+    if (obj.x > col.x - top && obj.x < col.x + top) {
       if (
         false
-        || (moveY > 0 && y > Y - 1 && y < Y - down)
-        || (moveY < 0 && y < Y + 1 && y > Y + down)
+        || (move.y > 0 && obj.y > col.y - 1 && obj.y < col.y - down)
+        || (move.y < 0 && obj.y < col.y + 1 && obj.y > col.y + down)
       ) {
         if (canCircle)
-          moveX = this.circle(x, X, moveX, moveY);
-        moveY = 0;
+          move.x = this.circle(obj.x, col.x, move.x, move.y);
+
+        move.y = 0;
       }
     }
-
-    return [moveX, moveY] as TPoint;
   }
 
   tick(deltaTime: number, time: number, game: GameMap) {
-    const { keys, width, height } = this;
+    const { width, height } = this;
     const { map, bombs, playersWidthPositions } = game;
     const size = width * height;
 
-    let { x, y, animate, dir } = this;
+    let { animate, dir } = this;
     let speed = deltaTime * 0.003 * this.speedMulti;
 
-    let moveX = 0;
-    let moveY = 0;
+    const move = this.move.clone();
 
-    if (animate !== EAnimate.DEATH) {
-      if (keys.up.isDown()) moveY -= 1;
-      if (keys.left.isDown()) moveX -= 1;
-      if (keys.right.isDown()) moveX += 1;
-      if (keys.bottom.isDown()) moveY += 1;
+    if (move.y) dir = move.y < 0 ? EDir.TOP : EDir.BOTTOM;
+    if (move.x) dir = move.x < 0 ? EDir.LEFT : EDir.RIGHT;
 
-      if (moveY) dir = moveY < 0 ? EDir.TOP : EDir.BOTTOM;
-      if (moveX) dir = moveX < 0 ? EDir.LEFT : EDir.RIGHT;
-    }
+    if (move.x && move.y) speed *= .7;
 
-    if (moveX && moveY) speed *= 0.7;
-    if (!moveX && !moveY) speed *= 0;
+    animate = move.sum() ? EAnimate.RUNNING : EAnimate.IDLE;
 
-    if (animate !== EAnimate.DEATH) {
-      animate = speed ? EAnimate.RUNNING : EAnimate.IDLE;
-    }
-
-    moveX *= speed;
-    moveY *= speed;
+    move.times(speed);
 
     for (let i = 0; i < size; i++) {
       if (
@@ -110,13 +88,12 @@ export class PlayerController {
         || map[i] === EMapItem.SAND
       ) continue;
 
-      const X = i % width;
-      const Y = (i - X) / width;
+      const col = Vec2.withIndex(i, width, height);
 
-      [moveX, moveY] = this.collision(
-        [moveX, moveY],
-        [x, y],
-        [X, Y],
+      this.collision(
+        move,
+        this,
+        col,
         undefined,
         undefined,
         map[i] == EMapItem.WALL
@@ -124,41 +101,37 @@ export class PlayerController {
     }
 
     for (const bomb of bombs) {
-      const X = bomb.x;
-      const Y = bomb.y;
+      const obj = new Vec2(bomb);
 
-      if (Math.round(x) === X && Math.round(y) === Y)
+      if (obj.equal(this.clone().round()))
         continue;
 
-      [moveX, moveY] = this.collision(
-        [moveX, moveY],
-        [x, y],
-        [X, Y]
+      this.collision(
+        move,
+        this,
+        obj
       );
     }
+
 
     for (const player of playersWidthPositions) {
-      const X = player.x ?? 0;
-      const Y = player.y ?? 0;
+      const obj = new Vec2(player.x ?? 0, player.y ?? 0);
 
-      if (player.animate === 2)
+      if (player.isDeath)
         continue;
 
-      [moveX, moveY] = this.collision(
-        [moveX, moveY],
-        [x, y],
-        [X, Y]
+      this.collision(
+        move,
+        this,
+        obj
       );
     }
 
-    x += moveX;
-    y += moveY;
+    this.plus(move);
 
-    x = toLimit(x, 0, width - 1);
-    y = toLimit(y, 0, height - 1);
+    this.minLimit(0);
+    this.maxLimit(width - 1, height - 1);
 
-    this.x = x;
-    this.y = y;
     this.dir = dir;
     this.animate = animate;
   }

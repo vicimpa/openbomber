@@ -1,13 +1,11 @@
 <script lang="ts">
-  import { EXPODER_DIRS } from "types";
+  import { EXPODER_DIRS } from "@/types";
   import Move from "./Move.svelte";
   import sprite from "images/sprite.png";
-  import { plus, points } from "library/point";
+  import { plus, points } from "@/core/point";
   import Sprite from "./Sprite.svelte";
-  import type { EExplodeDir } from "types";
-  import type { Explode } from "../../server/class/Explode";
-  import { onMount } from "svelte";
-  import { sounds } from "library/sounds";
+  import type { EExplodeDir } from "@/types";
+  import type { Explode } from "@/server/class/Explode";
 
   export let expl: Explode["info"] | null = null;
 

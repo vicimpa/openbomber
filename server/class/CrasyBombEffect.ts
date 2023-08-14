@@ -1,5 +1,5 @@
-import { CRAZY_BOMB_TIME } from "../../src/config";
-import { ESounds } from "../../src/types";
+import { CRAZY_BOMB_TIME } from "../../config";
+import { ESounds } from "../../types";
 import { Player } from "./Player";
 import { PlayerEffect } from "./PlayerEffect";
 

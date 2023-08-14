@@ -1,6 +1,6 @@
-import { EExplodeDir, EMapItem, EXPODER_DIRS } from "../../src/types";
-import { find } from "../lib/find";
-import { pick } from "../lib/pick";
+import { find } from "../../core/find";
+import { pick } from "../../core/pick";
+import { EExplodeDir, EMapItem, EXPODER_DIRS } from "../../types";
 import { Achivment } from "./Achivment";
 import { Bomb } from "./Bomb";
 import { Entity } from "./Entity";
@@ -56,7 +56,7 @@ export class Explode extends Entity {
 
     for (const [_id, direction] of Object.entries(EXPODER_DIRS)) {
       if (!+_id) continue;
-      const [dx, dy] = direction;
+      const { x: dx, y: dy } = direction;
       const dir: EExplodeDir = +_id as any;
 
       for (let i = 1; i <= radius; i++) {

@@ -12,15 +12,8 @@
     "noEmit": false
   },
   "include": [
+    "./core",
     "./server",
-    "./src/types.ts",
-    "./src/library/socketApi.ts",
-    "./vite.config.ts",
-    "./src/config.ts",
-    "./src/proto.ts",
-    "./src/library/Buffers.ts",
-    "./src/library/copyBuffer.ts",
-    "./src/library/isEqualBuffer.ts",
-    "./src/library/makeEffect.ts"
+    "./*.ts",
   ]
 }

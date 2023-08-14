@@ -16,7 +16,12 @@
     "types": [
       "vite/client",
       "svelte"
-    ]
+    ],
+    "paths": {
+      "@/*": [
+        "../*"
+      ],
+    }
   },
   "include": [
     "src/**/*.d.ts",
@@ -24,8 +29,11 @@
     "src/**/*.js",
     "src/**/*.mts",
     "src/**/*.svelte",
-    "src/types.ts",
-    "src/types.ts"
+    "core/**/*.ts",
+    "./*.ts"
+  ],
+  "exclude": [
+    "./vite.config.ts"
   ],
   "references": [
     {

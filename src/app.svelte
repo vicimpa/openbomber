@@ -1,26 +1,28 @@
 <script lang="ts">
+  import { makeEffect } from "@/core/makeEffect";
+  import { forwardApi, useApi } from "@/core/socketApi";
+  import type { TPlayer, TServer } from "@/types";
+  import { NICK_LENGTH } from "@/config";
+  import { PlayerPositionsProto } from "@/proto";
+
+  import type { Player as TypePlayer } from "@/server/class/Player";
+  import type { Game as TypeGame } from "@/server/class/Game";
+
   import { PlayerController } from "class/PlayerController";
   import Player from "components/Player.svelte";
   import { onFrame } from "library/onFrame";
   import Move from "components/Move.svelte";
-  import { makeController } from "library/makeController";
+  import { makeController, makeVectorController } from "library/makeController";
   import { onMount } from "svelte";
-  import { forwardApi, useApi } from "library/socketApi";
   import Game from "components/Game.svelte";
   import { GameMap } from "class/GameMap";
-  import { makeEffect } from "library/makeEffect";
   import { socket } from "socket";
   import EditName from "components/EditName.svelte";
 
-  import type { Player as TypePlayer } from "../server/class/Player";
-  import type { Game as TypeGame } from "../server/class/Game";
-  import type { TPlayer, TServer } from "types";
   import { sounds } from "library/sounds";
   import Volume from "components/Volume.svelte";
   import { ChatEvent } from "class/ChatEvent";
   import Chat from "components/Chat.svelte";
-  import { NICK_LENGTH } from "config";
-  import { PlayerPositionsProto } from "proto";
   import PlayerList from "components/PlayerList.svelte";
   import Effects from "components/Effects.svelte";
   import Button from "components/Button.svelte";
@@ -41,6 +43,25 @@
   let name = localStorage.getItem("name") || "";
   let restartAfter = -1;
 
+  const controller = makeVectorController(
+    {
+      keys: ["KeyW", "ArrowUp"],
+      plus: [0, -1],
+    },
+    {
+      keys: ["KeyA", "ArrowLeft"],
+      plus: [-1, 0],
+    },
+    {
+      keys: ["KeyD", "ArrowRight"],
+      plus: [1, 0],
+    },
+    {
+      keys: ["KeyS", "ArrowDown"],
+      plus: [0, 1],
+    }
+  );
+
   const resize = () => {
     const offset = 60;
     const min = Math.min(
@@ -55,10 +76,6 @@
 
   const playerEffect = makeEffect();
   const gameSizeEffect = makeEffect();
-  const winEffect = makeEffect<boolean>();
-  const shieldEffect = makeEffect<boolean>();
-  const crazyEffect = makeEffect<boolean>();
-  const speedEffect = makeEffect<number>();
 
   let isRestarting = false;
   let isOpenEditName = !name;
@@ -154,6 +171,7 @@
     if (!info.inGame) return;
 
     if (!player || !gamemap) return;
+    player.move.set(controller());
     if (restartAfter >= 0) return;
     if (isRestarting) return;
 

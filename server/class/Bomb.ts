@@ -1,6 +1,6 @@
-import { CRAZY_BOMB_BOOST, CRAZY_BOMB_MAX, CRAZY_BOMB_MIN } from "../../src/config";
-import { EEffect, ESounds } from "../../src/types";
-import { pick } from "../lib/pick";
+import { CRAZY_BOMB_BOOST, CRAZY_BOMB_MAX, CRAZY_BOMB_MIN } from "../../config";
+import { pick } from "../../core/pick";
+import { EEffect, ESounds } from "../../types";
 import { Effect } from "./Effect";
 import { Entity } from "./Entity";
 import { Explode } from "./Explode";

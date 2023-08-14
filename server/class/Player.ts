@@ -1,14 +1,14 @@
 import { Socket } from "socket.io";
 
-import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT } from "../../src/config";
-import { forwardApi, useApi } from "../../src/library/socketApi";
-import { PlayerPositionsProto } from "../../src/proto";
-import { EAnimate, EDir, EEffect, ESounds } from "../../src/types";
+import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT } from "../../config";
+import { effectObject } from "../../core/effectObject";
+import { find } from "../../core/find";
+import { map } from "../../core/map";
+import { pick } from "../../core/pick";
+import { forwardApi, useApi } from "../../core/socketApi";
+import { PlayerPositionsProto } from "../../proto";
+import { EAnimate, EDir, EEffect, ESounds } from "../../types";
 import { IS_DEV } from "../env";
-import { effectObject } from "../lib/effectObject";
-import { find } from "../lib/find";
-import { map } from "../lib/map";
-import { pick } from "../lib/pick";
 import { Bomb } from "./Bomb";
 import { BombEffect } from "./BombEffect";
 import { CrasyBombEffect } from "./CrasyBombEffect";
@@ -20,7 +20,7 @@ import { RadiusEffect } from "./RadiusEffect";
 import { ShieldEffect } from "./ShieldEffect";
 import { SpeedEffect } from "./SpeedEffect";
 
-import type { TPlayer, TPoint, TServer } from "../../src/types";
+import type { TPlayer, TPoint, TServer } from "../../types";
 export class Player extends Entity {
   #id = -1;
   api!: TPlayer;
@@ -34,7 +34,7 @@ export class Player extends Entity {
   get id() { return this.#id; }
   get inGame() { return this.#id !== -1; };
   get canJoin() { return this.game.slotLimits > this.game.playersCount; }
-  get animate() { return this.isDeath ? EAnimate.DEATH : this.#animate; }
+  get animate() { return this.#animate; }
   set animate(v) { this.#animate = v; }
   get startPosition(): TPoint | undefined { return this.game.startPositions[this.#id]; };
 

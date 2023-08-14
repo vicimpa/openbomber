@@ -1,3 +1,7 @@
+import { Vec2 } from "@/core/Vec2";
+
+import type { TVec2 } from "@/core/Vec2";
+
 const keymap = new Map<string, boolean>();
 
 addEventListener('keydown', ({ code, target }) => {
@@ -91,3 +95,26 @@ export const makeController = (
       }, {} as { [key in keyof T]: IKeyCtl });
   }
 );
+
+export const makeVectorController = (
+  ...args: {
+    keys: string[],
+    plus: TVec2;
+  }[]
+) => {
+  const controllers = args.map(({ keys, plus }) => ({
+    ctrl: new KeyController(keys),
+    plus,
+  }));
+
+  return () => {
+    const vec = new Vec2();
+
+    for (const { ctrl, plus } of controllers) {
+      if (ctrl.isDown())
+        vec.plus(...plus);
+    }
+
+    return vec;
+  };
+};

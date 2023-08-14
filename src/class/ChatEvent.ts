@@ -1,5 +1,4 @@
-import type { TChatInfo } from "types";
-import type { Player } from "../../server/class/Player";
+import type { TChatInfo } from "@/types";
 
 export class ChatEvent extends Event {
 
