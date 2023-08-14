@@ -1,15 +1,26 @@
 import { toCol } from "./toCol";
 
-const regExp = /(\w)\1*/g;
+const format = /(\w)\1*/g;
+const parse = /(\d+)\s*(\w?)/g;
 
 export class FDate extends Date {
   get h() { return this.getHours(); }
   get m() { return this.getMinutes(); }
   get s() { return this.getSeconds(); }
+  get ms() { return this.getMilliseconds(); }
+
+  set h(v) { this.setHours(v); }
+  set m(v) { this.setMinutes(v); }
+  set s(v) { this.setSeconds(v); }
+  set ms(v) { this.setMilliseconds(v); }
 
   get D() { return this.getDate(); }
   get M() { return this.getMonth() + 1; }
   get Y() { return this.getFullYear(); }
+
+  set D(v) { this.setDate(v); }
+  set M(v) { this.setMonth(v - 1); }
+  set Y(v) { this.setFullYear(v); }
 
   static makeFormat(format: string) {
     return this.format.bind(this, format);
@@ -19,7 +30,7 @@ export class FDate extends Date {
     if (!(date instanceof this))
       date = new this(date);
 
-    return format.replace(regExp, (source) => {
+    return format.replace(format, (source) => {
       const d: FDate = date as any;
       const [key] = source;
       if (key in d)
@@ -27,5 +38,22 @@ export class FDate extends Date {
 
       return source;
     });
+  }
+
+  static from(string: string) {
+    const date = new this(0);
+
+    string.replace(parse, (_, num, key) => {
+      if (key in date) {
+        (date as any)[key] += +num;
+      }
+
+      if (!key)
+        date.ms += +num;
+
+      return '';
+    });
+
+    return +date;
   }
 }
