@@ -5,7 +5,9 @@ import { effectObject } from "../../core/effectObject";
 import { find } from "../../core/find";
 import { map } from "../../core/map";
 import { pick } from "../../core/pick";
+import { point } from "../../core/point";
 import { forwardApi, useApi } from "../../core/socketApi";
+import { Vec2 } from "../../core/Vec2";
 import { PlayerPositionsProto } from "../../proto";
 import { EAnimate, EDir, EEffect, ESounds } from "../../types";
 import { IS_DEV } from "../env";
@@ -20,7 +22,7 @@ import { RadiusEffect } from "./RadiusEffect";
 import { ShieldEffect } from "./ShieldEffect";
 import { SpeedEffect } from "./SpeedEffect";
 
-import type { TPlayer, TPoint, TServer } from "../../types";
+import type { TPlayer, TServer } from "../../types";
 export class Player extends Entity {
   #id = -1;
   api!: TPlayer;
@@ -36,7 +38,7 @@ export class Player extends Entity {
   get canJoin() { return this.game.slotLimits > this.game.playersCount; }
   get animate() { return this.#animate; }
   set animate(v) { this.#animate = v; }
-  get startPosition(): TPoint | undefined { return this.game.startPositions[this.#id]; };
+  get startPosition(): Vec2 | undefined { return this.game.startPositions[this.#id]; };
 
   name = '';
   color = -1;
@@ -182,7 +184,7 @@ export class Player extends Entity {
     PlayerEffect.clearEffets(this);
 
     if (startPosition) {
-      [this.x, this.y] = startPosition;
+      this.set(startPosition);
       effectObject(this, 'startPosition', [-1, -1], () => { });
     }
   }
@@ -336,11 +338,10 @@ export class Player extends Entity {
       effectObject(
         this,
         'startPosition',
-        this.startPosition ?? [0, 0],
-        ([x, y]) => {
-          this.x = x;
-          this.y = y;
-          this.api.setStartPosition(x, y);
+        this.startPosition ?? point(0),
+        (point) => {
+          this.set(point);
+          this.api.setStartPosition(point.x, point.y);
           this.api.playSound(ESounds.newLife);
         }
       );

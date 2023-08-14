@@ -22,9 +22,11 @@
     startVolume = volume;
     start = point(x, y);
   };
+
   const mouseUp = ({ x, y }: MouseEvent) => {
     start = null;
   };
+
   const mouseMove = ({ x, y }: MouseEvent) => {
     if (!start) return;
     const delta = (start.x - x) / span.offsetWidth;

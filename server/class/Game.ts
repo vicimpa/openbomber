@@ -6,8 +6,10 @@ import { effectObject } from "../../core/effectObject";
 import { find } from "../../core/find";
 import { map } from "../../core/map";
 import { pick } from "../../core/pick";
+import { point } from "../../core/point";
 import { random } from "../../core/random";
-import { ESounds, TPlayer, TPoint } from "../../types";
+import { Vec2, vec2 } from "../../core/Vec2";
+import { ESounds, TPlayer } from "../../types";
 import { IS_DEV } from "../env";
 import { Achivment } from "./Achivment";
 import { Bomb } from "./Bomb";
@@ -26,11 +28,11 @@ export const defaultConfig = {
   startLiveCount: 1,
 };
 
-export const defaultStartPositions: TPoint[] = [
-  [0, 0],
-  [1, 0],
-  [1, 1],
-  [0, 1]
+export const defaultStartPositions: Vec2[] = [
+  point(0, 0),
+  point(1, 0),
+  point(1, 1),
+  point(0, 1)
 ];
 
 export type TConfig = typeof defaultConfig;
@@ -45,7 +47,7 @@ export class Game {
   players = new Set<Player>();
   effects = new Set<Effect>();
 
-  startPositions: TPoint[];
+  startPositions: Vec2[];
   usedPositions = new Set<number>();
 
   playerColors: number[] = [];
@@ -104,12 +106,16 @@ export class Game {
     public width: number,
     public height: number,
     settings?: Partial<TConfig>,
-    startPositions: TPoint[] = defaultStartPositions
+    startPositions: Vec2[] = defaultStartPositions
   ) {
     this.#settings = { ...defaultConfig, ...settings };
     this.startPositions = startPositions
-      .map(([x, y]) => [x * (width - 1) | 0, y * (height - 1) | 0])
-      .map(([x, y]) => [(x & 1) ? x - 1 : x, (y & 1) ? y - 1 : y]);
+      .map((point) => point.times(width - 1, height - 1).floor())
+      .map((point) => vec2(point, (x, y) => {
+        if (x & 1) point.x -= 1;
+        if (y & 1) point.y -= 1;
+        return point;
+      }));
 
     for (let i = 0; i < 10; i++)
       this.playerColors.push(i);

@@ -76,7 +76,7 @@ export class PlayerController extends Vec2 {
 
     if (move.x && move.y) speed *= .7;
 
-    animate = move.sum() ? EAnimate.RUNNING : EAnimate.IDLE;
+    animate = !move.equal(0) ? EAnimate.RUNNING : EAnimate.IDLE;
 
     move.times(speed);
 

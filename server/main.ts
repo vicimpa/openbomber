@@ -1,6 +1,7 @@
 import { Server } from "http";
 import { Server as SocketIO } from "socket.io";
 
+import { point } from "../core/point";
 import { defaultStartPositions, Game } from "./class/Game";
 import { IS_DEV } from "./env";
 
@@ -11,11 +12,11 @@ export function game(server: Server) {
     fillBlocks: .7
   }, [
     ...defaultStartPositions,
-    [.5, 0],
-    [1, .5],
-    [.5, 1],
-    [0, .5],
-    [.5, .5]
+    point(.5, 0),
+    point(1, .5),
+    point(.5, 1),
+    point(0, .5),
+    point(.5, .5)
   ]);
 
 
