@@ -1,4 +1,5 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
+import { resolve } from "path";
 import { defineConfig } from "vite";
 import commonjs from "vite-plugin-commonjs";
 import paths from "vite-tsconfig-paths";
@@ -10,7 +11,13 @@ export default defineConfig({
   root: './src',
   build: {
     outDir: '../dist',
-    target: 'esnext'
+    target: 'esnext',
+    rollupOptions: {
+      input: {
+        index: resolve(__dirname, 'src', 'index.html'),
+        new: resolve(__dirname, 'src', 'new.html')
+      }
+    }
   },
   preview: {
     host: '127.0.0.1',
