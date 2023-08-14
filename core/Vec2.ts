@@ -7,8 +7,8 @@ export type TVec2Callback = (x: number, y: number) => any;
 export const vec2 = <F extends TVec2Callback>(
   ...args: [...TVec2, callback: F]
 ): ReturnType<F> => {
-  const callback = args.pop();
-  const first = args.shift() ?? 0;
+  const callback = args.at(-1);
+  const first = args.at(0);
 
   if (!(callback instanceof Function))
     throw new Error("Need callback");
@@ -16,7 +16,7 @@ export const vec2 = <F extends TVec2Callback>(
   if (typeof first === 'object')
     return callback(first.x, first.y);
 
-  const second = args.shift() ?? first ?? 0;
+  const second = args.at(1);
 
   if (typeof first === 'number' && typeof second === 'number')
     return callback(first, second);
