@@ -33,8 +33,11 @@ export class CrasyBombEffect extends PlayerEffect {
     const effets = this.effects(player);
     const currentEffect = this.get(player) ?? new this(player);
 
+    if (!effets.has(currentEffect)) {
+      player.api.playSound(ESounds.crazy);
+    }
+
     currentEffect.appendTime();
     effets.add(currentEffect);
-    player.api.playSound(ESounds.crazy);
   }
 }
