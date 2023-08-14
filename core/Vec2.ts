@@ -8,7 +8,7 @@ export const vec2 = <F extends TVec2Callback>(
   ...args: [...TVec2, callback: F]
 ): ReturnType<F> => {
   const callback = args.at(-1);
-  const first = args.at(0);
+  const first = args.at(0) ?? 0;
 
   if (!(callback instanceof Function))
     throw new Error("Need callback");
@@ -16,7 +16,7 @@ export const vec2 = <F extends TVec2Callback>(
   if (typeof first === 'object')
     return callback(first.x, first.y);
 
-  const second = args.at(1);
+  const second = args.at(1) ?? first;
 
   if (typeof first === 'number' && typeof second === 'number')
     return callback(first, second);
