@@ -166,6 +166,7 @@ export class Player extends Entity {
       this.isDeath = true;
       this.kills = 0;
       this.deaths = 0;
+      this.wins = 0;
       this.lastAction = Date.now();
       PlayerEffect.clearEffets(this);
       this.randomColor();
