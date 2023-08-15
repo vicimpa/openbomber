@@ -6,8 +6,16 @@
   export let players: TypePlayer["info"][] = [];
   export let current: TypePlayer["info"] | null = null;
 
-  $: sortedPlayers = players.sort(
-    (a, b) => b.wins * 5 + b.kills - a.wins * 5 + a.kills
+  $: sortedPlayers = players.sort((a, b) =>
+    b.wins > a.wins
+      ? 1
+      : a.wins > b.wins
+      ? -1
+      : b.kills > a.kills
+      ? 1
+      : a.kills > b.kills
+      ? -1
+      : b.name.localeCompare(a.name)
   );
 
   $: leavePlayers = sortedPlayers.filter((e) => !e.isDeath);
