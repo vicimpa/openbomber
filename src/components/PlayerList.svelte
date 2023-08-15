@@ -7,7 +7,7 @@
   export let current: TypePlayer["info"] | null = null;
 
   $: sortedPlayers = players.sort(
-    (a, b) => a.wins * 5 + a.kills - b.wins * 5 + b.kills
+    (a, b) => b.wins * 5 + b.kills - a.wins * 5 + a.kills
   );
 
   $: leavePlayers = sortedPlayers.filter((e) => !e.isDeath);
