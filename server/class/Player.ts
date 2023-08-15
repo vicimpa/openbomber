@@ -1,14 +1,14 @@
 import { Socket } from "socket.io";
 
+import { gameApi, playerApi } from "../../api";
 import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT } from "../../config";
 import { effectObject } from "../../core/effectObject";
 import { find } from "../../core/find";
+import { TMethods } from "../../core/makeWebSocketApi";
 import { map } from "../../core/map";
 import { pick } from "../../core/pick";
 import { point } from "../../core/point";
-import { forwardApi, useApi } from "../../core/socketApi";
 import { Vec2 } from "../../core/Vec2";
-import { PlayerPositionsProto } from "../../proto";
 import { EAnimate, EDir, EEffect, ESounds } from "../../types";
 import { IS_DEV } from "../env";
 import { Bomb } from "./Bomb";
@@ -22,11 +22,10 @@ import { RadiusEffect } from "./RadiusEffect";
 import { ShieldEffect } from "./ShieldEffect";
 import { SpeedEffect } from "./SpeedEffect";
 
-import type { TPlayer, TServer } from "../../types";
 export class Player extends Entity {
   #id = -1;
-  api!: TPlayer;
-  unforward?: () => {};
+  newApi!: TMethods<typeof playerApi>;
+  unforward?: () => any;
 
   isDeath = false;
 
@@ -106,12 +105,27 @@ export class Player extends Entity {
     public socket: Socket
   ) {
     super(game, 0, 0);
-    this.api = useApi<TPlayer>(socket);
+    this.newApi = playerApi.use(socket);
+
     if (IS_DEV)
-      this.methods.toGame();
+      this.newMethods.toGame?.();
   }
 
-  methods: TServer = {
+  newMethods: Parameters<typeof gameApi['forward']>[1] = {
+    setPosition: ({ x, y, dir, animate }) => {
+      if (this.isDeath && !this.inGame) return;
+      if (Math.sqrt((this.x - x) ** 2 + (this.y - y) ** 2) > 1) {
+        this.newApi.setStartPosition(this);
+        return;
+      }
+
+      this.lastAction = Date.now();
+      this.x = (x * 16 | 0) / 16;
+      this.y = (y * 16 | 0) / 16;
+      this.dir = dir;
+      this.animate = animate;
+    },
+
     ping: () => {
       this.ping = Date.now() - this.lastTestPing;
     },
@@ -138,21 +152,9 @@ export class Player extends Entity {
         return;
 
       bombs.add(newBomb);
-      this.game.playersApi.playSound(ESounds.putBomb);
-    },
-
-    setPosition: (x, y, dir, animate) => {
-      if (this.isDeath && !this.inGame) return;
-      if (Math.sqrt((this.x - x) ** 2 + (this.y - y) ** 2) > 1) {
-        this.api.setStartPosition(this.x, this.y);
-        return;
-      }
-
-      this.lastAction = Date.now();
-      this.x = (x * 16 | 0) / 16;
-      this.y = (y * 16 | 0) / 16;
-      this.dir = dir;
-      this.animate = animate;
+      this.game.players.forEach(player => {
+        player.newApi.playSound(ESounds.putBomb);
+      });
     },
 
     setName: (name: string) => {
@@ -184,6 +186,7 @@ export class Player extends Entity {
     }
   };
 
+
   reset() {
     const { startPosition } = this;
     this.isDeath = false;
@@ -200,7 +203,7 @@ export class Player extends Entity {
   death(player?: Player) {
     if (this.isDeath) return;
     this.isDeath = true;
-    this.api.playSound(ESounds.death);
+    this.newApi.playSound(ESounds.death);
     this.game.effects.add(
       new Effect(this.game, this.x, this.y, EEffect.DEATH)
     );
@@ -208,7 +211,7 @@ export class Player extends Entity {
     if (player) {
       this.deaths++;
       this.game.kills++;
-      player.api.playSound(ESounds.kill);
+      player.newApi.playSound(ESounds.kill);
 
       if (player !== this)
         player.kills++;
@@ -241,11 +244,15 @@ export class Player extends Entity {
       delete this.unforward;
     }
 
-    forwardApi<TServer>(this.socket, this.methods);
+    const un2 = gameApi.forward(this.socket, this.newMethods);
+
+    this.unforward = () => {
+      un2();
+    };
   }
 
   disconnect() {
-    this.methods.toLeave();
+    this.newMethods.toLeave?.();
     this.unforward?.();
   }
 
@@ -271,7 +278,7 @@ export class Player extends Entity {
         Date.now() - this.lastAction > PLAYER_TIMEOUT && !this.isDeath && !IS_DEV,
         (result) => {
           if (result)
-            this.methods.toLeave();
+            this.newMethods.toLeave?.();
         }
       );
 
@@ -320,7 +327,7 @@ export class Player extends Entity {
 
     if (this.lastTestPing + 3000 < Date.now()) {
       this.lastTestPing = Date.now();
-      this.api.ping();
+      this.newApi.ping();
     }
   }
 
@@ -341,7 +348,7 @@ export class Player extends Entity {
       'gameInfo',
       infoCache,
       info => {
-        this.api.updateGameInfo(info);
+        this.newApi.updateGameInfo(this.game);
       }
     );
 
@@ -350,7 +357,7 @@ export class Player extends Entity {
       'waitForRestart',
       this.game.waitForRestart > 0 ? (this.game.waitForRestart - Date.now()) / 1000 | 0 : -1,
       time => {
-        this.api.updateWaitForRestart(time);
+        this.newApi.updateWaitForRestart(time);
       }
     );
 
@@ -361,8 +368,8 @@ export class Player extends Entity {
         this.startPosition ?? point(0),
         (point) => {
           this.set(point);
-          this.api.setStartPosition(point.x, point.y);
-          this.api.playSound(ESounds.newLife);
+          this.newApi.setStartPosition(point);
+          this.newApi.playSound(ESounds.newLife);
         }
       );
 
@@ -371,7 +378,7 @@ export class Player extends Entity {
       'localInfo',
       this.info,
       localInfo => {
-        this.api.updateLocalInfo(localInfo);
+        this.newApi.updateLocalInfo(localInfo);
       }
     );
 
@@ -380,7 +387,7 @@ export class Player extends Entity {
       'map',
       mapCache,
       (gameMap) => {
-        this.api.updateMap(gameMap);
+        this.newApi.updateMap(gameMap);
       }
     );
 
@@ -389,7 +396,7 @@ export class Player extends Entity {
       'effects',
       effectsTypeCache,
       () => {
-        this.api.updateEffects(effectsCache);
+        this.newApi.updateEffects(effectsCache);
       }
     );
 
@@ -398,7 +405,7 @@ export class Player extends Entity {
       'bombs',
       bombsCache,
       bombs => {
-        this.api.updateBombs(bombs);
+        this.newApi.updateBombs(bombs);
       }
     );
 
@@ -407,7 +414,7 @@ export class Player extends Entity {
       'explodes',
       explodesCahce,
       explodes => {
-        this.api.updateExplodes(explodes);
+        this.newApi.updateExplodes(explodes);
       }
     );
 
@@ -416,7 +423,7 @@ export class Player extends Entity {
       'achivments',
       achivmentsCache,
       achivments => {
-        this.api.updateAchivments(achivments);
+        this.newApi.updateAchivments(achivments);
       }
     );
 
@@ -425,7 +432,7 @@ export class Player extends Entity {
       'players',
       map(players, e => e.info, (e, d) => e !== this && e.inGame),
       players => {
-        this.api.updatePlayers(players);
+        this.newApi.updatePlayers(players);
       }
     );
 
@@ -434,9 +441,7 @@ export class Player extends Entity {
       'positions',
       map(players, e => e.posInfo, (e, d) => e !== this && e.inGame && !e.isDeath),
       (positions) => {
-        this.api.updatePlayerPositions(
-          PlayerPositionsProto.from(positions)
-        );
+        this.newApi.updatePlayerPositions(positions);
       }
     );
   }

@@ -21,20 +21,7 @@ export enum EMapItem {
 }
 
 export type TPlayer = {
-  setStartPosition(x: number, y: number): void;
-  updateMap(arrayBuffer: ArrayBuffer): void;
-  updateBombs(bombs: Bomb['info'][]): void;
-  updatePlayers(players: Player['info'][]): void;
-  updateExplodes(explodes: Explode['info'][]): void;
-  updateAchivments(achivments: Achivment['info'][]): void;
-  updateLocalInfo(localInfo: Player['info']): void;
-  updatePlayerPositions(positions: ArrayBuffer): void;
-  updateGameInfo(info: Game['info']): void;
-  updateWaitForRestart(count: number): void;
-  updateEffects(effects: Effect['info'][]): void;
-  playSound(sound: ESounds): void;
-  onMessage(message: string, player: TChatInfo, isMe: boolean): void;
-  ping(): void;
+
 };
 
 export enum ESounds {
@@ -56,14 +43,7 @@ export enum ESounds {
 }
 
 export type TServer = {
-  setPosition(x: number, y: number, dir: EDir, animate: EAnimate): void;
-  setBomb(): void;
-  setName(name: string): void;
-  toGame(): void;
-  toLeave(): void;
-  sendMessage(message: string): void;
-  randomColor(): void;
-  ping(): void;
+
 };
 
 export enum EDir {

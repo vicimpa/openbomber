@@ -70,7 +70,7 @@ export class Achivment extends Entity {
       }
     }
 
-    player.api.playSound(ESounds.bonus);
+    player.newApi.playSound(ESounds.bonus);
   }
 
 

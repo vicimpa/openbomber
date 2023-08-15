@@ -55,19 +55,9 @@ export class Game {
 
   running = false;
   kills = 0;
-  winPlayerId: Player['id'] | null = null;
+  winPlayerId: Player['id'] = -1;
 
   waitForRestart = -1;
-
-  playersApi: TPlayer = new Proxy({}, {
-    get: <T extends keyof TPlayer>(_: any, key: T) => {
-      return (...args: Parameters<TPlayer[T]>) => {
-        for (const player of this.players) {
-          (player.api[key] as any)?.apply(player.api, args);
-        }
-      };
-    }
-  }) as any;
 
   infoCache: Game['info'] = this.info;
   mapCache: ArrayBuffer = new ArrayBuffer(0);
@@ -148,17 +138,17 @@ export class Game {
     this.kills = 0;
     this.map = new GameMap(width, height, this);
     this.map.generate(this.settings);
-    this.winPlayerId = null;
+    this.winPlayerId = -1;
   }
 
   message(message: string, sender?: Player) {
     for (const player of this.players) {
-      player.api.playSound(ESounds.message);
-      player.api.onMessage(
+      player.newApi.playSound(ESounds.message);
+      player.newApi.onMessage({
         message,
-        sender instanceof Player ? ({ name: sender.name }) : ({ name: 'server' }),
-        sender === player
-      );
+        sender: sender instanceof Player ? ({ name: sender.name }) : ({ name: 'server' }),
+        isMe: sender === player
+      });
     }
   }
 
@@ -195,7 +185,6 @@ export class Game {
       'height',
       'winPlayerId',
       'playersCount',
-      'startPositions',
       'spectratorsCount'
     ]);
   }
@@ -258,7 +247,7 @@ export class Game {
               const winPlayer = find(this.players, e => e.inGame && !e.isDeath);
               if (winPlayer) {
                 winPlayer.wins++;
-                winPlayer.api.playSound(ESounds.win);
+                winPlayer.newApi.playSound(ESounds.win);
                 this.winPlayerId = winPlayer.id;
                 this.message(`${winPlayer.name} победил`);
               } else {

@@ -1,5 +1,3 @@
-import App from "./new.svelte";
+import { socket } from "socket";
 
-new App({
-  target: document.getElementById('app')!
-});
+

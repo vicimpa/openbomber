@@ -35,10 +35,10 @@ export default defineConfig({
     {
       name: "WebSocketServer",
       configurePreviewServer(server) {
-        game(server.httpServer);
+        return game(server.httpServer);
       },
       configureServer(server) {
-        game(server.httpServer!);
+        return game(server.httpServer!);
       }
     }
   ],

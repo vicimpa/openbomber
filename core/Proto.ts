@@ -1,7 +1,10 @@
-import { PRIMITIVE_TYPES } from "./Buffers";
 import { DataBuffer } from "./DataBuffer";
 
+const FROM_SYMBOL = Symbol();
+const TO_SYMBOL = Symbol();
+
 export type TDataBuffer = DataBuffer;
+
 export type PRIMITIVE_TYPES = (
   never
   | 'boolean'
@@ -17,13 +20,14 @@ export type PRIMITIVE_TYPES = (
   | 'biguint64'
   | 'string'
 );
+
 export type TPrimitiveValue<T extends PRIMITIVE_TYPES> = (
   ReturnType<DataBuffer[`read${T}`]>
 );
 
 export type TCustomType<T> = {
-  $from(db: DataBuffer, value: T): void;
-  $to(db: DataBuffer): T;
+  [FROM_SYMBOL](db: DataBuffer, value: T): void;
+  [TO_SYMBOL](db: DataBuffer): T;
 };
 
 export type TProtoType = (
@@ -48,7 +52,7 @@ export type TProtoValue<T extends TProtoParam> = (
   T extends PRIMITIVE_TYPES ? (
     TPrimitiveValue<T>
   ) : T extends TCustomType<any> ? (
-    ReturnType<T['$to']>
+    ReturnType<T[typeof TO_SYMBOL]>
   ) : T extends TProtoObject ? ({
     [key in keyof T]: TProtoValue<T[key]>
   }) : T extends [any] ? (
@@ -56,9 +60,41 @@ export type TProtoValue<T extends TProtoParam> = (
   ) : never
 );
 
+export const makeCustomType = <T>(
+  from: TCustomType<T>[typeof FROM_SYMBOL],
+  to: TCustomType<T>[typeof TO_SYMBOL]
+) => {
+  return {
+    [FROM_SYMBOL]: from,
+    [TO_SYMBOL]: to,
+  } as TCustomType<T>;
+};
+
+type StandardEnum<T> = {
+  [id: string]: T | string;
+  [nu: number]: string;
+};
+
+export const makeEnum = <T extends StandardEnum<unknown>>(type: T) => {
+  return makeCustomType<T[keyof T]>(
+    (db, value) => {
+      db.writeuint8(value as number);
+    },
+    (db) => {
+      return db.readuint8() as T[keyof T];
+    }
+  );
+};
+
 export class Proto<T extends TProtoParam> {
   #param: T;
-  #db = new DataBuffer();
+  #db?: DataBuffer;
+
+  get db() {
+    return this.#db ?? (
+      this.#db = new DataBuffer()
+    );
+  }
 
   #convert(buffer: ArrayBuffer) {
     if (typeof Buffer !== 'undefined' && buffer instanceof Buffer) {
@@ -73,30 +109,41 @@ export class Proto<T extends TProtoParam> {
     this.#param = param;
   }
 
+  [FROM_SYMBOL](db: DataBuffer, value: TProtoValue<T>) {
+    this.from(value, undefined, db);
+  }
+
+  [TO_SYMBOL](db: DataBuffer) {
+    return this.to(undefined, undefined, db);
+  }
+
   from(value: TProtoValue<T>, param = this.#param, db?: DataBuffer): ArrayBuffer {
     if (!db) {
-      db = this.#db;
+      db = this.db;
       db.cursor = 0;
     }
 
     if (typeof param === 'object') {
       if (Array.isArray(param)) {
+        if (!Array.isArray(value))
+          throw new Error('Value is not array');
+
         db.writeuint32(value.length);
 
         for (let i = 0; i < value.length; i++) {
-          this.from(value[i], param[0] as any, db);
+          this.from(value[i] as any, param[0] as any, db);
         }
 
         return db.buffer;
       }
 
-      if ('$to' in param && '$from' in param) {
-        (param as TCustomType<any>)['$from'](db, value);
+      if (FROM_SYMBOL in param && TO_SYMBOL in param) {
+        (param as TCustomType<any>)[FROM_SYMBOL](db, value);
         return db.buffer;
       }
 
       for (const key in param) {
-        this.from(value[key], param[key] as any, db);
+        this.from((value as any)[key], param[key] as any, db);
       }
 
       return db.buffer;
@@ -110,10 +157,11 @@ export class Proto<T extends TProtoParam> {
     return db.buffer;
   }
 
-  to(buffer: ArrayBuffer, param = this.#param, db?: DataBuffer): TProtoValue<T> {
+  to(buffer?: ArrayBuffer, param = this.#param, db?: DataBuffer): TProtoValue<T> {
     if (!db) {
-      db = this.#db;
-      db.buffer = this.#convert(buffer);
+      db = this.db;
+      db.write(this.#convert(buffer ?? new ArrayBuffer(0)), 0);
+      db.cursor = 0;
     }
 
     if (typeof param === 'object') {
@@ -122,8 +170,8 @@ export class Proto<T extends TProtoParam> {
         return Array.from({ length }, () => this.to(buffer, param[0] as any, db)) as any;
       }
 
-      if ('$to' in param && '$from' in param)
-        return (param as TCustomType<any>).$to(db);
+      if (TO_SYMBOL in param && FROM_SYMBOL in param)
+        return (param as TCustomType<any>)[TO_SYMBOL](db);
 
       const object = {} as any;
 

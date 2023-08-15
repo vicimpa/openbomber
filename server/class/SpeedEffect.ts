@@ -35,10 +35,10 @@ export class SpeedEffect extends PlayerEffect {
 
     if (currentEffect) {
       if (currentEffect.value > 1)
-        player.api.playSound(ESounds.speedOn);
+        player.newApi.playSound(ESounds.speedOn);
 
       if (currentEffect.value < 1)
-        player.api.playSound(ESounds.fireOn);
+        player.newApi.playSound(ESounds.fireOn);
 
       currentEffect.delete();
     }
@@ -55,10 +55,10 @@ export class SpeedEffect extends PlayerEffect {
 
     if (!effets.has(currentEffect)) {
       if (currentEffect.value > 1)
-        player.api.playSound(ESounds.speedOn);
+        player.newApi.playSound(ESounds.speedOn);
 
       if (currentEffect.value < 1)
-        player.api.playSound(ESounds.fireOn);
+        player.newApi.playSound(ESounds.fireOn);
     }
 
     currentEffect.value = value;

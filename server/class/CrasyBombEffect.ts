@@ -26,7 +26,7 @@ export class CrasyBombEffect extends PlayerEffect {
 
   static delete(player: Player) {
     this.get(player)?.delete();
-    player.api.playSound(ESounds.crazy);
+    player.newApi.playSound(ESounds.crazy);
   }
 
   static append(player: Player) {
@@ -34,7 +34,7 @@ export class CrasyBombEffect extends PlayerEffect {
     const currentEffect = this.get(player) ?? new this(player);
 
     if (!effets.has(currentEffect)) {
-      player.api.playSound(ESounds.crazy);
+      player.newApi.playSound(ESounds.crazy);
     }
 
     currentEffect.appendTime();

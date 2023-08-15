@@ -1,7 +1,5 @@
 <script lang="ts">
   import { makeEffect } from "@/core/makeEffect";
-  import { forwardApi, useApi } from "@/core/socketApi";
-  import type { TPlayer, TServer } from "@/types";
   import { NICK_LENGTH } from "@/config";
 
   import type { Player as TypePlayer } from "@/server/class/Player";
@@ -26,13 +24,13 @@
   import Effects from "components/Effects.svelte";
   import Button from "components/Button.svelte";
   import Link from "components/Link.svelte";
-  import { PlayerPositionsProto } from "@/proto";
+  import { gameApi, playerApi } from "@/api";
 
   const keys = makeController({
     bomb: ["Space", "Enter"],
   });
 
-  const api = useApi<TServer>(socket);
+  const newApi = gameApi.use(socket);
 
   let gamemap: GameMap | null = null;
   let player: PlayerController | null = null;
@@ -88,9 +86,9 @@
       isRestarting = true;
     });
 
-    forwardApi<TPlayer>(socket, {
+    playerApi.forward(socket, {
       ping() {
-        api.ping();
+        newApi.ping();
       },
       updateGameInfo(info) {
         const { width, height } = info;
@@ -122,7 +120,7 @@
         if (!gamemap) return;
         gamemap.map = new Uint8Array(buffer);
       },
-      setStartPosition(x, y) {
+      setStartPosition({ x, y }) {
         if (!gameInfo) return;
         const { width, height } = gameInfo;
         player = new PlayerController(width, height);
@@ -135,7 +133,7 @@
       },
       updatePlayerPositions(newPositions) {
         if (!gamemap) return;
-        gamemap.positions = PlayerPositionsProto.to(newPositions);
+        gamemap.positions = newPositions;
       },
       updateExplodes(newExplodes) {
         if (!gamemap) return;
@@ -148,8 +146,8 @@
       updateWaitForRestart(count) {
         restartAfter = count;
       },
-      onMessage(message, player, isMe) {
-        ChatEvent.dispatch(message, player, isMe);
+      onMessage({ message, sender, isMe }) {
+        ChatEvent.dispatch(message, sender, isMe);
       },
     });
 
@@ -164,7 +162,7 @@
     if (name !== info.name) {
       name = name.slice(0, NICK_LENGTH);
       info.name = name;
-      api.setName(name);
+      newApi.setName(name);
       localStorage.setItem("name", name);
     }
 
@@ -183,13 +181,13 @@
 
     player = player;
     gamemap.update();
-    bomb.isSingle() && api.setBomb();
+    bomb.isSingle() && newApi.setBomb();
     let { x, y, dir, animate } = player;
     x = ((x * 16) | 0) / 16;
     y = ((y * 16) | 0) / 16;
 
     playerEffect({ x, y, dir, animate }, () => {
-      api.setPosition(x, y, dir, animate);
+      newApi.setPosition({ x, y, dir, animate });
     });
   });
 </script>
@@ -201,7 +199,7 @@
         <span>Ping: {info.ping}ms</span>
       {/if}
       <EditName bind:name>
-        <Button on:click={() => api.randomColor()}>Аватар</Button>
+        <Button on:click={() => newApi.randomColor()}>Аватар</Button>
       </EditName>
     </div>
     <div class="item">
@@ -209,11 +207,11 @@
 
       {#if gameInfo}
         {#if !info?.inGame}
-          <Button disabled={!info?.canJoin} on:click={() => api.toGame()}>
+          <Button disabled={!info?.canJoin} on:click={() => newApi.toGame()}>
             Подключиться
           </Button>
         {:else}
-          <Button on:click={() => api.toLeave()}>Отключится</Button>
+          <Button on:click={() => newApi.toLeave()}>Отключится</Button>
         {/if}
       {/if}
     </div>
@@ -297,7 +295,7 @@
     <div class="item">
       <Chat
         on:message={({ detail }) => {
-          api.sendMessage(detail);
+          newApi.sendMessage(detail);
         }}
       />
     </div>

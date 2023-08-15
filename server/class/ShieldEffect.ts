@@ -36,7 +36,7 @@ export class ShieldEffect extends PlayerEffect {
     const currentEffect = this.get(player);
 
     if (currentEffect) {
-      player.api.playSound(ESounds.shield);
+      player.newApi.playSound(ESounds.shield);
 
       currentEffect.delete();
     }
@@ -47,7 +47,7 @@ export class ShieldEffect extends PlayerEffect {
     const currentEffect = this.get(player) ?? new this(player);
 
     if (!effets.has(currentEffect)) {
-      player.api.playSound(ESounds.shield);
+      player.newApi.playSound(ESounds.shield);
     }
 
     currentEffect.appendTime();

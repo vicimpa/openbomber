@@ -1,15 +1,15 @@
-import { Proto } from "./core/Proto";
+import { makeCustomType, Proto } from "./core/Proto";
 
 import type { TCustomType } from "./core/Proto";
 
-const POSITION: TCustomType<number> = {
-  $from(db, value) {
+const POSITION = makeCustomType<number>(
+  (db, value) => {
     db.writeint16(value * 1000);
   },
-  $to(db) {
+  (db) => {
     return db.readint16() / 1000;
   }
-};
+);
 
 export const PlayerPositionsProto = new Proto([{
   id: 'uint16',
