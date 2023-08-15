@@ -23,9 +23,9 @@ export enum EMapItem {
 export type TPlayer = {
   setStartPosition(x: number, y: number): void;
   updateMap(arrayBuffer: ArrayBuffer): void;
-  updateBombs(bombs: Bomb['info'][]): void;
-  updatePlayers(players: Player['info'][]): void;
-  updateExposes(exposes: Explode['info'][]): void;
+  updateBombs(buffer: ArrayBuffer): void;
+  updatePlayers(buffer: ArrayBuffer): void;
+  updateExposes(buffer: ArrayBuffer): void;
   updateAchivments(achivments: Achivment['info'][]): void;
   updateLocalInfo(localInfo: Player['info']): void;
   updatePlayerPositions(positions: ArrayBuffer): void;
@@ -56,7 +56,7 @@ export enum ESounds {
 }
 
 export type TServer = {
-  setPosition(x: number, y: number, dir: EDir, animate: EAnimate): void;
+  setPosition(buffer: ArrayBuffer): void;
   setBomb(): void;
   setName(name: string): void;
   toGame(): void;

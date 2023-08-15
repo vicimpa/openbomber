@@ -1,46 +1,55 @@
-import { ReadBuffer, WriteBuffer } from "./core/Buffers";
+import { Proto } from "./core/Proto";
 
-import type { Player } from "./server/class/Player";
+export const PlayerPositionsProto = new Proto([{
+  id: 'uint16',
+  x: 'float32',
+  y: 'float32',
+  dir: 'uint8',
+  animate: 'uint8',
+}]);
 
-export class PlayerPositionsProto {
-  static readable = new ReadBuffer();
-  static writable = new WriteBuffer();
+export const PlayerInfosProto = new Proto([{
+  id: 'uint16',
+  name: 'string',
+  color: 'uint8',
+  inGame: 'boolean',
+  isDeath: 'boolean',
+  canJoin: 'boolean',
+  wins: 'uint8',
+  kills: 'uint8',
+  deaths: 'uint8',
+  effects: {
+    bombs: 'uint8',
+    radius: 'uint8',
+    haveShield: 'boolean',
+    speed: 'float32',
+    crazyBomb: 'boolean',
+  },
+  ping: 'uint16'
+}]);
 
-  static from(buffer: ArrayBuffer) {
-    const { readable } = this;
+export const PlayerSetPositionProto = new Proto({
+  x: 'float32',
+  y: 'float32',
+  dir: 'uint8',
+  animate: 'uint8'
+});
 
-    readable.accept(buffer);
+export const BombsStateProto = new Proto([{
+  x: 'float32',
+  y: 'float32',
+  radius: 'uint8',
+  isCrazy: 'boolean'
+}]);
 
-    const output: Player['posInfo'][] = [];
-    const size = readable.read('uint8');
-
-    for (let i = 0; i < size; i++) {
-      output.push({
-        id: readable.read('uint8'),
-        x: readable.read('float32'),
-        y: readable.read('float32'),
-        dir: readable.read('uint8'),
-        animate: readable.read('uint8'),
-      });
-    }
-
-    return output;
-  }
-
-  static to(players: Player['posInfo'][]) {
-    const { writable } = this;
-
-    writable.write('uint8', players.length);
-
-    for (let i = 0; i < players.length; i++) {
-      const player = players[i];
-      writable.write('uint8', player.id);
-      writable.write('float32', player.x);
-      writable.write('float32', player.y);
-      writable.write('uint8', player.dir);
-      writable.write('uint8', player.animate);
-    }
-
-    return writable.flush();
-  }
-}
+export const ExplodesStateProto = new Proto([{
+  x: 'float32',
+  y: 'float32',
+  points: [{
+    x: 'float32',
+    y: 'float32',
+    dir: 'uint8',
+    isFinaly: 'boolean',
+    isBlock: 'boolean',
+  }]
+}]);

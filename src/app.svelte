@@ -3,7 +3,13 @@
   import { forwardApi, useApi } from "@/core/socketApi";
   import type { TPlayer, TServer } from "@/types";
   import { NICK_LENGTH } from "@/config";
-  import { PlayerPositionsProto } from "@/proto";
+  import {
+    BombsStateProto,
+    ExplodesStateProto,
+    PlayerInfosProto,
+    PlayerPositionsProto,
+    PlayerSetPositionProto,
+  } from "@/proto";
 
   import type { Player as TypePlayer } from "@/server/class/Player";
   import type { Game as TypeGame } from "@/server/class/Game";
@@ -116,7 +122,7 @@
       },
       updateBombs(newBombs) {
         if (!gamemap) return;
-        gamemap.bombs = newBombs;
+        gamemap.bombs = BombsStateProto.to(newBombs);
       },
       updateMap(buffer) {
         if (!gamemap) return;
@@ -131,15 +137,15 @@
       },
       updatePlayers(newPlayers) {
         if (!gamemap) return;
-        gamemap.players = newPlayers;
+        gamemap.players = PlayerInfosProto.to(newPlayers);
       },
       updatePlayerPositions(newPositions) {
         if (!gamemap) return;
-        gamemap.positions = PlayerPositionsProto.from(newPositions);
+        gamemap.positions = PlayerPositionsProto.to(newPositions);
       },
       updateExposes(newExposes) {
         if (!gamemap) return;
-        gamemap.explodes = newExposes;
+        gamemap.explodes = ExplodesStateProto.to(newExposes);
       },
       updateAchivments(newAchivments) {
         if (!gamemap) return;
@@ -187,8 +193,9 @@
     let { x, y, dir, animate } = player;
     x = ((x * 16) | 0) / 16;
     y = ((y * 16) | 0) / 16;
+
     playerEffect({ x, y, dir, animate }, () => {
-      api.setPosition(x, y, dir, animate);
+      api.setPosition(PlayerSetPositionProto.from({ x, y, dir, animate }));
     });
   });
 </script>

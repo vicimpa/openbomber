@@ -1,72 +1,131 @@
-export const PRIMITIVE_TYPES = {
-  'int8': Int8Array,
-  'int16': Int16Array,
-  'int32': Int32Array,
-  'uint8': Uint8Array,
-  'uint16': Uint16Array,
-  'uint32': Uint32Array,
-  'float32': Float32Array,
-  'float64': Float64Array,
-  'bigint64': BigInt64Array,
-  'biguint64': BigUint64Array,
-};
+import { PRIMITIVE_TYPES } from "./Buffers";
+import { DataBuffer } from "./DataBuffer";
 
-export type TPrimitiveTypes = typeof PRIMITIVE_TYPES;
-export type TPrimitiveType = keyof TPrimitiveTypes;
-export type TTypeFrom<T> = {
-  $type$: {
-    from(data: T): ArrayBuffer;
-    to(data: ArrayBuffer): T;
-  };
-};
-export type TObject = {
-  [key: string]: TProto;
-};
-
-export type TProto = (
-  TPrimitiveType |
-  TObject |
-  [TProto]
+export type TDataBuffer = DataBuffer;
+export type PRIMITIVE_TYPES = (
+  never
+  | 'boolean'
+  | 'int8'
+  | 'int16'
+  | 'int32'
+  | 'uint8'
+  | 'uint16'
+  | 'uint32'
+  | 'float32'
+  | 'float64'
+  | 'bigint64'
+  | 'biguint64'
+  | 'string'
+);
+export type TPrimitiveValue<T extends PRIMITIVE_TYPES> = (
+  ReturnType<DataBuffer[`read${T}`]>
 );
 
-export type TValue<T> = (
-  T extends TPrimitiveType ? (
-    InstanceType<TPrimitiveTypes[T]>[0]
-  ) : T extends TTypeFrom<any> ? (
-    ReturnType<T['$type$']['to']>
-  ) : T extends TObject ? (
-    { [K in keyof T]: TValue<T[K]> }
-  ) : T extends [] ? TValue<T[0]> : never
+export type TCustomType<T> = {
+  $from(db: DataBuffer, value: T): T;
+  $to(db: DataBuffer): T;
+};
 
+export type TProtoType = (
+  never
+  | PRIMITIVE_TYPES
+  | TCustomType<any>
 );
 
-export type TData<T extends TProto> = (
-  T extends [] ? T[0][] : T
+export type TProtoParam = (
+  never
+  | TProtoType
+  | TProtoObject
+  | [TProtoType]
+  | [TProtoObject]
 );
 
-export class Proto<T extends TProto> {
-  constructor(param: T) { }
+export type TProtoObject = {
+  [key: string]: TProtoParam;
+};
 
-  from(data: TValue<T>) {
+export type TProtoValue<T extends TProtoParam> = (
+  T extends PRIMITIVE_TYPES ? (
+    TPrimitiveValue<T>
+  ) : T extends TCustomType<any> ? (
+    ReturnType<T['$to']>
+  ) : T extends TProtoObject ? ({
+    [key in keyof T]: TProtoValue<T[key]>
+  }) : T extends [any] ? (
+    TProtoValue<T[0]>[]
+  ) : never
+);
 
+export class Proto<T extends TProtoParam> {
+  #param: T;
+
+  #convert(buffer: ArrayBuffer) {
+    if (typeof Buffer !== 'undefined' && buffer instanceof Buffer) {
+      const out = buffer.buffer;
+      return out.slice(out.byteLength - buffer.length);
+    }
+
+    return buffer;
   }
 
-  to(data: ArrayBuffer): TValue<T> {
+  constructor(param: T) {
+    this.#param = param;
+  }
 
+  from(value: TProtoValue<T>, param = this.#param, db = new DataBuffer()): ArrayBuffer {
+    if (typeof param === 'object') {
+      if (Array.isArray(param)) {
+        db.writeuint32(value.length);
+
+        for (let i = 0; i < value.length; i++) {
+          this.from(value[i], param[0] as any, db);
+        }
+
+        return db.buffer;
+      }
+
+      if ('$to' in param && '$from' in param) {
+        (param as TCustomType<any>)['$from'](db, value);
+        return db.buffer;
+      }
+
+      for (const key in param) {
+        this.from(value[key], param[key] as any, db);
+      }
+
+      return db.buffer;
+    }
+
+    if (('write' + param) in db) {
+      (db as any)['write' + param](value);
+      return db.buffer;
+    }
+
+    return db.buffer;
+  }
+
+  to(buffer: ArrayBuffer, param = this.#param, db = new DataBuffer(this.#convert(buffer))): TProtoValue<T> {
+    if (typeof param === 'object') {
+      if (Array.isArray(param)) {
+        const length = db.readuint32();
+        return Array.from({ length }, () => this.to(buffer, param[0] as any, db)) as any;
+      }
+
+      if ('$to' in param && '$from' in param)
+        return (param as TCustomType<any>).$to(db);
+
+      const object = {} as any;
+
+      for (const key in param) {
+        object[key] = this.to(buffer, param[key] as any, db);
+      }
+
+      return object;
+    }
+
+    if (('read' + param) in db)
+      return (db as any)['read' + param]();
 
     return null as any;
   }
 }
-
-const a = new Proto({
-  id: 'uint8',
-  x: 'float32',
-  y: 'float32',
-  dir: 'uint8',
-  animate: 'uint8',
-  test: {
-    a: 'int8',
-    b: 'int16',
-    c: 'bigint64'
-  }
-});

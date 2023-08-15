@@ -10,8 +10,8 @@ export interface IExplodePoin {
   x: number;
   y: number;
   dir: EExplodeDir;
-  isFinaly?: boolean;
-  isBlock?: boolean;
+  isFinaly: boolean;
+  isBlock: boolean;
 }
 
 export class Explode extends Entity {
@@ -52,7 +52,7 @@ export class Explode extends Entity {
       }
     } = this;
 
-    points.push({ x, y, dir: EExplodeDir.CENTER });
+    points.push({ x, y, dir: EExplodeDir.CENTER, isFinaly: false, isBlock: false });
 
     for (const [_id, direction] of Object.entries(EXPODER_DIRS)) {
       if (!+_id) continue;
@@ -91,17 +91,17 @@ export class Explode extends Entity {
           bombFind.player = this.player;
           bombFind.time = Date.now();
           bombFind.liveTime = 50;
-          points.push({ x, y, dir, isFinaly: true });
+          points.push({ x, y, dir, isFinaly: true, isBlock: false });
           break;
         }
 
         if (achivmentFind) {
           achivments.delete(achivmentFind);
-          points.push({ x, y, dir, isFinaly: true });
+          points.push({ x, y, dir, isFinaly: true, isBlock: false });
           break;
         }
 
-        points.push({ x, y, dir, isFinaly: radius === i });
+        points.push({ x, y, dir, isFinaly: radius === i, isBlock: false });
       }
 
       for (const { x, y } of points) {
