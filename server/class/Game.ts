@@ -281,7 +281,7 @@ export class Game {
         }
       }
 
-      await delay(1000 / 30);
+      await delay(1000 / 60);
     }
   }
 }
