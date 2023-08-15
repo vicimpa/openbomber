@@ -15,11 +15,12 @@
         <Player color={player.color} isDeath={false} />
       </div>
       <span class="name">
-        {player.name || "noname"}
+        {player.name || "noname"} ({player.ping} ms)
       </span>
       <small class="stats">
         <span class="stat">💣<b>{player.effects.bombs}</b></span>
         <span class="stat">🔥<b>{player.effects.radius}</b></span>
+        <span class="stat">👑<b>{player.wins}</b></span>
         <span class="stat">🔫<b>{player.kills}</b></span>
         <span class="stat">💀<b>{player.deaths}</b></span>
 
@@ -40,6 +41,7 @@
 
   .name
     flex-grow: 1
+    font-size: 10px
     
   ul, li
     padding: 0

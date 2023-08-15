@@ -89,6 +89,9 @@
     });
 
     forwardApi<TPlayer>(socket, {
+      ping() {
+        api.ping();
+      },
       updateGameInfo(info) {
         const { width, height } = info;
         gameInfo = info;
@@ -232,6 +235,7 @@
         {#if info?.inGame}
           <span>💣 x {info.effects.bombs}</span>
           <span>🔥 x {info.effects.radius}</span>
+          <span>👑 x {info.wins}</span>
           <span>🔫 x {info.kills}</span>
           <span>💀 x {info.deaths}</span>
           <span>

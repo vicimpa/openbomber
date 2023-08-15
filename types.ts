@@ -34,6 +34,7 @@ export type TPlayer = {
   updateEffects(effects: Effect['info'][]): void;
   playSound(sound: ESounds): void;
   onMessage(message: string, player: TChatInfo, isMe: boolean): void;
+  ping(): void;
 };
 
 export enum ESounds {
@@ -62,6 +63,7 @@ export type TServer = {
   toLeave(): void;
   sendMessage(message: string): void;
   randomColor(): void;
+  ping(): void;
 };
 
 export enum EDir {

@@ -57,6 +57,9 @@ export class Player extends Entity {
   kills = 0;
   deaths = 0;
 
+  ping = 0;
+  lastTestPing = 0;
+
   lastAction = Date.now();
 
   get posInfo() {
@@ -84,7 +87,8 @@ export class Player extends Entity {
       'kills',
       'deaths',
       'effects',
-      'color'
+      'color',
+      'ping'
     ]);
   }
 
@@ -108,6 +112,9 @@ export class Player extends Entity {
   }
 
   methods: TServer = {
+    ping: () => {
+      this.ping = Date.now() - this.lastTestPing;
+    },
     randomColor: () => {
       this.randomColor();
     },
@@ -419,5 +426,10 @@ export class Player extends Entity {
         this.api.updatePlayerPositions(positions);
       }
     );
+
+    if (this.lastTestPing + 3000 < Date.now()) {
+      this.lastTestPing = Date.now();
+      this.api.ping();
+    }
   }
 }
