@@ -22,7 +22,7 @@ export type TPrimitiveValue<T extends PRIMITIVE_TYPES> = (
 );
 
 export type TCustomType<T> = {
-  $from(db: DataBuffer, value: T): T;
+  $from(db: DataBuffer, value: T): void;
   $to(db: DataBuffer): T;
 };
 
@@ -58,6 +58,7 @@ export type TProtoValue<T extends TProtoParam> = (
 
 export class Proto<T extends TProtoParam> {
   #param: T;
+  #db = new DataBuffer();
 
   #convert(buffer: ArrayBuffer) {
     if (typeof Buffer !== 'undefined' && buffer instanceof Buffer) {
@@ -72,7 +73,12 @@ export class Proto<T extends TProtoParam> {
     this.#param = param;
   }
 
-  from(value: TProtoValue<T>, param = this.#param, db = new DataBuffer()): ArrayBuffer {
+  from(value: TProtoValue<T>, param = this.#param, db?: DataBuffer): ArrayBuffer {
+    if (!db) {
+      db = this.#db;
+      db.cursor = 0;
+    }
+
     if (typeof param === 'object') {
       if (Array.isArray(param)) {
         db.writeuint32(value.length);
@@ -104,7 +110,12 @@ export class Proto<T extends TProtoParam> {
     return db.buffer;
   }
 
-  to(buffer: ArrayBuffer, param = this.#param, db = new DataBuffer(this.#convert(buffer))): TProtoValue<T> {
+  to(buffer: ArrayBuffer, param = this.#param, db?: DataBuffer): TProtoValue<T> {
+    if (!db) {
+      db = this.#db;
+      db.buffer = this.#convert(buffer);
+    }
+
     if (typeof param === 'object') {
       if (Array.isArray(param)) {
         const length = db.readuint32();

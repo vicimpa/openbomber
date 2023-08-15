@@ -1,22 +1,26 @@
+const mem = new ArrayBuffer(1024 * 1024);
+const dv = new DataView(mem);
+const ua = new Uint8Array(mem);
+const enc = new TextEncoder();
+const dec = new TextDecoder();
+
 export class DataBuffer {
   #cursor = 0;
-  #buffer!: ArrayBuffer;
-  #dataView!: DataView;
-
-  #encoder = new TextEncoder();
-  #decoder = new TextDecoder();
+  #end = 0;
 
   get byteLength() {
-    return this.#buffer.byteLength;
+    return this.#end + 1;
   }
 
   get buffer() {
-    return this.#buffer;
+    return mem.slice(0, this.#end);
   }
 
   set buffer(v) {
-    this.#buffer = v;
-    this.#dataView = new DataView(this.#buffer);
+    const cua = new Uint8Array(v);
+    this.#cursor = 0;
+    this.#end = v.byteLength - 1;
+    ua.set(cua, 0);
   }
 
   get cursor() {
@@ -25,22 +29,18 @@ export class DataBuffer {
 
   set cursor(v) {
     this.#cursor = v;
-    if (v > this.buffer.byteLength - 1) {
-      const newBytes = new Uint8Array(v);
-      newBytes.set(new Uint8Array(this.#buffer), 0);
-      this.buffer = newBytes.buffer;
-    }
-  }
-
-  get dv() {
-    return this.#dataView;
+    if (v > this.#end)
+      this.#end = v;
   }
 
   constructor(data: number | ArrayBuffer = 0) {
     if (typeof data === 'number')
-      data = new ArrayBuffer(data);
+      this.#end = -1;
 
-    this.buffer = data;
+    if (data instanceof ArrayBuffer)
+      this.buffer = data;
+
+    ua.fill(0);
   }
 
   cm(cursor?: number, move?: number) {
@@ -69,57 +69,57 @@ export class DataBuffer {
   // Read 8 bit
   readint8(c?: number, m = 1) {
     const cursor = this.cm(c, m);
-    return this.dv.getInt8(cursor);
+    return dv.getInt8(cursor);
   }
   readuint8(c?: number, m = 1) {
     const cursor = this.cm(c, m);
-    return this.dv.getUint8(cursor);
+    return dv.getUint8(cursor);
   }
 
   // Read 16 bit
   readint16(c?: number, m = 2) {
     const cursor = this.cm(c, m);
-    return this.dv.getInt16(cursor);
+    return dv.getInt16(cursor);
   }
   readuint16(c?: number, m = 2) {
     const cursor = this.cm(c, m);
-    return this.dv.getUint16(cursor);
+    return dv.getUint16(cursor);
   }
 
   // Read 32 bit
   readint32(c?: number, m = 4) {
     const cursor = this.cm(c, m);
-    return this.dv.getInt32(cursor);
+    return dv.getInt32(cursor);
   }
   readuint32(c?: number, m = 4) {
     const cursor = this.cm(c, m);
-    return this.dv.getUint32(cursor);
+    return dv.getUint32(cursor);
   }
 
   // Read float
   readfloat32(c?: number, m = 4) {
     const cursor = this.cm(c, m);
-    return this.dv.getFloat32(cursor);
+    return dv.getFloat32(cursor);
   }
   readfloat64(c?: number, m = 8) {
     const cursor = this.cm(c, m);
-    return this.dv.getFloat64(cursor);
+    return dv.getFloat64(cursor);
   }
 
   // Read bigint
   readbigint64(c?: number, m = 8) {
     const cursor = this.cm(c, m);
-    return this.dv.getBigInt64(cursor);
+    return dv.getBigInt64(cursor);
   }
   readbiguint64(c?: number, m = 8) {
     const cursor = this.cm(c, m);
-    return this.dv.getBigUint64(cursor);
+    return dv.getBigUint64(cursor);
   }
 
   // Read string
   readstring(c?: number) {
     const size = this.readuint32(c);
-    return this.#decoder.decode(
+    return dec.decode(
       this.read(undefined, size)
     );
   }
@@ -148,56 +148,56 @@ export class DataBuffer {
   // Write 8 bit
   writeint8(value: number, c?: number, m = 1) {
     const cursor = this.cm(c, m);
-    this.dv.setInt8(cursor, value);
+    dv.setInt8(cursor, value);
   }
   writeuint8(value: number, c?: number, m = 1) {
     const cursor = this.cm(c, m);
-    this.dv.setUint8(cursor, value);
+    dv.setUint8(cursor, value);
   }
 
   // Write 16 bit
   writeint16(value: number, c?: number, m = 2) {
     const cursor = this.cm(c, m);
-    this.dv.setInt16(cursor, value);
+    dv.setInt16(cursor, value);
   }
   writeuint16(value: number, c?: number, m = 2) {
     const cursor = this.cm(c, m);
-    this.dv.setUint16(cursor, value);
+    dv.setUint16(cursor, value);
   }
 
   // Write 32 bit
   writeint32(value: number, c?: number, m = 4) {
     const cursor = this.cm(c, m);
-    this.dv.setInt32(cursor, value);
+    dv.setInt32(cursor, value);
   }
   writeuint32(value: number, c?: number, m = 4) {
     const cursor = this.cm(c, m);
-    this.dv.setUint32(cursor, value);
+    dv.setUint32(cursor, value);
   }
 
   // Write Float
   writefloat32(value: number, c?: number, m = 4) {
     const cursor = this.cm(c, m);
-    this.dv.setFloat32(cursor, value);
+    dv.setFloat32(cursor, value);
   }
   writefloat64(value: number, c?: number, m = 8) {
     const cursor = this.cm(c, m);
-    this.dv.setFloat64(cursor, value);
+    dv.setFloat64(cursor, value);
   }
 
   // Write Bigint
   writebigint64(value: bigint, c?: number, m = 8) {
     const cursor = this.cm(c, m);
-    this.dv.setBigInt64(cursor, value);
+    dv.setBigInt64(cursor, value);
   }
   writebiguint64(value: bigint, c?: number, m = 8) {
     const cursor = this.cm(c, m);
-    this.dv.setBigUint64(cursor, value);
+    dv.setBigUint64(cursor, value);
   }
 
   // Write string
   writestring(value: string, c?: number) {
-    const buffer = this.#encoder.encode(value);
+    const buffer = enc.encode(value);
     this.writeuint32(buffer.length, c);
     this.write(buffer);
   }

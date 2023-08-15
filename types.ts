@@ -28,7 +28,7 @@ export type TPlayer = {
   updateExplodes(explodes: Explode['info'][]): void;
   updateAchivments(achivments: Achivment['info'][]): void;
   updateLocalInfo(localInfo: Player['info']): void;
-  updatePlayerPositions(positions: Player['posInfo'][]): void;
+  updatePlayerPositions(positions: ArrayBuffer): void;
   updateGameInfo(info: Game['info']): void;
   updateWaitForRestart(count: number): void;
   updateEffects(effects: Effect['info'][]): void;

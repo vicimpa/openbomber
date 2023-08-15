@@ -1,5 +1,16 @@
 import { Proto } from "./core/Proto";
 
+import type { TCustomType } from "./core/Proto";
+
+const POSITION: TCustomType<number> = {
+  $from(db, value) {
+    db.writeint16(value * 1000);
+  },
+  $to(db) {
+    return db.readint16() / 1000;
+  }
+};
+
 export const PlayerPositionsProto = new Proto([{
   id: 'uint16',
   x: 'float32',
@@ -29,8 +40,8 @@ export const PlayerInfosProto = new Proto([{
 }]);
 
 export const PlayerSetPositionProto = new Proto({
-  x: 'float32',
-  y: 'float32',
+  x: POSITION,
+  y: POSITION,
   dir: 'uint8',
   animate: 'uint8'
 });

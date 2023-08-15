@@ -8,6 +8,7 @@ import { pick } from "../../core/pick";
 import { point } from "../../core/point";
 import { forwardApi, useApi } from "../../core/socketApi";
 import { Vec2 } from "../../core/Vec2";
+import { PlayerPositionsProto } from "../../proto";
 import { EAnimate, EDir, EEffect, ESounds } from "../../types";
 import { IS_DEV } from "../env";
 import { Bomb } from "./Bomb";
@@ -433,7 +434,9 @@ export class Player extends Entity {
       'positions',
       map(players, e => e.posInfo, (e, d) => e !== this && e.inGame && !e.isDeath),
       (positions) => {
-        this.api.updatePlayerPositions(positions);
+        this.api.updatePlayerPositions(
+          PlayerPositionsProto.from(positions)
+        );
       }
     );
   }

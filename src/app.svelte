@@ -26,6 +26,7 @@
   import Effects from "components/Effects.svelte";
   import Button from "components/Button.svelte";
   import Link from "components/Link.svelte";
+  import { PlayerPositionsProto } from "@/proto";
 
   const keys = makeController({
     bomb: ["Space", "Enter"],
@@ -134,7 +135,7 @@
       },
       updatePlayerPositions(newPositions) {
         if (!gamemap) return;
-        gamemap.positions = newPositions;
+        gamemap.positions = PlayerPositionsProto.to(newPositions);
       },
       updateExplodes(newExplodes) {
         if (!gamemap) return;
