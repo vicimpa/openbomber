@@ -196,7 +196,9 @@
 <div class="ui">
   <div class="side">
     <div class="item">
-      Имя:
+      {#if info}
+        <span>Ping: {info.ping}ms</span>
+      {/if}
       <EditName bind:name>
         <Button on:click={() => api.randomColor()}>Аватар</Button>
       </EditName>
@@ -382,6 +384,7 @@
       padding: 10px
       background-color: rgba(0,0,0,0.3)
       justify-content: center
+      align-items: center
       gap: 20px
 
     .content
