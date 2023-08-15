@@ -421,7 +421,7 @@ export class Player extends Entity {
     effectObject(
       this,
       'players',
-      map(players, e => e.info, (e, d) => d.inGame),
+      map(players, e => e.info, (e, d) => e !== this && e.inGame),
       players => {
         this.api.updatePlayers(players);
       }
@@ -430,7 +430,7 @@ export class Player extends Entity {
     effectObject(
       this,
       'positions',
-      map(players, e => e.posInfo, (e, d) => e !== this && e.inGame && !e.isDeath && d.id !== -1),
+      map(players, e => e.posInfo, (e, d) => e !== this && e.inGame && !e.isDeath),
       (positions) => {
         this.api.updatePlayerPositions(positions);
       }
