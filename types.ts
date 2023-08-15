@@ -1,10 +1,10 @@
 import { point } from "./core/point";
 
+import type { Bomb } from "./server/class/Bomb";
+import type { Explode } from "./server/class/Explode";
 import type { Game } from "./server/class/Game";
 import type { Player } from "./server/class/Player";
-import type { Bomb } from "./server/class/Bomb";
 import type { Achivment } from "./server/class/Achivment";
-import type { Explode } from "./server/class/Explode";
 import type { Effect } from "./server/class/Effect";
 
 export type TChatInfo = {
@@ -23,12 +23,12 @@ export enum EMapItem {
 export type TPlayer = {
   setStartPosition(x: number, y: number): void;
   updateMap(arrayBuffer: ArrayBuffer): void;
-  updateBombs(buffer: ArrayBuffer): void;
-  updatePlayers(buffer: ArrayBuffer): void;
-  updateExposes(buffer: ArrayBuffer): void;
+  updateBombs(bombs: Bomb['info'][]): void;
+  updatePlayers(players: Player['info'][]): void;
+  updateExplodes(explodes: Explode['info'][]): void;
   updateAchivments(achivments: Achivment['info'][]): void;
   updateLocalInfo(localInfo: Player['info']): void;
-  updatePlayerPositions(positions: ArrayBuffer): void;
+  updatePlayerPositions(positions: Player['posInfo'][]): void;
   updateGameInfo(info: Game['info']): void;
   updateWaitForRestart(count: number): void;
   updateEffects(effects: Effect['info'][]): void;
@@ -56,7 +56,7 @@ export enum ESounds {
 }
 
 export type TServer = {
-  setPosition(buffer: ArrayBuffer): void;
+  setPosition(x: number, y: number, dir: EDir, animate: EAnimate): void;
   setBomb(): void;
   setName(name: string): void;
   toGame(): void;

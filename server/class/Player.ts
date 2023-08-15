@@ -8,13 +8,6 @@ import { pick } from "../../core/pick";
 import { point } from "../../core/point";
 import { forwardApi, useApi } from "../../core/socketApi";
 import { Vec2 } from "../../core/Vec2";
-import {
-  BombsStateProto,
-  ExplodesStateProto,
-  PlayerInfosProto,
-  PlayerPositionsProto,
-  PlayerSetPositionProto,
-} from "../../proto";
 import { EAnimate, EDir, EEffect, ESounds } from "../../types";
 import { IS_DEV } from "../env";
 import { Bomb } from "./Bomb";
@@ -147,14 +140,7 @@ export class Player extends Entity {
       this.game.playersApi.playSound(ESounds.putBomb);
     },
 
-    setPosition: (buffer) => {
-      const { x, y, dir, animate } = PlayerSetPositionProto.to(buffer) as {
-        x: number;
-        y: number;
-        dir: EDir;
-        animate: EAnimate;
-      };
-
+    setPosition: (x, y, dir, animate) => {
       if (this.isDeath && !this.inGame) return;
       if (Math.sqrt((this.x - x) ** 2 + (this.y - y) ** 2) > 1) {
         this.api.setStartPosition(this.x, this.y);
@@ -398,9 +384,7 @@ export class Player extends Entity {
       'bombs',
       map(bombs, e => e.info),
       bombs => {
-        this.api.updateBombs(
-          BombsStateProto.from(bombs)
-        );
+        this.api.updateBombs(bombs);
       }
     );
 
@@ -409,9 +393,7 @@ export class Player extends Entity {
       'explodes',
       map(explodes, e => e.info),
       explodes => {
-        this.api.updateExposes(
-          ExplodesStateProto.from(explodes)
-        );
+        this.api.updateExplodes(explodes);
       }
     );
 
@@ -429,9 +411,7 @@ export class Player extends Entity {
       'players',
       map(players, e => e.info, (e, d) => e !== this && d.inGame),
       players => {
-        this.api.updatePlayers(
-          PlayerInfosProto.from(players)
-        );
+        this.api.updatePlayers(players);
       }
     );
 
@@ -440,9 +420,7 @@ export class Player extends Entity {
       'positions',
       map(players, e => e.posInfo, (e, d) => e !== this && d.id !== -1),
       (positions) => {
-        this.api.updatePlayerPositions(
-          PlayerPositionsProto.from(positions)
-        );
+        this.api.updatePlayerPositions(positions);
       }
     );
 
