@@ -1,7 +1,7 @@
 import { toCol } from "./toCol";
 
-const format = /(\w)\1*/g;
-const parse = /(\d+)\s*(\w?)/g;
+const FORMAT_RE = /(\w)\1*/g;
+const PARSE_RE = /(\d+)\s*(\w?)/g;
 
 export class FDate extends Date {
   get h() { return this.getHours(); }
@@ -30,7 +30,7 @@ export class FDate extends Date {
     if (!(date instanceof this))
       date = new this(date);
 
-    return format.replace(format, (source) => {
+    return format.replace(FORMAT_RE, (source) => {
       const d: FDate = date as any;
       const [key] = source;
       if (key in d)
@@ -43,7 +43,7 @@ export class FDate extends Date {
   static from(string: string) {
     const date = new this(0);
 
-    string.replace(parse, (_, num, key) => {
+    string.replace(PARSE_RE, (_, num, key) => {
       if (key in date) {
         (date as any)[key] += +num;
       }
