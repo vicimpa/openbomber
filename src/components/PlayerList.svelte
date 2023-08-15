@@ -5,11 +5,18 @@
 
   export let players: TypePlayer["info"][] = [];
   export let current: TypePlayer["info"] | null = null;
+
+  $: sortedPlayers = players.sort(
+    (a, b) => a.wins * 5 + a.kills - b.wins * 5 + b.kills
+  );
+
+  $: leavePlayers = sortedPlayers.filter((e) => !e.isDeath);
+  $: deathPlayers = sortedPlayers.filter((e) => e.isDeath);
 </script>
 
 Список игроков:
 <ul>
-  {#each players as player}
+  {#each [...leavePlayers, ...deathPlayers] as player}
     <li data-death={player.isDeath} data-me={player === current}>
       <div class="player">
         <Player color={player.color} isDeath={false} />
