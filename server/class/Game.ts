@@ -69,6 +69,14 @@ export class Game {
     }
   }) as any;
 
+  infoCache: Game['info'] = this.info;
+  mapCache: ArrayBuffer = new ArrayBuffer(0);
+  bombsCache: Bomb['info'][] = [];
+  explodesCahce: Explode['info'][] = [];
+  achivmentsCache: Achivment['info'][] = [];
+  effectsCache: Effect['info'][] = [];
+  effectsTypeCache: Effect['infoType'][] = [];
+
   getFreePosition() {
     const free = Array.from({ length: this.startPositions.length }, (_, i) => i)
       .filter(e => !this.usedPositions.has(e));
@@ -219,6 +227,18 @@ export class Game {
 
       for (const player of this.players) {
         player.update();
+      }
+
+      this.mapCache = this.map.info;
+      this.infoCache = this.info;
+      this.bombsCache = map(this.bombs, e => e.info);
+      this.achivmentsCache = map(this.achivments, e => e.info);
+      this.explodesCahce = map(this.explodes, e => e.info);
+      this.effectsCache = map(this.effects, e => e.info);
+      this.effectsTypeCache = map(this.effects, e => e.infoType);
+
+      for (const player of this.players) {
+        player.sendInfo();
       }
 
       effectObject(

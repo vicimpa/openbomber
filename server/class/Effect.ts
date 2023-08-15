@@ -24,4 +24,13 @@ export class Effect extends Entity {
       ]
     );
   }
+
+  get infoType() {
+    return pick(
+      this,
+      [
+        'type'
+      ]
+    );
+  }
 }

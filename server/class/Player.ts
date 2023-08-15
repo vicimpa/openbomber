@@ -254,14 +254,8 @@ export class Player extends Entity {
 
   update() {
     const {
-      bombs,
       explodes,
-      achivments,
-      players,
-      info,
-      map: {
-        info: gameMap
-      }
+      achivments
     } = this.game;
     if (!this.isDeath && this.inGame) {
       for (const effect of PlayerEffect.effects(this))
@@ -322,10 +316,28 @@ export class Player extends Entity {
       }
     }
 
+    if (this.lastTestPing + 3000 < Date.now()) {
+      this.lastTestPing = Date.now();
+      this.api.ping();
+    }
+  }
+
+  sendInfo() {
+    const {
+      players,
+      infoCache,
+      mapCache,
+      bombsCache,
+      achivmentsCache,
+      effectsCache,
+      effectsTypeCache,
+      explodesCahce
+    } = this.game;
+
     effectObject(
       this,
       'gameInfo',
-      info,
+      infoCache,
       info => {
         this.api.updateGameInfo(info);
       }
@@ -364,8 +376,8 @@ export class Player extends Entity {
     effectObject(
       this,
       'map',
-      gameMap,
-      () => {
+      mapCache,
+      (gameMap) => {
         this.api.updateMap(gameMap);
       }
     );
@@ -373,16 +385,16 @@ export class Player extends Entity {
     effectObject(
       this,
       'effects',
-      map(this.game.effects, ({ type }) => (type)),
+      effectsTypeCache,
       () => {
-        this.api.updateEffects(map(this.game.effects, e => e.info));
+        this.api.updateEffects(effectsCache);
       }
     );
 
     effectObject(
       this,
       'bombs',
-      map(bombs, e => e.info),
+      bombsCache,
       bombs => {
         this.api.updateBombs(bombs);
       }
@@ -391,7 +403,7 @@ export class Player extends Entity {
     effectObject(
       this,
       'explodes',
-      map(explodes, e => e.info),
+      explodesCahce,
       explodes => {
         this.api.updateExplodes(explodes);
       }
@@ -400,7 +412,7 @@ export class Player extends Entity {
     effectObject(
       this,
       'achivments',
-      map(achivments, e => e.info),
+      achivmentsCache,
       achivments => {
         this.api.updateAchivments(achivments);
       }
@@ -409,7 +421,7 @@ export class Player extends Entity {
     effectObject(
       this,
       'players',
-      map(players, e => e.info, (e, d) => e !== this && d.inGame),
+      map(players, e => e.info, (e, d) => d.inGame),
       players => {
         this.api.updatePlayers(players);
       }
@@ -418,15 +430,10 @@ export class Player extends Entity {
     effectObject(
       this,
       'positions',
-      map(players, e => e.posInfo, (e, d) => e !== this && d.id !== -1),
+      map(players, e => e.posInfo, (e, d) => e !== this && e.inGame && !e.isDeath && d.id !== -1),
       (positions) => {
         this.api.updatePlayerPositions(positions);
       }
     );
-
-    if (this.lastTestPing + 3000 < Date.now()) {
-      this.lastTestPing = Date.now();
-      this.api.ping();
-    }
   }
 }
