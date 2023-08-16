@@ -148,7 +148,7 @@
   onFrame((deltaTime, time) => {
     {
       const isPlayer =
-        info?.inGame && !info?.isDeath && player && restartAfter <= 0;
+        info?.inGame && !info?.isDeath && player && restartAfter < 0;
       let { offsetWidth: width, offsetHeight: height } = zoom;
       let s = isPlayer ? scale : normalScale;
       let a = isPlayer ? DIRECTIONS[player!.dir] : point(0, 0);
