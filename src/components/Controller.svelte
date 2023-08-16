@@ -109,6 +109,8 @@
         if (newMove.clone().abs().length() > 0.3) move.set(newMove);
         else move.set(0);
         updatePoint(move);
+        move.round().normalize();
+        console.log(move.toLog());
       }
     };
 
