@@ -270,6 +270,14 @@
             <Link url="https://t.me/gameopenbomber">Группа игроков в TG</Link>
           </li>
           <li>
+            <Link url="https://www.donationalerts.com/r/promise">
+              Донат на DonationAlerts
+            </Link>
+          </li>
+          <li>
+            <Link url="https://boosty.to/vic_dev">Донат на Boosty</Link>
+          </li>
+          <li>
             <Link url="/new.html">Тут я делаю новый двигло</Link>
           </li>
         </ul>
