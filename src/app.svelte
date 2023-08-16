@@ -169,10 +169,10 @@
       const append = a.clone().times(0);
       x += append.x;
       y += append.y;
+      x += 1.5;
+      y += 1.5;
       x *= 16;
       y *= 16;
-      x += 8;
-      y += 8;
 
       x -= width;
       y -= height;
