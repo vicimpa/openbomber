@@ -35,8 +35,8 @@
 
   onMount(() => {
     return ChatEvent.subscribe(({ player, message, isMe }) => {
-      messages.push({ player, message, isMe, date: new Date() });
-      messages = messages;
+      messages.unshift({ player, message, isMe, date: new Date() });
+      messages = messages.splice(0, 100);
     });
   });
 </script>
@@ -87,18 +87,17 @@
     display: flex
     flex-direction: column
     gap: 10px
-    max-width: 300px
-    height: 370px
-
+    flex-grow: 1
+    
     .list[data-hide="true"] .item
       filter: blur(10px)
 
     .list
-      overflow-y: scroll
       display: flex
       flex-grow: 1
-      flex-direction: column
-      justify-content: flex-end
+      overflow-y: scroll
+      flex-direction: column-reverse
+      height: 150px
       gap: 20px
 
       .item
@@ -106,6 +105,7 @@
         flex-direction: column
         gap: 5px
         align-items: flex-end
+        margin: 10px
         
         &[data-isme="true"]
           align-items: flex-start

@@ -12,17 +12,6 @@ const POSITION = makeCustomType<number>(
   }
 );
 
-const MAP = makeCustomType<ArrayBuffer>(
-  (db, value) => {
-    db.writeuint32(value.byteLength);
-    db.write(value);
-  },
-  (db) => {
-    const size = db.readuint32();
-    return db.read(undefined, size);
-  }
-);
-
 const DIRECTION = makeEnum(EDir);
 const ANIMATION = makeEnum(EAnimate);
 const SOUND = makeEnum(ESounds);
@@ -131,7 +120,7 @@ export const gameApi = makeWebSocketApi({
 
 export const playerApi = makeWebSocketApi({
   setStartPosition: { input: START_POSITION },
-  updateMap: { input: MAP },
+  updateMap: { input: ['int8'] },
   updateBombs: { input: [BOMB_INFO] },
   updatePlayers: { input: [PLAYER_INFO] },
   updateExplodes: { input: [EXPLODE_INFO] },

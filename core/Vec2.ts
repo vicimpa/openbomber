@@ -1,4 +1,4 @@
-import { ceil, floor, pow, rem, round } from "./math";
+import { abs, ceil, floor, pow, rem, round } from "./math";
 
 export interface IVec2 { x: number; y: number; }
 export type TVec2 = [] | [xy: number] | [x: number, y: number] | [vec: IVec2];
@@ -116,6 +116,7 @@ export class Vec2 {
   round() { return this.set(round(this.x), round(this.y)); }
   floor() { return this.set(floor(this.x), floor(this.y)); }
   ceil() { return this.set(ceil(this.x), ceil(this.y)); }
+  abs() { return this.set(abs(this.x), abs(this.y)); }
 
   plus(...args: TVec2) { return vec2(...args, this.#plus); }
   minus(...args: TVec2) { return vec2(...args, this.#minus); }

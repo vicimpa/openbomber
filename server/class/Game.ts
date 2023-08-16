@@ -60,7 +60,7 @@ export class Game {
   waitForRestart = -1;
 
   infoCache: Game['info'] = this.info;
-  mapCache: ArrayBuffer = new ArrayBuffer(0);
+  mapCache: number[] = [];
   bombsCache: Bomb['info'][] = [];
   explodesCahce: Explode['info'][] = [];
   achivmentsCache: Achivment['info'][] = [];
@@ -144,6 +144,7 @@ export class Game {
   message(message: string, sender?: Player) {
     for (const player of this.players) {
       player.newApi.playSound(ESounds.message);
+
       player.newApi.onMessage({
         message,
         sender: sender instanceof Player ? ({ name: sender.name }) : ({ name: 'server' }),
@@ -218,12 +219,12 @@ export class Game {
         player.update();
       }
 
-      this.mapCache = this.map.info;
+      this.mapCache = [...this.map];
       this.infoCache = this.info;
-      this.bombsCache = map(this.bombs, e => e.info);
-      this.achivmentsCache = map(this.achivments, e => e.info);
-      this.explodesCahce = map(this.explodes, e => e.info);
-      this.effectsCache = map(this.effects, e => e.info);
+      this.bombsCache = [...this.bombs];
+      this.achivmentsCache = [...this.achivments];
+      this.explodesCahce = [...this.explodes];
+      this.effectsCache = [...this.effects];
       this.effectsTypeCache = map(this.effects, e => e.infoType);
 
       for (const player of this.players) {

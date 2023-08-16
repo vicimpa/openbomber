@@ -8,16 +8,20 @@ import { IS_DEV } from "./env";
 export function game(server: Server) {
   const socketio = new SocketIO(server, { cors: { origin: '*' } });
 
-  const game = new Game(21, 17, {
+  const game = new Game(31, 21, {
     fillAchivments: IS_DEV ? .999 : .15,
     fillBlocks: .7
   }, [
     ...defaultStartPositions,
-    point(.5, 0),
+    point(.333, 0),
+    point(.666, 0),
+    point(1, .3),
     point(1, .5),
-    point(.5, 1),
+    point(.333, 1),
+    point(.666, 1),
     point(0, .5),
-    point(.5, .5)
+    point(.333, .5),
+    point(.666, .5)
   ]);
 
 

@@ -30,6 +30,7 @@
     bottom: calc(100% + 2px)
     font-size: 4px
     text-align: center
+    transform: scale(1.4)
     z-index: 1
 
     span

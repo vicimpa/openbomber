@@ -1,8 +1,8 @@
+import { abs } from "@/core/math";
 import { Vec2 } from "@/core/Vec2";
 import { EAnimate, EDir, EMapItem } from "@/types";
 
 import type { GameMap } from "./GameMap";
-
 export class PlayerController extends Vec2 {
   dir: EDir = EDir.BOTTOM;
   animate: EAnimate = EAnimate.IDLE;
@@ -71,10 +71,8 @@ export class PlayerController extends Vec2 {
 
     const move = this.move.clone();
 
-    if (move.y) dir = move.y < 0 ? EDir.TOP : EDir.BOTTOM;
-    if (move.x) dir = move.x < 0 ? EDir.LEFT : EDir.RIGHT;
-
-    if (move.x && move.y) speed *= .7;
+    if (abs(move.y) > .5) dir = move.y < 0 ? EDir.TOP : EDir.BOTTOM;
+    if (abs(move.x) > .5) dir = move.x < 0 ? EDir.LEFT : EDir.RIGHT;
 
     animate = !move.equal(0) ? EAnimate.RUNNING : EAnimate.IDLE;
 

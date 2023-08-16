@@ -1,3 +1,5 @@
+import { generatePerlinNoise } from "@vicimpa/perlin-noise";
+
 import { copyBuffer } from "../../core/copyBuffer";
 import { random } from "../../core/random";
 import { DIRECTIONS, EMapItem } from "../../types";
@@ -7,6 +9,7 @@ import type { TConfig } from "./Game";
 
 export class GameMap extends Uint8Array {
   achivments = new Set<number>();
+  noize: number[] = [];
 
   constructor(
     public width: number,
@@ -14,6 +17,7 @@ export class GameMap extends Uint8Array {
     public game: Game
   ) {
     super(width * height);
+    this.noize = generatePerlinNoise(width, height);
   }
 
   generate(config: TConfig) {
@@ -38,7 +42,8 @@ export class GameMap extends Uint8Array {
       if (x & 1 && y & 1) {
         this[i] = EMapItem.WALL;
       } else {
-        this[i] = Math.random() > .7 ? EMapItem.SAND : EMapItem.CLEAR;
+        const n = this.noize[i];
+        this[i] = n < .1 ? EMapItem.GRAS : n < .4 ? EMapItem.SAND : EMapItem.CLEAR;
         positions.add(i);
       }
     }

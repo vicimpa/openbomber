@@ -12,6 +12,8 @@ html, body, #app
 
   box-sizing: border-box
   user-select: none
+  image-rendering: pixelated
+  -webkit-mask-image: none
 
 input
   user-select: contain
@@ -30,3 +32,14 @@ button
   cursor: pointer
   user-select: none
   outline: none
+
+::-webkit-scrollbar
+  width: 2px /* width of the entire scrollbar */
+
+::-webkit-scrollbar-track
+  background: #333 /* color of the tracking area */
+
+::-webkit-scrollbar-thumb
+  background-color: blue /* color of the scroll thumb */
+  border-radius: 20px /* roundness of the scroll thumb */
+  border: 2px solid #555 /* creates padding around scroll thumb */

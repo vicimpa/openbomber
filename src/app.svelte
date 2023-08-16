@@ -25,12 +25,14 @@
   import Button from "components/Button.svelte";
   import Link from "components/Link.svelte";
   import { gameApi, playerApi } from "@/api";
-
-  const keys = makeController({
-    bomb: ["Space", "Enter"],
-  });
+  import Controller from "components/Controller.svelte";
+  import { Vec2 } from "@/core/Vec2";
+  import { DIRECTIONS } from "@/types";
+  import { point } from "@/core/point";
+  import Map from "components/Map.svelte";
 
   const newApi = gameApi.use(socket);
+  let move = new Vec2();
 
   let gamemap: GameMap | null = null;
   let player: PlayerController | null = null;
@@ -40,34 +42,16 @@
   let zoom: HTMLDivElement;
   let name = localStorage.getItem("name") || "";
   let restartAfter = -1;
-
-  const controller = makeVectorController(
-    {
-      keys: ["KeyW", "ArrowUp"],
-      plus: [0, -1],
-    },
-    {
-      keys: ["KeyA", "ArrowLeft"],
-      plus: [-1, 0],
-    },
-    {
-      keys: ["KeyD", "ArrowRight"],
-      plus: [1, 0],
-    },
-    {
-      keys: ["KeyS", "ArrowDown"],
-      plus: [0, 1],
-    }
-  );
+  let offset = 40;
+  let scale = 0;
+  let normalScale = 0;
 
   const resize = () => {
-    const offset = 60;
-    const min = Math.min(
+    scale = Math.min(container.offsetWidth, container.offsetHeight) / (16 * 10);
+    normalScale = Math.min(
       (container.offsetWidth - offset) / zoom.offsetWidth,
       (container.offsetHeight - offset) / zoom.offsetHeight
     );
-
-    zoom.style.transform = `scale(${min})`;
   };
 
   const observer = new ResizeObserver(resize);
@@ -157,7 +141,41 @@
     };
   });
 
+  const keys = makeController({
+    map: ["KeyE"],
+  });
+
   onFrame((deltaTime, time) => {
+    {
+      const isPlayer = info?.inGame && !info?.isDeath && player;
+      let { offsetWidth: width, offsetHeight: height } = zoom;
+      let s = isPlayer ? scale : normalScale;
+      let a = isPlayer ? DIRECTIONS[player!.dir] : point(0, 0);
+
+      width *= 0.5;
+      height *= 0.5;
+      let { x, y } = isPlayer
+        ? player!
+        : {
+            x: (width / 16) | 0,
+            y: (height / 16) | 0,
+          };
+      const append = a.clone().times(0);
+      x += append.x;
+      y += append.y;
+      x *= 16;
+      y *= 16;
+      x += 8;
+      y += 8;
+
+      x -= width;
+      y -= height;
+
+      if (zoom) {
+        zoom.style.transform = `scale(${s}) translateX(${-x}px) translateY(${-y}px)`;
+      }
+    }
+
     if (!info) return;
     if (name !== info.name) {
       name = name.slice(0, NICK_LENGTH);
@@ -166,13 +184,12 @@
       localStorage.setItem("name", name);
     }
 
-    const { bomb } = keys;
     const { isDeath } = info;
 
     if (!info.inGame) return;
 
     if (!player || !gamemap) return;
-    player.move.set(controller());
+    player.move.set(move);
     if (restartAfter >= 0) return;
     if (isRestarting) return;
 
@@ -181,7 +198,6 @@
 
     player = player;
     gamemap.update();
-    bomb.isSingle() && newApi.setBomb();
     let { x, y, dir, animate } = player;
     x = ((x * 16) | 0) / 16;
     y = ((y * 16) | 0) / 16;
@@ -193,41 +209,43 @@
 </script>
 
 <div class="ui">
-  <div class="side">
-    <div class="item">
-      {#if info}
-        <span>Ping: {info.ping}ms</span>
-      {/if}
-      <EditName bind:name>
-        <Button on:click={() => newApi.randomColor()}>Аватар</Button>
-      </EditName>
-    </div>
-    <div class="item">
-      Подключение
-
-      {#if gameInfo}
-        {#if !info?.inGame}
-          <Button disabled={!info?.canJoin} on:click={() => newApi.toGame()}>
-            Подключиться
-          </Button>
-        {:else}
-          <Button on:click={() => newApi.toLeave()}>Отключится</Button>
-        {/if}
-      {/if}
-    </div>
-    {#if gamemap && info}
+  <div class="side left">
+    <div class="scroll">
       <div class="item">
-        <PlayerList
-          current={info}
-          players={[...(info.inGame ? [info] : []), ...gamemap.players]}
-        />
+        {#if info}
+          <span>Ping: {info.ping}ms</span>
+        {/if}
+        <EditName bind:name>
+          <Button on:click={() => newApi.randomColor()}>Аватар</Button>
+        </EditName>
       </div>
-    {/if}
-    <div class="item">
-      Наблюдателей: {gameInfo?.spectratorsCount ?? 0}
-    </div>
-    <div class="item">
-      <Volume />
+      <div class="item">
+        Подключение
+
+        {#if gameInfo}
+          {#if !info?.inGame}
+            <Button disabled={!info?.canJoin} on:click={() => newApi.toGame()}>
+              Подключиться
+            </Button>
+          {:else}
+            <Button on:click={() => newApi.toLeave()}>Отключится</Button>
+          {/if}
+        {/if}
+      </div>
+      {#if gamemap && info}
+        <div class="item">
+          <PlayerList
+            current={info}
+            players={[...(info.inGame ? [info] : []), ...gamemap.players]}
+          />
+        </div>
+      {/if}
+      <div class="item">
+        Наблюдателей: {gameInfo?.spectratorsCount ?? 0}
+      </div>
+      <div class="item">
+        <Volume />
+      </div>
     </div>
   </div>
   <div class="container">
@@ -288,38 +306,47 @@
           {/if}
         </Game>
       </div>
-    </div>
-  </div>
-
-  <div class="side">
-    <div class="item">
-      <Chat
-        on:message={({ detail }) => {
-          newApi.sendMessage(detail);
+      <Controller
+        bind:move
+        inGame={info?.inGame ?? false}
+        on:bomb={() => {
+          newApi.setBomb();
         }}
       />
     </div>
-    <div class="item">
-      <p>Ссылки:</p>
-      <ul>
-        <li>
-          <Link url="https://github.com/vicimpa/openbomber/">
-            Репозиторий GitHub
-          </Link>
-        </li>
-        <li>
-          <Link url="https://discord.gg/gwh58DTe">Наш сервер в Discord</Link>
-        </li>
-        <li>
-          <Link url="https://vk.com/openbomber">Группа игроков в VK</Link>
-        </li>
-        <li>
-          <Link url="https://t.me/gameopenbomber">Группа игроков в TG</Link>
-        </li>
-        <li>
-          <Link url="/new.html">Тут я делаю новый двигло</Link>
-        </li>
-      </ul>
+  </div>
+
+  <div class="side right">
+    <div class="scroll">
+      <div class="item">
+        <Chat
+          on:message={({ detail }) => {
+            newApi.sendMessage(detail);
+          }}
+        />
+      </div>
+      <div class="item">
+        <p>Ссылки:</p>
+        <ul>
+          <li>
+            <Link url="https://github.com/vicimpa/openbomber/">
+              Репозиторий GitHub
+            </Link>
+          </li>
+          <li>
+            <Link url="https://discord.gg/gwh58DTe">Наш сервер в Discord</Link>
+          </li>
+          <li>
+            <Link url="https://vk.com/openbomber">Группа игроков в VK</Link>
+          </li>
+          <li>
+            <Link url="https://t.me/gameopenbomber">Группа игроков в TG</Link>
+          </li>
+          <li>
+            <Link url="/new.html">Тут я делаю новый двигло</Link>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 </div>
@@ -336,16 +363,63 @@
     height: 100%
     display: flex
 
+    $side: 350px
+
     .side
-      background-color: rgba(0,0,0,0.3)
+      background-color: rgba(0,0,0,0.7)
       box-shadow: 0 0 10px #000
       padding: 0px
-      width: 300px
+      width: $side
       display: flex
       flex-direction: column
       gap: 10px
-      overflow-y: auto
       font-size: 12px
+      position: absolute
+      top: 0
+      bottom: 0
+      z-index: 2
+      transition: transform 0.3s
+      backdrop-filter: blur(10px)
+
+      .scroll
+        display: flex
+        flex-direction: column
+        flex-grow: 1
+        overflow-y: scroll
+
+      &:after
+        display: block
+        position: absolute
+        width: 30px
+        height: 100px
+        top: 0
+        bottom: 0
+        margin: auto
+        display: flex
+        align-items: center
+        justify-content: center
+        background-color: rgba(100,100,100, 0.5)
+        border-radius: 100px
+        font-size: 20px
+
+      &.left
+        left: 0
+        transform: translateX(-$side + 15px)
+
+        &:after
+          content: '🕹️'
+          right: -15px
+
+      &.right
+        right: 0
+        transform: translateX($side - 15px)
+
+        &:after
+          content: '💬'
+          left: -15px 
+
+      &:hover
+        transform: translateX(0)
 
       .item
         background-color: rgba(0,0,0,0.3)
@@ -369,6 +443,7 @@
         flex-direction: column
         align-items: center
         gap: 20px
+        z-index: 2
 
       .restart-back
         position: absolute
@@ -380,11 +455,18 @@
 
     .header
       display: flex
-      padding: 10px
-      background-color: rgba(0,0,0,0.3)
+      padding: 0px 10px
+      background-color: rgba(0,0,0,0.5)
       justify-content: center
       align-items: center
       gap: 20px
+      position: absolute
+      top: 0
+      left: 0
+      right: 0
+      z-index: 1
+      backdrop-filter: blur(5px)
+      
 
     .content
       flex-grow: 1
@@ -392,10 +474,12 @@
       justify-content: center
       align-items: center
       overflow: hidden
-      padding: 20px
       position: relative
+      padding: 30px
+      padding-bottom: 0px
 
     .zoom
       box-shadow: 5px 5px 10px #000
       position: absolute
+      transition: transform 0.3s linear
 </style>
