@@ -134,14 +134,14 @@
   });
 </script>
 
-{#if touch && inGame}
-  <div bind:this={ref} class="touch">
+<div bind:this={ref} class="touch">
+  {#if touch && inGame}
     <div bind:this={axis} class="axis" data-show={startId !== null}>
       <div bind:this={point} class="point" />
     </div>
     <div bind:this={bomb} class="bomb">💣</div>
-  </div>
-{/if}
+  {/if}
+</div>
 
 <style lang="sass">
   .touch
