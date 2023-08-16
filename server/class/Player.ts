@@ -152,10 +152,7 @@ export class Player extends Entity {
         return;
 
       bombs.add(newBomb);
-      this.newApi.playSound(ESounds.putBomb);
-
       this.game.players.forEach(player => {
-        if (this === player) return;
         player.newApi.playSoundPosition({
           sound: ESounds.putBomb,
           position: this
