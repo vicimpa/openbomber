@@ -85,6 +85,11 @@
       playSound(sound) {
         sounds[sound]?.play();
       },
+      playSoundPosition({ sound, position }) {
+        if (!player) return sounds[sound]?.play();
+        const delta = player.clone().minus(position);
+        sounds[sound].play(delta);
+      },
       updateLocalInfo(localInfo) {
         info = localInfo;
 
@@ -247,6 +252,28 @@
       <div class="item">
         <Volume />
       </div>
+      <div class="item">
+        <p>Ссылки:</p>
+        <ul>
+          <li>
+            <Link url="https://github.com/vicimpa/openbomber/">
+              Репозиторий GitHub
+            </Link>
+          </li>
+          <li>
+            <Link url="https://discord.gg/gwh58DTe">Наш сервер в Discord</Link>
+          </li>
+          <li>
+            <Link url="https://vk.com/openbomber">Группа игроков в VK</Link>
+          </li>
+          <li>
+            <Link url="https://t.me/gameopenbomber">Группа игроков в TG</Link>
+          </li>
+          <li>
+            <Link url="/new.html">Тут я делаю новый двигло</Link>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
   <div class="container">
@@ -326,28 +353,6 @@
           }}
         />
       </div>
-      <div class="item">
-        <p>Ссылки:</p>
-        <ul>
-          <li>
-            <Link url="https://github.com/vicimpa/openbomber/">
-              Репозиторий GitHub
-            </Link>
-          </li>
-          <li>
-            <Link url="https://discord.gg/gwh58DTe">Наш сервер в Discord</Link>
-          </li>
-          <li>
-            <Link url="https://vk.com/openbomber">Группа игроков в VK</Link>
-          </li>
-          <li>
-            <Link url="https://t.me/gameopenbomber">Группа игроков в TG</Link>
-          </li>
-          <li>
-            <Link url="/new.html">Тут я делаю новый двигло</Link>
-          </li>
-        </ul>
-      </div>
     </div>
   </div>
 </div>
@@ -381,6 +386,7 @@
       z-index: 2
       transition: transform 0.3s
       backdrop-filter: blur(10px)
+      z-index: 2
 
       .scroll
         display: flex

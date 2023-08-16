@@ -66,7 +66,6 @@
 
     ref.ontouchstart = (e) => {
       const { touches } = e;
-      e.preventDefault();
       for (const { clientX, clientY, identifier, target } of touches) {
         if (bomb === target) {
           dispatch("bomb");

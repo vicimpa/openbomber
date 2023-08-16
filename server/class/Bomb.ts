@@ -54,13 +54,19 @@ export class Bomb extends Entity {
           new Effect(this.game, this.x, this.y, EEffect.FAKE_EXPLODE)
         );
         this.player.game.players.forEach(player => {
-          player.newApi.playSound(ESounds.explodeFail);
+          player.newApi.playSoundPosition({
+            sound: ESounds.explodeFail,
+            position: this
+          });
         });
         return;
       }
 
       this.player.game.players.forEach(player => {
-        player.newApi.playSound(ESounds.explode);
+        player.newApi.playSoundPosition({
+          sound: ESounds.explode,
+          position: this
+        });
       });
 
       Explode.run(this);

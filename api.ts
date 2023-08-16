@@ -118,6 +118,14 @@ export const gameApi = makeWebSocketApi({
   ping: {},
 });
 
+export const POSITION_SOUND = new Proto({
+  position: {
+    x: POSITION,
+    y: POSITION
+  },
+  sound: SOUND
+});
+
 export const playerApi = makeWebSocketApi({
   setStartPosition: { input: START_POSITION },
   updateMap: { input: ['int8'] },
@@ -131,6 +139,7 @@ export const playerApi = makeWebSocketApi({
   updateWaitForRestart: { input: 'int8' },
   updateEffects: { input: [EFFECT_INFO] },
   playSound: { input: SOUND },
+  playSoundPosition: { input: POSITION_SOUND },
   onMessage: { input: MESSAGE_INFO },
   ping: {},
 });

@@ -1,7 +1,10 @@
+import { toLimit } from "@/core/toLimit";
 import { ESounds } from "@/types";
 
+import type { Vec2 } from "@/core/Vec2";
 const audioCtx = new (AudioContext || (window as any)['webkitAudioContext']) as AudioContext;
 export const gainNode = audioCtx.createGain();
+
 
 let connected = false;
 
@@ -38,14 +41,36 @@ export class Sound {
     xhr.send();
   }
 
-  play() {
+  play(vec?: Vec2) {
     if (!connected) return;
+
     const src = audioCtx.createBufferSource();
+    const gane = audioCtx.createGain();
+
     src.buffer = this.#buffer;
-    src.connect(gainNode);
+
+    if (vec) {
+      console.log(vec.toLog());
+      const panner = audioCtx.createPanner();
+      const length = vec.length();
+      vec.normalize().div(4);
+      panner.positionX.value = -vec.x;
+      panner.positionY.value = vec.y;
+      panner.refDistance = length / 10;
+      gane.gain.value = toLimit(1 - panner.refDistance / 500, 0, 1);
+      console.log(gane.gain.value);
+      panner.distanceModel = 'exponential';
+      src.connect(panner);
+      panner.connect(gane);
+    } else {
+      src.connect(gane);
+    }
+
+    gane.connect(gainNode);
+
     src.start(0);
     src.onended = () => {
-      src.disconnect(gainNode);
+      gane.disconnect(gainNode);
       src.onended = null;
     };
   }
