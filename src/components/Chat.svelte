@@ -97,7 +97,6 @@
       flex-grow: 1
       overflow-y: scroll
       flex-direction: column-reverse
-      height: 150px
       gap: 20px
 
       .item

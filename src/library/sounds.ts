@@ -45,32 +45,34 @@ export class Sound {
     if (!connected) return;
 
     const src = audioCtx.createBufferSource();
-    const gane = audioCtx.createGain();
 
     src.buffer = this.#buffer;
 
     if (vec) {
-      console.log(vec.toLog());
       const panner = audioCtx.createPanner();
       const length = vec.length();
       vec.normalize().div(4);
       panner.positionX.value = -vec.x;
       panner.positionY.value = vec.y;
-      panner.refDistance = length / 10;
-      gane.gain.value = toLimit(1 - panner.refDistance / 500, 0, 1);
-      console.log(gane.gain.value);
+      panner.positionZ.value = 0;
+      panner.orientationX.value = 0;
+      panner.orientationY.value = 0;
+      panner.orientationZ.value = 0;
+      panner.refDistance = 1;
+      panner.maxDistance = 1000;
+      panner.panningModel = 'HRTF';
       panner.distanceModel = 'exponential';
-      src.connect(panner);
-      panner.connect(gane);
-    } else {
-      src.connect(gane);
-    }
 
-    gane.connect(gainNode);
+      src.connect(panner);
+      panner.connect(gainNode);
+
+    } else {
+      src.connect(gainNode);
+    }
 
     src.start(0);
     src.onended = () => {
-      gane.disconnect(gainNode);
+      src.disconnect(gainNode);
       src.onended = null;
     };
   }
