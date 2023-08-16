@@ -203,27 +203,27 @@ export class Player extends Entity {
     }
   }
 
-  death(player?: Player) {
+  death(player: Player) {
     if (this.isDeath) return;
+    const isSuicide = player === this;
+
     this.isDeath = true;
     this.newApi.playSound(ESounds.death);
+
     this.game.effects.add(
       new Effect(this.game, this.x, this.y, EEffect.DEATH)
     );
 
-    if (player) {
-      this.deaths++;
-      this.game.kills++;
+    this.deaths++;
+    this.game.kills++;
+
+    if (isSuicide) {
+      player.kills++;
       player.newApi.playSound(ESounds.kill);
-
-      if (player !== this)
-        player.kills++;
     }
 
-    if (player) {
-      const target = player === this ? 'самоубился' : `убит ${player.name}`;
-      this.game.message(`${this.name ?? 'noname'} ${target}`);
-    }
+    const target = isSuicide ? 'самоубился' : `убит ${player.name}`;
+    this.game.message(`${this.name ?? 'noname'} ${target}`);
   }
 
   randomPosition() {
