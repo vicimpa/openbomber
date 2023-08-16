@@ -50,18 +50,21 @@ export class Sound {
 
     if (vec) {
       const panner = audioCtx.createPanner();
-      const length = vec.length();
       vec.normalize().div(4);
       panner.positionX.value = -vec.x;
       panner.positionY.value = vec.y;
       panner.positionZ.value = 0;
       panner.orientationX.value = 0;
       panner.orientationY.value = 0;
-      panner.orientationZ.value = 0;
+      panner.orientationZ.value = -1;
+      panner.coneOuterGain = 1;
+      panner.coneInnerAngle = 60;
+      panner.coneOuterAngle = 90;
+      panner.rolloffFactor = 10;
       panner.refDistance = 1;
-      panner.maxDistance = 1000;
+      panner.maxDistance = 10000;
       panner.panningModel = 'HRTF';
-      panner.distanceModel = 'exponential';
+      panner.distanceModel = 'linear';
 
       src.connect(panner);
       panner.connect(gainNode);
