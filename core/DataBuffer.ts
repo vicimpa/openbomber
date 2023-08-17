@@ -1,5 +1,3 @@
-
-
 export class DataBuffer {
   #cursor = 0;
   #end = 0;
@@ -30,15 +28,15 @@ export class DataBuffer {
   }
 
   constructor(data: number | ArrayBuffer = 0) {
-    if (typeof data === 'number')
-      this.#end = -1;
+    if (typeof data === 'number') {
+      this.cursor = 0;
+      this.#end = data - 1;
+    }
 
     if (data instanceof ArrayBuffer) {
       this.write(data);
       this.cursor = 0;
     }
-
-    this.ua.fill(0);
   }
 
   reset() {

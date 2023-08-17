@@ -107,6 +107,14 @@ const BOMB_INFO = new Proto({
   isCrazy: 'boolean',
 });
 
+const POSITION_SOUND = new Proto({
+  position: {
+    x: POSITION,
+    y: POSITION
+  },
+  sound: SOUND
+});
+
 export const gameApi = makeWebSocketApi({
   setPosition: { input: INPUT_POSITION },
   setBomb: {},
@@ -116,14 +124,6 @@ export const gameApi = makeWebSocketApi({
   sendMessage: { input: 'string' },
   randomColor: {},
   ping: {},
-});
-
-export const POSITION_SOUND = new Proto({
-  position: {
-    x: POSITION,
-    y: POSITION
-  },
-  sound: SOUND
 });
 
 export const playerApi = makeWebSocketApi({

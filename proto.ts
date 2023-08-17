@@ -1,7 +1,5 @@
 import { makeCustomType, Proto } from "./core/Proto";
 
-import type { TCustomType } from "./core/Proto";
-
 const POSITION = makeCustomType<number>(
   (db, value) => {
     db.writeint16(value * 1000);

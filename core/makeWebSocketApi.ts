@@ -12,7 +12,6 @@ export type TApiParam = {
   };
 };
 
-
 export type TApiFunctionInput<T extends TApiParam[`${string}`]> = (
   T['input'] extends TProtoParam ? [input: TProtoValue<T['input']>] : []
 );

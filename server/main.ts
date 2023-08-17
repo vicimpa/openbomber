@@ -34,12 +34,15 @@ export function game(server: Server) {
     const nums = makeData();
 
     const response = await api.verify(nums);
-    if (response !== calc(nums))
+    if (response !== calc(nums)) {
+      api();
       return socket.disconnect();
+    }
 
     game.join(socket);
 
     socket.once('disconnect', () => {
+      api();
       game.leave(socket);
     });
   });
