@@ -1,7 +1,9 @@
 import { Server } from "http";
 import { Server as SocketIO } from "socket.io";
 
+import { verifyApi } from "../api";
 import { point } from "../core/point";
+import { calc, makeData } from "../core/verify";
 import { defaultStartPositions, Game } from "./class/Game";
 import { IS_DEV } from "./env";
 
@@ -27,8 +29,14 @@ export function game(server: Server) {
     point(.666, .666),
   ]);
 
+  socketio.on('connection', async socket => {
+    const api = verifyApi.use(socket);
+    const nums = makeData();
 
-  socketio.on('connection', socket => {
+    const response = await api.verify(nums);
+    if (response !== calc(nums))
+      return socket.disconnect();
+
     game.join(socket);
 
     socket.once('disconnect', () => {

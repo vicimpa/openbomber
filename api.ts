@@ -143,3 +143,7 @@ export const playerApi = makeWebSocketApi({
   onMessage: { input: MESSAGE_INFO },
   ping: {},
 });
+
+export const verifyApi = makeWebSocketApi({
+  verify: { input: ['uint8'], output: 'int32' },
+});

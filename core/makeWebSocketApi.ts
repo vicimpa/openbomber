@@ -42,6 +42,10 @@ export type TMethods<T extends TApi<any>> = (
   Required<Parameters<T['forward']>[1]>
 );
 
+export type TMethodsOut<T extends TApi<any>> = (
+  Required<ReturnType<T['use']>>
+);
+
 export type TApiMethod = {
   id: number;
   key: string;

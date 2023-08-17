@@ -1,6 +1,5 @@
 import { Proto } from "@/core/Proto";
 
-
 // {id: number, x: number, y: number, name: string}
 
 const user = new Proto({

@@ -4,7 +4,7 @@ import { gameApi, playerApi } from "../../api";
 import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT } from "../../config";
 import { effectObject } from "../../core/effectObject";
 import { find } from "../../core/find";
-import { TMethods } from "../../core/makeWebSocketApi";
+import { TMethodsOut } from "../../core/makeWebSocketApi";
 import { map } from "../../core/map";
 import { pick } from "../../core/pick";
 import { point } from "../../core/point";
@@ -24,7 +24,7 @@ import { SpeedEffect } from "./SpeedEffect";
 
 export class Player extends Entity {
   #id = -1;
-  newApi!: TMethods<typeof playerApi>;
+  newApi!: TMethodsOut<typeof playerApi>;
   unforward?: () => any;
 
   isDeath = false;
@@ -321,7 +321,7 @@ export class Player extends Entity {
     if (!this.isDeath && this.inGame) {
       for (const achivment of achivments) {
         const { x, y } = achivment;
-        if (this.checkCollision(x, y, .9)) {
+        if (this.checkCollision(x, y, .5)) {
           achivment.accept(this);
           achivments.delete(achivment);
         }
