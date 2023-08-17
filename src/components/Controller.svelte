@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Vec2 } from "@/core/Vec2";
+  import { effectObject } from "@/core/effectObject";
   import { makeEffect } from "@/core/makeEffect";
   import { makeController, makeVectorController } from "library/makeController";
   import { onFrame } from "library/onFrame";
@@ -21,6 +22,7 @@
 
   let startId: number | null = null;
   let startVec = new Vec2();
+  let gamepads: Gamepad[] = [];
 
   const controller = makeVectorController(
     {
@@ -45,6 +47,10 @@
     bomb: ["Space", "Enter"],
   });
 
+  const gamepad = makeController({
+    bomb: [() => !!gamepads.find((e) => e.buttons[0].pressed)],
+  });
+
   const filter = (x: number, y: number) => {
     if (!ref) return false;
     if (x > ref.offsetWidth * 0.5 || y < ref.offsetHeight * 0.3) return false;
@@ -60,6 +66,23 @@
       }px)`;
     }
   };
+
+  const updateGamepads = () => {
+    gamepads = navigator.getGamepads().filter((e) => e) as Gamepad[];
+  };
+
+  onMount(() => {
+    updateGamepads();
+    addEventListener("gamepadconnected", updateGamepads);
+    addEventListener("gamepaddisconnected", updateGamepads);
+    addEventListener("gotpointercapture", updateGamepads);
+
+    return () => {
+      removeEventListener("gamepadconnected", updateGamepads);
+      removeEventListener("gamepaddisconnected", updateGamepads);
+      removeEventListener("gotpointercapture", updateGamepads);
+    };
+  });
 
   beforeUpdate(() => {
     if (!ref) return;
@@ -129,8 +152,27 @@
 
     if (startId === null) move.set(0);
 
+    const gamepadMove = new Vec2();
+    const keysMove = controller().normalize();
+
+    if (gamepads.length) {
+      updateGamepads();
+      for (const {
+        axes: [x, y],
+        buttons,
+      } of gamepads) {
+        const vec = new Vec2(x, y);
+        vec.round().normalize();
+
+        if (vec.length()) {
+          gamepadMove.set(vec);
+        }
+      }
+
+      gamepad.bomb.isSingle() && dispatch("bomb");
+    }
     if (!touch) {
-      move.set(controller().normalize());
+      move.set(gamepadMove.length() ? gamepadMove : keysMove);
       keys.bomb.isSingle() && dispatch("bomb");
     }
   });

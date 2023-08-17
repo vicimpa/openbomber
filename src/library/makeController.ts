@@ -2,7 +2,7 @@ import { Vec2 } from "@/core/Vec2";
 
 import type { TVec2 } from "@/core/Vec2";
 
-const keymap = new Map<string, boolean>();
+const keymap = new Map<TKey, boolean>();
 
 addEventListener('keydown', ({ code, target }) => {
   if (target instanceof HTMLInputElement) return;
@@ -22,8 +22,10 @@ addEventListener('blur', () => {
   keymap.clear();
 });
 
+type TKey = string | (() => boolean);
+
 interface IControllerConfig {
-  [key: string]: string[];
+  [key: string]: TKey[];
 }
 
 interface IKeyCtl {
@@ -34,16 +36,16 @@ interface IKeyCtl {
 }
 
 class KeyController {
-  #keys!: string[];
+  #keys!: TKey[];
   #pressed = false;
   #lastClick = 0;
 
-  constructor(keys: string[]) {
+  constructor(keys: TKey[]) {
     this.#keys = keys;
   }
 
   isDown() {
-    return !!this.#keys.filter(key => keymap.get(key)).length;
+    return !!this.#keys.filter(key => typeof key === 'string' ? keymap.get(key) : key()).length;
   }
 
   isUp() {
@@ -89,7 +91,7 @@ export const makeController = (
 
     return Object
       .entries(opt)
-      .reduce((acc, [key, value]: [keyof T, string[]]) => {
+      .reduce((acc, [key, value]: [keyof T, TKey[]]) => {
         acc[key] = new KeyController(value);
         return acc;
       }, {} as { [key in keyof T]: IKeyCtl });
@@ -98,7 +100,7 @@ export const makeController = (
 
 export const makeVectorController = (
   ...args: {
-    keys: string[],
+    keys: TKey[],
     plus: TVec2;
   }[]
 ) => {
