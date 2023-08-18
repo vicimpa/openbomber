@@ -31,6 +31,7 @@
   import { point } from "@/point";
   import ChatView from "components/ChatView.svelte";
   import App from "app.svelte";
+  import { stylesVariable } from "library/stylesVariable";
 
   const newApi = gameApi.use(socket);
   let move = new Vec2();
@@ -51,6 +52,12 @@
   const current = {
     pos: new Vec2(0, 0),
     scale: 0,
+  };
+
+  const toStyles = {
+    x: "",
+    y: "",
+    s: "",
   };
 
   const resize = () => {
@@ -206,8 +213,9 @@
       );
 
       if (zoom) {
-        zoom.style.transform = `scale(${current.scale}) translateX(${-current
-          .pos.x}px) translateY(${-current.pos.y}px)`;
+        toStyles.s = current.scale + "";
+        toStyles.x = `${-current.pos.x}px`;
+        toStyles.y = `${-current.pos.y}px`;
       }
     }
 
@@ -356,7 +364,7 @@
           <p>Сервер перезагружается. Подождите.</p>
         </div>
       {/if}
-      <div class="zoom" bind:this={zoom}>
+      <div class="zoom" bind:this={zoom} style={stylesVariable(toStyles)}>
         <Game gamemap={$gamemap}>
           {#if player && info}
             <Move x={player.x} y={player.y}>
@@ -532,4 +540,5 @@
     .zoom
       box-shadow: 5px 5px 10px #000
       position: absolute
+      transform: scale(var(--s)) translateX(var(--x))  translateY(var(--y))
 </style>
