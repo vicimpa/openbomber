@@ -17,6 +17,7 @@ import { CrasyBombEffect } from "./CrasyBombEffect";
 import { Effect } from "./Effect";
 import { Entity } from "./Entity";
 import { Game } from "./Game";
+import { Npc } from "./Npc";
 import { PlayerEffect } from "./PlayerEffect";
 import { RadiusEffect } from "./RadiusEffect";
 import { ShieldEffect } from "./ShieldEffect";
@@ -203,9 +204,9 @@ export class Player extends Entity {
     }
   }
 
-  death(player: Player) {
+  death(killer: Player | Npc) {
     if (this.isDeath) return;
-    const isSuicide = player === this;
+    const isSuicide = killer === this;
 
     this.isDeath = true;
     this.newApi.playSound(ESounds.death);
@@ -217,12 +218,12 @@ export class Player extends Entity {
     this.deaths++;
     this.game.kills++;
 
-    if (isSuicide) {
-      player.kills++;
-      player.newApi.playSound(ESounds.kill);
+    if (!isSuicide && killer instanceof Player) {
+      killer.kills++;
+      killer.newApi.playSound(ESounds.kill);
     }
 
-    const target = isSuicide ? 'самоубился' : `убит ${player.name}`;
+    const target = isSuicide ? 'самоубился' : `убит ${killer.name}`;
     this.game.message(`${this.name ?? 'noname'} ${target}`);
   }
 
