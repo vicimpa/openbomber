@@ -29,6 +29,7 @@
   import { Vec2 } from "@/Vec2";
   import { DIRECTIONS } from "@/types";
   import { point } from "@/point";
+  import ChatView from "components/ChatView.svelte";
 
   const newApi = gameApi.use(socket);
   let move = new Vec2();
@@ -345,6 +346,7 @@
           {/if}
         </Game>
       </div>
+      <ChatView />
       <Controller
         bind:move
         inGame={info?.inGame ?? false}
@@ -357,7 +359,7 @@
 
   <div class="side right">
     <div class="scroll">
-      <div class="item">
+      <div class="item" style="flex-grow: 1;">
         <Chat
           on:message={({ detail }) => {
             newApi.sendMessage(detail);
@@ -443,6 +445,8 @@
         background-color: rgba(0,0,0,0.3)
         padding: 10px
         position: relative
+        display: flex
+        flex-direction: column
 
     .container
       flex-grow: 1

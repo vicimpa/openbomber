@@ -83,21 +83,26 @@
   .header
     display: flex
     justify-content: space-between
+
   .chat
-    display: flex
-    flex-direction: column
-    gap: 10px
     flex-grow: 1
+    position: relative
     
     .list[data-hide="true"] .item
       filter: blur(10px)
 
     .list
+      position: absolute
+      top: 0
+      left: 0
+      right: 0
+      bottom: 0
       display: flex
       flex-grow: 1
       overflow-y: scroll
       flex-direction: column-reverse
       gap: 20px
+      padding-bottom: 30px
 
       .item
         display: flex
@@ -120,6 +125,11 @@
 
     .input
       display: flex
+      position: absolute
+      bottom: 0
+      left: 0
+      right: 0
+
       input
         outline: none
         flex-grow: 1
