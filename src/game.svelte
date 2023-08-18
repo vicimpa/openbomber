@@ -45,6 +45,7 @@
   let offset = 40;
   let scale = 0;
   let normalScale = 0;
+  let viewer = 0;
 
   const resize = () => {
     scale = Math.min(container.offsetWidth, container.offsetHeight) / (16 * 10);
@@ -53,6 +54,13 @@
       (container.offsetHeight - offset) / zoom.offsetHeight
     );
   };
+
+  $: view =
+    player && info && info.inGame && !info.isDeath
+      ? player
+      : gamemap
+      ? gamemap.positions[viewer % gamemap.positions.length]
+      : null;
 
   const observer = new ResizeObserver(resize);
 
@@ -156,16 +164,15 @@
 
   onFrame((deltaTime, time) => {
     {
-      const isPlayer =
-        info?.inGame && !info?.isDeath && player && restartAfter < 0;
+      const isPlayer = view && restartAfter < 0;
       let { offsetWidth: width, offsetHeight: height } = zoom;
       let s = isPlayer ? scale : normalScale;
-      let a = isPlayer ? DIRECTIONS[player!.dir] : point(0, 0);
+      let a = isPlayer ? DIRECTIONS[view!.dir] : point(0, 0);
 
       width *= 0.5;
       height *= 0.5;
       let { x, y } = isPlayer
-        ? player!
+        ? view!
         : {
             x: (width / 16) | 0,
             y: (height / 16) | 0,
@@ -354,7 +361,8 @@
         bind:move
         inGame={info?.inGame ?? false}
         on:bomb={() => {
-          newApi.setBomb();
+          if (info && info.inGame && !info.isDeath) newApi.setBomb();
+          else viewer++;
         }}
       />
     </div>
