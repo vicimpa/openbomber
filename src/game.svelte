@@ -177,6 +177,7 @@
 
   onFrame((deltaTime, time) => {
     {
+      if (deltaTime > 100) return;
       const isPlayer = view && restartAfter < 0;
       let { offsetWidth: width, offsetHeight: height } = zoom;
       let s = isPlayer ? scale : normalScale;
@@ -193,14 +194,18 @@
       const append = a.clone().times(0);
       x += append.x;
       y += append.y;
+
       x += 1.5;
       y += 1.5;
+
       x *= 16;
       y *= 16;
+
       x -= width;
       y -= height;
 
       let delta = (current.scale - s) * deltaTime * 0.003;
+
       if (isFinite(delta)) {
         current.scale -= delta;
       }
@@ -211,6 +216,9 @@
           .minus(x, y)
           .times(deltaTime * 0.003)
       );
+
+      current.scale = ((current.scale * 1000) | 0) / 1000;
+      current.pos.times(100).floor().div(100);
 
       if (zoom) {
         toStyles.s = current.scale + "";
@@ -241,7 +249,9 @@
 
     player = player;
     gamemap.update();
+
     let { x, y, dir, animate } = player;
+
     x = ((x * 16) | 0) / 16;
     y = ((y * 16) | 0) / 16;
 
