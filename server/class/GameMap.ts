@@ -8,23 +8,23 @@ import { Game } from "./Game";
 import type { TConfig } from "./Game";
 
 export class GameMap extends Uint8Array {
+  width: number;
+  height: number;
   achivments = new Set<number>();
   noize: number[] = [];
 
   constructor(
-    public width: number,
-    public height: number,
     public game: Game
   ) {
+    const { width, height } = game;
     super(width * height);
+    this.width = width;
+    this.height = height;
     this.noize = generatePerlinNoise(width, height);
   }
 
   generate(config: TConfig) {
-    const {
-      width,
-      height
-    } = this;
+    const { width, } = this;
 
     const {
       fillAchivments,
@@ -77,9 +77,5 @@ export class GameMap extends Uint8Array {
       this.achivments.add(p);
       this[p] = EMapItem.BLOCK;
     }
-  }
-
-  get info() {
-    return copyBuffer(this.buffer);
   }
 }

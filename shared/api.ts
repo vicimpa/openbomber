@@ -2,7 +2,6 @@ import { makeWebSocketApi } from "../core/makeWebSocketApi";
 import { makeCustomType, makeEnum, Proto } from "../core/Proto";
 import { EAchivment, EAnimate, EDir, EEffect, EExplodeDir, ESounds } from "./types";
 
-
 const POSITION = makeCustomType<number>(
   (db, value) => {
     db.writeint32(value * 1000);

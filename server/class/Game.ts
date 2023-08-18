@@ -141,7 +141,7 @@ export class Game {
     this.explodes.clear();
     this.effects.clear();
     this.kills = 0;
-    this.map = new GameMap(width, height, this);
+    this.map = new GameMap(this);
     this.map.generate(this.settings);
     this.winPlayerId = -1;
   }
@@ -173,6 +173,7 @@ export class Game {
     player = new Player(this, socket);
     player.connect();
     this.players.add(player);
+    this.start();
   }
 
   leave(socket: Socket) {
@@ -180,17 +181,21 @@ export class Game {
     if (!player) return;
     this.players.delete(player);
     player.disconnect();
+    if (!this.players.size)
+      this.stop();
   }
 
   start() {
     if (this.running) return;
     this.running = true;
+    logger.info('Game starting', { timestamp: true });
     this.loop()
       .catch(console.error);
   }
 
   stop() {
     if (!this.running) return;
+    logger.info('Game stoping', { timestamp: true });
     this.running = false;
   }
 
@@ -213,7 +218,7 @@ export class Game {
         'playersCount',
         this.playersCount,
         count => {
-          logger.info('Players count ' + count);
+          logger.info('Players count ' + count, { timestamp: true });
         }
       );
 
@@ -255,7 +260,7 @@ export class Game {
         ).length <= +!!(playersCount - 1),
         (isRestart) => {
           if (isRestart) {
-            logger.info("Wait restart");
+            logger.info("Wait restart", { timestamp: true });
             this.waitForRestart = Date.now() + (IS_DEV ? 0 : 5000);
 
             if (this.playersCount > 1 && this.kills > 0) {
@@ -271,7 +276,7 @@ export class Game {
             }
           } else {
             if (this.waitForRestart > 0) {
-              logger.info("Cancel restart");
+              logger.info("Cancel restart", { timestamp: true });
             }
             this.waitForRestart = -1;
           }
@@ -280,7 +285,7 @@ export class Game {
 
       if (this.waitForRestart > 0) {
         if (Date.now() > this.waitForRestart + 500) {
-          logger.info("Restart");
+          logger.info("Restart", { timestamp: true });
           this.restart();
         }
       }

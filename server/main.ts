@@ -46,6 +46,4 @@ export function game(server: Server) {
       game.leave(socket);
     });
   });
-
-  game.start();
 }
