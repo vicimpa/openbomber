@@ -43,9 +43,11 @@
   @keyframes hide
     from
       max-height: 100px
+      margin-top: 10px
 
     to
       max-height: 0px
+      margin-top: 0px
 
   .chatview
     position: absolute
@@ -62,6 +64,7 @@
       animation: hide 0.3s 3s linear forwards
       background-color: rgba(0,0,0,0.4)
       border-radius: 10px
+      margin-top: 10px
       
       &[data-isme="true"]
         align-items: flex-start
