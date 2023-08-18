@@ -47,8 +47,8 @@
 
   .chatview
     position: absolute
-    top: 20px
-    right: 20px
+    top: 50px
+    right: 50px
     display: flex
     flex-direction: column-reverse
 
