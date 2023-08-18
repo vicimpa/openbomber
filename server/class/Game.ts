@@ -46,6 +46,7 @@ export class Game {
   achivments = new Set<Achivment>();
   players = new Set<Player>();
   effects = new Set<Effect>();
+  nextSize = new Vec2();
 
   startPositions: Vec2[];
   usedPositions = new Set<number>();
@@ -106,6 +107,7 @@ export class Game {
     settings?: Partial<TConfig>,
     startPositions: Vec2[] = defaultStartPositions
   ) {
+    this.nextSize.set(width, height);
     this.#settings = { ...defaultConfig, ...settings };
     this.startPositions = startPositions
       .map((point) => point.times(width - 1, height - 1).floor())
@@ -122,7 +124,10 @@ export class Game {
   }
 
   restart() {
-    const { width, height } = this;
+    const { x: width, y: height } = this.nextSize;
+
+    this.width = width;
+    this.height = height;
 
     this.waitForRestart = -1;
 
@@ -142,6 +147,15 @@ export class Game {
   }
 
   message(message: string, sender?: Player) {
+    if (IS_DEV) {
+      const find = /(\d+)x(\d+)/.exec(message);
+      if (find) {
+        const [, width, height] = find;
+        this.nextSize.set(+width, +height);
+        this.waitForRestart = 3000;
+      }
+    }
+
     for (const player of this.players) {
       player.newApi.playSound(ESounds.message);
 

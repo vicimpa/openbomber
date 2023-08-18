@@ -11,7 +11,7 @@ export function game(server: Server) {
   const socketio = new SocketIO(server, { cors: { origin: '*' } });
 
   const game = new Game(31, 31, {
-    fillAchivments: IS_DEV ? .999 : .15,
+    fillAchivments: IS_DEV ? .9999 : .15,
     fillBlocks: .7
   }, [
     ...defaultStartPositions,

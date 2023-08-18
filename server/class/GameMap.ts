@@ -39,13 +39,10 @@ export class GameMap extends Uint8Array {
       let x = i % width;
       let y = i / width;
 
-      if (x & 1 && y & 1) {
-        this[i] = EMapItem.WALL;
-      } else {
-        const n = this.noize[i];
-        this[i] = n < .1 ? EMapItem.GRAS : n < .4 ? EMapItem.SAND : EMapItem.CLEAR;
-        positions.add(i);
-      }
+
+      const n = this.noize[i];
+      this[i] = n < .1 ? EMapItem.GRAS : n < .4 ? EMapItem.SAND : EMapItem.CLEAR;
+      positions.add(i);
     }
 
     for (const { x: X, y: Y } of this.game.startPositions) {

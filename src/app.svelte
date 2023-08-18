@@ -80,6 +80,10 @@
 
         gameSizeEffect({ width: width, height: height }, () => {
           gamemap = new GameMap(width, height);
+          if (player) {
+            player.width = width;
+            player.height = height;
+          }
         });
       },
       playSound(sound) {
