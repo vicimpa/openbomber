@@ -15,25 +15,27 @@
 
   onMount(() => {
     return ChatEvent.subscribe(({ player, message, isMe }) => {
-      messages.unshift({ player, message, isMe, date: new Date() });
+      messages.push({ player, message, isMe, date: new Date() });
       messages = messages.splice(0, 100);
     });
   });
 </script>
 
 <div class="chatview">
-  {#each messages as { player, message, isMe, date }}
-    <div class="item" data-isme={isMe}>
-      <div class="name">
-        {player.name ?? "noname"}
-        <span class="date">
-          {format(date)}
-        </span>
+  {#each messages as { player, message, isMe, date }, id}
+    {#key id}
+      <div class="item" data-isme={isMe}>
+        <div class="name">
+          {player.name ?? "noname"}
+          <span class="date">
+            {format(date)}
+          </span>
+        </div>
+        <div class="message">
+          {message}
+        </div>
       </div>
-      <div class="message">
-        {message}
-      </div>
-    </div>
+    {/key}
   {/each}
 </div>
 
@@ -50,7 +52,7 @@
     top: 50px
     right: 50px
     display: flex
-    flex-direction: column-reverse
+    flex-direction: column
 
     .item
       overflow: hidden
