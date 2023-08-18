@@ -289,7 +289,7 @@
     </div>
   </div>
   <div class="container">
-    <div class="header">
+    <div class="header" style="z-index: 1;">
       {#if gameInfo}
         {#if info?.inGame}
           <span>💣 x {info.effects.bombs}</span>
