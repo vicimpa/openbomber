@@ -55,6 +55,7 @@
     right: 50px
     display: flex
     flex-direction: column
+    z-index: 10
 
     .item
       overflow: hidden
