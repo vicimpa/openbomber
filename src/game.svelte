@@ -30,6 +30,7 @@
   import { DIRECTIONS } from "@/types";
   import { point } from "@/point";
   import ChatView from "components/ChatView.svelte";
+  import App from "app.svelte";
 
   const newApi = gameApi.use(socket);
   let move = new Vec2();
@@ -46,6 +47,11 @@
   let scale = 0;
   let normalScale = 0;
   let viewer = 0;
+
+  const current = {
+    pos: new Vec2(0, 0),
+    scale: 0,
+  };
 
   const resize = () => {
     scale = Math.min(container.offsetWidth, container.offsetHeight) / (16 * 10);
@@ -184,12 +190,24 @@
       y += 1.5;
       x *= 16;
       y *= 16;
-
       x -= width;
       y -= height;
 
+      let delta = (current.scale - s) * deltaTime * 0.003;
+      if (isFinite(delta)) {
+        current.scale -= delta;
+      }
+
+      current.pos.minus(
+        current.pos
+          .clone()
+          .minus(x, y)
+          .times(deltaTime * 0.003)
+      );
+
       if (zoom) {
-        zoom.style.transform = `scale(${s}) translateX(${-x}px) translateY(${-y}px)`;
+        zoom.style.transform = `scale(${current.scale}) translateX(${-current
+          .pos.x}px) translateY(${-current.pos.y}px)`;
       }
     }
 
@@ -514,5 +532,4 @@
     .zoom
       box-shadow: 5px 5px 10px #000
       position: absolute
-      transition: transform 0.3s linear
 </style>
