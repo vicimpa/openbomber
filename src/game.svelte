@@ -75,6 +75,8 @@
       ? gamemap.positions[viewer % gamemap.positions.length]
       : null;
 
+  $: viewPlayer = gamemap?.players.find((e) => e.id === (view as any)?.["id"]);
+
   const observer = new ResizeObserver(resize);
 
   const playerEffect = makeEffect();
@@ -393,6 +395,13 @@
         </Game>
       </div>
       <ChatView />
+      {#if viewPlayer}
+        <div class="viewer">
+          <Button on:click={() => viewer--}>◀️</Button>
+          <p>Наблюдение за <b>{viewPlayer.name}</b></p>
+          <Button on:click={() => viewer++}>▶️</Button>
+        </div>
+      {/if}
       <Controller
         bind:move
         inGame={info?.inGame ?? false}
@@ -423,6 +432,18 @@
 
   ul
     padding: 5px 0
+
+  .viewer
+    position: absolute
+    bottom: 50px
+    padding: 10px 20px
+    border-radius: 10px
+    background-color: rgba(0,0,0,0.5)
+    display: flex
+    transform: scale(1.3)
+    gap: 10px
+    align-items: center
+    z-index: 10
 
   .ui 
     width: 100%
