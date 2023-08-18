@@ -16,6 +16,11 @@ export class CrasyBombEffect extends PlayerEffect {
       this.delete();
   }
 
+  delete(): boolean {
+    this.player.newApi.playSound(ESounds.crazy);
+    return super.delete();
+  }
+
   static get(player: Player): CrasyBombEffect | null {
     return this.getEffects(player, this)[0];
   }
@@ -26,7 +31,6 @@ export class CrasyBombEffect extends PlayerEffect {
 
   static delete(player: Player) {
     this.get(player)?.delete();
-    player.newApi.playSound(ESounds.crazy);
   }
 
   static append(player: Player) {

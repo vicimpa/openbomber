@@ -20,6 +20,7 @@ export class ShieldEffect extends PlayerEffect {
     const result = super.delete();
     if (result) {
       this.player.game.message(`${this.player.name} потерял щит`);
+      this.player.newApi.playSound(ESounds.shield);
     }
     return result;
   }
@@ -33,13 +34,7 @@ export class ShieldEffect extends PlayerEffect {
   }
 
   static delete(player: Player) {
-    const currentEffect = this.get(player);
-
-    if (currentEffect) {
-      player.newApi.playSound(ESounds.shield);
-
-      currentEffect.delete();
-    }
+    this.get(player)?.delete();
   }
 
   static append(player: Player) {

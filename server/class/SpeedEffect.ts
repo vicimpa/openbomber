@@ -22,6 +22,16 @@ export class SpeedEffect extends PlayerEffect {
       this.delete();
   }
 
+  delete(): boolean {
+    if (this.value > 1)
+      this.player.newApi.playSound(ESounds.speedOff);
+
+    if (this.value < 1)
+      this.player.newApi.playSound(ESounds.fireOff);
+
+    return super.delete();
+  }
+
   static get(player: Player): SpeedEffect | null {
     return this.getEffects(player, this)[0];
   }
@@ -31,17 +41,7 @@ export class SpeedEffect extends PlayerEffect {
   }
 
   static delete(player: Player) {
-    const currentEffect = this.get(player);
-
-    if (currentEffect) {
-      if (currentEffect.value > 1)
-        player.newApi.playSound(ESounds.speedOn);
-
-      if (currentEffect.value < 1)
-        player.newApi.playSound(ESounds.fireOn);
-
-      currentEffect.delete();
-    }
+    this.get(player)?.delete();
   }
 
   static append(player: Player, value = 1) {
