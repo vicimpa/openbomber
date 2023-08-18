@@ -302,6 +302,9 @@
           </span>
         {:else}
           <p>Вы наблюдатель</p>
+          <Button disabled={!info?.canJoin} on:click={() => newApi.toGame()}>
+            Подключиться
+          </Button>
         {/if}
       {/if}
     </div>
