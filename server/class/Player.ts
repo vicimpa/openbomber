@@ -140,7 +140,7 @@ export class Player extends Entity {
     },
 
     setBomb: () => {
-      if (this.isDeath) return;
+      if (this.isDeath || !this.inGame) return;
 
       const { bombs } = this.game;
       const newBomb = new Bomb(this, CrasyBombEffect.hasCrasyBomb(this));
