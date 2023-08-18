@@ -9,6 +9,7 @@ on:
       - 'server/**'
       - 'core/**'
       - 'src/**'
+      - 'shared/**'
       - '*.ts'
       - '*.json'
       - '.swcrc'

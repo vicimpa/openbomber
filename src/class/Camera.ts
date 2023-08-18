@@ -1,12 +1,12 @@
-import { makeEffect } from "@/core/makeEffect";
-import { makeNumberFilter } from "@/core/makeNumberFilter";
-import { makeVec2Filter } from "@/core/makeVec2Filter";
-import { cos, min, sin } from "@/core/math";
-import { point } from "@/core/point";
+import { makeEffect } from "@/makeEffect";
+import { makeNumberFilter } from "@/makeNumberFilter";
+import { makeVec2Filter } from "@/makeVec2Filter";
+import { cos, min, sin } from "@/math";
+import { point } from "@/point";
 
 import { Entity } from "./Entity";
 
-import type { Vec2 } from "@/core/Vec2";
+import type { Vec2 } from "@/Vec2";
 export class Camera extends Entity {
   ctx!: CanvasRenderingContext2D;
 

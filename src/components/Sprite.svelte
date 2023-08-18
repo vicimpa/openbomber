@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onFrame } from "library/onFrame";
-  import { toLimit } from "@/core/toLimit";
+  import { toLimit } from "@/toLimit";
   import Frame from "./Frame.svelte";
-  import { isEqual } from "@/core/isEqual";
+  import { isEqual } from "@/isEqual";
   import { createEventDispatcher } from "svelte";
-  import { Vec2 } from "@/core/Vec2";
-  import { point } from "@/core/point";
+  import { Vec2 } from "@/Vec2";
+  import { point } from "@/point";
 
   const dispatch = createEventDispatcher<{
     end: [];

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Player } from "@/server/class/Player";
+  import type { Player } from "@/class/Player";
 
   export let effects: Player["effects"] | null = null;
 </script>

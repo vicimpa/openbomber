@@ -1,11 +1,4 @@
-import { point } from "./core/point";
-
-import type { Bomb } from "./server/class/Bomb";
-import type { Explode } from "./server/class/Explode";
-import type { Game } from "./server/class/Game";
-import type { Player } from "./server/class/Player";
-import type { Achivment } from "./server/class/Achivment";
-import type { Effect } from "./server/class/Effect";
+import { point } from "../core/point";
 
 export type TChatInfo = {
   name: string;
@@ -19,10 +12,6 @@ export enum EMapItem {
   SAND,
   WATER,
 }
-
-export type TPlayer = {
-
-};
 
 export enum ESounds {
   win,
@@ -41,10 +30,6 @@ export enum ESounds {
   speedOff,
   kill,
 }
-
-export type TServer = {
-
-};
 
 export enum EDir {
   TOP,

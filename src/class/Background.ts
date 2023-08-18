@@ -1,5 +1,5 @@
-import { points } from "@/core/point";
-import { random } from "@/core/random";
+import { points } from "@/point";
+import { random } from "@/random";
 import { generatePerlinNoise } from "@vicimpa/perlin-noise";
 import sprite from "images/sprite.png";
 

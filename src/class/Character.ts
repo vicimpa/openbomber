@@ -1,8 +1,8 @@
-import { makeEffect } from "@/core/makeEffect";
-import { cos, sin } from "@/core/math";
-import { point, points } from "@/core/point";
-import { random } from "@/core/random";
-import { toLimit } from "@/core/toLimit";
+import { makeEffect } from "@/makeEffect";
+import { cos, sin } from "@/math";
+import { point, points } from "@/point";
+import { random } from "@/random";
+import { toLimit } from "@/toLimit";
 import { DIRECTIONS } from "@/types";
 import sprite from "images/generic.png";
 
@@ -10,7 +10,7 @@ import { Entity } from "./Entity";
 import { Sprite } from "./Sprite";
 
 import type { Camera } from "./Camera";
-import type { Vec2 } from "@/core/Vec2";
+import type { Vec2 } from "@/Vec2";
 export class Character extends Entity {
   sprite = new Sprite(sprite, 16);
   cam?: Camera;

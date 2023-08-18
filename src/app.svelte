@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { makeEffect } from "@/core/makeEffect";
+  import { makeEffect } from "@/makeEffect";
   import { NICK_LENGTH } from "@/config";
 
-  import type { Player as TypePlayer } from "@/server/class/Player";
-  import type { Game as TypeGame } from "@/server/class/Game";
+  import type { Player as TypePlayer } from "@/class/Player";
+  import type { Game as TypeGame } from "@/class/Game";
 
   import { PlayerController } from "class/PlayerController";
   import Player from "components/Player.svelte";
   import { onFrame } from "library/onFrame";
   import Move from "components/Move.svelte";
-  import { makeController, makeVectorController } from "library/makeController";
+  import { makeController } from "library/makeController";
   import { onMount } from "svelte";
   import Game from "components/Game.svelte";
   import { GameMap } from "class/GameMap";
@@ -26,10 +26,9 @@
   import Link from "components/Link.svelte";
   import { gameApi, playerApi } from "@/api";
   import Controller from "components/Controller.svelte";
-  import { Vec2 } from "@/core/Vec2";
+  import { Vec2 } from "@/Vec2";
   import { DIRECTIONS } from "@/types";
-  import { point } from "@/core/point";
-  import Map from "components/Map.svelte";
+  import { point } from "@/point";
 
   const newApi = gameApi.use(socket);
   let move = new Vec2();

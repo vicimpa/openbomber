@@ -19,8 +19,10 @@
     ],
     "paths": {
       "@/*": [
-        "../*"
-      ],
+        "../shared/*",
+        "../core/*",
+        "../server/*"
+      ]
     }
   },
   "include": [
@@ -29,8 +31,8 @@
     "src/**/*.js",
     "src/**/*.mts",
     "src/**/*.svelte",
-    "core/**/*.ts",
-    "./*.ts"
+    "core",
+    "shared"
   ],
   "exclude": [
     "./vite.config.ts"

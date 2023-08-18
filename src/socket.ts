@@ -1,5 +1,5 @@
 import { verifyApi } from "@/api";
-import { calc } from "@/core/verify";
+import { calc } from "@/verify";
 import { connect } from "socket.io-client";
 
 export const socket = connect({

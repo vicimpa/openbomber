@@ -1,7 +1,5 @@
 import { Socket } from "socket.io";
 
-import { gameApi, playerApi } from "../../api";
-import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT } from "../../config";
 import { effectObject } from "../../core/effectObject";
 import { find } from "../../core/find";
 import { TMethodsOut } from "../../core/makeWebSocketApi";
@@ -9,7 +7,9 @@ import { map } from "../../core/map";
 import { pick } from "../../core/pick";
 import { point } from "../../core/point";
 import { Vec2 } from "../../core/Vec2";
-import { EAnimate, EDir, EEffect, ESounds } from "../../types";
+import { gameApi, playerApi } from "../../shared/api";
+import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT } from "../../shared/config";
+import { EAnimate, EDir, EEffect, ESounds } from "../../shared/types";
 import { IS_DEV } from "../env";
 import { Bomb } from "./Bomb";
 import { BombEffect } from "./BombEffect";

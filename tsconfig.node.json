@@ -3,7 +3,7 @@
     "composite": true,
     "skipLibCheck": true,
     "target": "ESNext",
-    "module": "ESNext",
+    "module": "NodeNext",
     "esModuleInterop": true,
     "moduleResolution": "Node",
     "experimentalDecorators": true,
@@ -14,6 +14,7 @@
   "include": [
     "./core",
     "./server",
-    "./*.ts",
+    "./shared",
+    "./vite.config.ts",
   ]
 }

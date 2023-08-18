@@ -1,6 +1,4 @@
-import { Proto } from "@/core/Proto";
-
-// {id: number, x: number, y: number, name: string}
+import { Proto } from "@/Proto";
 
 const user = new Proto({
   id: 'uint8',

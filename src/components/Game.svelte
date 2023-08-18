@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { arange } from "@/core/range";
+  import { arange } from "@/range";
   import { EEffect, EMapItem } from "@/types";
-  import { points } from "@/core/point";
+  import { points } from "@/point";
 
   import sprite from "images/sprite.png";
   import Frame from "components/Frame.svelte";

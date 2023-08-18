@@ -2,7 +2,7 @@
   import { EAnimate, EDir } from "@/types";
   import sprite from "images/sprite.png";
   import Sprite from "./Sprite.svelte";
-  import { plus, point, points } from "@/core/point";
+  import { plus, point, points } from "@/point";
   import generic from "images/generic.png";
   import { stylesVariable } from "library/stylesVariable";
   import Short from "./Short.svelte";

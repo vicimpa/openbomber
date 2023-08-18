@@ -1,6 +1,6 @@
-import { abs } from "@/core/math";
-import { Vec2 } from "@/core/Vec2";
+import { abs } from "@/math";
 import { EAnimate, EDir, EMapItem } from "@/types";
+import { Vec2 } from "@/Vec2";
 
 import type { GameMap } from "./GameMap";
 export class PlayerController extends Vec2 {

@@ -2,7 +2,7 @@ import { generatePerlinNoise } from "@vicimpa/perlin-noise";
 
 import { copyBuffer } from "../../core/copyBuffer";
 import { random } from "../../core/random";
-import { DIRECTIONS, EMapItem } from "../../types";
+import { DIRECTIONS, EMapItem } from "../../shared/types";
 import { Game } from "./Game";
 
 import type { TConfig } from "./Game";

@@ -1,4 +1,4 @@
-import type { Vec2 } from "@/core/Vec2";
+import type { Vec2 } from "@/Vec2";
 
 const CACHE = new Map<string, Sprite>();
 

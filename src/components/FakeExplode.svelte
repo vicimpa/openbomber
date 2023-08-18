@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { points } from "@/core/point";
+  import { points } from "@/point";
   import Move from "./Move.svelte";
   import fakeExplode from "images/explodeFake.png";
   import Sprite from "./Sprite.svelte";

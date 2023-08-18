@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Vec2 } from "@/core/Vec2";
-  import { effectObject } from "@/core/effectObject";
-  import { makeEffect } from "@/core/makeEffect";
+  import { Vec2 } from "@/Vec2";
+  import { effectObject } from "@/effectObject";
+  import { makeEffect } from "@/makeEffect";
   import { makeController, makeVectorController } from "library/makeController";
   import { onFrame } from "library/onFrame";
   import { beforeUpdate, onMount } from "svelte";

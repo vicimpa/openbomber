@@ -2,10 +2,10 @@
   import { EXPODER_DIRS } from "@/types";
   import Move from "./Move.svelte";
   import sprite from "images/sprite.png";
-  import { plus, points } from "@/core/point";
+  import { plus, points } from "@/point";
   import Sprite from "./Sprite.svelte";
   import type { EExplodeDir } from "@/types";
-  import type { Explode } from "@/server/class/Explode";
+  import type { Explode } from "@/class/Explode";
 
   export let expl: Explode["info"] | null = null;
 
