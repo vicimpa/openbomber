@@ -188,46 +188,44 @@
         {/if}
       {/if}
     </div>
-    <div class="content">
-      <CanvasRender
-        {socket}
-        bind:view
-        bind:cam
-        bind:viewCount={viewer}
-        on:setBomb={() => newApi.setBomb()}
-        on:setPosition={({ detail }) => newApi.setPosition(detail)}
-      />
-      {#if restartAfter >= 0 && restartAfter <= 3}
-        <div class="restart-back" />
-        <div class="restart">
-          <p>Новая игра через {restartAfter} сек</p>
-        </div>
-      {/if}
-      {#if isOpenEditName}
-        <div class="restart-back" />
-        <div class="restart">
-          <p>Введите имя</p>
-          <input bind:value={name} maxlength={NICK_LENGTH} />
-          <Button disabled={!name} on:click={() => (isOpenEditName = false)}>
-            Сохранить
-          </Button>
-        </div>
-      {/if}
-      {#if isRestarting}
-        <div class="restart-back" />
-        <div class="restart">
-          <p>Сервер перезагружается. Подождите.</p>
-        </div>
-      {/if}
-      <ChatView />
-      {#if viewPlayer}
-        <div class="viewer">
-          <Button on:click={() => viewer--}>◀️</Button>
-          <p>Наблюдение за <b>{viewPlayer.name}</b></p>
-          <Button on:click={() => viewer++}>▶️</Button>
-        </div>
-      {/if}
-    </div>
+    <CanvasRender
+      {socket}
+      bind:view
+      bind:cam
+      bind:viewCount={viewer}
+      on:setBomb={() => newApi.setBomb()}
+      on:setPosition={({ detail }) => newApi.setPosition(detail)}
+    />
+    {#if restartAfter >= 0 && restartAfter <= 3}
+      <div class="restart-back" />
+      <div class="restart">
+        <p>Новая игра через {restartAfter} сек</p>
+      </div>
+    {/if}
+    {#if isOpenEditName}
+      <div class="restart-back" />
+      <div class="restart">
+        <p>Введите имя</p>
+        <input bind:value={name} maxlength={NICK_LENGTH} />
+        <Button disabled={!name} on:click={() => (isOpenEditName = false)}>
+          Сохранить
+        </Button>
+      </div>
+    {/if}
+    {#if isRestarting}
+      <div class="restart-back" />
+      <div class="restart">
+        <p>Сервер перезагружается. Подождите.</p>
+      </div>
+    {/if}
+    <ChatView />
+    {#if viewPlayer}
+      <div class="viewer">
+        <Button on:click={() => viewer--}>◀️</Button>
+        <p>Наблюдение за <b>{viewPlayer.name}</b></p>
+        <Button on:click={() => viewer++}>▶️</Button>
+      </div>
+    {/if}
   </div>
 
   <div class="side right">
@@ -375,18 +373,4 @@
       border-radius: 0 0 10px 10px
       z-index: 1
       backdrop-filter: blur(5px)
-      
-
-    .content
-      flex-grow: 1
-      display: flex
-      justify-content: center
-      align-items: center
-      overflow: hidden
-      position: relative
-      padding: 30px
-      padding-bottom: 0px
-      width: 100%
-      height: 100%
-
 </style>
