@@ -94,6 +94,7 @@
 
   $: if (info && info.name !== name) {
     newApi.setName(name);
+    localStorage.setItem("name", name);
   }
 </script>
 
