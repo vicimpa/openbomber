@@ -1,4 +1,5 @@
 import { makeEffect } from "@/makeEffect";
+import { rem } from "@/math";
 import { OUT_FRAME } from "config";
 
 import { AchivmentsLayer } from "./AchivmentsLayer";
@@ -58,7 +59,7 @@ export class Game extends Entity {
 
   update(dtime: number, time: number): void {
     const players = [...this.playersLayer.players.values()];
-    this.focusPlayer = players[this.viewCount % players.length];
+    this.focusPlayer = players[rem(this.viewCount, players.length)];
 
     if (this.currentPlayer && !this.currentPlayerSprite) {
       this.currentPlayerSprite = new PlayerSprite();
