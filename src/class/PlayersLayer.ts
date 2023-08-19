@@ -27,6 +27,7 @@ export class PlayersLayer extends Entity {
         player.id = id;
         player.dir = dir;
         player.animate = animate;
+        player.name = !!info && info.name;
         player.color = !!info && info.color;
         player.isFire = !!info && info.effects.speed < 1;
         player.isShield = !!info && info.effects.haveShield;

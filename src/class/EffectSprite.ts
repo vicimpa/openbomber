@@ -11,10 +11,14 @@ const FRAMES = {
   [EEffect.FAKE_EXPLODE]: points('8,0;9,0;10,0;11,0;12,0;13,0;8,1;9,1;10,1;11,1;12,1;13,1')
 };
 
+const SPEEDS = {
+  [EEffect.DEATH]: 100,
+  [EEffect.FAKE_EXPLODE]: 50,
+};
+
 export class EffectSprite extends Frame {
   sprite = new Sprite(spriteSrc);
   type!: EEffect;
-  speed = 100;
 
   startAnimate = -1;
 
@@ -22,7 +26,7 @@ export class EffectSprite extends Frame {
     if (this.startAnimate === -1)
       this.startAnimate = time;
 
-    const frame = (time - this.startAnimate) / this.speed | 0;
+    const frame = (time - this.startAnimate) / SPEEDS[this.type] | 0;
     const list = FRAMES[this.type];
     this.frame.set(list[toLimit(frame, 0, list.length - 1)]);
   }

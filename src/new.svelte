@@ -15,7 +15,7 @@
   import Effects from "components/Effects.svelte";
   import Button from "components/Button.svelte";
   import Link from "components/Link.svelte";
-  import { PLAYER_INFO, PLAYER_POSITION, gameApi, playerApi } from "@/api";
+  import { PLAYER_INFO, gameApi, playerApi } from "@/api";
   import ChatView from "components/ChatView.svelte";
   import type { TProtoOut } from "@/Proto";
   import CanvasRender from "components/CanvasRender.svelte";
@@ -24,8 +24,6 @@
   import { sounds } from "library/sounds";
   import { point } from "@/point";
   import { OUT_FRAME } from "config";
-  import { onFrame } from "library/onFrame";
-  import { effectObject } from "@/effectObject";
 
   const newApi = gameApi.use(socket);
 
@@ -91,11 +89,9 @@
     };
   });
 
-  onFrame(() => {
-    effectObject(newApi, "name", name, (name) => {
-      newApi.setName(name);
-    });
-  });
+  $: if (info && info.name !== name) {
+    newApi.setName(name);
+  }
 </script>
 
 <div class="ui">

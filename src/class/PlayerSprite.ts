@@ -1,5 +1,6 @@
 import { plus, point, points } from "@/point";
 import { EAnimate, EDir } from "@/types";
+import { OUT_FRAME } from "config";
 import spriteSrc from "images/characters.png";
 
 import { FireSprite } from "./FireSprite";
@@ -33,6 +34,8 @@ export class PlayerSprite extends Frame {
   fireAnimate = new FireSprite();
   shieldAnimate = new ShieldSprite();
 
+  name = '';
+
   startAnimate = 0;
 
   update(dtime: number, time: number): void {
@@ -56,6 +59,19 @@ export class PlayerSprite extends Frame {
       this.fireAnimate.render(camera);
 
     super.render(camera);
+
+    if (this.name) {
+      camera.ctx.fillStyle = '#fff';
+      camera.ctx.font = "normal 6px serif";
+      camera.ctx.textAlign = 'center';
+      camera.ctx.textBaseline = 'bottom';
+      camera.ctx.fillText(
+        this.name,
+        OUT_FRAME / 2 | 0,
+        0
+      );
+
+    }
 
     if (this.isShield)
       this.shieldAnimate.render(camera);
