@@ -21,13 +21,13 @@ export class PlayersLayer extends Entity {
         new PlayerSprite()
           .appendTo(this)
       ),
-      ({ id, x, y, dir, animate }, player) => {
-        const info = this.game.players.get(id);
+      ({ id, x, y, dir, animate, }, player) => {
+        const info = this.game.players.get(id)!;
         player.set(x, y).times(OUT_FRAME);
         player.id = id;
         player.dir = dir;
         player.animate = animate;
-
+        player.color = !!info && info.color;
         player.isFire = !!info && info.effects.speed < 1;
         player.isShield = !!info && info.effects.haveShield;
       },
