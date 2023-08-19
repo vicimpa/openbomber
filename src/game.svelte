@@ -521,6 +521,8 @@
       display: flex
       flex-direction: column
       position: relative
+      justify-content: center
+      align-items: center
 
       .restart
         position: absolute
@@ -552,8 +554,8 @@
       gap: 20px
       position: absolute
       top: 0
-      left: 0
-      right: 0
+      padding: 10px
+      border-radius: 0 0 10px 10px
       z-index: 1
       backdrop-filter: blur(5px)
       
@@ -567,6 +569,8 @@
       position: relative
       padding: 30px
       padding-bottom: 0px
+      width: 100%
+      height: 100%
 
     .zoom
       box-shadow: 5px 5px 10px #000
