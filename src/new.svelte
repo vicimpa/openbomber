@@ -259,6 +259,7 @@
     gap: 10px
     align-items: center
     z-index: 10
+    user-select: none
 
   .ui 
     width: 100%
@@ -283,6 +284,7 @@
       transition: transform 0.3s
       backdrop-filter: blur(10px)
       z-index: 11
+      user-select: none
 
       .scroll
         display: flex
@@ -373,4 +375,5 @@
       border-radius: 0 0 10px 10px
       z-index: 1
       backdrop-filter: blur(5px)
+      user-select: none
 </style>
