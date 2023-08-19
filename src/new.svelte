@@ -20,11 +20,12 @@
   import type { TProtoOut } from "@/Proto";
   import CanvasRender from "components/CanvasRender.svelte";
   import type { PlayerSprite } from "class/PlayerSprite";
-  import type { Camera } from "class/Camera";
   import type { FocusCamera } from "class/FocusCamera";
   import { sounds } from "library/sounds";
   import { point } from "@/point";
   import { OUT_FRAME } from "config";
+  import { onFrame } from "library/onFrame";
+  import { effectObject } from "@/effectObject";
 
   const newApi = gameApi.use(socket);
 
@@ -88,6 +89,12 @@
     return () => {
       socket.disconnect();
     };
+  });
+
+  onFrame(() => {
+    effectObject(newApi, "name", name, (name) => {
+      newApi.setName(name);
+    });
   });
 </script>
 
