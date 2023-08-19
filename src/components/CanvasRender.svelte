@@ -33,6 +33,8 @@
   const app = new Application(true);
   const back = new Background(256, 256);
 
+  let currentColor = 0;
+
   let game = new Game();
   export let cam: FocusCamera | undefined;
 
@@ -76,11 +78,11 @@
       updateExplodes(explodes) {
         updateIdMap(explodes, game.explodes);
       },
-      updateLocalInfo({ isDeath, inGame, effects }) {
+      updateLocalInfo({ isDeath, inGame, effects, color }) {
         state.inGame = inGame;
         if (!inGame || isDeath) delete game.currentPlayer;
-        else if (game.currentPlayer)
-          game.currentPlayer.speedMulti = effects.speed;
+        if (game.currentPlayer) game.currentPlayer.speedMulti = effects.speed;
+        currentColor = color;
       },
       setStartPosition({ x, y }) {
         game.currentPlayer = new PlayerControllerNew(game);
@@ -106,6 +108,7 @@
   onFrame(() => {
     game.viewCount = viewCount;
     view = game.focusPlayer ?? null;
+    if (game.currentPlayerSprite) game.currentPlayerSprite.color = currentColor;
   });
 </script>
 

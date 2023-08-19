@@ -3,7 +3,7 @@
   import sprite from "images/sprite.png";
   import Sprite from "./Sprite.svelte";
   import { plus, point, points } from "@/point";
-  import generic from "images/generic.png";
+  import generic from "images/characters.png";
   import { stylesVariable } from "library/stylesVariable";
   import Short from "./Short.svelte";
   import Move from "./Move.svelte";
@@ -36,20 +36,16 @@
   export let isFire = false;
 
   $: frames = animate === EAnimate.IDLE ? IDLE[dir] : RUNNING[dir];
-
-  const COLORS = Array.from({ length: 10 }, (_, i) => i)
-    .map((e) => [e % 5, (e / 5) | 0])
-    .map(([x, y]) => point(x * 3, y * 4));
 </script>
 
-{#if name && !isDeath && COLORS[color]}
+{#if name && !isDeath}
   <Short>
     {name}
   </Short>
 {/if}
 
 <div style={stylesVariable({ c: color })}>
-  {#if !isDeath && COLORS[color]}
+  {#if !isDeath}
     {#if haveShield}
       <div class="shield" />
     {/if}
@@ -68,7 +64,7 @@
       </Move>
     {/if}
 
-    <Sprite frames={plus(frames, COLORS[color])} speed={150} src={generic} />
+    <Sprite frames={plus(frames, point(0, color))} speed={150} src={generic} />
   {/if}
 </div>
 
