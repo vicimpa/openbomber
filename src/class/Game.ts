@@ -59,7 +59,7 @@ export class Game extends Entity {
 
   update(dtime: number, time: number): void {
     const players = [...this.playersLayer.players.values()];
-    this.focusPlayer = this.waitRestart >= 0 ? players[rem(this.viewCount, players.length)] : undefined;
+    this.focusPlayer = this.waitRestart == -1 ? players[rem(this.viewCount, players.length)] : undefined;
 
     if (this.currentPlayer && !this.currentPlayerSprite) {
       this.currentPlayerSprite = new PlayerSprite();
