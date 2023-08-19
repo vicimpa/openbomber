@@ -36,7 +36,10 @@
   let cam: FocusCamera | undefined;
   let view: PlayerSprite | null;
 
-  $: viewPlayer = players.find((e) => e.id === (view as any)?.["id"]);
+  $: viewPlayer =
+    info && (!info.inGame || info.isDeath)
+      ? players.find((e) => e.id === (view as any)?.["id"])
+      : null;
 
   let isRestarting = false;
   let isOpenEditName = !name;
