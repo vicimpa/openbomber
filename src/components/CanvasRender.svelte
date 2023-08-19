@@ -78,11 +78,16 @@
       updateExplodes(explodes) {
         updateIdMap(explodes, game.explodes);
       },
-      updateLocalInfo({ isDeath, inGame, effects, color }) {
+      updateLocalInfo(info) {
+        game.localInfo = info;
+        const { isDeath, inGame, effects, color } = info;
         state.inGame = inGame;
         if (!inGame || isDeath) delete game.currentPlayer;
         if (game.currentPlayer) game.currentPlayer.speedMulti = effects.speed;
         currentColor = color;
+      },
+      updateWaitForRestart(restart) {
+        game.waitRestart = restart;
       },
       setStartPosition({ x, y }) {
         game.currentPlayer = new PlayerControllerNew(game);
@@ -108,7 +113,6 @@
   onFrame(() => {
     game.viewCount = viewCount;
     view = game.focusPlayer ?? null;
-    if (game.currentPlayerSprite) game.currentPlayerSprite.color = currentColor;
   });
 </script>
 

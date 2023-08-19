@@ -50,6 +50,9 @@ export class Game extends Entity {
 
   viewCount = 0;
 
+  localInfo?: TProtoOut<typeof PLAYER_INFO>;
+  waitRestart = -1;
+
   playerEffect = makeEffect<{ x: number, y: number, dir: EDir, animate: EAnimate; }>();
   updatePosition(x: number, y: number, dir: EDir, animate: EAnimate) { }
 
@@ -67,7 +70,7 @@ export class Game extends Entity {
       delete this.currentPlayerSprite;
     }
 
-    if (this.currentPlayer) {
+    if (this.currentPlayer && this.localInfo && this.waitRestart == -1) {
       this.currentPlayer.tick(dtime, time);
 
       let { x, y, dir, animate } = this.currentPlayer;
@@ -86,6 +89,12 @@ export class Game extends Entity {
           this.currentPlayer
         ).times(OUT_FRAME);
       }
+    }
+
+    if (this.currentPlayerSprite && this.localInfo) {
+      this.currentPlayerSprite.isFire = this.localInfo.effects.speed < 1;
+      this.currentPlayerSprite.isShield = this.localInfo.effects.haveShield;
+      this.currentPlayerSprite.color = this.localInfo.color;
     }
 
     if (this.focusCamera) {
