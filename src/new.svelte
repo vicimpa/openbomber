@@ -282,7 +282,7 @@
       z-index: 2
       transition: transform 0.3s
       backdrop-filter: blur(10px)
-      z-index: 10
+      z-index: 11
 
       .scroll
         display: flex
