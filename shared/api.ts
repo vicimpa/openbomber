@@ -2,7 +2,7 @@ import { makeWebSocketApi } from "../core/makeWebSocketApi";
 import { makeCustomType, makeEnum, Proto } from "../core/Proto";
 import { EAchivment, EAnimate, EDir, EEffect, EExplodeDir, ESounds } from "./types";
 
-const POSITION = makeCustomType<number>(
+export const POSITION = makeCustomType<number>(
   (db, value) => {
     db.writeint32(value * 1000);
   },
@@ -11,21 +11,21 @@ const POSITION = makeCustomType<number>(
   }
 );
 
-const DIRECTION = makeEnum(EDir);
-const ANIMATION = makeEnum(EAnimate);
-const SOUND = makeEnum(ESounds);
-const EFFECT = makeEnum(EEffect);
-const ACHIVMENT = makeEnum(EAchivment);
-const EXPLODEDIRECTION = makeEnum(EExplodeDir);
+export const DIRECTION = makeEnum(EDir);
+export const ANIMATION = makeEnum(EAnimate);
+export const SOUND = makeEnum(ESounds);
+export const EFFECT = makeEnum(EEffect);
+export const ACHIVMENT = makeEnum(EAchivment);
+export const EXPLODEDIRECTION = makeEnum(EExplodeDir);
 
-const INPUT_POSITION = new Proto({
+export const INPUT_POSITION = new Proto({
   x: POSITION,
   y: POSITION,
   dir: DIRECTION,
   animate: ANIMATION,
 });
 
-const MESSAGE_INFO = new Proto({
+export const MESSAGE_INFO = new Proto({
   message: 'string',
   sender: {
     name: 'string'
@@ -33,14 +33,15 @@ const MESSAGE_INFO = new Proto({
   isMe: 'boolean'
 });
 
-const EFFECT_INFO = new Proto({
+export const EFFECT_INFO = new Proto({
+  id: 'uint32',
   x: POSITION,
   y: POSITION,
   type: EFFECT,
   deltaTime: 'float64'
 });
 
-const GAME_INFO = new Proto({
+export const GAME_INFO = new Proto({
   width: 'uint8',
   height: 'uint8',
   winPlayerId: 'int8',
@@ -48,15 +49,15 @@ const GAME_INFO = new Proto({
   spectratorsCount: 'uint8',
 });
 
-const PLAYER_POSITION_INFO = new Proto({
+export const PLAYER_POSITION = new Proto({
   id: 'uint8',
   x: 'float32',
   y: 'float32',
-  dir: 'uint8',
-  animate: 'uint8',
+  dir: DIRECTION,
+  animate: ANIMATION,
 });
 
-const PLAYER_INFO = new Proto({
+export const PLAYER_INFO = new Proto({
   id: 'uint8',
   name: 'string',
   color: 'uint8',
@@ -76,13 +77,15 @@ const PLAYER_INFO = new Proto({
   ping: 'uint16'
 });
 
-const ACHIVMENT_INFO = new Proto({
+export const ACHIVMENT_INFO = new Proto({
+  id: 'uint32',
   x: POSITION,
   y: POSITION,
   type: ACHIVMENT
 });
 
-const EXPLODE_INFO = new Proto({
+export const EXPLODE_INFO = new Proto({
+  id: 'uint32',
   x: POSITION,
   y: POSITION,
   points: [{
@@ -94,19 +97,20 @@ const EXPLODE_INFO = new Proto({
   }]
 });
 
-const START_POSITION = new Proto({
+export const START_POSITION = new Proto({
   x: POSITION,
   y: POSITION,
 });
 
-const BOMB_INFO = new Proto({
+export const BOMB_INFO = new Proto({
+  id: 'uint32',
   x: POSITION,
   y: POSITION,
   radius: 'uint16',
   isCrazy: 'boolean',
 });
 
-const POSITION_SOUND = new Proto({
+export const POSITION_SOUND = new Proto({
   position: {
     x: POSITION,
     y: POSITION
@@ -133,7 +137,7 @@ export const playerApi = makeWebSocketApi({
   updateExplodes: { input: [EXPLODE_INFO] },
   updateAchivments: { input: [ACHIVMENT_INFO] },
   updateLocalInfo: { input: PLAYER_INFO },
-  updatePlayerPositions: { input: [PLAYER_POSITION_INFO] },
+  updatePlayerPositions: { input: [PLAYER_POSITION] },
   updateGameInfo: { input: GAME_INFO },
   updateWaitForRestart: { input: 'int8' },
   updateEffects: { input: [EFFECT_INFO] },

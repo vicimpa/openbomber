@@ -1,0 +1,1 @@
+export const OUT_FRAME = 16;

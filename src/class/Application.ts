@@ -32,30 +32,36 @@ export class Application {
     this.render();
   }
 
+  runUpdate(children: Set<Entity>, dtime: number, time: number) {
+    for (const entity of children) {
+      entity.update(dtime, time);
+      this.runUpdate(entity.children, dtime, time);
+    }
+  }
+
+  runRender(children: Set<Entity>, cam: Camera) {
+    for (const entity of children) {
+      cam.ctx.save();
+      cam.renderObject(entity);
+      this.runRender(entity.children, cam);
+      cam.ctx.restore();
+    }
+  }
+
   update() {
     const time = performance.now();
     const dtime = time - this.time;
 
     this.time = time;
 
-    for (const cam of this.cameras)
-      cam.update(dtime, time);
-
-    for (const entity of this.children)
-      entity.update(dtime, time);
+    this.runUpdate(this.cameras, dtime, time);
+    this.runUpdate(this.children, dtime, time);
   }
 
-  render(children = this.children) {
+  render() {
     for (const cam of this.cameras) {
-      if (this.children === children)
-        cam.apply();
-
-      for (const entity of children) {
-        cam.ctx.save();
-        cam.renderObject(entity);
-        this.render(entity.children);
-        cam.ctx.restore();
-      }
+      cam.apply();
+      this.runRender(this.children, cam);
     }
   }
 }

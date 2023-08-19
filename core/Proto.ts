@@ -48,6 +48,9 @@ export type TProtoObject = {
   [key: string]: TProtoParam;
 };
 
+export type TProtoOut<T extends TCustomType<any>> =
+  T[typeof TO_SYMBOL] extends (...args: any[]) => any ? ReturnType<T[typeof TO_SYMBOL]> : never;
+
 export type TProtoValue<T extends TProtoParam> = (
   T extends PRIMITIVE_TYPES ? (
     TPrimitiveValue<T>

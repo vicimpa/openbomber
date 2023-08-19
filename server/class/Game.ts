@@ -60,6 +60,12 @@ export class Game {
 
   waitForRestart = -1;
 
+  bombsCounter!: number;
+  explodesCounter!: number;
+  achivmentsCounter!: number;
+  effectsCounter!: number;
+
+
   infoCache: Game['info'] = this.info;
   mapCache: number[] = [];
   bombsCache: Bomb['info'][] = [];
@@ -144,6 +150,11 @@ export class Game {
     this.map = new GameMap(this);
     this.map.generate(this.settings);
     this.winPlayerId = -1;
+
+    this.bombsCounter = 0;
+    this.effectsCounter = 0;
+    this.explodesCounter = 0;
+    this.achivmentsCounter = 0;
   }
 
   message(message: string, sender?: Player) {

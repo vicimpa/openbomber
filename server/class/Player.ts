@@ -142,11 +142,14 @@ export class Player extends Entity {
     setBomb: () => {
       if (this.isDeath || !this.inGame) return;
 
-      const { bombs } = this.game;
+      const { bombs, achivments } = this.game;
       const newBomb = new Bomb(this, CrasyBombEffect.hasCrasyBomb(this));
       const { x, y } = newBomb;
 
       if (find(bombs, { x, y }))
+        return;
+
+      if (find(achivments, { x, y }))
         return;
 
       if (map(bombs, e => e, e => e.player === this).length >= this.effects.bombs)

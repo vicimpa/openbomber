@@ -1,24 +1,14 @@
-import { makeEffect } from "@/makeEffect";
-import { makeNumberFilter } from "@/makeNumberFilter";
-import { makeVec2Filter } from "@/makeVec2Filter";
-import { cos, min, sin } from "@/math";
 import { point } from "@/point";
 
 import { Entity } from "./Entity";
 
 import type { Vec2 } from "@/Vec2";
+
 export class Camera extends Entity {
   ctx!: CanvasRenderingContext2D;
 
-  resizeEffect = makeEffect<number>();
-
   get width() { return this.can.width; }
   get height() { return this.can.height; }
-
-  focus?: Vec2;
-
-  filter = makeVec2Filter(30);
-  scaleFilter = makeNumberFilter(100);
 
   constructor(
     public can: HTMLCanvasElement,
@@ -31,8 +21,7 @@ export class Camera extends Entity {
   }
 
   update(dtime: number, time: number): void {
-    if (this.ctx.imageSmoothingEnabled)
-      this.ctx.imageSmoothingEnabled = false;
+    this.ctx.imageSmoothingEnabled = false;
 
     if (typeof this.can.offsetWidth === 'number')
       if (this.can.width !== this.can.offsetWidth)
@@ -41,24 +30,6 @@ export class Camera extends Entity {
     if (typeof this.can.offsetHeight === 'number')
       if (this.can.height !== this.can.offsetHeight)
         this.can.height = this.can.offsetHeight;
-
-    this.s = min(this.width, this.height) / (16 * 16);
-
-    const stime = time * .00001;
-    const move = (this.focus ? (
-      this.focus.clone()
-        .minus(this)
-        .normalize()
-    ) : (
-      point(
-        sin(stime),
-        cos(stime)
-      )
-    )).times(
-      (this.focus ? this.focus.length(this) * .01 : .03) * dtime
-    );
-
-    this.plus(move);
   }
 
   apply() {
@@ -68,6 +39,10 @@ export class Camera extends Entity {
     ctx.resetTransform();
     ctx.clearRect(0, 0, width, height);
     ctx.setTransform(s, 0, 0, s, center.x - x * s, center.y - y * s);
+  }
+
+  inCamera(x: number, y: number, width: number, height: number) {
+
   }
 
   save() {

@@ -1,5 +1,6 @@
-import type { Vec2 } from "@/Vec2";
+import { OUT_FRAME } from "config";
 
+import type { Vec2 } from "@/Vec2";
 const CACHE = new Map<string, Sprite>();
 
 export class Sprite {
@@ -21,7 +22,13 @@ export class Sprite {
     CACHE.set(image, this);
   }
 
-  render(ctx: CanvasRenderingContext2D, frame: Vec2, x: number, y: number, size = this.grid) {
+  render(
+    ctx: CanvasRenderingContext2D,
+    frame: Vec2,
+    x = 0,
+    y = 0
+  ) {
+
     ctx.drawImage(
       this.image,
       frame.x * this.grid,
@@ -29,8 +36,8 @@ export class Sprite {
       this.grid,
       this.grid,
       x, y,
-      size,
-      size
+      OUT_FRAME,
+      OUT_FRAME
     );
   }
 }

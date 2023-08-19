@@ -7,6 +7,8 @@ import { Explode } from "./Explode";
 import { Player } from "./Player";
 
 export class Bomb extends Entity {
+  id!: number;
+
   time = Date.now();
   liveTime = 2000;
 
@@ -20,6 +22,7 @@ export class Bomb extends Entity {
     const y = Math.round(player.y);
 
     super(player.game, x, y);
+    this.id = player.game.bombsCounter++;
     this.radius = player.effects.radius;
 
     if (isCrazy) {
@@ -37,6 +40,7 @@ export class Bomb extends Entity {
 
   get info() {
     return pick(this, [
+      'id',
       'x',
       'y',
       'radius',

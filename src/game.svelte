@@ -30,7 +30,6 @@
   import { DIRECTIONS } from "@/types";
   import { point } from "@/point";
   import ChatView from "components/ChatView.svelte";
-  import App from "app.svelte";
   import { stylesVariable } from "library/stylesVariable";
 
   const newApi = gameApi.use(socket);

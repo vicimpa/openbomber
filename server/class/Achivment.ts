@@ -20,6 +20,7 @@ const STORE = [
 ];
 
 export class Achivment extends Entity {
+  id!: number;
   constructor(
     game: Game,
     x: number,
@@ -27,6 +28,7 @@ export class Achivment extends Entity {
     public type: EAchivment = random([...STORE, EAchivment.RANDOM])
   ) {
     super(game, x, y);
+    this.id = game.achivmentsCounter++;
   }
 
   accept(player: Player, type = this.type): void {
@@ -76,6 +78,7 @@ export class Achivment extends Entity {
 
   get info() {
     return pick(this, [
+      'id',
       'x',
       'y',
       'type'

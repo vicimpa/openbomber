@@ -23,10 +23,11 @@ export class Entity extends Vec2 {
     this.delete();
     this.parent = parent;
     parent.children.add(this);
+    return this;
   }
 
   delete() {
-    this.parent?.children.add(this);
+    this.parent?.children.delete(this);
     delete this.parent;
   }
 }

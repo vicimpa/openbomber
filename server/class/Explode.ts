@@ -15,6 +15,7 @@ export interface IExplodePoin {
 }
 
 export class Explode extends Entity {
+  id!: number;
   #points: IExplodePoin[] = [];
   time = Date.now();
   liveTime = 500;
@@ -25,6 +26,7 @@ export class Explode extends Entity {
 
   constructor(bomb: Bomb) {
     super(bomb.game, bomb.x, bomb.y);
+    this.id = bomb.game.explodesCounter++;
     this.radius = bomb.radius;
     this.player = bomb.player;
     this.explode();
@@ -128,6 +130,7 @@ export class Explode extends Entity {
 
   get info() {
     return pick(this, [
+      'id',
       'x',
       'y',
       'points'

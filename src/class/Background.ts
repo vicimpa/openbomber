@@ -1,6 +1,7 @@
 import { points } from "@/point";
 import { random } from "@/random";
 import { generatePerlinNoise } from "@vicimpa/perlin-noise";
+import { OUT_FRAME } from "config";
 import sprite from "images/sprite.png";
 
 import { Entity } from "./Entity";
@@ -30,8 +31,17 @@ export class Background extends Entity {
     return points[persent.length];
   }
 
-  generate(width: number, height: number, size = 16) {
-    const noise = generatePerlinNoise(width, height);
+  generate(width: number, height: number, size = OUT_FRAME) {
+    if (!this.sprite.ready) return;
+
+    const noise = generatePerlinNoise(
+      width,
+      height,
+      {
+        seed: 0
+      }
+    );
+
     this.can.width = width * size;
     this.can.height = height * size;
 
@@ -41,8 +51,7 @@ export class Background extends Entity {
           this.ctx,
           this.getFrom(noise[x + y * width]),
           x * size,
-          y * size,
-          size
+          y * size
         );
       }
     }
@@ -53,20 +62,18 @@ export class Background extends Entity {
   update(dtime: number, time: number): void {
     if (this.ctx.imageSmoothingEnabled)
       this.ctx.imageSmoothingEnabled = false;
-    if (!this.pattern && this.sprite.ready) {
-      this.generate(this.width, this.height);
-    }
   }
 
   render(camera: Camera): void {
     if (!this.pattern)
-      return;
+      return this.generate(this.width, this.height);
 
     const s = 1 / camera.s;
     const X = camera.width * s * .5;
     const Y = camera.height * s * .5;
 
     const { ctx } = camera;
+
     ctx.fillStyle = this.pattern;
     ctx.fillRect(-X + camera.x, -Y + camera.y, X * 2, Y * 2);
   }
