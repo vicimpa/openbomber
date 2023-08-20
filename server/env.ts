@@ -1,1 +1,1 @@
-export const IS_DEV = process.env['npm_lifecycle_event'] === 'dev';
+export const IS_DEV = false;// process.env['npm_lifecycle_event'] === 'dev';

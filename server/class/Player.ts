@@ -173,9 +173,8 @@ export class Player extends Entity {
     },
 
     toGame: () => {
-      if (this.inGame) return;
+      if (!this.canJoin || this.inGame) return;
       this.randomPosition();
-      if (this.#id === -1) return;
       this.isDeath = true;
       this.kills = 0;
       this.deaths = 0;
@@ -377,17 +376,18 @@ export class Player extends Entity {
       }
     );
 
-    if (this.inGame && !this.isDeath)
-      effectObject(
-        this,
-        'startPosition',
-        this.startPosition ?? point(Math.random()),
-        (point) => {
+    effectObject(
+      this,
+      'startPosition',
+      this.inGame && !this.isDeath ? this.startPosition : undefined,
+      (point) => {
+        if (point) {
           this.set(point);
           this.newApi.setStartPosition(point);
           this.newApi.playSound(ESounds.newLife);
         }
-      );
+      }
+    );
 
     effectObject(
       this,
