@@ -1,11 +1,12 @@
 import { point } from "@/point";
+import { Vec2 } from "@/Vec2";
 
 import { Entity } from "./Entity";
 
-import type { Vec2 } from "@/Vec2";
-
 export class Camera extends Entity {
   ctx!: CanvasRenderingContext2D;
+
+  upScale = 1;
 
   get width() { return this.can.width; }
   get height() { return this.can.height; }
@@ -21,24 +22,34 @@ export class Camera extends Entity {
   }
 
   update(dtime: number, time: number): void {
+    const { upScale } = this;
+    const { parentElement } = this.can;
     this.ctx.imageSmoothingEnabled = false;
 
-    if (typeof this.can.offsetWidth === 'number')
-      if (this.can.width !== this.can.offsetWidth)
-        this.can.width = this.can.offsetWidth;
+    if (parentElement instanceof HTMLElement) {
+      this.can.style.transform = `scale(${1 / upScale})`;
 
-    if (typeof this.can.offsetHeight === 'number')
-      if (this.can.height !== this.can.offsetHeight)
-        this.can.height = this.can.offsetHeight;
+      if (typeof this.can.offsetWidth === 'number')
+        if (this.can.width !== parentElement.offsetWidth * upScale)
+          this.can.width = parentElement.offsetWidth * upScale;
+
+      if (typeof this.can.offsetHeight === 'number')
+        if (this.can.height !== parentElement.offsetHeight * upScale)
+          this.can.height = parentElement.offsetHeight * upScale;
+    }
   }
 
   apply() {
-    const { ctx, width, height, s, x, y } = this;
-    const center = point(width, height).times(.5);
+    const { ctx, width, height, s } = this;
+    const translate = point(width, height)
+      .times(.5)
+      .minus(
+        this.clone().times(s)
+      ).round();
 
     ctx.resetTransform();
     ctx.clearRect(0, 0, width, height);
-    ctx.setTransform(s, 0, 0, s, center.x - x * s, center.y - y * s);
+    ctx.setTransform(s, 0, 0, s, translate.x, translate.y);
   }
 
   inCamera(x: number, y: number, width: number, height: number) {
