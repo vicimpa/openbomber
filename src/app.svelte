@@ -371,9 +371,10 @@
     .skins
       display: flex
       flex-wrap: wrap
-      width: 100%
+      width: 30vw
+      height: 20vh
       max-width: 300px
-      height: 300px
+      max-height: 200px
       overflow: hidden
       overflow-y: scroll
 
