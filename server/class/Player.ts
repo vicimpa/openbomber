@@ -376,20 +376,17 @@ export class Player extends Entity {
       }
     );
 
-    effectObject(
-      this,
-      'startPosition',
-      this.startPosition,
-      (point) => {
-        if (!point) return;
-        this.set(point);
-
-        if (this.inGame && !this.isDeath) {
+    if (this.inGame && !this.isDeath)
+      effectObject(
+        this,
+        'startPosition',
+        this.startPosition ?? point(Math.random()),
+        (point) => {
+          this.set(point);
           this.newApi.setStartPosition(point);
           this.newApi.playSound(ESounds.newLife);
         }
-      }
-    );
+      );
 
     effectObject(
       this,
