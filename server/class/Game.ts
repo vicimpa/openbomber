@@ -1,6 +1,7 @@
 import { Socket } from "socket.io";
 import { createLogger } from "vite";
 
+import { calcMap } from "../../core/calcMap";
 import { delay } from "../../core/delay";
 import { effectObject } from "../../core/effectObject";
 import { find } from "../../core/find";
@@ -38,6 +39,9 @@ export const defaultStartPositions: Vec2[] = [
 export type TConfig = typeof defaultConfig;
 
 export class Game {
+  width = 1;
+  height = 1;
+
   #settings: TConfig;
 
   map!: GameMap;
@@ -48,8 +52,8 @@ export class Game {
   effects = new Set<Effect>();
   nextSize = new Vec2();
 
-  startPositions: Vec2[];
-  usedPositions = new Set<number>();
+  startPositions: Vec2[] = [];
+  usedPositions = new Set<Vec2>();
 
   playerColors: number[] = [];
   usedColors = new Set<number>();
@@ -64,7 +68,7 @@ export class Game {
   explodesCounter!: number;
   achivmentsCounter!: number;
   effectsCounter!: number;
-
+  slotLimits = 25;
 
   infoCache: Game['info'] = this.info;
   mapCache: number[] = [];
@@ -75,7 +79,7 @@ export class Game {
   effectsTypeCache: Effect['infoType'][] = [];
 
   getFreePosition() {
-    const free = Array.from({ length: this.startPositions.length }, (_, i) => i)
+    const free = Array.from(this.startPositions)
       .filter(e => !this.usedPositions.has(e));
     const position = random(free);
     this.usedPositions.add(position);
@@ -91,7 +95,7 @@ export class Game {
     return color;
   }
 
-  releasePosition(position: number) {
+  releasePosition(position: Vec2) {
     this.usedPositions.delete(position);
   }
 
@@ -101,39 +105,30 @@ export class Game {
 
   get spectratorsCount() { return map(this.players, e => e, e => !e.inGame).length; }
   get playersCount() { return map(this.players, e => e, e => e.inGame).length; }
-  get slotLimits() { return this.startPositions.length; }
 
   get settings() {
     return { ...this.#settings };
   }
 
   constructor(
-    public width: number,
-    public height: number,
-    settings?: Partial<TConfig>,
-    startPositions: Vec2[] = defaultStartPositions
+    settings?: Partial<TConfig>
   ) {
-    this.nextSize.set(width, height);
     this.#settings = { ...defaultConfig, ...settings };
-    this.startPositions = startPositions
-      .map((point) => point.times(width - 1, height - 1).floor())
-      .map((point) => vec2(point, (x, y) => {
-        if (x & 1) point.x -= 1;
-        if (y & 1) point.y -= 1;
-        return point;
-      }));
-
     for (let i = 0; i < 52; i++)
       this.playerColors.push(i);
 
+    this.startPositions = [];
     this.restart();
   }
 
   restart() {
-    const { x: width, y: height } = this.nextSize;
+    const { size, positions } = calcMap(this.playersCount);
 
-    this.width = width;
-    this.height = height;
+    if (!size.equal(this.width, this.height)) {
+      this.width = size.x;
+      this.height = size.y;
+      this.startPositions = positions;
+    }
 
     this.waitForRestart = -1;
 
@@ -200,6 +195,7 @@ export class Game {
     if (this.running) return;
     this.running = true;
     logger.info('Game starting', { timestamp: true });
+    this.restart();
     this.loop()
       .catch(console.error);
   }

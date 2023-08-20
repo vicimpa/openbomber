@@ -1,22 +1,5 @@
-import { Proto } from "@/Proto";
+import App from "test.svelte";
 
-const user = new Proto({
-  id: 'uint8',
-  x: 'float32',
-  y: 'float32',
-  name: 'string'
-});
-
-const userJson = JSON.stringify({
-  id: 12,
-  x: 12.5,
-  y: 13.6,
-  name: 'Roman'
-});
-
-const buff = user.from({
-  id: 12,
-  x: 12.5,
-  y: 13.6,
-  name: 'Roman'
+new App({
+  target: document.getElementById('app')!
 });

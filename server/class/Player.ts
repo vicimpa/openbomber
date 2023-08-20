@@ -23,22 +23,25 @@ import { RadiusEffect } from "./RadiusEffect";
 import { ShieldEffect } from "./ShieldEffect";
 import { SpeedEffect } from "./SpeedEffect";
 
+let PLAYER_COUNTER = 0;
+
 export class Player extends Entity {
-  #id = -1;
+  #id = PLAYER_COUNTER++;
   newApi!: TMethodsOut<typeof playerApi>;
   unforward?: () => any;
 
   isDeath = false;
 
   dir = EDir.BOTTOM;
+  inGame = false;
   #animate = EAnimate.IDLE;
 
   get id() { return this.#id; }
-  get inGame() { return this.#id !== -1; };
   get canJoin() { return this.game.slotLimits > this.game.playersCount; }
   get animate() { return this.#animate; }
   set animate(v) { this.#animate = v; }
-  get startPosition(): Vec2 | undefined { return this.game.startPositions[this.#id]; };
+
+  startPosition?: Vec2 | undefined;
 
   name = '';
   color = -1;
@@ -170,13 +173,14 @@ export class Player extends Entity {
     },
 
     toGame: () => {
-      if (this.#id >= 0) return;
+      if (this.inGame) return;
       this.randomPosition();
       if (this.#id === -1) return;
       this.isDeath = true;
       this.kills = 0;
       this.deaths = 0;
       this.wins = 0;
+      this.inGame = true;
       this.lastAction = Date.now();
       PlayerEffect.clearEffets(this);
       this.randomColor();
@@ -184,15 +188,15 @@ export class Player extends Entity {
     },
 
     toLeave: () => {
-      if (!this.startPosition) return;
-      this.game.releasePosition(this.#id);
+      if (!this.inGame) return;
+      this.releasePosition();
       this.game.releaseColor(this.color);
       this.#id = -1;
       this.color = -1;
+      this.inGame = false;
       this.game.message(`${this.name ?? 'noname'} отключился`);
     }
   };
-
 
   reset() {
     const { startPosition } = this;
@@ -228,14 +232,18 @@ export class Player extends Entity {
 
     const target = isSuicide ? 'самоубился' : `убит ${killer.name}`;
     this.game.message(`${this.name ?? 'noname'} ${target}`);
+    this.releasePosition();
   }
 
   randomPosition() {
-    if (this.startPosition) {
-      this.game.releasePosition(this.#id);
-    }
+    this.releasePosition();
+    this.startPosition = this.game.getFreePosition();
+  }
 
-    this.#id = this.game.getFreePosition();
+  releasePosition() {
+    if (this.startPosition) {
+      this.game.releasePosition(this.startPosition);
+    }
   }
 
   randomColor() {
@@ -368,17 +376,20 @@ export class Player extends Entity {
       }
     );
 
-    if (this.inGame && !this.isDeath)
-      effectObject(
-        this,
-        'startPosition',
-        this.startPosition ?? point(0),
-        (point) => {
-          this.set(point);
+    effectObject(
+      this,
+      'startPosition',
+      this.startPosition,
+      (point) => {
+        if (!point) return;
+        this.set(point);
+
+        if (this.inGame && !this.isDeath) {
           this.newApi.setStartPosition(point);
           this.newApi.playSound(ESounds.newLife);
         }
-      );
+      }
+    );
 
     effectObject(
       this,
