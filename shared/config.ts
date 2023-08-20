@@ -8,3 +8,4 @@ export const BOMB_TIME = 2000;
 export const CRAZY_BOMB_MIN = 500;
 export const CRAZY_BOMB_MAX = 5000;
 export const CRAZY_BOMB_BOOST = 5;
+export const SKINS_COUNT = 52;

@@ -16,11 +16,11 @@
   {#if editName}
     <input placeholder="Name" maxlength={NICK_LENGTH} bind:value={name} />
     <Button on:click={() => ((editName = false), dispatch("save", name))}>
-      Close
+      Закрыть
     </Button>
   {:else}
     <span>{name ?? "noname"}</span>
-    <Button on:click={() => (editName = true)}>Edit</Button>
+    <Button on:click={() => (editName = true)}>Изменить</Button>
   {/if}
   <slot />
 </p>

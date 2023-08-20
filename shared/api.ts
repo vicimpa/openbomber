@@ -126,6 +126,7 @@ export const gameApi = makeWebSocketApi({
   toLeave: {},
   sendMessage: { input: 'string' },
   randomColor: {},
+  setSkin: { input: 'uint8' },
   ping: {},
 });
 

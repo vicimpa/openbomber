@@ -4,11 +4,11 @@ import { effectObject } from "../../core/effectObject";
 import { find } from "../../core/find";
 import { TMethodsOut } from "../../core/makeWebSocketApi";
 import { map } from "../../core/map";
+import { rem } from "../../core/math";
 import { pick } from "../../core/pick";
-import { point } from "../../core/point";
 import { Vec2 } from "../../core/Vec2";
 import { gameApi, playerApi } from "../../shared/api";
-import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT } from "../../shared/config";
+import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT, SKINS_COUNT } from "../../shared/config";
 import { EAnimate, EDir, EEffect, ESounds } from "../../shared/types";
 import { IS_DEV } from "../env";
 import { Bomb } from "./Bomb";
@@ -134,12 +134,15 @@ export class Player extends Entity {
       this.ping = Date.now() - this.lastTestPing;
     },
     randomColor: () => {
-      this.randomColor();
     },
     sendMessage: (message) => {
       if (!message) return;
       message = message.slice(0, MESSAGE_LENGTH);
       this.game.message(message, this);
+    },
+
+    setSkin: (skin) => {
+      this.color = rem(skin, SKINS_COUNT);
     },
 
     setBomb: () => {
@@ -182,14 +185,12 @@ export class Player extends Entity {
       this.inGame = true;
       this.lastAction = Date.now();
       PlayerEffect.clearEffets(this);
-      this.randomColor();
       this.game.message(`${this.name ?? 'noname'} подключился`);
     },
 
     toLeave: () => {
       if (!this.inGame) return;
       this.releasePosition();
-      this.game.releaseColor(this.color);
       this.#id = -1;
       this.color = -1;
       this.inGame = false;
@@ -244,13 +245,6 @@ export class Player extends Entity {
       this.game.releasePosition(this.startPosition);
     }
     delete this.startPosition;
-  }
-
-  randomColor() {
-    if (this.color !== -1)
-      this.game.releaseColor(this.color);
-
-    this.color = this.game.getFreeColor();
   }
 
   connect() {

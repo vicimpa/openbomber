@@ -55,9 +55,6 @@ export class Game {
   startPositions: Vec2[] = [];
   usedPositions = new Set<Vec2>();
 
-  playerColors: number[] = [];
-  usedColors = new Set<number>();
-
   running = false;
   kills = 0;
   winPlayerId: Player['id'] = -1;
@@ -86,21 +83,8 @@ export class Game {
     return position;
   }
 
-  getFreeColor() {
-    const free = Array.from({ length: this.playerColors.length }, (_, i) => i)
-      .filter(e => !this.usedColors.has(e));
-
-    const color = random(free);
-    this.usedColors.add(color);
-    return color;
-  }
-
   releasePosition(position: Vec2) {
     this.usedPositions.delete(position);
-  }
-
-  releaseColor(color: number) {
-    this.usedColors.delete(color);
   }
 
   get spectratorsCount() { return map(this.players, e => e, e => !e.inGame).length; }
@@ -114,9 +98,6 @@ export class Game {
     settings?: Partial<TConfig>
   ) {
     this.#settings = { ...defaultConfig, ...settings };
-    for (let i = 0; i < 52; i++)
-      this.playerColors.push(i);
-
     this.startPositions = [];
     this.restart();
   }
