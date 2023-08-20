@@ -12,14 +12,7 @@ export default defineConfig({
   publicDir: '../public',
   build: {
     outDir: '../dist',
-    target: 'esnext',
-    rollupOptions: {
-      input: {
-        index: resolve(__dirname, 'src', 'index.html'),
-        old: resolve(__dirname, 'src', 'old.html'),
-        test: resolve(__dirname, 'src', 'test.html'),
-      }
-    }
+    target: 'esnext'
   },
   preview: {
     host: '127.0.0.1',
