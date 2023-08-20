@@ -1,4 +1,5 @@
 export const rem = (v: number, a: number): number => {
+  if (!isFinite(v)) v = 0;
   if (v < 0) return rem(v + a, a);
   return v % a;
 };
