@@ -22,7 +22,10 @@ export class FocusCamera extends Camera {
     const { focus } = this;
 
     if (focus instanceof Game) {
-      const focusPlayer = focus.currentPlayerSprite ?? focus.focusPlayer;
+      const focusPlayer = focus.waitRestart === -1 ? (
+        focus.currentPlayerSprite ?? focus.focusPlayer
+      ) : undefined;
+
       if (focusPlayer) {
         this.need.set(
           this.filterNeed(
