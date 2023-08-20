@@ -69,15 +69,20 @@ export class Sound {
       src.connect(panner);
       panner.connect(gainNode);
 
+      src.onended = () => {
+        panner.disconnect(gainNode);
+        src.disconnect(panner);
+        src.onended = null;
+      };
     } else {
       src.connect(gainNode);
-    }
 
+      src.onended = () => {
+        src.disconnect(gainNode);
+        src.onended = null;
+      };
+    }
     src.start(0);
-    src.onended = () => {
-      src.disconnect(gainNode);
-      src.onended = null;
-    };
   }
 
   static test() {
