@@ -22,6 +22,10 @@
   let startVec = new Vec2();
   let gamepads: Gamepad[] = [];
 
+  const keyboardMove = new Vec2();
+  const touchMove = new Vec2();
+  const gamepadMove = new Vec2();
+
   const controller = makeVectorController(
     {
       keys: ["KeyW", "ArrowUp"],
@@ -86,6 +90,7 @@
     if (!ref) return;
 
     ref.ontouchstart = (e) => {
+      const move = touchMove;
       const { touches } = e;
       for (const { clientX, clientY, identifier, target } of touches) {
         if (bomb === target) {
@@ -106,6 +111,7 @@
     };
 
     ref.ontouchmove = (e) => {
+      const move = touchMove;
       const { touches } = e;
       e.preventDefault();
       for (const { clientX, clientY, identifier } of touches) {
@@ -135,7 +141,6 @@
     };
 
     ref.ontouchend = ({ touches }) => {
-      console.log(touches);
       if (startId === null) return;
       if (![...touches].find((e) => e.identifier === startId)) startId = null;
     };
@@ -149,8 +154,7 @@
 
     if (startId === null) move.set(0);
 
-    const gamepadMove = new Vec2();
-    const keysMove = controller().normalize();
+    keyboardMove.set(controller().normalize());
 
     if (gamepads.length) {
       updateGamepads();
@@ -163,15 +167,20 @@
 
         if (vec.length()) {
           gamepadMove.set(vec);
+        } else {
+          gamepadMove.set(0);
         }
       }
 
       gamepad.bomb.isSingle() && dispatch("bomb");
     }
-    if (!touch) {
-      move.set(gamepadMove.length() ? gamepadMove : keysMove);
-      keys.bomb.isSingle() && dispatch("bomb");
-    }
+
+    keys.bomb.isSingle() && dispatch("bomb");
+
+    if (keyboardMove.length()) move.set(keyboardMove);
+    else if (gamepadMove.length()) move.set(gamepadMove);
+    else if (touchMove.length()) move.set(touchMove);
+    else move.set(0);
   });
 </script>
 

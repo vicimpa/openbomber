@@ -109,7 +109,7 @@ export class Game {
       this.width = size.x;
       this.height = size.y;
       this.startPositions = positions;
-      this.message('Размер карты был увеличен');
+      this.message('Размер карты был изменен');
     }
 
     this.waitForRestart = -1;
