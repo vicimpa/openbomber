@@ -26,7 +26,7 @@ import { SpeedEffect } from "./SpeedEffect";
 let PLAYER_COUNTER = 0;
 
 export class Player extends Entity {
-  #id = PLAYER_COUNTER++;
+  readonly #id = PLAYER_COUNTER++;
   newApi!: TMethodsOut<typeof playerApi>;
   unforward?: () => any;
 
@@ -191,7 +191,6 @@ export class Player extends Entity {
     toLeave: () => {
       if (!this.inGame) return;
       this.releasePosition();
-      this.#id = -1;
       this.color = -1;
       this.inGame = false;
       this.game.message(`${this.name ?? 'noname'} отключился`);
