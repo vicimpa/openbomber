@@ -143,6 +143,8 @@
     ref.ontouchend = ({ touches }) => {
       if (startId === null) return;
       if (![...touches].find((e) => e.identifier === startId)) startId = null;
+      const move = touchMove;
+      move.set(0);
     };
 
     ref.oncontextmenu = (e) => e.preventDefault();
