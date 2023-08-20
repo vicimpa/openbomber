@@ -56,6 +56,7 @@
     display: flex
     flex-direction: column
     z-index: 10
+    max-width: 200px
 
     .item
       overflow: hidden
