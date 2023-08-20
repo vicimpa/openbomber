@@ -244,6 +244,7 @@ export class Player extends Entity {
     if (this.startPosition) {
       this.game.releasePosition(this.startPosition);
     }
+    delete this.startPosition;
   }
 
   randomColor() {
