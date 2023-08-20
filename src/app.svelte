@@ -413,7 +413,7 @@
         flex-direction: column
         align-items: center
         gap: 20px
-        z-index: 2
+        z-index: 12
 
       .restart-back
         position: absolute
