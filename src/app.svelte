@@ -211,7 +211,7 @@
       </div>
     {/if}
 
-    {#if selectSkin}
+    {#if !isOpenEditName && selectSkin}
       <div class="restart-back" />
       <div class="restart">
         <p>Выберите скин</p>
