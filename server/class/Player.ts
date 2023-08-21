@@ -10,7 +10,7 @@ import { pick } from "../../core/pick";
 import { Vec2 } from "../../core/Vec2";
 import { gameApi, playerApi } from "../../shared/api";
 import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT, SKINS_COUNT } from "../../shared/config";
-import { EAnimate, EDir, EEffect, ESounds } from "../../shared/types";
+import { EAnimate, EDir, EEffect, EMapItem, ESounds } from "../../shared/types";
 import { IS_DEV } from "../env";
 import { Bomb } from "./Bomb";
 import { BombEffect } from "./BombEffect";
@@ -120,15 +120,19 @@ export class Player extends Entity {
     setPosition: ({ x, y, dir, animate }) => {
       if (this.isDeath && !this.inGame) return;
       const { speed } = this.effects;
-      const distance = calcSpeed(Date.now() - this.lastAction, speed);
-      if (this.length(x, y) > distance + .15) {
+      const distance = calcSpeed(Date.now() - this.lastAction, speed) + .2;
+
+      x = (x * 16 | 0) / 16;
+      y = (y * 16 | 0) / 16;
+
+      if (this.length(x, y) > distance) {
         this.newApi.setStartPosition(this);
         return;
       }
 
       this.lastAction = Date.now();
-      this.x = (x * 16 | 0) / 16;
-      this.y = (y * 16 | 0) / 16;
+      this.x = x;
+      this.y = y;
       this.dir = dir;
       this.animate = animate;
     },
