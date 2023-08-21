@@ -6,10 +6,7 @@
 
   const format = FDate.makeFormat("hh:mm:ss DD.MM.YYYY");
 
-  let counter = 0;
-
   let messages: {
-    id: number;
     message: string;
     player: TChatInfo;
     isMe: boolean;
@@ -18,27 +15,25 @@
 
   onMount(() => {
     return ChatEvent.subscribe(({ player, message, isMe }) => {
-      messages.push({ id: counter++, player, message, isMe, date: new Date() });
-      messages = messages.slice(-100);
+      messages.push({ player, message, isMe, date: new Date() });
+      messages = messages.filter((e) => +e.date + 6000 < Date.now());
     });
   });
 </script>
 
 <div class="chatview">
   {#each messages as mess}
-    {#key mess.id}
-      <div class="item" data-isme={mess.isMe}>
-        <div class="name">
-          {mess.player.name ?? "noname"}
-          <span class="date">
-            {format(mess.date)}
-          </span>
-        </div>
-        <div class="message">
-          {mess.message}
-        </div>
+    <div class="item" data-isme={mess.isMe}>
+      <div class="name">
+        {mess.player.name ?? "noname"}
+        <span class="date">
+          {format(mess.date)}
+        </span>
       </div>
-    {/key}
+      <div class="message">
+        {mess.message}
+      </div>
+    </div>
   {/each}
 </div>
 
