@@ -159,6 +159,11 @@ export class Player extends Entity {
       const newBomb = new Bomb(this, CrasyBombEffect.hasCrasyBomb(this));
       const { x, y } = newBomb;
 
+      const value = this.game.map[x + y * this.game.width];
+
+      if (value === EMapItem.BLOCK || value === EMapItem.WALL)
+        return;
+
       if (find(bombs, { x, y }))
         return;
 
