@@ -94,6 +94,14 @@ export class Vec2 {
     return this.x === x && this.y === y;
   };
 
+  #lower = (x: number, y: number) => {
+    return this.x <= x && this.y <= y;
+  };
+
+  #bigger = (x: number, y: number) => {
+    return this.x >= x && this.y >= y;
+  };
+
   constructor(...args: TVec2) { this.set(...args); }
 
   length(...args: TVec2) {
@@ -128,6 +136,8 @@ export class Vec2 {
   minLimit(...args: TVec2) { return vec2(...args, this.#minLimit); }
   maxLimit(...args: TVec2) { return vec2(...args, this.#maxLimit); }
   equal(...args: TVec2) { return vec2(...args, this.#equal); }
+  lower(...args: TVec2) { return vec2(...args, this.#lower); }
+  bigger(...args: TVec2) { return vec2(...args, this.#bigger); }
 
   static withIndex(i: number, width: number, height: number) {
     return new Vec2(i % width, i / width | 0);
