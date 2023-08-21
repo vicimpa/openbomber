@@ -2,7 +2,7 @@ import { verifyApi } from "@/api";
 import { calc } from "@/verify";
 import { connect } from "socket.io-client";
 
-export const socket = connect('https://openbomber.ru', {
+export const socket = connect({
   reconnectionDelay: 500,
   reconnectionDelayMax: 500,
   autoConnect: false,
