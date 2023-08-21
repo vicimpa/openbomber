@@ -1,3 +1,4 @@
+import { calcSpeed } from "@/calcSpeed";
 import { abs } from "@/math";
 import { EAnimate, EDir, EMapItem } from "@/types";
 import { Vec2 } from "@/Vec2";
@@ -70,7 +71,7 @@ export class PlayerControllerNew extends Vec2 {
     const size = width * height;
 
     let { animate, dir } = this;
-    let speed = deltaTime * 0.003 * this.speedMulti;
+    const speed = calcSpeed(deltaTime, this.speedMulti);
 
     const move = this.move.clone().normalize();
 

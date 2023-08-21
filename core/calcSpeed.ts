@@ -1,0 +1,1 @@
+export const calcSpeed = (dtime = 0, multi = 0) => 0.003 * dtime * multi;

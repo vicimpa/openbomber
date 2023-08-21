@@ -1,5 +1,6 @@
 import { Socket } from "socket.io";
 
+import { calcSpeed } from "../../core/calcSpeed";
 import { effectObject } from "../../core/effectObject";
 import { find } from "../../core/find";
 import { TMethodsOut } from "../../core/makeWebSocketApi";
@@ -118,7 +119,9 @@ export class Player extends Entity {
   newMethods: Parameters<typeof gameApi['forward']>[1] = {
     setPosition: ({ x, y, dir, animate }) => {
       if (this.isDeath && !this.inGame) return;
-      if (Math.sqrt((this.x - x) ** 2 + (this.y - y) ** 2) > 1) {
+      const { speed } = this.effects;
+      const distance = calcSpeed(Date.now() - this.lastAction, speed);
+      if (this.length(x, y) > distance + .15) {
         this.newApi.setStartPosition(this);
         return;
       }

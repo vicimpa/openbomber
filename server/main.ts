@@ -1,10 +1,9 @@
 import { Server } from "http";
 import { Server as SocketIO } from "socket.io";
 
-import { point } from "../core/point";
 import { calc, makeData } from "../core/verify";
 import { verifyApi } from "../shared/api";
-import { defaultStartPositions, Game } from "./class/Game";
+import { Game } from "./class/Game";
 import { IS_DEV } from "./env";
 
 export function game(server: Server) {
