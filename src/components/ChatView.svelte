@@ -16,8 +16,7 @@
   onMount(() => {
     return ChatEvent.subscribe(({ player, message, isMe }) => {
       messages.push({ player, message, isMe, date: new Date() });
-      messages.splice(-100);
-      messages = messages;
+      messages = messages.slice(-100);
     });
   });
 </script>
@@ -64,6 +63,8 @@
       align-items: flex-end
       animation: hide 0.3s 3s linear forwards
       background-color: rgba(0,0,0,0.4)
+      backdrop-filter: blur(10px)
+      -webkit-backdrop-filter: blur(10px)
       border-radius: 10px
       margin-top: 10px
       
@@ -71,11 +72,14 @@
         align-items: flex-start
 
       .name
+        padding: 10px
         .date
           font-size: 8px
+          
 
       .message
-        padding: 0px 10px
+        padding: 10px
+        padding-top: 0
         word-wrap: break-word
         word-break: break-all
 </style>

@@ -318,6 +318,7 @@
       z-index: 2
       transition: transform 0.3s
       backdrop-filter: blur(10px)
+      -webkit-backdrop-filter: blur(10px)
       z-index: 11
       user-select: none
 
@@ -436,5 +437,6 @@
       border-radius: 0 0 10px 10px
       z-index: 1
       backdrop-filter: blur(5px)
+      -webkit-backdrop-filter: blur(5px)
       user-select: none
 </style>

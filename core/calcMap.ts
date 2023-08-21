@@ -21,12 +21,15 @@ export const calcMap = (players = 0) => {
     height = floor(internal);
   } while (width * height < players);
 
+  const m = MARGIN + PADDING;
+  const p = PADDING;
+
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       positions.push(
         point(
-          PADDING + (PADDING + MARGIN) * x,
-          PADDING + (PADDING + MARGIN) * y
+          p + m * x,
+          p + m * y
         )
       );
     }
@@ -34,8 +37,8 @@ export const calcMap = (players = 0) => {
 
   return {
     size: point(
-      PADDING + (PADDING + MARGIN) * (width - 1) + PADDING + 1,
-      PADDING + + (PADDING + MARGIN) * (height - 1) + PADDING + 1
+      p + m * (width - 1) + p + 1,
+      p + m * (height - 1) + p + 1
     ),
     positions
   };
