@@ -72,7 +72,7 @@ export class PlayerControllerNew extends Vec2 {
     let { animate, dir } = this;
     let speed = deltaTime * 0.003 * this.speedMulti;
 
-    const move = this.move.clone();
+    const move = this.move.clone().normalize();
 
     if (abs(move.y) > .5) dir = move.y < 0 ? EDir.TOP : EDir.BOTTOM;
     if (abs(move.x) > .5) dir = move.x < 0 ? EDir.LEFT : EDir.RIGHT;
