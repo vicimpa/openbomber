@@ -16,7 +16,7 @@
   onMount(() => {
     return ChatEvent.subscribe(({ player, message, isMe }) => {
       messages.push({ player, message, isMe, date: new Date() });
-      messages = messages.filter((e) => +e.date + 6000 > Date.now());
+      messages = messages;
     });
   });
 </script>
