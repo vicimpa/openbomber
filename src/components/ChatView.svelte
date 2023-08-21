@@ -16,26 +16,25 @@
   onMount(() => {
     return ChatEvent.subscribe(({ player, message, isMe }) => {
       messages.push({ player, message, isMe, date: new Date() });
-      messages = messages.splice(0, 100);
+      messages.splice(-100);
+      messages = messages;
     });
   });
 </script>
 
 <div class="chatview">
-  {#each messages as { player, message, isMe, date }, id}
-    {#key id}
-      <div class="item" data-isme={isMe}>
-        <div class="name">
-          {player.name ?? "noname"}
-          <span class="date">
-            {format(date)}
-          </span>
-        </div>
-        <div class="message">
-          {message}
-        </div>
+  {#each messages as mess}
+    <div class="item" data-isme={mess.isMe}>
+      <div class="name">
+        {mess.player.name ?? "noname"}
+        <span class="date">
+          {format(mess.date)}
+        </span>
       </div>
-    {/key}
+      <div class="message">
+        {mess.message}
+      </div>
+    </div>
   {/each}
 </div>
 
