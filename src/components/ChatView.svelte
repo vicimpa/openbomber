@@ -61,7 +61,7 @@
       display: flex
       flex-direction: column
       align-items: flex-end
-      animation: hide 0.3s 3s linear forwards
+      animation: hide 1s 5s linear forwards
       background-color: rgba(0,0,0,0.4)
       backdrop-filter: blur(10px)
       -webkit-backdrop-filter: blur(10px)
