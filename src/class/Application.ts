@@ -51,14 +51,13 @@ export class Application {
     const time = performance.now();
     const dtime = time - this.time;
 
+    this.time = time;
+
     if (dtime > 30)
       return;
 
-    this.time = time;
-
     this.runUpdate(this.cameras, dtime, time);
     this.runUpdate(this.children, dtime, time);
-
     this.render();
   }
 
