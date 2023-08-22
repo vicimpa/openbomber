@@ -56,7 +56,7 @@
     flex-direction: column
     align-items: flex-end
     z-index: 10
-    max-width: 300px
+    max-width: 400px
 
     .item
       overflow: hidden
@@ -83,6 +83,4 @@
       .message
         padding: 10px
         padding-top: 0
-        word-wrap: break-word
-        word-break: break-all
 </style>
