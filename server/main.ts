@@ -7,7 +7,7 @@ import { Game } from "./class/Game";
 import { IS_DEV } from "./env";
 
 export function game(server: Server) {
-  const socketio = new SocketIO(server, {cors: {origin: '*'}});
+  const socketio = new SocketIO(server, IS_DEV ? { cors: { origin: '*' } } : {});
 
   const game = new Game({
     fillAchivments: IS_DEV ? .9999 : .15,
