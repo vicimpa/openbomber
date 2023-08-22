@@ -10,7 +10,7 @@ import { rem } from "../../core/math";
 import { pick } from "../../core/pick";
 import { Vec2 } from "../../core/Vec2";
 import { gameApi, playerApi } from "../../shared/api";
-import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT, SKINS_COUNT } from "../../shared/config";
+import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT, SKINS_COUNT, TIMEOUT_MESSAGE, TIMEOUT_RECONNECT } from "../../shared/config";
 import { EAnimate, EDir, EEffect, EMapItem, ESounds } from "../../shared/types";
 import { IS_DEV } from "../env";
 import { Bomb } from "./Bomb";
@@ -66,8 +66,8 @@ export class Player extends Entity {
   lastTestPing = 0;
 
   lastAction = Date.now();
-  lastMessage = Date.now();
-  lastConnect = Date.now();
+  lastMessage = Date.now() - TIMEOUT_MESSAGE;
+  lastConnect = Date.now() - TIMEOUT_RECONNECT;
 
   get posInfo() {
     return pick(
@@ -146,11 +146,17 @@ export class Player extends Entity {
     randomColor: () => {
     },
     sendMessage: (message) => {
-      if (this.lastMessage + 5000 > Date.now()) {
-        this.newApi.onMessage({ message: 'Сообщение можно отправить через 5 сек', sender: { name: 'server' }, isMe: false })
+      if (!message) return;
+      const needTime = this.lastMessage + TIMEOUT_MESSAGE;
+      const deltaTime = needTime - Date.now();
+      if (deltaTime > 0) {
+        this.newApi.onMessage({
+          message: `Сообщение можно отправить через ${deltaTime / 1000 | 0} сек.`,
+          sender: { name: 'server' },
+          isMe: false
+        })
         return;
       }
-      if (!message) return;
       this.lastMessage = Date.now()
       message = message.slice(0, MESSAGE_LENGTH);
       this.game.message(message, this);
@@ -196,11 +202,20 @@ export class Player extends Entity {
     },
 
     toGame: () => {
-      if(this.lastConnect + 5000 > Date.now()) {
-        this.newApi.onMessage({message: 'Подключитесь через некоторое время', sender: {name: 'server'}, isMe: false})
+      if (!this.canJoin || this.inGame) return;
+
+      const needTime = this.lastConnect + TIMEOUT_RECONNECT;
+      const deltaTime = needTime - Date.now();
+
+      if (deltaTime > 0) {
+        this.newApi.onMessage({ 
+          message: `Подключитесь через ${deltaTime / 1000 | 0} сек.`, 
+          sender: { name: 'server' }, 
+          isMe: false 
+        })
         return;
       }
-      if (!this.canJoin || this.inGame) return;
+
       this.randomPosition();
       this.isDeath = true;
       this.kills = 0;
