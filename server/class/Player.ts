@@ -66,6 +66,8 @@ export class Player extends Entity {
   lastTestPing = 0;
 
   lastAction = Date.now();
+  lastMessage = Date.now();
+  lastConnect = Date.now();
 
   get posInfo() {
     return pick(
@@ -144,7 +146,12 @@ export class Player extends Entity {
     randomColor: () => {
     },
     sendMessage: (message) => {
+      if (this.lastMessage + 5000 < Date.now()) {
+        this.newApi.onMessage({ message: 'Сообщение можно отправить через 5 сек', sender: { name: 'server' }, isMe: false })
+        return;
+      }
       if (!message) return;
+      this.lastMessage = Date.now()
       message = message.slice(0, MESSAGE_LENGTH);
       this.game.message(message, this);
     },
@@ -189,6 +196,10 @@ export class Player extends Entity {
     },
 
     toGame: () => {
+      if(this.lastConnect + 5000 < Date.now()) {
+        this.newApi.onMessage({message: 'Подключитесь через некоторое время', sender: {name: 'server'}, isMe: false})
+        return;
+      }
       if (!this.canJoin || this.inGame) return;
       this.randomPosition();
       this.isDeath = true;
@@ -196,6 +207,7 @@ export class Player extends Entity {
       this.deaths = 0;
       this.wins = 0;
       this.inGame = true;
+      this.lastConnect = Date.now()
       this.lastAction = Date.now();
       PlayerEffect.clearEffets(this);
       this.game.message(`${this.name ?? 'noname'} подключился`);
@@ -206,6 +218,7 @@ export class Player extends Entity {
       this.releasePosition();
       this.color = -1;
       this.inGame = false;
+      this.lastAction = Date.now();
       this.game.message(`${this.name ?? 'noname'} отключился`);
     }
   };
