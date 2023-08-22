@@ -8,6 +8,7 @@ import { Camera } from "./Camera";
 import { Game } from "./Game";
 import { PlayerSprite } from "./PlayerSprite";
 import { toLimit } from "@/toLimit";
+import { EEffect } from "@/types";
 
 export class FocusCamera extends Camera {
   focus?: Game | PlayerSprite;
@@ -55,7 +56,8 @@ export class FocusCamera extends Camera {
         minVec.times(OUT_FRAME)
         maxVec.times(OUT_FRAME)
 
-        for(const [_, {created, x, y}] of focus.effectsLayer.effects) {
+        for(const [_, {created, x, y, type}] of focus.effectsLayer.effects) {
+          if(type !== EEffect.DEATH) continue
           if(created + 3000 < time) continue
           if (minVec.x > x) minVec.x = x;
           if (minVec.y > y) minVec.y = y;
