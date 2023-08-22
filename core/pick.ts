@@ -1,12 +1,18 @@
+import { makePicker } from "./makePicker";
+
+const CACHE = new Map<string, Function>;
+
 export const pick = <T extends object, S extends keyof T>(
   target: T,
   keys: S[]
-) => {
-  const out: Pick<T, S> = ({}) as any;
+): Pick<T, S> => {
+  const KEY = keys.join(',');
+  let picker = CACHE.get(KEY);
 
-  for (const key of keys) {
-    out[key] = target[key];
+  if (!picker) {
+    picker = makePicker<T>(keys);
+    CACHE.set(KEY, picker);
   }
 
-  return out;
+  return picker(target);
 };

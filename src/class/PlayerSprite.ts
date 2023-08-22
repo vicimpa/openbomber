@@ -65,12 +65,7 @@ export class PlayerSprite extends Frame {
       camera.ctx.font = "normal 4px serif";
       camera.ctx.textAlign = 'center';
       camera.ctx.textBaseline = 'bottom';
-      camera.ctx.fillText(
-        this.name,
-        OUT_FRAME / 2 | 0,
-        0
-      );
-
+      camera.ctx.fillText(this.name, OUT_FRAME / 2, 0);
     }
 
     if (this.isShield)

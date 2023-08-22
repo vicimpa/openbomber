@@ -5,7 +5,6 @@
   import { plus, point, points } from "@/point";
   import generic from "images/characters.png";
   import { stylesVariable } from "library/stylesVariable";
-  import Short from "./Short.svelte";
   import Move from "./Move.svelte";
   import Frame from "./Frame.svelte";
   import crosshair from "images/crosshair.png";
@@ -29,7 +28,6 @@
   export let dir: EDir = EDir.BOTTOM;
   export let animate: EAnimate = EAnimate.IDLE;
   export let color = -1;
-  export let name = "";
   export let marker = false;
   export let haveShield = false;
   export let isDeath = true;
@@ -37,12 +35,6 @@
 
   $: frames = animate === EAnimate.IDLE ? IDLE[dir] : RUNNING[dir];
 </script>
-
-{#if name && !isDeath}
-  <Short>
-    {name}
-  </Short>
-{/if}
 
 <div style={stylesVariable({ c: color })}>
   {#if !isDeath}

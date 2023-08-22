@@ -5,6 +5,7 @@ import { calcMap } from "../../core/calcMap";
 import { delay } from "../../core/delay";
 import { effectObject } from "../../core/effectObject";
 import { find } from "../../core/find";
+import { makePicker } from "../../core/makePicker";
 import { map } from "../../core/map";
 import { pick } from "../../core/pick";
 import { point } from "../../core/point";
@@ -37,6 +38,7 @@ export const defaultStartPositions: Vec2[] = [
 ];
 
 export type TConfig = typeof defaultConfig;
+
 
 export class Game {
   width = 1;
@@ -74,6 +76,17 @@ export class Game {
   achivmentsCache: Achivment['info'][] = [];
   effectsCache: Effect['info'][] = [];
   effectsTypeCache: Effect['infoType'][] = [];
+
+  get info() {
+    return pick(this, [
+      'width',
+      'height',
+      'winPlayerId',
+      'playersCount',
+      'spectratorsCount'
+    ]);
+  }
+
 
   getFreePosition() {
     const free = Array.from(this.startPositions)
@@ -186,16 +199,6 @@ export class Game {
     if (!this.running) return;
     logger.info('Game stoping', { timestamp: true });
     this.running = false;
-  }
-
-  get info() {
-    return pick(this, [
-      'width',
-      'height',
-      'winPlayerId',
-      'playersCount',
-      'spectratorsCount'
-    ]);
   }
 
   async loop() {

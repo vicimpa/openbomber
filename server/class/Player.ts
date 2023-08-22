@@ -3,6 +3,7 @@ import { Socket } from "socket.io";
 import { calcSpeed } from "../../core/calcSpeed";
 import { effectObject } from "../../core/effectObject";
 import { find } from "../../core/find";
+import { makePicker } from "../../core/makePicker";
 import { TMethodsOut } from "../../core/makeWebSocketApi";
 import { map } from "../../core/map";
 import { rem } from "../../core/math";
