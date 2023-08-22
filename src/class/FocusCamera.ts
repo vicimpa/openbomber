@@ -52,7 +52,10 @@ export class FocusCamera extends Camera {
           if (maxVec.y < y) maxVec.y = y;
         }
 
-        for(const [_, {x, y, created}] of focus.effectsLayer.effects) {
+        minVec.times(OUT_FRAME)
+        maxVec.times(OUT_FRAME)
+
+        for(const [_, {created, x, y}] of focus.effectsLayer.effects) {
           if(created + 3000 < time) continue
           if (minVec.x > x) minVec.x = x;
           if (minVec.y > y) minVec.y = y;
@@ -61,10 +64,8 @@ export class FocusCamera extends Camera {
         }
 
         const size = maxVec.minus(minVec)
-        const center = size.clone().div(2).plus(minVec).plus(.5)
+        const center = size.clone().div(2).plus(minVec).plus(.5 * OUT_FRAME)
 
-        size.times(OUT_FRAME)
-        center.times(OUT_FRAME)
 
         this.need.set(
           this.filterNeed(
