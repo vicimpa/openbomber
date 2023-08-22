@@ -117,7 +117,9 @@ export class PlayerControllerNew extends Vec2 {
 
 
     for (const [id, { x, y }] of positions) {
-      const { isDeath } = players.get(id)!;
+      const player = players.get(id);
+      if (!player) continue;
+      const { isDeath } = player;
       const obj = new Vec2(x ?? 0, y ?? 0);
 
       if (isDeath)
