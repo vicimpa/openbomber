@@ -61,11 +61,13 @@ export class PlayerSprite extends Frame {
     super.render(camera);
 
     if (this.name) {
+      camera.ctx.globalAlpha = 0.6;
       camera.ctx.fillStyle = '#fff';
-      camera.ctx.font = "normal 4px serif";
+      camera.ctx.font = "normal 3px BetterVCR";
       camera.ctx.textAlign = 'center';
       camera.ctx.textBaseline = 'bottom';
       camera.ctx.fillText(this.name, OUT_FRAME / 2, 0);
+      camera.ctx.globalAlpha = 1;
     }
 
     if (this.isShield)

@@ -4,7 +4,7 @@
   import { ChatEvent } from "class/ChatEvent";
   import { onMount } from "svelte";
 
-  const format = FDate.makeFormat("hh:mm:ss DD.MM.YYYY");
+  const format = FDate.makeFormat("hh:mm:ss");
 
   let messages: {
     message: string;
@@ -15,6 +15,7 @@
 
   onMount(() => {
     return ChatEvent.subscribe(({ player, message, isMe }) => {
+      if (isMe) return;
       messages.push({ player, message, isMe, date: new Date() });
       messages = messages;
     });
@@ -53,15 +54,16 @@
     right: 50px
     display: flex
     flex-direction: column
+    align-items: flex-end
     z-index: 10
-    max-width: 250px
+    max-width: 300px
 
     .item
       overflow: hidden
       display: flex
       flex-direction: column
       align-items: flex-end
-      animation: hide 1s 5s linear forwards
+      animation: hide .3s 5s linear forwards
       background-color: rgba(0,0,0,0.4)
       backdrop-filter: blur(10px)
       -webkit-backdrop-filter: blur(10px)
@@ -73,6 +75,7 @@
 
       .name
         padding: 10px
+        font-size: 10px
         .date
           font-size: 8px
           

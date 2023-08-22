@@ -109,12 +109,17 @@
         flex-direction: column
         gap: 5px
         align-items: flex-end
-        margin: 10px
+        padding: 10px
+        border-radius: 10px
         
         &[data-isme="true"]
           align-items: flex-start
+          background-color: rgba(100,100,100,0.3)
 
         .name
+          display: flex
+          gap: 10px
+          font-size: 10px
           .date
             font-size: 8px
 

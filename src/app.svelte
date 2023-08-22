@@ -114,24 +114,29 @@
     <div class="scroll">
       <div class="item">
         {#if info}
-          <span>Ping: {info.ping}ms</span>
+          <span>Пинг: {info.ping}ms</span>
         {/if}
         <EditName bind:name>
           <Button on:click={() => (selectSkin = true)}>Аватар</Button>
         </EditName>
       </div>
       <div class="item">
-        Подключение
+        <div>
+          Подключение
 
-        {#if gameInfo}
-          {#if !info?.inGame}
-            <Button disabled={!info?.canJoin} on:click={() => newApi.toGame()}>
-              Подключиться
-            </Button>
-          {:else}
-            <Button on:click={() => newApi.toLeave()}>Отключится</Button>
+          {#if gameInfo}
+            {#if !info?.inGame}
+              <Button
+                disabled={!info?.canJoin}
+                on:click={() => newApi.toGame()}
+              >
+                Подключиться
+              </Button>
+            {:else}
+              <Button on:click={() => newApi.toLeave()}>Отключится</Button>
+            {/if}
           {/if}
-        {/if}
+        </div>
       </div>
       {#if info}
         <div class="item">
@@ -301,16 +306,16 @@
     height: 100%
     display: flex
 
-    $side: 350px
+    $side: 370px
 
     .side
-      background-color: rgba(0,0,0,0.7)
+      background-color: rgba(11, 10, 45,0.7) 
       box-shadow: 0 0 10px #000
       padding: 0px
       width: $side
       display: flex
       flex-direction: column
-      gap: 10px
+      gap: 20px
       font-size: 12px
       position: absolute
       top: 0
@@ -372,16 +377,17 @@
     .skins
       display: flex
       flex-wrap: wrap
-      width: 30vw
+      width: 40vw
       height: 20vh
       max-width: 300px
       max-height: 200px
       overflow: hidden
       overflow-y: scroll
+      justify-content: space-around
 
       .skin-item
-        width: 32px
-        height: 32px
+        width: 48px
+        height: 48px
         position: relative
         display: flex
         justify-content: center
@@ -389,7 +395,7 @@
         cursor: pointer
 
         & > .scale
-          transform: scale(1.8)
+          transform: scale(2.4)
 
         &[data-select='true']
           background-color: #999

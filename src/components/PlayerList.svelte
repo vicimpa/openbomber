@@ -94,7 +94,6 @@
         &.effects
           font-size: 6px
         b
-          margin-top: -2px
           color: #fff
           
 
