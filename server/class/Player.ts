@@ -146,7 +146,7 @@ export class Player extends Entity {
     randomColor: () => {
     },
     sendMessage: (message) => {
-      if (this.lastMessage + 5000 < Date.now()) {
+      if (this.lastMessage + 5000 > Date.now()) {
         this.newApi.onMessage({ message: 'Сообщение можно отправить через 5 сек', sender: { name: 'server' }, isMe: false })
         return;
       }
@@ -196,7 +196,7 @@ export class Player extends Entity {
     },
 
     toGame: () => {
-      if(this.lastConnect + 5000 < Date.now()) {
+      if(this.lastConnect + 5000 > Date.now()) {
         this.newApi.onMessage({message: 'Подключитесь через некоторое время', sender: {name: 'server'}, isMe: false})
         return;
       }
