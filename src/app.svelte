@@ -37,15 +37,7 @@
   let localSkin = +(localStorage.getItem("skin") ?? -1);
   let selectSkin = localSkin < 0;
   let restartAfter = -1;
-  let viewer = 0;
   let cam: FocusCamera | undefined;
-  let view: PlayerSprite | null;
-
-  $: viewPlayer =
-    info && (!info.inGame || info.isDeath)
-      ? players.find((e) => e.id === (view as any)?.["id"])
-      : null;
-
   let isRestarting = false;
   let isOpenEditName = !name;
 
@@ -205,9 +197,7 @@
     </div>
     <CanvasRender
       {socket}
-      bind:view
       bind:cam
-      bind:viewCount={viewer}
       on:setBomb={() => newApi.setBomb()}
       on:setPosition={({ detail }) => newApi.setPosition(detail)}
     />
@@ -261,13 +251,6 @@
       </div>
     {/if}
     <ChatView />
-    {#if viewPlayer}
-      <div class="viewer">
-        <Button on:click={() => viewer--}>◀️</Button>
-        <p>Наблюдение за <b>{viewPlayer.name}</b></p>
-        <Button on:click={() => viewer++}>▶️</Button>
-      </div>
-    {/if}
   </div>
 
   <div class="side right">
@@ -289,19 +272,6 @@
 
   ul
     padding: 5px 0
-
-  .viewer
-    position: absolute
-    bottom: 50px
-    padding: 10px 20px
-    border-radius: 10px
-    background-color: rgba(0,0,0,0.5)
-    display: flex
-    transform: scale(1.3)
-    gap: 10px
-    align-items: center
-    z-index: 10
-    user-select: none
 
   .ui 
     width: 100%
