@@ -25,22 +25,8 @@ export class FocusCamera extends Camera {
     if (focus instanceof Game) {
       const focusSize = new Vec2(focus.width, focus.height)
         .times(OUT_FRAME);
+        
 
-      const minScale = min(this.width, this.height) / (OUT_FRAME * 10)
-      const maxScale = min(
-        this.height / (focusSize.y + this.padding),
-        this.width / (focusSize.x + this.padding)
-      )
-
-      const rectView = focus.positions.size ? (
-        [...focus.positions].reduce((acc, [, { x, y }]) => {
-          if(acc.min.x > x) acc.min.x = x;
-          if(acc.min.y > y) acc.min.y = y;
-          if(acc.max.x < x) acc.max.x = x;
-          if(acc.max.y < y) acc.max.y = y;
-          return acc;
-        }, {min: new Vec2(Infinity), max: new Vec2(-Infinity)})
-      ) : null
 
       const focusPlayer = focus.waitRestart === -1 ? (
         focus.currentPlayerSprite // ?? focus.focusPlayer
@@ -54,9 +40,18 @@ export class FocusCamera extends Camera {
           )
         );
 
-        this.scale = minScale;
-      } else if(focus.waitRestart == -1 && rectView) {
-        const {min: minVec, max: maxVec} = rectView;
+        this.scale = min(this.width, this.height) / (OUT_FRAME * 10);
+      } else if (focus.waitRestart == -1 && focus.positions.size) {
+        const minVec = point(Infinity)
+        const maxVec = point(-Infinity)
+
+        for(const [_, {x, y}] of focus.positions) {
+          if (minVec.x > x) minVec.x = x;
+          if (minVec.y > y) minVec.y = y;
+          if (maxVec.x < x) maxVec.x = x;
+          if (maxVec.y < y) maxVec.y = y;
+        }
+
         const size = maxVec.clone().minus(minVec)
         const center = size.clone().div(2).plus(minVec)
 
@@ -72,15 +67,15 @@ export class FocusCamera extends Camera {
         );
 
         const vec = point(this.width, this.height)
-            .div(
-              size.clone()
-                .plus(8 * OUT_FRAME)
-            )
+            .div(size.clone().plus(8 * OUT_FRAME))
 
         this.scale = toLimit(
           min(vec.x, vec.y),
-          maxScale, 
-          minScale
+          min(
+            this.height / (focusSize.y + this.padding),
+            this.width / (focusSize.x + this.padding)
+          ), 
+          min(this.width, this.height) / (OUT_FRAME * 10)
         )
         
       } else {
@@ -92,7 +87,10 @@ export class FocusCamera extends Camera {
           )
         );
 
-        this.scale = maxScale;
+        this.scale = min(
+          this.height / (focusSize.y + this.padding),
+          this.width / (focusSize.x + this.padding)
+        );
       }
     }
 
