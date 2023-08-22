@@ -26,8 +26,6 @@ export class FocusCamera extends Camera {
       const focusSize = new Vec2(focus.width, focus.height)
         .times(OUT_FRAME);
         
-
-
       const focusPlayer = focus.waitRestart === -1 ? (
         focus.currentPlayerSprite // ?? focus.focusPlayer
       ) : undefined;
@@ -37,11 +35,13 @@ export class FocusCamera extends Camera {
           this.filterNeed(
             focus.clone()
               .plus(focusPlayer)
+              .plus(.5*OUT_FRAME)
           )
         );
 
         this.scale = min(this.width, this.height) / (OUT_FRAME * 10);
       } else if (focus.waitRestart == -1 && focus.positions.size) {
+        const time = Date.now()
         const minVec = point(Infinity)
         const maxVec = point(-Infinity)
 
@@ -52,22 +52,28 @@ export class FocusCamera extends Camera {
           if (maxVec.y < y) maxVec.y = y;
         }
 
-        const size = maxVec.clone().minus(minVec)
-        const center = size.clone().div(2).plus(minVec)
+        for(const [_, {x, y, created}] of focus.effectsLayer.effects) {
+          if(created + 3000 < time) continue
+          if (minVec.x > x) minVec.x = x;
+          if (minVec.y > y) minVec.y = y;
+          if (maxVec.x < x) maxVec.x = x;
+          if (maxVec.y < y) maxVec.y = y;
+        }
+
+        const size = maxVec.minus(minVec)
+        const center = size.clone().div(2).plus(minVec).plus(.5)
 
         size.times(OUT_FRAME)
         center.times(OUT_FRAME)
 
         this.need.set(
           this.filterNeed(
-            center
-            .plus(minVec)
-            .plus(focus)
+            center.plus(focus)
           )
         );
 
         const vec = point(this.width, this.height)
-            .div(size.clone().plus(8 * OUT_FRAME))
+            .div(size.plus(8 * OUT_FRAME))
 
         this.scale = toLimit(
           min(vec.x, vec.y),

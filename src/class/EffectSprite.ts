@@ -21,6 +21,7 @@ export class EffectSprite extends Frame {
   type!: EEffect;
 
   startAnimate = -1;
+  created = Date.now()
 
   update(dtime: number, time: number): void {
     if (this.startAnimate === -1)
