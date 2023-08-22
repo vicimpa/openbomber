@@ -69,17 +69,25 @@
     }
   };
 
+  const unset = () => {
+    keyboardMove.set(0);
+    gamepadMove.set(0);
+    touchMove.set(0);
+  };
+
   const updateGamepads = () => {
     gamepads = navigator.getGamepads().filter((e) => e) as Gamepad[];
   };
 
   onMount(() => {
     updateGamepads();
+    addEventListener("blur", unset);
     addEventListener("gamepadconnected", updateGamepads);
     addEventListener("gamepaddisconnected", updateGamepads);
     addEventListener("gotpointercapture", updateGamepads);
 
     return () => {
+      removeEventListener("blur", unset);
       removeEventListener("gamepadconnected", updateGamepads);
       removeEventListener("gamepaddisconnected", updateGamepads);
       removeEventListener("gotpointercapture", updateGamepads);

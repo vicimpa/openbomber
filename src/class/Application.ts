@@ -29,7 +29,6 @@ export class Application {
 
   loop() {
     this.update();
-    this.render();
   }
 
   runUpdate(children: Set<Entity>, dtime: number, time: number) {
@@ -52,10 +51,15 @@ export class Application {
     const time = performance.now();
     const dtime = time - this.time;
 
+    if (dtime > 30)
+      return;
+
     this.time = time;
 
     this.runUpdate(this.cameras, dtime, time);
     this.runUpdate(this.children, dtime, time);
+
+    this.render();
   }
 
   render() {
