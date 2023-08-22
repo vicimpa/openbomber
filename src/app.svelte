@@ -161,7 +161,9 @@
             </Link>
           </li>
           <li>
-            <Link url="https://discord.gg/gwh58DTe">Наш сервер в Discord</Link>
+            <Link url="https://discord.gg/JzapKXFqzt">
+              Наш сервер в Discord
+            </Link>
           </li>
           <li>
             <Link url="https://vk.com/openbomber">Группа игроков в VK</Link>

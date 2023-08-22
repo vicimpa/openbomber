@@ -43,6 +43,6 @@
 
 ## Donate
 - Поддержать меня можно на [Boosty](https://boosty.to/vic_dev) и/или на [DonationAlerts](https://www.donationalerts.com/r/promise")
-- Ссылка на наш [Discord сервер](https://discord.gg/gwh58DTe)
+- Ссылка на наш [Discord сервер](https://discord.gg/JzapKXFqzt)
 - Ссылка на [группу вк](https://vk.com/openbomber)
 - Ссылка на [группу тг]("https://t.me/gameopenbomber)
