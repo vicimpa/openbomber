@@ -130,7 +130,7 @@ export class Player extends Entity {
     setPosition: ({ x, y, dir, animate }) => {
       if (this.isDeath && !this.inGame) return;
       const { speed } = this.effects;
-      const distance = calcSpeed(Date.now() - this.lastAction, speed) + .2;
+      const distance = calcSpeed(Date.now() - this.lastAction, speed) + .1;
 
       x = (x * 16 | 0) / 16;
       y = (y * 16 | 0) / 16;
