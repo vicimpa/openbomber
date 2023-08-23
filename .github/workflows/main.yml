@@ -34,7 +34,7 @@ jobs:
           cd testing
           npm install
           npm run build
-          pm2 describe openbomber && pm2 delete openbomber
+          pm2 ls | grep openbomber && pm2 delete openbomber
           cd ..
           rm -rf current
           mv testing current
