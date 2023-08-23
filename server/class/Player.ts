@@ -6,7 +6,7 @@ import { find } from "../../core/find";
 import { makePicker } from "../../core/makePicker";
 import { TMethodsOut } from "../../core/makeWebSocketApi";
 import { map } from "../../core/map";
-import { rem } from "../../core/math";
+import { ceil, rem } from "../../core/math";
 import { pick } from "../../core/pick";
 import { Vec2 } from "../../core/Vec2";
 import { gameApi, playerApi } from "../../shared/api";
@@ -81,11 +81,11 @@ export class Player extends Entity {
 
   get remainingEffects() {
     return {
-      shield: (ShieldEffect.get(this)?.remaining ?? 0) / 1000 | 0,
-      crazy: (CrasyBombEffect.get(this)?.remaining ?? 0) / 1000 | 0,
-      speed: (SpeedEffect.get(this)?.remaining ?? 0) / 1000 | 0,
-      bombs: BombEffect.count(this),
-      radius: RadiusEffect.count(this),
+      shield: ceil((ShieldEffect.get(this)?.remaining ?? 0) / 1000),
+      crazy: ceil((CrasyBombEffect.get(this)?.remaining ?? 0) / 1000),
+      speed: ceil((SpeedEffect.get(this)?.remaining ?? 0) / 1000),
+      bombs: BombEffect.count(this) || 0,
+      radius: RadiusEffect.count(this) || 0,
     }
   }
 

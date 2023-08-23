@@ -43,15 +43,8 @@
   let isRestarting = false;
   let isOpenEditName = !name;
 
-  const effectsStore = {
-    [EAchivment.APPEND_SPEED]: "Увеличение скорости",
-    [EAchivment.FIRE]: "Уменьшение скорости + огонь",
-    [EAchivment.CRAZY_BOMB]: "Шальная (рандомная) бомба",
-    [EAchivment.APPEND_SHIELD]: "Щит защищающий от взрыва",
-  };
-
   $: effectsList = Object.entries(effects ?? {})
-    .filter((e) => e[1])
+    .filter((e) => e[1] > 0)
     .map(([name, value]) => {
       let type!: EAchivment;
       let remaining = `${value}`;
@@ -256,7 +249,7 @@
           <div class="info">
             <Frame s={2} src={achivmentSrc} x={type} y={14} />
           </div>
-          <span>{ACHIVMEN_DESCRIPTION[type]}</span>
+          <span class="desc">{ACHIVMEN_DESCRIPTION[type]}</span>
           <span>
             {remaining}
           </span>
@@ -339,7 +332,7 @@
   .effects
     position: absolute
     top: 50px
-    left: 50px
+    left: 0px
     display: flex
     flex-direction: column
     align-items: flex-start
@@ -356,6 +349,17 @@
       align-items: center
       justify-content: space-between
       gap: 15px
+
+      .desc
+        display: inline-block
+        overflow: hidden
+        max-width: 0px
+        transition: .3s
+        white-space: nowrap
+
+      &:hover
+        .desc
+          max-width: 200px
 
       .info
         display: flex
