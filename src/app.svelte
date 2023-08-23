@@ -340,8 +340,8 @@
     z-index: 1
 
     .item
-      padding: 15px 30px
-      border-radius: 10px
+      padding: 5px 30px
+      border-radius: 15px
       background-color: rgba(0,0,0,0.4)
       backdrop-filter: blur(10px)
       -webkit-backdrop-filter: blur(10px)
