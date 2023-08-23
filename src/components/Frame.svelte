@@ -1,15 +1,20 @@
 <script lang="ts">
+  import { point } from "@/point";
   import { stylesVariable } from "library/stylesVariable";
 
   export let src = "";
 
-  export let x = 0;
-  export let y = 0;
+  export let frame = point();
+
+  export let x = frame.x;
+  export let y = frame.y;
 
   export let scale: number | undefined = undefined;
 
-  export let sx = scale ?? 1;
-  export let sy = scale ?? 1;
+  export let s = 1;
+
+  export let sx = scale ?? s;
+  export let sy = scale ?? s;
 
   $: style = stylesVariable({
     x: x,

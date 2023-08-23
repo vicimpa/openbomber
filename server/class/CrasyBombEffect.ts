@@ -4,21 +4,14 @@ import { Player } from "./Player";
 import { PlayerEffect } from "./PlayerEffect";
 
 export class CrasyBombEffect extends PlayerEffect {
-  #created = Date.now();
-  shieldTime = 0;
-
-  appendTime() {
-    this.shieldTime += CRAZY_BOMB_TIME;
+  onCreate(): void {
+    const { player: { newApi } } = this;
+    newApi.playSound(ESounds.crazy);
   }
 
-  update(): void {
-    if (Date.now() > this.#created + this.shieldTime)
-      this.delete();
-  }
-
-  delete(): boolean {
-    this.player.newApi.playSound(ESounds.crazy);
-    return super.delete();
+  onDelete(): void {
+    const { player: { newApi } } = this;
+    newApi.playSound(ESounds.crazy);
   }
 
   static get(player: Player): CrasyBombEffect | null {
@@ -37,11 +30,7 @@ export class CrasyBombEffect extends PlayerEffect {
     const effets = this.effects(player);
     const currentEffect = this.get(player) ?? new this(player);
 
-    if (!effets.has(currentEffect)) {
-      player.newApi.playSound(ESounds.crazy);
-    }
-
-    currentEffect.appendTime();
+    currentEffect.appendTime(CRAZY_BOMB_TIME);
     effets.add(currentEffect);
   }
 }

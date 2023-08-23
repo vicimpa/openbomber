@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Player as TypePlayer } from "@/class/Player";
-  import Effects from "./Effects.svelte";
-  import Player from "./Player.svelte";
+  import Frame from "./Frame.svelte";
+  import spriteSrc from "images/characters.png";
 
   export let players: TypePlayer["info"][] = [];
   export let current: TypePlayer["info"] | null = null;
@@ -27,21 +27,16 @@
   {#each [...leavePlayers, ...deathPlayers] as player}
     <li data-death={player.isDeath} data-me={player === current}>
       <div class="player">
-        <Player color={player.color} isDeath={false} />
+        <Frame src={spriteSrc} x={1} y={player.color} />
       </div>
       <span class="name">
-        {player.name || "noname"} ({player.ping} ms)
+        {player.name || "noname"}
       </span>
+      <span class="stat">{player.ping} ms</span>
       <small class="stats">
-        <span class="stat">💣<b>{player.effects.bombs}</b></span>
-        <span class="stat">🔥<b>{player.effects.radius}</b></span>
         <span class="stat">👑<b>{player.wins}</b></span>
         <span class="stat">🔫<b>{player.kills}</b></span>
         <span class="stat">💀<b>{player.deaths}</b></span>
-
-        <span class="stat effects">
-          <Effects effects={player.effects} />
-        </span>
       </small>
     </li>
   {/each}
@@ -56,15 +51,15 @@
 
   .name
     flex-grow: 1
-    font-size: 10px
+    font-size: 12px
     
   ul, li
-    padding: 0
+    padding: 0px 
     margin: 0
     list-style: none
 
   ul
-    padding: 0px
+    padding: 10px 0px
     display: flex
     flex-direction: column
     gap: 5px
@@ -75,7 +70,7 @@
     justify-content: space-between
     align-items: center
     border-radius: 10px
-    padding: 10px 5px
+    padding: 10px 15px
     background-color: rgba(0,0,0,0.2)
 
     .stats
@@ -91,11 +86,8 @@
         flex-wrap: wrap
         height: 30px
 
-        &.effects
-          font-size: 6px
         b
           color: #fff
-          
 
     &[data-me="true"]
       background-color: rgba(255,255,255,0.1)

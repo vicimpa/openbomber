@@ -30,4 +30,5 @@
     &[data-disabled="true"]
       cursor: not-allowed
       opacity: .8
+      background-color: #222
 </style>

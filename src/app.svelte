@@ -7,32 +7,34 @@
   import { onMount } from "svelte";
   import { socket } from "socket";
   import EditName from "components/EditName.svelte";
+  import spriteSrc from "images/characters.png";
+  import achivmentSrc from "images/sprite.png";
 
   import Volume from "components/Volume.svelte";
   import { ChatEvent } from "class/ChatEvent";
   import Chat from "components/Chat.svelte";
   import PlayerList from "components/PlayerList.svelte";
-  import Effects from "components/Effects.svelte";
   import Button from "components/Button.svelte";
   import Link from "components/Link.svelte";
-  import { PLAYER_INFO, gameApi, playerApi } from "@/api";
+  import { PLAYER_INFO, REMAINING_EFFECTS, gameApi, playerApi } from "@/api";
   import ChatView from "components/ChatView.svelte";
   import type { TProtoOut } from "@/Proto";
   import CanvasRender from "components/CanvasRender.svelte";
-  import type { PlayerSprite } from "class/PlayerSprite";
   import type { FocusCamera } from "class/FocusCamera";
   import { sounds } from "library/sounds";
   import { point } from "@/point";
   import { OUT_FRAME } from "config";
   import { each } from "library/each";
-  import Player from "components/Player.svelte";
   import { rem } from "@/math";
+  import Frame from "components/Frame.svelte";
+  import { ACHIVMEN_DESCRIPTION, EAchivment } from "@/types";
 
   const newApi = gameApi.use(socket);
 
   let info: TypePlayer["info"] | null = null;
   let gameInfo: TypeGame["info"] | null = null;
   let players: TProtoOut<typeof PLAYER_INFO>[] = [];
+  let effects: TProtoOut<typeof REMAINING_EFFECTS> | null = null;
   let name = localStorage.getItem("name") || "";
   let localSkin = +(localStorage.getItem("skin") ?? -1);
   let selectSkin = localSkin < 0;
@@ -40,6 +42,56 @@
   let cam: FocusCamera | undefined;
   let isRestarting = false;
   let isOpenEditName = !name;
+
+  const effectsStore = {
+    [EAchivment.APPEND_SPEED]: "Увеличение скорости",
+    [EAchivment.FIRE]: "Уменьшение скорости + огонь",
+    [EAchivment.CRAZY_BOMB]: "Шальная (рандомная) бомба",
+    [EAchivment.APPEND_SHIELD]: "Щит защищающий от взрыва",
+  };
+
+  $: effectsList = Object.entries(effects ?? {})
+    .filter((e) => e[1])
+    .map(([name, value]) => {
+      let type!: EAchivment;
+      let remaining = `${value}`;
+
+      switch (name) {
+        case "speed": {
+          type =
+            info && info.effects.speed > 1
+              ? EAchivment.APPEND_SPEED
+              : EAchivment.FIRE;
+
+          remaining += " сек.";
+          break;
+        }
+        case "shield": {
+          type = EAchivment.APPEND_SHIELD;
+          remaining += " сек.";
+          break;
+        }
+        case "crazy": {
+          type = EAchivment.CRAZY_BOMB;
+          remaining += " сек.";
+          break;
+        }
+
+        case "bombs": {
+          type = EAchivment.APPEND_BOMB;
+          remaining = "x " + remaining;
+          break;
+        }
+
+        case "radius": {
+          type = EAchivment.APPEND_EXPO;
+          remaining = "x " + remaining;
+          break;
+        }
+      }
+
+      return { type, remaining };
+    });
 
   onMount(() => {
     socket.connect();
@@ -53,6 +105,9 @@
       },
       playSound(sound) {
         sounds[sound]?.play();
+      },
+      updateRemainingEffects(newEffects) {
+        effects = newEffects;
       },
       playSoundPosition({ sound, position }) {
         if (!cam || !gameInfo) return sounds[sound]?.play();
@@ -105,9 +160,6 @@
   <div class="side left">
     <div class="scroll">
       <div class="item">
-        {#if info}
-          <span>Пинг: {info.ping}ms</span>
-        {/if}
         <EditName bind:name>
           <Button on:click={() => (selectSkin = true)}>Аватар</Button>
         </EditName>
@@ -179,14 +231,9 @@
     <div class="header" style="z-index: 4;">
       {#if gameInfo}
         {#if info?.inGame}
-          <span>💣 x {info.effects.bombs}</span>
-          <span>🔥 x {info.effects.radius}</span>
           <span>👑 x {info.wins}</span>
           <span>🔫 x {info.kills}</span>
           <span>💀 x {info.deaths}</span>
-          <span>
-            <Effects effects={info.effects} />
-          </span>
         {:else}
           <p>Вы наблюдатель</p>
           <Button disabled={!info?.canJoin} on:click={() => newApi.toGame()}>
@@ -195,12 +242,28 @@
         {/if}
       {/if}
     </div>
+
     <CanvasRender
       {socket}
       bind:cam
       on:setBomb={() => newApi.setBomb()}
       on:setPosition={({ detail }) => newApi.setPosition(detail)}
     />
+
+    <div class="effects">
+      {#each effectsList as { type, remaining }}
+        <div class="item" title={ACHIVMEN_DESCRIPTION[type]}>
+          <div class="info">
+            <Frame s={2} src={achivmentSrc} x={type} y={14} />
+          </div>
+          <span>{ACHIVMEN_DESCRIPTION[type]}</span>
+          <span>
+            {remaining}
+          </span>
+        </div>
+      {/each}
+    </div>
+
     {#if restartAfter >= 0 && restartAfter <= 3}
       <div class="restart-back" />
       <div class="restart">
@@ -221,7 +284,7 @@
               data-select={localSkin === skin}
             >
               <div class="scale">
-                <Player color={skin} isDeath={false} />
+                <Frame src={spriteSrc} x={1} y={skin} />
               </div>
             </div>
           {/each}
@@ -272,6 +335,36 @@
 
   ul
     padding: 5px 0
+
+  .effects
+    position: absolute
+    top: 50px
+    left: 50px
+    display: flex
+    flex-direction: column
+    align-items: flex-start
+    gap: 10px
+    z-index: 1
+
+    .item
+      padding: 15px 30px
+      border-radius: 10px
+      background-color: rgba(0,0,0,0.4)
+      backdrop-filter: blur(10px)
+      -webkit-backdrop-filter: blur(10px)
+      display: flex
+      align-items: center
+      justify-content: space-between
+      gap: 15px
+
+      .info
+        display: flex
+        flex-direction: column
+        align-items: flex-start
+        gap: 10px
+
+      span
+        font-size: 10px
 
   .ui 
     width: 100%

@@ -50,11 +50,8 @@ export class Player extends Entity {
 
   get effects() {
     return {
-      bombs: BombEffect.count(this) + 1,
-      radius: RadiusEffect.count(this) + 1,
       haveShield: ShieldEffect.hasShield(this),
       speed: SpeedEffect.getValue(this),
-      crazyBomb: CrasyBombEffect.hasCrasyBomb(this),
     };
   }
 
@@ -80,6 +77,16 @@ export class Player extends Entity {
         'animate',
       ]
     );
+  }
+
+  get remainingEffects() {
+    return {
+      shield: (ShieldEffect.get(this)?.remaining ?? 0) / 1000 | 0,
+      crazy: (CrasyBombEffect.get(this)?.remaining ?? 0) / 1000 | 0,
+      speed: (SpeedEffect.get(this)?.remaining ?? 0) / 1000 | 0,
+      bombs: BombEffect.count(this),
+      radius: RadiusEffect.count(this),
+    }
   }
 
   get info() {
@@ -167,12 +174,12 @@ export class Player extends Entity {
     },
 
     setBomb: () => {
-      if (this.isDeath || !this.inGame) return;
+      if (this.game.waitForRestart !== -1 || this.isDeath || !this.inGame) return;
 
       const { bombs, achivments } = this.game;
-      const newBomb = new Bomb(this, CrasyBombEffect.hasCrasyBomb(this));
+      const newBomb = new Bomb(this);
       const { x, y } = newBomb;
-
+      const bombsCount = BombEffect.count(this) + 1;
       const value = this.game.map[x + y * this.game.width];
 
       if (value === EMapItem.BLOCK || value === EMapItem.WALL)
@@ -184,10 +191,11 @@ export class Player extends Entity {
       if (find(achivments, { x, y }))
         return;
 
-      if (map(bombs, e => e, e => e.player === this).length >= this.effects.bombs)
+      if (map(bombs, e => e, e => e.player === this).length >= bombsCount)
         return;
 
       bombs.add(newBomb);
+
       this.game.players.forEach(player => {
         player.newApi.playSoundPosition({
           sound: ESounds.putBomb,
@@ -208,10 +216,10 @@ export class Player extends Entity {
       const deltaTime = needTime - Date.now();
 
       if (deltaTime > 0) {
-        this.newApi.onMessage({ 
-          message: `Подключитесь через ${deltaTime / 1000 | 0} сек.`, 
-          sender: { name: 'server' }, 
-          isMe: false 
+        this.newApi.onMessage({
+          message: `Подключитесь через ${deltaTime / 1000 | 0} сек.`,
+          sender: { name: 'server' },
+          isMe: false
         })
         return;
       }
@@ -315,6 +323,9 @@ export class Player extends Entity {
       explodes,
       achivments
     } = this.game;
+
+    const speed = SpeedEffect.getValue(this);
+
     if (!this.isDeath && this.inGame) {
       for (const effect of PlayerEffect.effects(this))
         effect.update();
@@ -332,12 +343,12 @@ export class Player extends Entity {
       );
 
     if (!this.isDeath && this.inGame) {
-      if (this.effects.speed >= 1) {
+      if (speed >= 1) {
         for (const player of this.game.players) {
           if (player === this || !player.inGame || player.isDeath)
             continue;
 
-          if (player.effects.speed >= 1)
+          if (SpeedEffect.getValue(player) >= 1)
             continue;
 
           if (this.checkCollision(player.x, player.y, 1))
@@ -345,14 +356,18 @@ export class Player extends Entity {
         }
       }
 
+      let shield = ShieldEffect.get(this);
+
       for (const explode of explodes) {
-        if (this.isDeath || explode.ignore.has(this)) continue;
+        if (this.isDeath || explode.ignore.has(this))
+          continue;
 
         for (const { x, y } of explode.points) {
           if (this.isDeath) continue;
 
           if (this.checkCollision(x, y, .6)) {
-            if (this.effects.haveShield) {
+            if (shield) {
+              shield = null;
               ShieldEffect.delete(this);
               explode.ignore.add(this);
               continue;
@@ -396,7 +411,7 @@ export class Player extends Entity {
       this,
       'gameInfo',
       infoCache,
-      info => {
+      () => {
         this.newApi.updateGameInfo(this.game);
       }
     );
@@ -429,6 +444,15 @@ export class Player extends Entity {
       this.info,
       localInfo => {
         this.newApi.updateLocalInfo(localInfo);
+      }
+    );
+
+    effectObject(
+      this,
+      'remainingEffects',
+      this.remainingEffects,
+      effects => {
+        this.newApi.updateRemainingEffects(effects);
       }
     );
 

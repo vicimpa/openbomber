@@ -1,10 +1,12 @@
 import { pick } from "../../core/pick";
 import { CRAZY_BOMB_BOOST, CRAZY_BOMB_MAX, CRAZY_BOMB_MIN } from "../../shared/config";
 import { EEffect, ESounds } from "../../shared/types";
+import { CrasyBombEffect } from "./CrasyBombEffect";
 import { Effect } from "./Effect";
 import { Entity } from "./Entity";
 import { Explode } from "./Explode";
 import { Player } from "./Player";
+import { RadiusEffect } from "./RadiusEffect";
 
 export class Bomb extends Entity {
   id!: number;
@@ -13,19 +15,21 @@ export class Bomb extends Entity {
   liveTime = 2000;
 
   isFake = false;
-  public radius = 1;
+  radius = 1;
+  isCrazy = false;
 
   constructor(
-    public player: Player, public isCrazy = false
+    public player: Player
   ) {
     const x = Math.round(player.x);
     const y = Math.round(player.y);
 
     super(player.game, x, y);
     this.id = player.game.bombsCounter++;
-    this.radius = player.effects.radius;
+    this.radius = RadiusEffect.count(player)+1;
+    this.isCrazy = !!CrasyBombEffect.get(player)
 
-    if (isCrazy) {
+    if (this.isCrazy) {
       this.isFake = Math.random() < .1 ? true : false;
 
       this.liveTime = CRAZY_BOMB_MIN + (

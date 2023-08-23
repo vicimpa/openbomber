@@ -4,25 +4,11 @@ import { Player } from "./Player";
 import { PlayerEffect } from "./PlayerEffect";
 
 export class ShieldEffect extends PlayerEffect {
-  #created = Date.now();
-  shieldTime = 0;
-
-  appendTime() {
-    this.shieldTime += SHIELD_TIME;
+  onCreate(): void {
+    this.player.newApi.playSound(ESounds.shield);
   }
-
-  update(): void {
-    if (Date.now() > this.#created + this.shieldTime)
-      this.delete();
-  }
-
-  delete(): boolean {
-    const result = super.delete();
-    if (result) {
-      this.player.game.message(`${this.player.name} потерял щит`);
-      this.player.newApi.playSound(ESounds.shield);
-    }
-    return result;
+  onDelete(): void {
+    this.player.newApi.playSound(ESounds.shield);
   }
 
   static get(player: Player): ShieldEffect | null {
@@ -40,12 +26,7 @@ export class ShieldEffect extends PlayerEffect {
   static append(player: Player) {
     const effets = this.effects(player);
     const currentEffect = this.get(player) ?? new this(player);
-
-    if (!effets.has(currentEffect)) {
-      player.newApi.playSound(ESounds.shield);
-    }
-
-    currentEffect.appendTime();
+    currentEffect.appendTime(SHIELD_TIME);
     effets.add(currentEffect);
   }
 }

@@ -4,32 +4,31 @@ import { Player } from "./Player";
 import { PlayerEffect } from "./PlayerEffect";
 
 export class SpeedEffect extends PlayerEffect {
-  #created = Date.now();
-  shieldTime = 0;
   value = 1;
+
+  onCreate(): void {
+    const {value, player: { newApi }} = this
+
+    if (value > 1)
+      newApi.playSound(ESounds.speedOn);
+
+    if (value < 1)
+      newApi.playSound(ESounds.fireOn);
+  }
+
+  onDelete(): void {
+    const { value, player: { newApi } } = this
+
+    if (value > 1)
+      newApi.playSound(ESounds.speedOff);
+
+    if (value < 1)
+      newApi.playSound(ESounds.fireOff);
+  }
 
   constructor(player: Player, value = 1) {
     super(player);
     this.value = value;
-  }
-
-  appendTime() {
-    this.shieldTime += SPEED_TIME;
-  }
-
-  update(): void {
-    if (Date.now() > this.#created + this.shieldTime)
-      this.delete();
-  }
-
-  delete(): boolean {
-    if (this.value > 1)
-      this.player.newApi.playSound(ESounds.speedOff);
-
-    if (this.value < 1)
-      this.player.newApi.playSound(ESounds.fireOff);
-
-    return super.delete();
   }
 
   static get(player: Player): SpeedEffect | null {
@@ -49,20 +48,12 @@ export class SpeedEffect extends PlayerEffect {
     const currentEffect = this.get(player) ?? new this(player, value);
 
     if (value !== currentEffect.value) {
-      currentEffect.shieldTime -= SPEED_TIME;
+      currentEffect.appendTime(-SPEED_TIME);
       return;
     }
 
-    if (!effets.has(currentEffect)) {
-      if (currentEffect.value > 1)
-        player.newApi.playSound(ESounds.speedOn);
-
-      if (currentEffect.value < 1)
-        player.newApi.playSound(ESounds.fireOn);
-    }
-
     currentEffect.value = value;
-    currentEffect.appendTime();
+    currentEffect.appendTime(SPEED_TIME);
     effets.add(currentEffect);
   }
 }

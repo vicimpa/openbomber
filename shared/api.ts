@@ -50,15 +50,15 @@ export const GAME_INFO = new Proto({
 });
 
 export const PLAYER_POSITION = new Proto({
-  id: 'uint8',
-  x: 'float32',
-  y: 'float32',
+  id: 'uint32',
+  x: POSITION,
+  y: POSITION,
   dir: DIRECTION,
   animate: ANIMATION,
 });
 
 export const PLAYER_INFO = new Proto({
-  id: 'uint8',
+  id: 'uint32',
   name: 'string',
   color: 'uint8',
   inGame: 'boolean',
@@ -68,11 +68,8 @@ export const PLAYER_INFO = new Proto({
   kills: 'uint8',
   deaths: 'uint8',
   effects: {
-    bombs: 'uint8',
-    radius: 'uint8',
     haveShield: 'boolean',
     speed: 'float32',
-    crazyBomb: 'boolean',
   },
   ping: 'uint16'
 });
@@ -118,6 +115,14 @@ export const POSITION_SOUND = new Proto({
   sound: SOUND
 });
 
+export const REMAINING_EFFECTS = new Proto({
+  radius: 'int8',
+  bombs: 'int8',
+  speed: 'int8',
+  shield: 'int8',
+  crazy: 'int8',
+})
+
 export const gameApi = makeWebSocketApi({
   setPosition: { input: INPUT_POSITION },
   setBomb: {},
@@ -140,6 +145,7 @@ export const playerApi = makeWebSocketApi({
   updateLocalInfo: { input: PLAYER_INFO },
   updatePlayerPositions: { input: [PLAYER_POSITION] },
   updateGameInfo: { input: GAME_INFO },
+  updateRemainingEffects: { input: REMAINING_EFFECTS },
   updateWaitForRestart: { input: 'int8' },
   updateEffects: { input: [EFFECT_INFO] },
   playSound: { input: SOUND },

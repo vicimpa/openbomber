@@ -39,7 +39,6 @@ export const defaultStartPositions: Vec2[] = [
 
 export type TConfig = typeof defaultConfig;
 
-
 export class Game {
   width = 1;
   height = 1;

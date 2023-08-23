@@ -71,6 +71,18 @@ export enum EAchivment {
   CRAZY_BOMB,
 }
 
+export const ACHIVMEN_DESCRIPTION = {
+  [EAchivment.APPEND_BOMB]: "Дополнительная бомба",
+  [EAchivment.APPEND_EXPO]: "Увеличение радиуса",
+  [EAchivment.ROLLERS]: "Эффект \"ролики\"",
+  [EAchivment.APPEND_SPEED]: "Увеличение скорости",
+  [EAchivment.APPEND_SHIELD]: "Щит, защищающий от взрыва",
+  [EAchivment.MOVING_BOMB]: "Перемещение бомбы",
+  [EAchivment.FIRE]: "Уменьшение скорости + огонь",
+  [EAchivment.RANDOM]: "Случайный эффект",
+  [EAchivment.CRAZY_BOMB]: "Шальная (рандомная) бомба"
+}
+
 export enum EEffect {
   DEATH,
   FAKE_EXPLODE,

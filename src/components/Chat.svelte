@@ -2,12 +2,15 @@
   import { ChatEvent } from "class/ChatEvent";
   import { createEventDispatcher, onMount } from "svelte";
   import { FDate } from "@/FDate";
-  import { MESSAGE_LENGTH } from "@/config";
+  import { MESSAGE_LENGTH, TIMEOUT_MESSAGE } from "@/config";
   import type { TChatInfo } from "@/types";
   import Button from "./Button.svelte";
+  import { onFrame } from "library/onFrame";
 
   let message: string = "";
   let isHide = false;
+  let canSend = true;
+  let lastMessage = 0;
 
   const format = FDate.makeFormat("hh:mm:ss DD.MM.YYYY");
 
@@ -22,7 +25,9 @@
   };
 
   const sendMessage = () => {
+    if (!canSend) return;
     dispatch("message", message);
+    lastMessage = Date.now();
     message = "";
   };
 
@@ -38,6 +43,10 @@
       messages.unshift({ player, message, isMe, date: new Date() });
       messages = messages.splice(0, 100);
     });
+  });
+
+  onFrame(() => {
+    canSend = Date.now() > lastMessage + TIMEOUT_MESSAGE;
   });
 </script>
 
@@ -67,15 +76,16 @@
       </div>
     {/each}
   </div>
-  <div class="input">
+  <div class="input" data-cansend={canSend}>
     <input
+      data-cansend={canSend}
       maxlength={MESSAGE_LENGTH}
       bind:value={message}
       on:keydown={keydown}
       placeholder="Message"
       tabindex="-1"
     />
-    <Button on:click={sendMessage}>Send (Enter)</Button>
+    <Button disabled={!canSend} on:click={sendMessage}>Send (Enter)</Button>
   </div>
 </div>
 
@@ -134,6 +144,9 @@
       bottom: 0
       left: 0
       right: 0
+      
+      &[data-cansend="false"]
+        box-shadow: 0 0 10px red
 
       input
         outline: none
