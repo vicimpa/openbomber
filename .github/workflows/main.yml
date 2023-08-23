@@ -40,5 +40,8 @@ jobs:
           rm -rf current
           mv testing current
           cd current
+          rm -rf /var/www/openbomber
+          mv dist /var/www/openbomber
+          chmod -R 755 /var/www/openbomber
           pm2 start npm --name openbomber -- run preview
           pm2 save
