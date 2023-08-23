@@ -130,15 +130,17 @@ export class Player extends Entity {
     setPosition: ({ x, y, dir, animate }) => {
       if (this.isDeath && !this.inGame) return;
       const { speed } = this.effects;
-      const distance = calcSpeed(Date.now() - this.lastAction, speed) + .1;
-
-      x = (x * 16 | 0) / 16;
-      y = (y * 16 | 0) / 16;
+      const deltatime = Date.now() - this.lastAction
+      if (deltatime < 10) return;
+      const distance = calcSpeed(deltatime, speed) + .2;
 
       if (this.length(x, y) > distance) {
         this.newApi.setStartPosition(this);
         return;
       }
+
+      x = (x * 16 | 0) / 16;
+      y = (y * 16 | 0) / 16;
 
       this.lastAction = Date.now();
       this.x = x;
