@@ -48,7 +48,7 @@ export class Application {
   }
 
   update() {
-    const time = Date.now();
+    const time = performance.now();
     const dtime = time - this.time;
 
     this.time = time;
