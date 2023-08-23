@@ -131,7 +131,6 @@ export class Player extends Entity {
       if (this.isDeath && !this.inGame) return;
       const { speed } = this.effects;
       const deltatime = Date.now() - this.lastAction
-      if (deltatime < 10) return;
       const distance = calcSpeed(deltatime, speed) + .2;
 
       if (this.length(x, y) > distance) {
