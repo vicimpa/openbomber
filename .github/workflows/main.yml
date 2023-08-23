@@ -12,7 +12,6 @@ on:
       - 'shared/**'
       - '*.ts'
       - '*.json'
-      - '.swcrc'
 
 jobs:
   build:
