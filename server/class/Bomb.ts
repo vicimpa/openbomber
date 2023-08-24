@@ -67,7 +67,7 @@ export class Bomb extends Entity {
     if (!this.maked && !this.dir) {
       for (const player of players) {
         if (player.animate === EAnimate.IDLE) continue;
-        // if (!MovingEffect.get(player)) continue;
+        if (!MovingEffect.get(player)) continue;
         if (player.isDeath || !player.inGame) continue;
         if (player.checkCollision(this) && !this.dir)
           this.dir = player.dir;
