@@ -65,7 +65,6 @@ export class Explode extends Entity {
   static run(bomb: Bomb) {
     const { bombs, explodes, players } = bomb.game;
 
-
     players.forEach(player => {
       player.newApi.playSoundPosition({
         sound: ESounds.explode,
