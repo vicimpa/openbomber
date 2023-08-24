@@ -133,13 +133,6 @@ export class Bomb extends Entity {
         return;
       }
 
-      this.player.game.players.forEach(player => {
-        player.newApi.playSoundPosition({
-          sound: ESounds.explode,
-          position: this
-        });
-      });
-
       Explode.run(this);
     }
   }
