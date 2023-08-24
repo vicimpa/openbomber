@@ -282,6 +282,7 @@ export class Player extends Entity {
 
     const target = isSuicide ? 'самоубился' : `убит ${killer.name}`;
     this.game.message(`${this.name ?? 'noname'} ${target}`);
+    PlayerEffect.clearEffets(this);
     this.releasePosition();
   }
 
