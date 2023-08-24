@@ -87,6 +87,7 @@ export class Bomb extends Entity {
 
       for (const item of players) {
         if (haveColide) continue;
+        if (player.isDeath || !player.inGame) continue;
         if (item.checkCollision(newSet, 1)) haveColide = true;
       }
 
