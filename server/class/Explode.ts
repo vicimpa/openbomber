@@ -35,9 +35,11 @@ export class ExplodePoint extends Entity {
         Explode.run(bomb);
     }
 
-    for (const achivment of achivments) {
-      if (achivment.checkCollision(this))
-        achivments.delete(achivment);
+    if (!this.isBlock) {
+      for (const achivment of achivments) {
+        if (achivment.checkCollision(this))
+          achivments.delete(achivment);
+      }
     }
   }
 }
