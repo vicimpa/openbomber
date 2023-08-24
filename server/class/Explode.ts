@@ -31,13 +31,13 @@ export class ExplodePoint extends Entity {
     const { bombs, achivments } = this.game;
 
     for (const bomb of bombs) {
-      if (bomb.checkCollision(this))
+      if (bomb.checkCollision(this, .7))
         Explode.run(bomb);
     }
 
     if (!this.isBlock) {
       for (const achivment of achivments) {
-        if (achivment.checkCollision(this))
+        if (achivment.checkCollision(this, .9))
           achivments.delete(achivment);
       }
     }
