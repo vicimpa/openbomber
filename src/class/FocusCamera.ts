@@ -105,7 +105,7 @@ export class FocusCamera extends Camera {
       this.scale = min(
         this.width,
         this.height
-      ) / (OUT_FRAME * 31);
+      ) / (OUT_FRAME * 10);
     }
 
     this.plus(

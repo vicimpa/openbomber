@@ -14,7 +14,7 @@ export class Frame extends Entity {
     const { ctx } = camera;
     const { frame } = this;
 
-    if (!this.sprite || !this.sprite.ready)
+    if (!this.sprite)
       return;
 
     this.sprite.render(

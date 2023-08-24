@@ -1,5 +1,15 @@
 import { Vec2 } from "../../core/Vec2";
+import { isColide } from "../../core/isColide";
+import { point } from "../../core/point";
 import { Game } from "./Game";
+
+
+
+const me = point();
+const size = point();
+const pos = point();
+const obj = point();
+
 
 export class Entity extends Vec2 {
   constructor(
@@ -10,5 +20,16 @@ export class Entity extends Vec2 {
     super(x, y);
   }
 
-  update() { }
+  checkCollision(o: Vec2, over = 1) {
+    const s = 1 - over;
+
+    me.set(this).plus(s / 2);
+    pos.set(o).plus(s / 2);
+    size.set(over);
+    obj.set(over);
+
+    return isColide(me, pos, size, obj);
+  }
+
+  update(dtime: number, time: number): void { }
 }

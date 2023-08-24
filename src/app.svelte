@@ -65,6 +65,11 @@
           remaining += " сек.";
           break;
         }
+        case "moving": {
+          type = EAchivment.MOVING_BOMB;
+          remaining += " сек.";
+          break;
+        }
         case "shield": {
           type = EAchivment.APPEND_SHIELD;
           remaining += " сек.";

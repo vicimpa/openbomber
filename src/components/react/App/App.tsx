@@ -6,10 +6,8 @@ import { Background } from "class/Background";
 
 import styles from "./App.module.sass";
 import { useFrame } from "hooks/useFrame";
-import { Entity } from "class/Entity";
-import type { Camera } from "class/Camera";
-import { point } from "@/point";
-import { isColide } from "@/isColide";
+import { Character } from "class/Character";
+import { OUT_FRAME } from "config";
 
 const AppCTX = createContext<Application | null>(null);
 const CamCTX = createContext<FocusCamera | null>(null);
@@ -25,34 +23,12 @@ export type TAppProps = {
   children?: ReactNode;
 };
 
-class Rect extends Entity {
-  #size = point();
-
-  width = 16;
-  height = 16;
-
-  get size() { return this.#size.set(this.width, this.height); }
-
-  color = '#fff';
-
-  render(camera: Camera): void {
-    const { ctx } = camera;
-
-    ctx.fillStyle = this.color;
-    ctx.fillRect(0, 0, this.width, this.height);
-  }
-}
-
 export const App: FC<TAppProps> = ({ children }) => {
   const refCanvas = useRef<HTMLCanvasElement>(null);
   const [cam, setCam] = useState<FocusCamera | null>(null);
 
-  const bound = useMemo(() => (
-    new Rect()
-  ), []);
-
-  const colide = useMemo(() => (
-    new Rect()
+  const character = useMemo(() => (
+    new Character()
   ), []);
 
   const app = useMemo(() => (
@@ -64,26 +40,13 @@ export const App: FC<TAppProps> = ({ children }) => {
     if (!current) return;
     const newCam = new FocusCamera(current);
     const back = new Background(128, 128);
-    const vec = point();
-    const mouse = point();
-
-    current.onmousemove = ({ x, y }) => {
-      mouse.set(x, y).div(newCam.s).minus(colide.size.cdiv(2));
-
-      colide.set(
-        vec.set(newCam.width, newCam.height).div(newCam.s).div(-2).plus(mouse)
-      );
-    };
 
     setCam(newCam);
 
-    colide.width = 10;
-
-    bound.appendTo(newCam);
-    colide.appendTo(newCam);
-
     app.cameras.add(newCam);
     back.appendTo(app);
+    character.set(-OUT_FRAME / 2);
+    character.appendTo(newCam);
 
     return () => {
       newCam.delete();
@@ -92,7 +55,6 @@ export const App: FC<TAppProps> = ({ children }) => {
   }, []);
 
   useFrame((dtime, time) => {
-    colide.color = isColide(bound, colide, bound.size, colide.size) ? '#f00' : '#999';
     app.loop(dtime, time);
   });
 

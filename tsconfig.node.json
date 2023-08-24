@@ -3,7 +3,7 @@
     "composite": true,
     "skipLibCheck": true,
     "target": "ESNext",
-    "module": "NodeNext",
+    "module": "ESNext",
     "esModuleInterop": true,
     "moduleResolution": "Node",
     "experimentalDecorators": true,

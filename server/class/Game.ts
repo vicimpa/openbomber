@@ -19,6 +19,7 @@ import { Effect } from "./Effect";
 import { Explode } from "./Explode";
 import { GameMap } from "./GameMap";
 import { Player } from "./Player";
+import { Entity } from "./Entity";
 
 const logger = createLogger('info', { allowClearScreen: true });
 
@@ -44,6 +45,7 @@ export class Game {
   height = 1;
 
   #settings: TConfig;
+  time = performance.now();
 
   map!: GameMap;
   bombs = new Set<Bomb>();
@@ -203,6 +205,11 @@ export class Game {
   async loop() {
     while (this.running) {
       const { players, playersCount } = this;
+      const time = performance.now();
+      const dtime = time - this.time;
+      this.time = time;
+
+      if (dtime > 30) continue;
 
       effectObject(
         this,
@@ -213,25 +220,25 @@ export class Game {
         }
       );
 
-      for (const explode of this.explodes) {
-        explode.update();
+      for (const explode of this.explodes as Set<Entity>) {
+        explode.update(dtime, time);
       }
 
-      for (const bomb of this.bombs) {
-        bomb.update();
+      for (const bomb of this.bombs as Set<Entity>) {
+        bomb.update(dtime, time);
       }
 
-      for (const achivment of this.achivments) {
-        achivment.update();
+      for (const achivment of this.achivments as Set<Entity>) {
+        achivment.update(dtime, time);
       }
 
-      for (const player of this.players) {
-        player.update();
+      for (const player of this.players as Set<Entity>) {
+        player.update(dtime, time);
       }
 
       this.mapCache = [...this.map];
       this.infoCache = this.info;
-      this.bombsCache = [...this.bombs];
+      this.bombsCache = [...this.bombs].map(e => e.info);
       this.achivmentsCache = [...this.achivments];
       this.explodesCahce = [...this.explodes];
       this.effectsCache = [...this.effects];

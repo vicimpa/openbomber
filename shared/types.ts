@@ -38,6 +38,7 @@ export enum ESounds {
   speedOn,
   speedOff,
   kill,
+  moving,
 }
 
 export enum EDir {
@@ -77,11 +78,11 @@ export const ACHIVMEN_DESCRIPTION = {
   [EAchivment.ROLLERS]: "Эффект \"ролики\"",
   [EAchivment.APPEND_SPEED]: "Увеличение скорости",
   [EAchivment.APPEND_SHIELD]: "Щит, защищающий от взрыва",
-  [EAchivment.MOVING_BOMB]: "Перемещение бомбы",
+  [EAchivment.MOVING_BOMB]: "Толкание бомбы",
   [EAchivment.FIRE]: "Уменьшение скорости + огонь",
   [EAchivment.RANDOM]: "Случайный эффект",
   [EAchivment.CRAZY_BOMB]: "Шальная (рандомная) бомба"
-}
+};
 
 export enum EEffect {
   DEATH,

@@ -5,6 +5,7 @@ import { BombEffect } from "./BombEffect";
 import { CrasyBombEffect } from "./CrasyBombEffect";
 import { Entity } from "./Entity";
 import { Game } from "./Game";
+import { MovingEffect } from "./MovingEffect";
 import { Player } from "./Player";
 import { RadiusEffect } from "./RadiusEffect";
 import { ShieldEffect } from "./ShieldEffect";
@@ -15,6 +16,7 @@ const STORE = [
   EAchivment.APPEND_EXPO,
   EAchivment.APPEND_SHIELD,
   EAchivment.APPEND_SPEED,
+  EAchivment.MOVING_BOMB,
   EAchivment.FIRE,
   EAchivment.CRAZY_BOMB,
 ];
@@ -50,6 +52,11 @@ export class Achivment extends Entity {
 
       case EAchivment.APPEND_SPEED: {
         SpeedEffect.append(player, 1.5);
+        break;
+      }
+
+      case EAchivment.MOVING_BOMB: {
+        MovingEffect.append(player);
         break;
       }
 

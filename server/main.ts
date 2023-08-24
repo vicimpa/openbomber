@@ -7,7 +7,7 @@ import { Game } from "./class/Game";
 import { IS_DEV } from "./env";
 
 export function game(server: Server) {
-  const socketio = new SocketIO(server, IS_DEV ? { cors: { origin: '*' } } : {});
+  const socketio = new SocketIO(server);
 
   const game = new Game({
     fillAchivments: IS_DEV ? .9999 : .15,
@@ -18,11 +18,8 @@ export function game(server: Server) {
     const api = verifyApi.use(socket);
     const nums = makeData();
 
-    const response = await api.verify(nums);
-    if (response !== calc(nums)) {
-      api();
+    if (await api.verify(nums) !== calc(nums))
       return socket.disconnect();
-    }
 
     game.join(socket);
 

@@ -28,9 +28,9 @@ import { showDebug } from "data/debug";
 export class Game extends Entity {
   mapLayer = new MapLayer(this);
   effectsLayer = new EffectsLayer(this);
+  achivmentsLayer = new AchivmentsLayer(this);
   bombsLayer = new BombsLayer(this);
   explodesLayer = new ExplodesLayer(this);
-  achivmentsLayer = new AchivmentsLayer(this);
   playersLayer = new PlayersLayer(this);
 
   width = 0;

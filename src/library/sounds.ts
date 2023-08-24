@@ -109,6 +109,7 @@ export const soundStore = {
   [ESounds.speedOn]: await import('sound/speed_on.mp3?url'),
   [ESounds.speedOff]: await import('sound/speed_off.mp3?url'),
   [ESounds.kill]: await import('sound/kill.mp3?url'),
+  [ESounds.moving]: await import('sound/moving.mp3'),
 };
 
 type TUrl = typeof import('*?url');

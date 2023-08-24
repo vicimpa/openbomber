@@ -23,8 +23,7 @@ import { PlayerEffect } from "./PlayerEffect";
 import { RadiusEffect } from "./RadiusEffect";
 import { ShieldEffect } from "./ShieldEffect";
 import { SpeedEffect } from "./SpeedEffect";
-import { point } from "../../core/point";
-import { isColide } from "../../core/isColide";
+import { MovingEffect } from "./MovingEffect";
 
 let PLAYER_COUNTER = 0;
 
@@ -85,6 +84,7 @@ export class Player extends Entity {
       shield: round((ShieldEffect.get(this)?.remaining ?? 0) / 1000),
       crazy: round((CrasyBombEffect.get(this)?.remaining ?? 0) / 1000),
       speed: round((SpeedEffect.get(this)?.remaining ?? 0) / 1000),
+      moving: round((MovingEffect.get(this)?.remaining ?? 0) / 1000),
       bombs: BombEffect.count(this) || 0,
       radius: RadiusEffect.count(this) || 0,
     };
@@ -315,22 +315,6 @@ export class Player extends Entity {
     this.unforward?.();
   }
 
-  #me = point();
-  #size = point();
-  #pos = point();
-  #obj = point();
-
-  checkCollision(X: number, Y: number, over = 1) {
-    const size = 1 - over;
-
-    this.#me.set(this).plus(size / 2);
-    this.#pos.set(X, Y).plus(size / 2);
-    this.#size.set(over);
-    this.#obj.set(over);
-
-    return isColide(this.#me, this.#pos, this.#size, this.#obj);
-  }
-
   update() {
     const {
       explodes,
@@ -364,7 +348,7 @@ export class Player extends Entity {
           if (SpeedEffect.getValue(player) >= 1)
             continue;
 
-          if (this.checkCollision(player.x, player.y, .9))
+          if (this.checkCollision(player, .9))
             this.death(player);
         }
       }
@@ -375,10 +359,10 @@ export class Player extends Entity {
         if (this.isDeath || explode.ignore.has(this))
           continue;
 
-        for (const { x, y } of explode.points) {
+        for (const point of explode.points) {
           if (this.isDeath) continue;
 
-          if (this.checkCollision(x, y, .6)) {
+          if (this.checkCollision(point, .6)) {
             if (shield) {
               shield = null;
               ShieldEffect.delete(this);
@@ -394,8 +378,7 @@ export class Player extends Entity {
 
     if (!this.isDeath && this.inGame) {
       for (const achivment of achivments) {
-        const { x, y } = achivment;
-        if (this.checkCollision(x, y, .4)) {
+        if (this.checkCollision(achivment, .4)) {
           achivment.accept(this);
           achivments.delete(achivment);
         }

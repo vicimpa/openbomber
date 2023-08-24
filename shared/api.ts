@@ -116,12 +116,13 @@ export const POSITION_SOUND = new Proto({
 });
 
 export const REMAINING_EFFECTS = new Proto({
-  radius: 'int8',
-  bombs: 'int8',
-  speed: 'int8',
-  shield: 'int8',
-  crazy: 'int8',
-})
+  radius: 'uint16',
+  bombs: 'uint16',
+  speed: 'uint16',
+  shield: 'uint16',
+  crazy: 'uint16',
+  moving: 'uint16',
+});
 
 export const gameApi = makeWebSocketApi({
   setPosition: { input: INPUT_POSITION },

@@ -6,6 +6,7 @@ export const PLAYER_TIMEOUT = FDate.from('1m');
 export const SHIELD_TIME = FDate.from('50s');
 export const SPEED_TIME = FDate.from('25s');
 export const CRAZY_BOMB_TIME = FDate.from('30s');
+export const MOVING_TIME = FDate.from('35s');
 export const BOMB_TIME = FDate.from('2s');
 export const CRAZY_BOMB_MIN = FDate.from('500');
 export const CRAZY_BOMB_MAX = FDate.from('5s');

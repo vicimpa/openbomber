@@ -4,6 +4,7 @@ import { EExplodeDir, EMapItem, EXPODER_DIRS } from "../../shared/types";
 import { Achivment } from "./Achivment";
 import { Bomb } from "./Bomb";
 import { Entity } from "./Entity";
+import { Game } from "./Game";
 import { Player } from "./Player";
 
 export interface IExplodePoin {
@@ -14,9 +15,21 @@ export interface IExplodePoin {
   isBlock: boolean;
 }
 
+export class ExplodePoint extends Entity {
+
+  constructor(
+    game: Game,
+    x: number,
+    y: number,
+    public dir: EExplodeDir,
+    public isFinaly: boolean = false,
+    public isBlock: boolean = false
+  ) { super(game, x, y); }
+}
+
 export class Explode extends Entity {
   id!: number;
-  #points: IExplodePoin[] = [];
+  #points: ExplodePoint[] = [];
   time = Date.now();
   liveTime = 500;
   radius = 1;
@@ -35,8 +48,10 @@ export class Explode extends Entity {
   static run(bomb: Bomb) {
     const { bombs, explodes } = bomb.game;
 
-    if (bombs.delete(bomb))
+    if (bombs.delete(bomb)) {
+      bomb.round();
       explodes.add(new Explode(bomb));
+    }
   }
 
   explode() {
@@ -45,16 +60,18 @@ export class Explode extends Entity {
       x,
       y,
       radius,
-      game: {
-        width,
-        height,
-        bombs,
-        achivments,
-        map
-      }
+      game
     } = this;
 
-    points.push({ x, y, dir: EExplodeDir.CENTER, isFinaly: false, isBlock: false });
+    const {
+      width,
+      height,
+      bombs,
+      achivments,
+      map
+    } = game;
+
+    points.push(new ExplodePoint(game, x, y, EExplodeDir.CENTER));
 
     for (const [_id, direction] of Object.entries(EXPODER_DIRS)) {
       if (!+_id) continue;
@@ -82,7 +99,7 @@ export class Explode extends Entity {
               );
             }
 
-            points.push({ x, y, dir, isFinaly: true, isBlock: true });
+            points.push(new ExplodePoint(game, x, y, dir, true, true));
           }
 
           points.slice(-1)[0].isFinaly = true;
@@ -93,17 +110,17 @@ export class Explode extends Entity {
           bombFind.player = this.player;
           bombFind.time = Date.now();
           bombFind.liveTime = 50;
-          points.push({ x, y, dir, isFinaly: true, isBlock: false });
+          points.push(new ExplodePoint(game, x, y, dir, true));
           break;
         }
 
         if (achivmentFind) {
           achivments.delete(achivmentFind);
-          points.push({ x, y, dir, isFinaly: true, isBlock: false });
+          points.push(new ExplodePoint(game, x, y, dir, true));
           break;
         }
 
-        points.push({ x, y, dir, isFinaly: radius === i, isBlock: false });
+        points.push(new ExplodePoint(game, x, y, dir, radius === i));
       }
 
       for (const { x, y } of points) {
@@ -125,7 +142,7 @@ export class Explode extends Entity {
   }
 
   get points() {
-    return ([] as IExplodePoin[]).concat(this.#points);
+    return ([] as ExplodePoint[]).concat(this.#points);
   }
 
   get info() {
