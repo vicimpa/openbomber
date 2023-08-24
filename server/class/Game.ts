@@ -11,7 +11,7 @@ import { pick } from "../../core/pick";
 import { point } from "../../core/point";
 import { random } from "../../core/random";
 import { Vec2, vec2 } from "../../core/Vec2";
-import { ESounds } from "../../shared/types";
+import { EEffect, ESounds } from "../../shared/types";
 import { IS_DEV } from "../env";
 import { Achivment } from "./Achivment";
 import { Bomb } from "./Bomb";
