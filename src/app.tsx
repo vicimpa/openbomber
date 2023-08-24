@@ -1,6 +1,11 @@
+import { Vec2 } from "@/Vec2";
 import { App } from "components/react/App";
 import { Panel } from "components/react/Panel";
 import { createRoot } from "react-dom/client";
+
+const a = new Vec2(1, 2);
+const b = new Vec2(2, 3);
+
 
 createRoot(document.getElementById('root')!)
   .render(

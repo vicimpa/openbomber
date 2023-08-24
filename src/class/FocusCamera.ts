@@ -6,12 +6,12 @@ import { OUT_FRAME } from "config";
 
 import { Camera } from "./Camera";
 import { Game } from "./Game";
-import { PlayerSprite } from "./PlayerSprite";
 import { toLimit } from "@/toLimit";
 import { EEffect } from "@/types";
+import { showDebug } from "data/debug";
 
 export class FocusCamera extends Camera {
-  focus?: Game | PlayerSprite;
+  focus?: Game;
 
   scale = 1;
   padding = 0;
@@ -22,10 +22,11 @@ export class FocusCamera extends Camera {
   update(dtime: number, time: number): void {
     const { focus } = this;
 
-
     if (focus instanceof Game) {
       const focusSize = new Vec2(focus.width, focus.height)
         .times(OUT_FRAME);
+
+      showDebug({ focusSize });
 
       const focusPlayer = focus.waitRestart === -1 ? (
         focus.currentPlayerSprite // ?? focus.focusPlayer
@@ -47,8 +48,8 @@ export class FocusCamera extends Camera {
         const maxVec = point(-Infinity);
 
         for (const [_, item] of focus.positions) {
-          minVec.minLimit(item);
-          maxVec.maxLimit(item);
+          minVec.maxLimit(item);
+          maxVec.minLimit(item);
         }
 
         minVec.times(OUT_FRAME);
@@ -58,8 +59,8 @@ export class FocusCamera extends Camera {
           const { created, type } = item;
           if (type !== EEffect.DEATH) continue;
           if (created + 3000 < time) continue;
-          minVec.minLimit(item);
-          maxVec.maxLimit(item);
+          minVec.maxLimit(item);
+          maxVec.minLimit(item);
         }
 
         const size = maxVec.minus(minVec);
@@ -117,5 +118,9 @@ export class FocusCamera extends Camera {
     );
     this.s += (this.scale - this.s) * dtime * .002;
     super.update(dtime, time);
+
+    showDebug('Camera', this);
+    showDebug('Need', this.need);
+    showDebug('Focus', this.focus);
   }
 }

@@ -2,11 +2,12 @@
   import { debug } from "data/debug";
   import { onMount } from "svelte";
 
-  let show = false;
+  let show = !!+(localStorage.getItem("show-debug") ?? 0);
 
   onMount(() => {
     const keydown = (e: KeyboardEvent) => {
       if (e.code === "IntlBackslash") show = !show;
+      localStorage.setItem("show-debug", +show + "");
     };
 
     addEventListener("keydown", keydown);
