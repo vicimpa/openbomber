@@ -86,7 +86,7 @@ export class Player extends Entity {
       speed: ceil((SpeedEffect.get(this)?.remaining ?? 0) / 1000),
       bombs: BombEffect.count(this) || 0,
       radius: RadiusEffect.count(this) || 0,
-    }
+    };
   }
 
   get info() {
@@ -130,7 +130,7 @@ export class Player extends Entity {
     setPosition: ({ x, y, dir, animate }) => {
       if (this.isDeath && !this.inGame) return;
       const { speed } = this.effects;
-      const deltatime = Date.now() - this.lastAction
+      const deltatime = Date.now() - this.lastAction;
       const distance = calcSpeed(deltatime, speed) + .2;
 
       if (this.length(x, y) > distance) {
@@ -162,10 +162,10 @@ export class Player extends Entity {
           message: `Сообщение можно отправить через ${deltaTime / 1000 | 0} сек.`,
           sender: { name: 'server' },
           isMe: false
-        })
+        });
         return;
       }
-      this.lastMessage = Date.now()
+      this.lastMessage = Date.now();
       message = message.slice(0, MESSAGE_LENGTH);
       this.game.message(message, this);
     },
@@ -221,7 +221,7 @@ export class Player extends Entity {
           message: `Подключитесь через ${deltaTime / 1000 | 0} сек.`,
           sender: { name: 'server' },
           isMe: false
-        })
+        });
         return;
       }
 
@@ -231,7 +231,7 @@ export class Player extends Entity {
       this.deaths = 0;
       this.wins = 0;
       this.inGame = true;
-      this.lastConnect = Date.now()
+      this.lastConnect = Date.now();
       this.lastAction = Date.now();
       PlayerEffect.clearEffets(this);
       this.game.message(`${this.name ?? 'noname'} подключился`);
@@ -316,7 +316,13 @@ export class Player extends Entity {
 
   checkCollision(X: number, Y: number, over = 1) {
     const { x, y } = this;
-    return x < X + over && x > X - over && y < Y + over && y > Y - over;
+
+    return (true
+      && x < X + over
+      && x > X - (1 - over)
+      && y < Y + over
+      && y > Y - (1 - over)
+    );
   }
 
   update() {
