@@ -75,7 +75,7 @@ export class Bomb extends Entity {
 
     if (this.dir !== undefined) {
       const move = DIRECTIONS[this.dir];
-      const newSet = this.cplus(move.ctimes(dtime * .01));
+      const newSet = this.cplus(move.cdiv(2));
       let haveColide = false;
 
       for (const item of bombs) {
@@ -112,7 +112,7 @@ export class Bomb extends Entity {
         this.round();
         this.dir = undefined;
       } else {
-        this.set(newSet);
+        this.plus(move.ctimes(dtime * .01));
       }
     }
 
