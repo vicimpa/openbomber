@@ -35,8 +35,8 @@ export class FocusCamera extends Camera {
       if (focusPlayer) {
         this.need.set(
           this.filterNeed(
-            focus.clone()
-              .plus(focusPlayer)
+            focus
+              .cplus(focusPlayer)
               .plus(.5 * OUT_FRAME)
           )
         );
@@ -64,7 +64,7 @@ export class FocusCamera extends Camera {
         }
 
         const size = maxVec.minus(minVec);
-        const center = size.clone().div(2).plus(minVec).plus(.5 * OUT_FRAME);
+        const center = size.cdiv(2).plus(minVec).plus(.5 * OUT_FRAME);
 
 
         this.need.set(
@@ -88,8 +88,8 @@ export class FocusCamera extends Camera {
       } else {
         this.need.set(
           this.filterNeed(
-            focusSize.clone()
-              .div(2)
+            focusSize
+              .cdiv(2)
               .plus(focus)
           )
         );
@@ -100,10 +100,7 @@ export class FocusCamera extends Camera {
         );
       }
     } else {
-      this.need.set(
-        this.clone()
-          .plus(dtime * .5, dtime * .3)
-      );
+      this.need.set(this.cplus(dtime * .5, dtime * .3));
 
       this.scale = min(
         this.width,

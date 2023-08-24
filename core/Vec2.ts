@@ -60,8 +60,7 @@ export class Vec2 {
     return (
       sqrt(
         this
-          .clone()
-          .minus(...args)
+          .cminus(...args)
           .pow(2)
           .sum()
       )
@@ -74,11 +73,19 @@ export class Vec2 {
 
   sum() { return this.x + this.y; }
   clone() { return new Vec2(this); }
+
   normalize() { return this.div(this.length() || 1); }
   round() { return this.set(round(this.x), round(this.y)); }
   floor() { return this.set(floor(this.x), floor(this.y)); }
   ceil() { return this.set(ceil(this.x), ceil(this.y)); }
   abs() { return this.set(abs(this.x), abs(this.y)); }
+
+
+  cnormalize() { return this.cdiv(this.length() || 1); }
+  cround() { return this.cset(round(this.x), round(this.y)); }
+  cfloor() { return this.cset(floor(this.x), floor(this.y)); }
+  cceil() { return this.cset(ceil(this.x), ceil(this.y)); }
+  cabs() { return this.cset(abs(this.x), abs(this.y)); }
 
   plus(...args: TVec2) { return vec2(...args, _plus, this); }
   minus(...args: TVec2) { return vec2(...args, _minus, this); }
@@ -91,8 +98,19 @@ export class Vec2 {
   bigger(...args: TVec2) { return vec2(...args, _bigger, this); }
   equal(...args: TVec2) { return vec2(...args, _equal, this); }
 
+  cplus(...args: TVec2) { return vec2(...args, _plus, this.clone()); }
+  cminus(...args: TVec2) { return vec2(...args, _minus, this.clone()); }
+  ctimes(...args: TVec2) { return vec2(...args, _times, this.clone()); }
+  cdiv(...args: TVec2) { return vec2(...args, _div, this.clone()); }
+  crem(...args: TVec2) { return vec2(...args, _rem, this.clone()); }
+  cpow(...args: TVec2) { return vec2(...args, _pow, this.clone()); }
+  cset(...args: TVec2) { return vec2(...args, _set, this.clone()); }
+
   minLimit(...args: TVec2) { return vec2(...args, _minLimit, this); }
   maxLimit(...args: TVec2) { return vec2(...args, _maxLimit, this); }
+
+  cminLimit(...args: TVec2) { return vec2(...args, _minLimit, this.clone()); }
+  cmaxLimit(...args: TVec2) { return vec2(...args, _maxLimit, this.clone()); }
 
   static withIndex(i: number, width: number, height: number) {
     return new Vec2(i % width, i / width | 0);

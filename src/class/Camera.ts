@@ -43,9 +43,7 @@ export class Camera extends Entity {
     const { ctx, width, height, s } = this;
     const translate = point(width, height)
       .times(.5)
-      .minus(
-        this.clone().times(s)
-      ).round();
+      .minus(this.ctimes(s));
 
     ctx.resetTransform();
     ctx.clearRect(0, 0, width, height);

@@ -3,10 +3,9 @@ import { Socket } from "socket.io";
 import { calcSpeed } from "../../core/calcSpeed";
 import { effectObject } from "../../core/effectObject";
 import { find } from "../../core/find";
-import { makePicker } from "../../core/makePicker";
 import { TMethodsOut } from "../../core/makeWebSocketApi";
 import { map } from "../../core/map";
-import { ceil, rem } from "../../core/math";
+import { rem, round } from "../../core/math";
 import { pick } from "../../core/pick";
 import { Vec2 } from "../../core/Vec2";
 import { gameApi, playerApi } from "../../shared/api";
@@ -24,6 +23,8 @@ import { PlayerEffect } from "./PlayerEffect";
 import { RadiusEffect } from "./RadiusEffect";
 import { ShieldEffect } from "./ShieldEffect";
 import { SpeedEffect } from "./SpeedEffect";
+import { point } from "../../core/point";
+import { isColide } from "../../core/isColide";
 
 let PLAYER_COUNTER = 0;
 
@@ -81,9 +82,9 @@ export class Player extends Entity {
 
   get remainingEffects() {
     return {
-      shield: ceil((ShieldEffect.get(this)?.remaining ?? 0) / 1000),
-      crazy: ceil((CrasyBombEffect.get(this)?.remaining ?? 0) / 1000),
-      speed: ceil((SpeedEffect.get(this)?.remaining ?? 0) / 1000),
+      shield: round((ShieldEffect.get(this)?.remaining ?? 0) / 1000),
+      crazy: round((CrasyBombEffect.get(this)?.remaining ?? 0) / 1000),
+      speed: round((SpeedEffect.get(this)?.remaining ?? 0) / 1000),
       bombs: BombEffect.count(this) || 0,
       radius: RadiusEffect.count(this) || 0,
     };
@@ -314,15 +315,20 @@ export class Player extends Entity {
     this.unforward?.();
   }
 
-  checkCollision(X: number, Y: number, over = 1) {
-    const { x, y } = this;
+  #me = point();
+  #size = point();
+  #pos = point();
+  #obj = point();
 
-    return (true
-      && x < X + over
-      && x > X - (1 - over)
-      && y < Y + over
-      && y > Y - (1 - over)
-    );
+  checkCollision(X: number, Y: number, over = 1) {
+    const size = 1 - over;
+
+    this.#me.set(this).plus(size / 2);
+    this.#pos.set(X, Y).plus(size / 2);
+    this.#size.set(over);
+    this.#obj.set(over);
+
+    return isColide(this.#me, this.#pos, this.#size, this.#obj);
   }
 
   update() {
@@ -358,7 +364,7 @@ export class Player extends Entity {
           if (SpeedEffect.getValue(player) >= 1)
             continue;
 
-          if (this.checkCollision(player.x, player.y, 1))
+          if (this.checkCollision(player.x, player.y, .9))
             this.death(player);
         }
       }
@@ -389,7 +395,7 @@ export class Player extends Entity {
     if (!this.isDeath && this.inGame) {
       for (const achivment of achivments) {
         const { x, y } = achivment;
-        if (this.checkCollision(x, y, .5)) {
+        if (this.checkCollision(x, y, .4)) {
           achivment.accept(this);
           achivments.delete(achivment);
         }

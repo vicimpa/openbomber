@@ -72,8 +72,7 @@ export class PlayerControllerNew extends Vec2 {
 
     let { animate, dir } = this;
     const speed = calcSpeed(deltaTime, this.speedMulti);
-
-    const move = this.move.clone().normalize();
+    const move = this.move.cnormalize();
 
     if (abs(move.y) > .5) dir = move.y < 0 ? EDir.TOP : EDir.BOTTOM;
     if (abs(move.x) > .5) dir = move.x < 0 ? EDir.LEFT : EDir.RIGHT;
@@ -105,7 +104,7 @@ export class PlayerControllerNew extends Vec2 {
     for (const [_, bomb] of bombs) {
       const obj = new Vec2(bomb);
 
-      if (obj.equal(this.clone().round()))
+      if (obj.equal(this.cround()))
         continue;
 
       this.collision(

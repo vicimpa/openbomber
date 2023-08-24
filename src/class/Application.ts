@@ -68,6 +68,7 @@ export class Application {
     for (const cam of this.cameras) {
       cam.apply();
       this.runRender(this.children, cam);
+      this.runRender(this.cameras, cam);
     }
   }
 }

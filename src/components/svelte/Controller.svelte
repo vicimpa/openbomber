@@ -128,8 +128,7 @@
         const delta = new Vec2(clientX, clientY).minus(startVec);
 
         const limit = delta
-          .clone()
-          .minLimit(-max)
+          .cminLimit(-max)
           .maxLimit(max)
           .div(max)
           .normalize()
@@ -137,12 +136,11 @@
           .times(max);
 
         const newMove = delta
-          .clone()
-          .minLimit(limit.times(-1))
+          .cminLimit(limit.times(-1))
           .maxLimit(limit.times(-1))
           .div(max);
 
-        if (newMove.clone().abs().length() > 0.3) move.set(newMove);
+        if (newMove.cabs().length() > 0.3) move.set(newMove);
         else move.set(0);
         updatePoint(move);
         move.round().normalize();

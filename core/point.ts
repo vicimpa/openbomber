@@ -14,6 +14,6 @@ export const points = (input: string) => {
 };
 
 export const plus = (points: Vec2[], plus: Vec2, times = 1): Vec2[] => {
-  plus = plus.clone().times(times);
-  return points.map(vec => vec.clone().plus(plus));
+  plus = plus.ctimes(times);
+  return points.map(vec => vec.cplus(plus));
 };

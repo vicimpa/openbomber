@@ -110,7 +110,7 @@
       },
       playSoundPosition({ sound, position }) {
         if (!cam || !gameInfo) return sounds[sound]?.play();
-        const delta = cam.clone().minus(
+        const delta = cam.cminus(
           point(position)
             .times(OUT_FRAME)
             .minus(

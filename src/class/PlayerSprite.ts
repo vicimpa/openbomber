@@ -51,26 +51,31 @@ export class PlayerSprite extends Frame {
     const size = this.animate === EAnimate.IDLE ? 1 : list.length;
     const frame = ((time - this.startAnimate) / this.speed | 0) % size;
 
-    this.frame.set(list[frame].clone().times(1, this.color));
+    this.frame.set(list[frame].ctimes(1, this.color));
   }
 
   render(camera: Camera): void {
+    const { ctx } = camera;
+
     if (this.isFire)
       this.fireAnimate.render(camera);
 
     super.render(camera);
 
+
     if (this.name) {
-      camera.ctx.globalAlpha = 0.6;
-      camera.ctx.fillStyle = '#fff';
-      camera.ctx.font = "normal 3px BetterVCR";
-      camera.ctx.textAlign = 'center';
-      camera.ctx.textBaseline = 'bottom';
-      camera.ctx.fillText(this.name, OUT_FRAME / 2, 0);
-      camera.ctx.globalAlpha = 1;
+      ctx.globalAlpha = 0.6;
+      ctx.fillStyle = '#fff';
+      ctx.font = "normal 3px BetterVCR";
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(this.name, OUT_FRAME / 2, 0);
+      ctx.globalAlpha = 1;
     }
 
     if (this.isShield)
       this.shieldAnimate.render(camera);
+
+    ctx.strokeRect(0, 0, OUT_FRAME, OUT_FRAME);
   }
 }

@@ -12,10 +12,7 @@
 </script>
 
 <a target="_blank" href={url}>
-  <img
-    src={`http://www.google.com/s2/favicons?domain=${domain}`}
-    alt="favicon"
-  />
+  <img src={`//www.google.com/s2/favicons?domain=${domain}`} alt="favicon" />
   <slot />
 </a>
 
