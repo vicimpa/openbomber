@@ -9,6 +9,7 @@ import { ShieldSprite } from "./ShieldSprite";
 import { Sprite } from "./Sprite";
 
 import type { Camera } from "./Camera";
+import { IS_DEV } from "env";
 const BASE = points('1,1;0,1;1,1;2,1');
 
 const FRAMES = {
@@ -76,6 +77,7 @@ export class PlayerSprite extends Frame {
     if (this.isShield)
       this.shieldAnimate.render(camera);
 
-    ctx.strokeRect(0, 0, OUT_FRAME, OUT_FRAME);
+    if (IS_DEV)
+      ctx.strokeRect(0, 0, OUT_FRAME, OUT_FRAME);
   }
 }
