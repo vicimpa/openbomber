@@ -1,7 +1,7 @@
 import { find } from "../../core/find";
 import { pick } from "../../core/pick";
 import { point } from "../../core/point";
-import { EExplodeDir, EMapItem, EXPODER_DIRS } from "../../shared/types";
+import { EExplodeDir, EMapItem, ESounds, EXPODER_DIRS } from "../../shared/types";
 import { Achivment } from "./Achivment";
 import { Bomb } from "./Bomb";
 import { Entity } from "./Entity";
@@ -63,7 +63,15 @@ export class Explode extends Entity {
   }
 
   static run(bomb: Bomb) {
-    const { bombs, explodes } = bomb.game;
+    const { bombs, explodes, players } = bomb.game;
+
+
+    players.forEach(player => {
+      player.newApi.playSoundPosition({
+        sound: ESounds.explode,
+        position: bomb
+      });
+    });
 
     if (bombs.delete(bomb)) {
       bomb.round();
