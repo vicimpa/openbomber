@@ -1,33 +1,39 @@
 <script lang="ts">
-  import { NICK_LENGTH, SKINS_COUNT } from "@/config";
-
-  import type { Player as TypePlayer } from "@/class/Player";
-  import type { Game as TypeGame } from "@/class/Game";
-
+  import { OUT_FRAME } from "config";
   import { onMount } from "svelte";
   import { socket } from "socket";
-  import EditName from "components/EditName.svelte";
+
   import spriteSrc from "images/characters.png";
   import achivmentSrc from "images/sprite.png";
 
-  import Volume from "components/Volume.svelte";
-  import { ChatEvent } from "class/ChatEvent";
-  import Chat from "components/Chat.svelte";
-  import PlayerList from "components/PlayerList.svelte";
-  import Button from "components/Button.svelte";
-  import Link from "components/Link.svelte";
-  import { PLAYER_INFO, REMAINING_EFFECTS, gameApi, playerApi } from "@/api";
-  import ChatView from "components/ChatView.svelte";
-  import type { TProtoOut } from "@/Proto";
-  import CanvasRender from "components/CanvasRender.svelte";
-  import type { FocusCamera } from "class/FocusCamera";
-  import { sounds } from "library/sounds";
-  import { point } from "@/point";
-  import { OUT_FRAME } from "config";
-  import { each } from "library/each";
   import { rem } from "@/math";
-  import Frame from "components/Frame.svelte";
+  import { point } from "@/point";
   import { ACHIVMEN_DESCRIPTION, EAchivment } from "@/types";
+  import { NICK_LENGTH, SKINS_COUNT } from "@/config";
+  import { PLAYER_INFO, REMAINING_EFFECTS, gameApi, playerApi } from "@/api";
+
+  import type { TProtoOut } from "@/Proto";
+  import type { Player as TypePlayer } from "@/class/Player";
+  import type { Game as TypeGame } from "@/class/Game";
+
+  import { FocusCamera } from "class/FocusCamera";
+  import { ChatEvent } from "class/ChatEvent";
+
+  import { each } from "library/each";
+  import { sounds } from "library/sounds";
+
+  import Frame from "components/svelte/Frame.svelte";
+  import PlayerList from "components/svelte/PlayerList.svelte";
+  import Button from "components/svelte/Button.svelte";
+  import EditName from "components/svelte/EditName.svelte";
+  import Volume from "components/svelte/Volume.svelte";
+  import Chat from "components/svelte/Chat.svelte";
+  import ChatView from "components/svelte/ChatView.svelte";
+  import Link from "components/svelte/Link.svelte";
+  import CanvasRender from "components/svelte/CanvasRender.svelte";
+  import { IS_DEV } from "env";
+  import Debug from "components/svelte/Debug.svelte";
+  import { debug } from "data/debug";
 
   const newApi = gameApi.use(socket);
 
@@ -242,6 +248,10 @@
       on:setBomb={() => newApi.setBomb()}
       on:setPosition={({ detail }) => newApi.setPosition(detail)}
     />
+
+    {#if IS_DEV}
+      <Debug />
+    {/if}
 
     <div class="effects">
       {#each effectsList as { type, remaining }}

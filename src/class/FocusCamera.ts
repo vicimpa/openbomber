@@ -26,7 +26,7 @@ export class FocusCamera extends Camera {
     if (focus instanceof Game) {
       const focusSize = new Vec2(focus.width, focus.height)
         .times(OUT_FRAME);
-        
+
       const focusPlayer = focus.waitRestart === -1 ? (
         focus.currentPlayerSprite // ?? focus.focusPlayer
       ) : undefined;
@@ -36,37 +36,34 @@ export class FocusCamera extends Camera {
           this.filterNeed(
             focus.clone()
               .plus(focusPlayer)
-              .plus(.5*OUT_FRAME)
+              .plus(.5 * OUT_FRAME)
           )
         );
 
         this.scale = min(this.width, this.height) / (OUT_FRAME * 10);
       } else if (focus.waitRestart == -1 && focus.positions.size) {
-        const time = Date.now()
-        const minVec = point(Infinity)
-        const maxVec = point(-Infinity)
+        const time = Date.now();
+        const minVec = point(Infinity);
+        const maxVec = point(-Infinity);
 
-        for(const [_, {x, y}] of focus.positions) {
-          if (minVec.x > x) minVec.x = x;
-          if (minVec.y > y) minVec.y = y;
-          if (maxVec.x < x) maxVec.x = x;
-          if (maxVec.y < y) maxVec.y = y;
+        for (const [_, item] of focus.positions) {
+          minVec.minLimit(item);
+          maxVec.maxLimit(item);
         }
 
-        minVec.times(OUT_FRAME)
-        maxVec.times(OUT_FRAME)
+        minVec.times(OUT_FRAME);
+        maxVec.times(OUT_FRAME);
 
-        for(const [_, {created, x, y, type}] of focus.effectsLayer.effects) {
-          if(type !== EEffect.DEATH) continue
-          if(created + 3000 < time) continue
-          if (minVec.x > x) minVec.x = x;
-          if (minVec.y > y) minVec.y = y;
-          if (maxVec.x < x) maxVec.x = x;
-          if (maxVec.y < y) maxVec.y = y;
+        for (const [_, item] of focus.effectsLayer.effects) {
+          const { created, type } = item;
+          if (type !== EEffect.DEATH) continue;
+          if (created + 3000 < time) continue;
+          minVec.minLimit(item);
+          maxVec.maxLimit(item);
         }
 
-        const size = maxVec.minus(minVec)
-        const center = size.clone().div(2).plus(minVec).plus(.5 * OUT_FRAME)
+        const size = maxVec.minus(minVec);
+        const center = size.clone().div(2).plus(minVec).plus(.5 * OUT_FRAME);
 
 
         this.need.set(
@@ -76,17 +73,17 @@ export class FocusCamera extends Camera {
         );
 
         const vec = point(this.width, this.height)
-            .div(size.plus(8 * OUT_FRAME))
+          .div(size.plus(8 * OUT_FRAME));
 
         this.scale = toLimit(
           min(vec.x, vec.y),
           min(
             this.height / (focusSize.y + this.padding),
             this.width / (focusSize.x + this.padding)
-          ), 
+          ),
           min(this.width, this.height) / (OUT_FRAME * 10)
-        )
-        
+        );
+
       } else {
         this.need.set(
           this.filterNeed(
@@ -101,8 +98,17 @@ export class FocusCamera extends Camera {
           this.width / (focusSize.x + this.padding)
         );
       }
-    }
+    } else {
+      this.need.set(
+        this.clone()
+          .plus(dtime * .5, dtime * .3)
+      );
 
+      this.scale = min(
+        this.width,
+        this.height
+      ) / (OUT_FRAME * 31);
+    }
 
     this.plus(
       this.need

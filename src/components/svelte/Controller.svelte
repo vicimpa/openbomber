@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Vec2 } from "@/Vec2";
+  import { debug } from "data/debug";
   import { makeController, makeVectorController } from "library/makeController";
   import { onFrame } from "library/onFrame";
   import { beforeUpdate, onMount } from "svelte";
@@ -170,7 +171,6 @@
       updateGamepads();
       for (const {
         axes: [x, y],
-        buttons,
       } of gamepads) {
         const vec = new Vec2(x, y);
         vec.round().normalize();
@@ -186,6 +186,10 @@
     }
 
     keys.bomb.isSingle() && dispatch("bomb");
+
+    debug.set("Keyboard", keyboardMove);
+    debug.set("Gamepad", gamepadMove);
+    debug.set("Touch", touchMove);
 
     if (keyboardMove.length()) move.set(keyboardMove);
     else if (gamepadMove.length()) move.set(gamepadMove);

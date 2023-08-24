@@ -2,16 +2,25 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig } from "vite";
 import commonjs from "vite-plugin-commonjs";
 import paths from "vite-tsconfig-paths";
+import react from "@vitejs/plugin-react-swc";
 
 import { game } from "./server/main";
+import { resolve } from "path";
 
 export default defineConfig({
   base: './',
   root: './src',
   publicDir: '../public',
+
   build: {
     outDir: '../dist',
-    target: 'esnext'
+    target: 'esnext',
+    rollupOptions: {
+      input: {
+        index: resolve(__dirname, 'src', 'index.html'),
+        new: resolve(__dirname, 'src', 'new.html')
+      }
+    }
   },
   preview: {
     host: '127.0.0.1',
@@ -23,6 +32,7 @@ export default defineConfig({
   },
   plugins: [
     commonjs(),
+    react({ plugins: [], tsDecorators: true }),
     svelte({ configFile: '../svelte.config.js' }),
     paths(),
     {

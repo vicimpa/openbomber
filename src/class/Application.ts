@@ -7,6 +7,13 @@ export class Application {
   time = performance.now();
   work = false;
 
+  get dtime() {
+    const time = performance.now();
+    const dtime = time - this.time;
+    this.time = time;
+    return dtime;
+  }
+
   constructor(autostart = true) {
     if (autostart) this.start();
   }
@@ -15,7 +22,10 @@ export class Application {
     if (this.work) return;
     this.work = true;
     const tick = () => {
-      this.loop();
+      const { dtime, time } = this;
+
+      this.loop(dtime, time);
+
       if (this.work)
         requestAnimationFrame(tick);
     };
@@ -27,8 +37,8 @@ export class Application {
     this.work = false;
   }
 
-  loop() {
-    this.update();
+  loop(dtime: number, time: number) {
+    this.update(dtime, time);
   }
 
   runUpdate(children: Set<Entity>, dtime: number, time: number) {
@@ -47,15 +57,8 @@ export class Application {
     }
   }
 
-  update() {
-    const time = performance.now();
-    const dtime = time - this.time;
-
-    this.time = time;
-
-    if (dtime > 30)
-      return;
-
+  update(dtime: number, time: number) {
+    if (dtime > 30) return;
     this.runUpdate(this.cameras, dtime, time);
     this.runUpdate(this.children, dtime, time);
     this.render();

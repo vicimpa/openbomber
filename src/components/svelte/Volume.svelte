@@ -23,11 +23,11 @@
     start = point(x, y);
   };
 
-  const mouseUp = ({ x, y }: MouseEvent) => {
+  const mouseUp = ({}: MouseEvent) => {
     start = null;
   };
 
-  const mouseMove = ({ x, y }: MouseEvent) => {
+  const mouseMove = ({ x }: MouseEvent) => {
     if (!start) return;
     const delta = (start.x - x) / span.offsetWidth;
     volume = toLimit(startVolume - delta, 0, 1);

@@ -4,14 +4,27 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "resolveJsonModule": true,
-    "strict": true,
+
+    /* Bundler mode */
     "allowJs": true,
     "checkJs": true,
-    "noEmit": true,
     "declaration": false,
-    "isolatedModules": true,
     "experimentalDecorators": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react",
+    "jsxImportSource": "react",
+    "resolveJsonModule": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Project */
     "baseUrl": "./src",
     "types": [
       "vite/client",
@@ -28,6 +41,7 @@
   "include": [
     "src/**/*.d.ts",
     "src/**/*.ts",
+    "src/**/*.tsx",
     "src/**/*.js",
     "src/**/*.mts",
     "src/**/*.svelte",

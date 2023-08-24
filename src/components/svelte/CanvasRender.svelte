@@ -1,12 +1,12 @@
 <script lang="ts">
   import { Vec2 } from "@/Vec2";
-  import { INPUT_POSITION, PLAYER_POSITION, playerApi } from "@/api";
+  import { INPUT_POSITION, playerApi } from "@/api";
   import { point } from "@/point";
   import { Application } from "class/Application";
   import { Background } from "class/Background";
   import { FocusCamera } from "class/FocusCamera";
   import { Game } from "class/Game";
-  import Controller from "components/Controller.svelte";
+  import Controller from "./Controller.svelte";
   import { createEventDispatcher, onMount } from "svelte";
   import { updateIdMap } from "library/updateIdMap";
   import type { Socket } from "socket.io-client";
@@ -33,8 +33,6 @@
   const app = new Application(true);
   const back = new Background(256, 256);
 
-  let currentColor = 0;
-
   let game = new Game();
   export let cam: FocusCamera | undefined;
 
@@ -56,6 +54,12 @@
         game.updatePosition = (x, y, dir, animate) => {
           dispatch("setPosition", { x, y, dir, animate });
         };
+      },
+
+      setStartPosition({ x, y }) {
+        game.currentPlayer = new PlayerControllerNew(game);
+        game.currentPlayer.set({ x, y });
+        game.currentPlayer.move = move;
       },
       updateMap(map) {
         game.newRender = new Uint8Array(map);
@@ -80,19 +84,13 @@
       },
       updateLocalInfo(info) {
         game.localInfo = info;
-        const { isDeath, inGame, effects, color } = info;
+        const { isDeath, inGame, effects } = info;
         state.inGame = inGame;
         if (!inGame || isDeath) delete game.currentPlayer;
         if (game.currentPlayer) game.currentPlayer.speedMulti = effects.speed;
-        currentColor = color;
       },
       updateWaitForRestart(restart) {
         game.waitRestart = restart;
-      },
-      setStartPosition({ x, y }) {
-        game.currentPlayer = new PlayerControllerNew(game);
-        game.currentPlayer.set({ x, y });
-        game.currentPlayer.move = move;
       },
     });
 

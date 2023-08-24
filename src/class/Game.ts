@@ -24,6 +24,7 @@ import type {
 
 import type { PlayerControllerNew } from "./PlayerControllerNew";
 import type { EAnimate, EDir } from "@/types";
+import { debug } from "data/debug";
 export class Game extends Entity {
   mapLayer = new MapLayer(this);
   effectsLayer = new EffectsLayer(this);
@@ -66,6 +67,8 @@ export class Game extends Entity {
       this.currentPlayerSprite.appendTo(this);
     }
 
+    debug.set('Player', this.currentPlayer);
+
     if (!this.currentPlayer && this.currentPlayerSprite) {
       this.currentPlayerSprite.delete();
       delete this.currentPlayerSprite;
@@ -79,9 +82,9 @@ export class Game extends Entity {
       x = ((x * 16) | 0) / 16;
       y = ((y * 16) | 0) / 16;
 
-      this.playerEffect({ x, y, dir, animate }, () => {
-        this.updatePosition(x, y, dir, animate);
-      });
+      this.playerEffect({ x, y, dir, animate }, () => (
+        this.updatePosition(x, y, dir, animate)
+      ));
 
       if (this.currentPlayerSprite) {
         this.currentPlayerSprite.dir = this.currentPlayer.dir;

@@ -1,32 +1,48 @@
-import { abs, ceil, floor, pow, rem, round } from "./math";
+import { abs, ceil, floor, pow, rem, round, sqrt } from "./math";
 
 export interface IVec2 { x: number; y: number; }
 export type TVec2 = [] | [xy: number] | [x: number, y: number] | [vec: IVec2];
-export type TVec2Callback = (x: number, y: number) => any;
+export type TVec2Callback = (x: number, y: number, vec: Vec2) => any;
+
+const _plus = (x: number, y: number, vec: Vec2) => (vec.x += x, vec.y += y, vec);
+const _minus = (x: number, y: number, vec: Vec2) => (vec.x -= x, vec.y -= y, vec);
+const _times = (x: number, y: number, vec: Vec2) => (vec.x *= x, vec.y *= y, vec);
+const _div = (x: number, y: number, vec: Vec2) => (vec.x /= x, vec.y /= y, vec);
+const _rem = (x: number, y: number, vec: Vec2) => (vec.x = rem(vec.x, x), vec.y = rem(vec.y, y), vec);
+const _pow = (x: number, y: number, vec: Vec2) => (vec.x = pow(vec.x, x), vec.y = pow(vec.y, y), vec);
+const _set = (x: number, y: number, vec: Vec2) => (vec.x = x, vec.y = y, vec);
+const _equal = (x: number, y: number, vec: Vec2) => (vec.x === x && vec.y === y);
+const _lower = (x: number, y: number, vec: Vec2) => (vec.x > x && vec.y > y);
+const _bigger = (x: number, y: number, vec: Vec2) => (vec.x > x && vec.y > y);
+const _minLimit = (x: number, y: number, vec: Vec2) => (vec.x < x && (vec.x = x), vec.y < y && (vec.y = y), vec);
+const _maxLimit = (x: number, y: number, vec: Vec2) => (vec.x > x && (vec.x = x), vec.y > y && (vec.y = y), vec);;
 
 export const vec2 = <F extends TVec2Callback>(
-  ...args: [...TVec2, callback: F]
+  ...args: [...TVec2, callback: F, vec: Vec2]
 ): ReturnType<F> => {
-  const callback = args.at(-1);
+  const arg = args.at(-1) as Vec2;
+  const callback = args.at(-2) as F;
   const first = args.at(0) ?? 0;
+
+  if (typeof arg !== 'object')
+    throw new Error('Need object');
 
   if (!(callback instanceof Function))
     throw new Error("Need callback");
 
   if (first instanceof Function)
-    return callback(0, 0);
+    return callback(0, 0, arg);
 
   if (typeof first === 'object')
-    return callback(first.x, first.y);
-
+    return callback(first.x, first.y, arg);
 
   if (typeof first === 'number') {
     const second = args.at(1);
 
     if (typeof second === 'number')
-      return callback(first, second);
+      return callback(first, second, arg);
 
-    return callback(first, first);
+    return callback(first, first, arg);
   }
 
   throw new Error('Unknow arguments');
@@ -36,77 +52,13 @@ export class Vec2 {
   x: number = 0;
   y: number = 0;
 
-  #plus = (x: number, y: number) => {
-    this.x += x;
-    this.y += y;
-    return this;
-  };
-
-  #minus = (x: number, y: number) => {
-    this.x -= x;
-    this.y -= y;
-    return this;
-  };
-
-  #times = (x: number, y: number) => {
-    this.x *= x;
-    this.y *= y;
-    return this;
-  };
-
-  #div = (x: number, y: number) => {
-    this.x /= x;
-    this.y /= y;
-    return this;
-  };
-
-  #rem = (x: number, y: number) => {
-    this.x = rem(this.x, x);
-    this.y = rem(this.y, y);
-    return this;
-  };
-
-  #pow = (x: number, y: number) => {
-    this.x = pow(this.x, x);
-    this.y = pow(this.y, y);
-    return this;
-  };
-
-  #set = (x: number, y: number) => {
-    this.x = x;
-    this.y = y;
-    return this;
-  };
-
-  #minLimit = (x: number, y: number) => {
-    if (this.x < x) this.x = x;
-    if (this.y < y) this.y = y;
-    return this;
-  };
-
-  #maxLimit = (x: number, y: number) => {
-    if (this.x > x) this.x = x;
-    if (this.y > y) this.y = y;
-    return this;
-  };
-
-  #equal = (x: number, y: number) => {
-    return this.x === x && this.y === y;
-  };
-
-  #lower = (x: number, y: number) => {
-    return this.x <= x && this.y <= y;
-  };
-
-  #bigger = (x: number, y: number) => {
-    return this.x >= x && this.y >= y;
-  };
-
-  constructor(...args: TVec2) { this.set(...args); }
+  constructor(...args: TVec2) {
+    this.set(...args);
+  }
 
   length(...args: TVec2) {
     return (
-      Math.sqrt(
+      sqrt(
         this
           .clone()
           .minus(...args)
@@ -116,7 +68,9 @@ export class Vec2 {
     );
   }
 
-  toLog() { return `Vec2<x: ${this.x}, y: ${this.y}>`; }
+  toLog() { return `Vec2<x: ${this.x.toFixed(2)}, y: ${this.y.toFixed(2)}>`; }
+  [Symbol.toStringTag]() { return this.toLog(); }
+  toString() { return this.toLog(); }
 
   sum() { return this.x + this.y; }
   clone() { return new Vec2(this); }
@@ -126,18 +80,19 @@ export class Vec2 {
   ceil() { return this.set(ceil(this.x), ceil(this.y)); }
   abs() { return this.set(abs(this.x), abs(this.y)); }
 
-  plus(...args: TVec2) { return vec2(...args, this.#plus); }
-  minus(...args: TVec2) { return vec2(...args, this.#minus); }
-  times(...args: TVec2) { return vec2(...args, this.#times); }
-  div(...args: TVec2) { return vec2(...args, this.#div); }
-  rem(...args: TVec2) { return vec2(...args, this.#rem); }
-  pow(...args: TVec2) { return vec2(...args, this.#pow); }
-  set(...args: TVec2) { return vec2(...args, this.#set); }
-  minLimit(...args: TVec2) { return vec2(...args, this.#minLimit); }
-  maxLimit(...args: TVec2) { return vec2(...args, this.#maxLimit); }
-  equal(...args: TVec2) { return vec2(...args, this.#equal); }
-  lower(...args: TVec2) { return vec2(...args, this.#lower); }
-  bigger(...args: TVec2) { return vec2(...args, this.#bigger); }
+  plus(...args: TVec2) { return vec2(...args, _plus, this); }
+  minus(...args: TVec2) { return vec2(...args, _minus, this); }
+  times(...args: TVec2) { return vec2(...args, _times, this); }
+  div(...args: TVec2) { return vec2(...args, _div, this); }
+  rem(...args: TVec2) { return vec2(...args, _rem, this); }
+  pow(...args: TVec2) { return vec2(...args, _pow, this); }
+  set(...args: TVec2) { return vec2(...args, _set, this); }
+  lower(...args: TVec2) { return vec2(...args, _lower, this); }
+  bigger(...args: TVec2) { return vec2(...args, _bigger, this); }
+  equal(...args: TVec2) { return vec2(...args, _equal, this); }
+
+  minLimit(...args: TVec2) { return vec2(...args, _minLimit, this); }
+  maxLimit(...args: TVec2) { return vec2(...args, _maxLimit, this); }
 
   static withIndex(i: number, width: number, height: number) {
     return new Vec2(i % width, i / width | 0);
