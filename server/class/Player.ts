@@ -81,11 +81,12 @@ export class Player extends Entity {
 
   get remainingEffects() {
     const speed = SpeedEffect.get(this);
+    const speedValue = speed ? round((speed.remaining ?? 0) / 1000) : 0;
     return {
       shield: round((ShieldEffect.get(this)?.remaining ?? 0) / 1000),
       crazy: round((CrasyBombEffect.get(this)?.remaining ?? 0) / 1000),
-      sup: speed && speed.value > 1 ? round((speed.remaining ?? 0) / 1000) : 0,
-      sdown: speed && speed.value < 1 ? round((speed.remaining ?? 0) / 1000) : 0,
+      sup: speed && speed.value > 1 ? speedValue : 0,
+      sdown: speed && speed.value < 1 ? speedValue : 0,
       moving: round((MovingEffect.get(this)?.remaining ?? 0) / 1000),
       bombs: BombEffect.count(this) || 0,
       radius: RadiusEffect.count(this) || 0,
