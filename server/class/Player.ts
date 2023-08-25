@@ -237,8 +237,8 @@ export class Player extends Entity {
       this.inGame = true;
       this.lastConnect = Date.now();
       this.lastAction = Date.now();
-      PlayerEffect.clearEffets(this);
       this.game.message(`${this.name ?? 'noname'} подключился`);
+      PlayerEffect.clearEffets(this);
     },
 
     toLeave: () => {
@@ -248,6 +248,7 @@ export class Player extends Entity {
       this.inGame = false;
       this.lastAction = Date.now();
       this.game.message(`${this.name ?? 'noname'} отключился`);
+      PlayerEffect.clearEffets(this);
     }
   };
 
