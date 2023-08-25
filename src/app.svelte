@@ -4,9 +4,6 @@
   import { socket } from "socket";
   import { IS_DEV } from "env";
 
-  import spriteSrc from "images/characters.png";
-
-  import { rem } from "@/math";
   import { point } from "@/point";
   import { NICK_LENGTH, SKINS_COUNT } from "@/config";
   import { PLAYER_INFO, REMAINING_EFFECTS, gameApi, playerApi } from "@/api";
@@ -17,10 +14,8 @@
   import { FocusCamera } from "class/FocusCamera";
   import { ChatEvent } from "class/ChatEvent";
 
-  import { each } from "library/each";
   import { sounds } from "library/sounds";
 
-  import Frame from "components/svelte/Frame.svelte";
   import PlayerList from "components/svelte/PlayerList.svelte";
   import Button from "components/svelte/Button.svelte";
   import EditName from "components/svelte/EditName.svelte";
@@ -32,6 +27,8 @@
   import Effects from "components/svelte/Effects.svelte";
   import Connect from "components/svelte/Connect.svelte";
   import ExternalLinks from "components/svelte/ExternalLinks.svelte";
+  import UserInfo from "components/svelte/UserInfo.svelte";
+  import SelectSkin from "components/svelte/SelectSkin.svelte";
 
   const newApi = gameApi.use(socket);
 
@@ -104,9 +101,10 @@
   }
 
   $: if (info && info.color !== localSkin) {
-    localSkin = rem(localSkin, SKINS_COUNT);
-    newApi.setSkin(localSkin);
-    localStorage.setItem("skin", localSkin + "");
+    if (localSkin >= 0 && localSkin < SKINS_COUNT) {
+      newApi.setSkin(localSkin);
+      localStorage.setItem("skin", localSkin + "");
+    }
   }
 </script>
 
@@ -150,18 +148,7 @@
   </div>
   <div class="container">
     {#if gameInfo}
-      <div class="header" style="z-index: 4;">
-        {#if info?.inGame}
-          <span>👑 x {info.wins}</span>
-          <span>🔫 x {info.kills}</span>
-          <span>💀 x {info.deaths}</span>
-        {:else}
-          <p>Вы наблюдатель</p>
-          <Button disabled={!info?.canJoin} on:click={() => newApi.toGame()}>
-            Подключиться
-          </Button>
-        {/if}
-      </div>
+      <UserInfo bind:info />
     {/if}
 
     <CanvasRender
@@ -187,25 +174,12 @@
     {#if !isOpenEditName && selectSkin}
       <div class="restart-back" />
       <div class="restart">
-        <p>Выберите скин</p>
-
-        <div class="skins">
-          {#each each(SKINS_COUNT) as skin}
-            <div
-              on:mousedown={() => (localSkin = skin)}
-              class="skin-item"
-              data-select={localSkin === skin}
-            >
-              <div class="scale">
-                <Frame src={spriteSrc} x={1} y={skin} />
-              </div>
-            </div>
-          {/each}
-        </div>
-
-        <Button disabled={!name} on:click={() => (selectSkin = false)}>
-          Сохранить
-        </Button>
+        <SelectSkin
+          selected={localSkin}
+          on:changeSkin={({ detail }) => {
+            (localSkin = detail) && (selectSkin = false);
+          }}
+        />
       </div>
     {/if}
 
@@ -316,33 +290,6 @@
         display: flex
         flex-direction: column
 
-    .skins
-      display: flex
-      flex-wrap: wrap
-      width: 40vw
-      height: 20vh
-      max-width: 300px
-      max-height: 200px
-      overflow: hidden
-      overflow-y: scroll
-      justify-content: space-around
-
-      .skin-item
-        width: 48px
-        height: 48px
-        position: relative
-        display: flex
-        justify-content: center
-        align-items: center
-        cursor: pointer
-
-        & > .scale
-          transform: scale(2.4)
-
-        &[data-select='true']
-          background-color: #999
-          border-radius: 100%
-
     .container
       flex-grow: 1
       display: flex
@@ -371,20 +318,4 @@
         right: 0
         bottom: 0
         z-index: 1
-
-    .header
-      display: flex
-      padding: 0px 10px
-      background-color: rgba(0,0,0,0.5)
-      justify-content: center
-      align-items: center
-      gap: 20px
-      position: absolute
-      top: 0
-      padding: 10px
-      border-radius: 0 0 10px 10px
-      z-index: 1
-      backdrop-filter: blur(5px)
-      -webkit-backdrop-filter: blur(5px)
-      user-select: none
 </style>

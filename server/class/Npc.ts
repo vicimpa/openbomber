@@ -6,7 +6,5 @@ export class Npc extends Entity {
 
   dir: EDir = EDir.TOP;
 
-  update(): void {
-
-  }
+  update(): void { }
 }

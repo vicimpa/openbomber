@@ -3,16 +3,12 @@ import { isColide } from "../../core/isColide";
 import { point } from "../../core/point";
 import { Game } from "./Game";
 
-
-
 const me = point();
 const size = point();
 const pos = point();
 const obj = point();
 
-
 export class Entity extends Vec2 {
-
   constructor(
     public game: Game,
     x: number,

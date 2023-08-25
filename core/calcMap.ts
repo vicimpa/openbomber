@@ -37,8 +37,8 @@ export const calcMap = (players = 0) => {
 
   return {
     size: point(
-      p + m * (width - 1) + p + 1,
-      p + m * (height - 1) + p + 1
+      2 * p + m * (width - 1) + 1,
+      2 * p + m * (height - 1) + 1,
     ),
     positions
   };

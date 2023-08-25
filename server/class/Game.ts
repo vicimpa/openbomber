@@ -5,13 +5,12 @@ import { calcMap } from "../../core/calcMap";
 import { delay } from "../../core/delay";
 import { effectObject } from "../../core/effectObject";
 import { find } from "../../core/find";
-import { makePicker } from "../../core/makePicker";
 import { map } from "../../core/map";
 import { pick } from "../../core/pick";
 import { point } from "../../core/point";
 import { random } from "../../core/random";
-import { Vec2, vec2 } from "../../core/Vec2";
-import { EEffect, ESounds } from "../../shared/types";
+import { Vec2 } from "../../core/Vec2";
+import { ESounds } from "../../shared/types";
 import { IS_DEV } from "../env";
 import { Achivment } from "./Achivment";
 import { Bomb } from "./Bomb";
@@ -112,7 +111,6 @@ export class Game {
     settings?: Partial<TConfig>
   ) {
     this.#settings = { ...defaultConfig, ...settings };
-    this.startPositions = [];
     this.restart();
   }
 
@@ -140,8 +138,8 @@ export class Game {
     this.kills = 0;
     this.map = new GameMap(this);
     this.map.generate(this.settings);
-    this.winPlayerId = -1;
 
+    this.winPlayerId = -1;
     this.bombsCounter = 0;
     this.effectsCounter = 0;
     this.explodesCounter = 0;

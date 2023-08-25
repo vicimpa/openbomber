@@ -1,11 +1,9 @@
-import { find } from "../../core/find";
 import { pick } from "../../core/pick";
 import { point } from "../../core/point";
 import { EExplodeDir, EMapItem, ESounds, EXPODER_DIRS } from "../../shared/types";
 import { Achivment } from "./Achivment";
 import { Bomb } from "./Bomb";
 import { Entity } from "./Entity";
-import { Game } from "./Game";
 import { Player } from "./Player";
 
 export interface IExplodePoin {

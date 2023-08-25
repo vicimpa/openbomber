@@ -1,5 +1,6 @@
 <script lang="ts">
   import { debug } from "data/debug";
+  import { IS_DEV } from "env";
   import { onMount } from "svelte";
 
   let show = !!+(localStorage.getItem("show-debug") ?? 0);
