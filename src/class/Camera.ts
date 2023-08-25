@@ -2,9 +2,14 @@ import { point } from "@/point";
 import { Vec2 } from "@/Vec2";
 
 import { Entity } from "./Entity";
+import { ceil, round } from "@/math";
+import { writable } from "svelte/store";
+import { makeNumberFilter } from "@/makeNumberFilter";
 
 export class Camera extends Entity {
   ctx!: CanvasRenderingContext2D;
+  fps = 0;
+  fpsState = writable(0);
 
   upScale = 1;
 
@@ -21,9 +26,13 @@ export class Camera extends Entity {
     this.ctx = can.getContext('2d')!;
   }
 
+  fpsFilter = makeNumberFilter(30);
+
   update(dtime: number, time: number): void {
     const { upScale } = this;
     const { parentElement } = this.can;
+    this.fps = this.fpsFilter(1000 / dtime);
+    this.fpsState.set(this.fps | 0);
     this.ctx.imageSmoothingEnabled = false;
 
     if (parentElement instanceof HTMLElement) {

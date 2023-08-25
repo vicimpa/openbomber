@@ -148,7 +148,7 @@
   </div>
   <div class="container">
     {#if gameInfo}
-      <UserInfo bind:info on:connect={() => newApi.toGame()} />
+      <UserInfo bind:info bind:cam on:connect={() => newApi.toGame()} />
     {/if}
 
     <CanvasRender
