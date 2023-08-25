@@ -24,8 +24,10 @@ export class Sound {
   #buffer!: AudioBuffer;
   static #current = 0;
 
-  constructor(src = '') {
-    this.loadSound(src);
+  constructor(src: TUrl | Promise<TUrl>) {
+    Promise.resolve()
+      .then(() => src)
+      .then(src => this.loadSound(src.default));
   }
 
   loadSound(src = '') {
@@ -94,34 +96,34 @@ export class Sound {
 gainNode.connect(audioCtx.destination);
 
 export const soundStore = {
-  [ESounds.win]: await import('sound/win.mp3?url'),
-  [ESounds.bonus]: await import('sound/bonus.wav?url'),
-  [ESounds.death]: await import('sound/death.wav?url'),
-  [ESounds.putBomb]: await import('sound/put_bomb.mp3?url'),
-  [ESounds.explode]: await import('sound/explode.mp3?url'),
-  [ESounds.newLife]: await import('sound/new_life.wav?url'),
-  [ESounds.message]: await import('sound/message.mp3?url'),
-  [ESounds.shield]: await import('sound/shield.mp3?url'),
-  [ESounds.crazy]: await import('sound/crazy.mp3?url'),
-  [ESounds.explodeFail]: await import('sound/explode_fail.mp3?url'),
-  [ESounds.fireOn]: await import('sound/fire_on.mp3?url'),
-  [ESounds.fireOff]: await import('sound/fire_off.mp3?url'),
-  [ESounds.speedOn]: await import('sound/speed_on.mp3?url'),
-  [ESounds.speedOff]: await import('sound/speed_off.mp3?url'),
-  [ESounds.kill]: await import('sound/kill.mp3?url'),
-  [ESounds.moving]: await import('sound/moving.mp3'),
+  [ESounds.win]: import('sound/win.mp3'),
+  [ESounds.bonus]: import('sound/bonus.wav'),
+  [ESounds.death]: import('sound/death.wav'),
+  [ESounds.putBomb]: import('sound/put_bomb.mp3'),
+  [ESounds.explode]: import('sound/explode.mp3'),
+  [ESounds.newLife]: import('sound/new_life.wav'),
+  [ESounds.message]: import('sound/message.mp3'),
+  [ESounds.shield]: import('sound/shield.mp3'),
+  [ESounds.crazy]: import('sound/crazy.mp3'),
+  [ESounds.explodeFail]: import('sound/explode_fail.mp3'),
+  [ESounds.fireOn]: import('sound/fire_on.mp3'),
+  [ESounds.fireOff]: import('sound/fire_off.mp3'),
+  [ESounds.speedOn]: import('sound/speed_on.mp3'),
+  [ESounds.speedOff]: import('sound/speed_off.mp3'),
+  [ESounds.kill]: import('sound/kill.mp3'),
+  [ESounds.moving]: import('sound/moving.mp3'),
 };
 
-type TUrl = typeof import('*?url');
+type TUrl = typeof import('*.mp3');
 type TStore = {
-  [key: string]: TUrl;
+  [key: string]: TUrl | Promise<TUrl>;
 };
 
 export const sounds = (
   <T extends TStore>(obj: T) => {
     return Object.entries(obj)
-      .reduce((acc, [key, value]: [keyof T, TUrl]) => {
-        acc[key] = new Sound(value.default);
+      .reduce((acc, [key, value]: [keyof T, TUrl | Promise<TUrl>]) => {
+        acc[key] = new Sound(value);
         return acc;
       }, {} as { [key in keyof T]: Sound });
   }

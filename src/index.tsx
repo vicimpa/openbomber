@@ -1,9 +1,16 @@
 import { createDOM } from "library/utils";
-import App from "./app.svelte";
+import AppSvelte from "./app.svelte";
+import { createRoot } from "react-dom/client";
+import { AppReact } from "app";
 
-new App({
-  target: document.getElementById('app')!
-});
+if (location.hash !== '#new') {
+  new AppSvelte({
+    target: document.getElementById('root')!
+  });
+} else {
+  createRoot(document.getElementById('root')!)
+    .render(<AppReact />);
+}
 
 addEventListener('keydown', (e) => {
   if (e.code === 'Tab') e.preventDefault();

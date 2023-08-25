@@ -4,12 +4,10 @@ self.addEventListener("install", function (event) {
       .open("v1-data")
       .then(function (cache) {
         const urlsToCache = [
-          location.href, 
-          "index.html", 
-          "manifest.json", 
-          "favicon.png",
-          "assets",
-          "images"
+          location.href,
+          "index.html",
+          "manifest.json",
+          "images/favicon.png"
         ];
         cache.addAll(urlsToCache);
       })

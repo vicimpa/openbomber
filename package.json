@@ -17,6 +17,7 @@
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
     "@vitejs/plugin-react-swc": "^3.3.2",
+    "html-minifier-terser": "^7.2.0",
     "sass": "^1.64.2",
     "socket.io": "^4.7.2",
     "socket.io-client": "^4.7.2",
@@ -25,6 +26,7 @@
     "typescript": "^5.0.2",
     "vite": "^4.3.9",
     "vite-plugin-commonjs": "^0.8.2",
+    "vite-plugin-singlefile": "^0.13.5",
     "vite-tsconfig-paths": "^4.2.0"
   },
   "dependencies": {
