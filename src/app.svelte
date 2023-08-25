@@ -1,19 +1,17 @@
 <script lang="ts">
-  import { OUT_FRAME } from "config";
+  import { EXTERNAL_LINKS, OUT_FRAME } from "config";
   import { onMount } from "svelte";
   import { socket } from "socket";
+  import { IS_DEV } from "env";
 
   import spriteSrc from "images/characters.png";
-  import achivmentSrc from "images/sprite.png";
 
   import { rem } from "@/math";
   import { point } from "@/point";
-  import { ACHIVMEN_DESCRIPTION, EAchivment } from "@/types";
   import { NICK_LENGTH, SKINS_COUNT } from "@/config";
   import { PLAYER_INFO, REMAINING_EFFECTS, gameApi, playerApi } from "@/api";
 
   import type { TProtoOut } from "@/Proto";
-  import type { Player as TypePlayer } from "@/class/Player";
   import type { Game as TypeGame } from "@/class/Game";
 
   import { FocusCamera } from "class/FocusCamera";
@@ -29,15 +27,15 @@
   import Volume from "components/svelte/Volume.svelte";
   import Chat from "components/svelte/Chat.svelte";
   import ChatView from "components/svelte/ChatView.svelte";
-  import Link from "components/svelte/Link.svelte";
   import CanvasRender from "components/svelte/CanvasRender.svelte";
-  import { IS_DEV } from "env";
   import Debug from "components/svelte/Debug.svelte";
-  import { debug } from "data/debug";
+  import Effects from "components/svelte/Effects.svelte";
+  import Connect from "components/svelte/Connect.svelte";
+  import ExternalLinks from "components/svelte/ExternalLinks.svelte";
 
   const newApi = gameApi.use(socket);
 
-  let info: TypePlayer["info"] | null = null;
+  let info: TProtoOut<typeof PLAYER_INFO> | null = null;
   let gameInfo: TypeGame["info"] | null = null;
   let players: TProtoOut<typeof PLAYER_INFO>[] = [];
   let effects: TProtoOut<typeof REMAINING_EFFECTS> | null = null;
@@ -48,54 +46,6 @@
   let cam: FocusCamera | undefined;
   let isRestarting = false;
   let isOpenEditName = !name;
-
-  $: effectsList = Object.entries(effects ?? {})
-    .filter((e) => e[1] > 0)
-    .map(([name, value]) => {
-      let type!: EAchivment;
-      let remaining = `${value}`;
-
-      switch (name) {
-        case "speed": {
-          type =
-            info && info.effects.speed > 1
-              ? EAchivment.APPEND_SPEED
-              : EAchivment.FIRE;
-
-          remaining += " сек.";
-          break;
-        }
-        case "moving": {
-          type = EAchivment.MOVING_BOMB;
-          remaining += " сек.";
-          break;
-        }
-        case "shield": {
-          type = EAchivment.APPEND_SHIELD;
-          remaining += " сек.";
-          break;
-        }
-        case "crazy": {
-          type = EAchivment.CRAZY_BOMB;
-          remaining += " сек.";
-          break;
-        }
-
-        case "bombs": {
-          type = EAchivment.APPEND_BOMB;
-          remaining = "x " + remaining;
-          break;
-        }
-
-        case "radius": {
-          type = EAchivment.APPEND_EXPO;
-          remaining = "x " + remaining;
-          break;
-        }
-      }
-
-      return { type, remaining };
-    });
 
   onMount(() => {
     socket.connect();
@@ -168,24 +118,17 @@
           <Button on:click={() => (selectSkin = true)}>Аватар</Button>
         </EditName>
       </div>
-      <div class="item">
-        <div>
-          Подключение
 
-          {#if gameInfo}
-            {#if !info?.inGame}
-              <Button
-                disabled={!info?.canJoin}
-                on:click={() => newApi.toGame()}
-              >
-                Подключиться
-              </Button>
-            {:else}
-              <Button on:click={() => newApi.toLeave()}>Отключится</Button>
-            {/if}
-          {/if}
+      {#if gameInfo}
+        <div class="item">
+          <Connect
+            bind:info
+            on:connect={() => newApi.toGame()}
+            on:disconnect={() => newApi.toLeave()}
+          />
         </div>
-      </div>
+      {/if}
+
       {#if info}
         <div class="item">
           <PlayerList
@@ -201,39 +144,13 @@
         <Volume />
       </div>
       <div class="item">
-        <p>Ссылки:</p>
-        <ul>
-          <li>
-            <Link url="https://github.com/vicimpa/openbomber/">
-              Репозиторий GitHub
-            </Link>
-          </li>
-          <li>
-            <Link url="https://discord.gg/JzapKXFqzt">
-              Наш сервер в Discord
-            </Link>
-          </li>
-          <li>
-            <Link url="https://vk.com/openbomber">Группа игроков в VK</Link>
-          </li>
-          <li>
-            <Link url="https://t.me/gameopenbomber">Группа игроков в TG</Link>
-          </li>
-          <li>
-            <Link url="https://www.donationalerts.com/r/promise">
-              Донат на DonationAlerts
-            </Link>
-          </li>
-          <li>
-            <Link url="https://boosty.to/vic_dev">Донат на Boosty</Link>
-          </li>
-        </ul>
+        <ExternalLinks links={EXTERNAL_LINKS} />
       </div>
     </div>
   </div>
   <div class="container">
-    <div class="header" style="z-index: 4;">
-      {#if gameInfo}
+    {#if gameInfo}
+      <div class="header" style="z-index: 4;">
         {#if info?.inGame}
           <span>👑 x {info.wins}</span>
           <span>🔫 x {info.kills}</span>
@@ -244,8 +161,8 @@
             Подключиться
           </Button>
         {/if}
-      {/if}
-    </div>
+      </div>
+    {/if}
 
     <CanvasRender
       {socket}
@@ -254,23 +171,11 @@
       on:setPosition={({ detail }) => newApi.setPosition(detail)}
     />
 
+    <Effects bind:info bind:effects />
+
     {#if IS_DEV}
       <Debug />
     {/if}
-
-    <div class="effects">
-      {#each effectsList as { type, remaining }}
-        <div class="item" title={ACHIVMEN_DESCRIPTION[type]}>
-          <div class="info">
-            <Frame s={2} src={achivmentSrc} x={type} y={14} />
-          </div>
-          <span class="desc">{ACHIVMEN_DESCRIPTION[type]}</span>
-          <span>
-            {remaining}
-          </span>
-        </div>
-      {/each}
-    </div>
 
     {#if restartAfter >= 0 && restartAfter <= 3}
       <div class="restart-back" />
@@ -338,53 +243,6 @@
 </div>
 
 <style lang="sass">
-  ul, li
-    list-style: none
-
-  ul
-    padding: 5px 0
-
-  .effects
-    position: absolute
-    top: 50px
-    left: 0px
-    display: flex
-    flex-direction: column
-    align-items: flex-start
-    gap: 10px
-    z-index: 1
-
-    .item
-      padding: 5px 30px
-      border-radius: 15px
-      background-color: rgba(0,0,0,0.4)
-      backdrop-filter: blur(10px)
-      -webkit-backdrop-filter: blur(10px)
-      display: flex
-      align-items: center
-      justify-content: space-between
-      gap: 15px
-
-      .desc
-        display: inline-block
-        overflow: hidden
-        max-width: 0px
-        transition: .3s
-        white-space: nowrap
-
-      &:hover
-        .desc
-          max-width: 200px
-
-      .info
-        display: flex
-        flex-direction: column
-        align-items: flex-start
-        gap: 10px
-
-      span
-        font-size: 10px
-
   .ui 
     width: 100%
     height: 100%

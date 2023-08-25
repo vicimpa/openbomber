@@ -1,5 +1,5 @@
 export class ReactiveMap<K, V> extends Map<K, V> {
-  #subs = new Set<(v: ReactiveMap<K, V>) => void>();
+  #subs = new Set<(v: this) => void>();
 
   update() {
     for (const sub of this.#subs) {
@@ -7,7 +7,7 @@ export class ReactiveMap<K, V> extends Map<K, V> {
     }
   }
 
-  subscribe(callback: (v: ReactiveMap<K, V>) => void) {
+  subscribe(callback: (v: this) => void) {
     callback(this);
     return (
       this.#subs.add(callback),

@@ -12,6 +12,7 @@ const obj = point();
 
 
 export class Entity extends Vec2 {
+
   constructor(
     public game: Game,
     x: number,

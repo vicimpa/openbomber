@@ -1,13 +1,14 @@
 export class ReactiveSet<T> extends Set<T> {
-  #subs = new Set<() => void>();
+  #subs = new Set<(v: this) => void>();
 
   update() {
     for (const sub of this.#subs) {
-      sub();
+      sub(this);
     }
   }
 
-  subscribe(callback: () => void) {
+  subscribe(callback: (v: this) => void) {
+    callback(this);
     return (
       this.#subs.add(callback),
       () => { this.#subs.delete(callback); }
