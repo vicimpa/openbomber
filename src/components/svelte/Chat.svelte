@@ -26,9 +26,10 @@
 
   const sendMessage = () => {
     if (!canSend) return;
+    if (!message) return;
     dispatch("message", message);
-    lastMessage = Date.now();
     message = "";
+    lastMessage = Date.now();
   };
 
   let messages: {

@@ -12,5 +12,5 @@ export const CRAZY_BOMB_MIN = FDate.from('500');
 export const CRAZY_BOMB_MAX = FDate.from('5s');
 export const CRAZY_BOMB_BOOST = 5;
 export const SKINS_COUNT = 52;
-export const TIMEOUT_MESSAGE = FDate.from('5s');
+export const TIMEOUT_MESSAGE = FDate.from('2s');
 export const TIMEOUT_RECONNECT = FDate.from('10s');
