@@ -1,3 +1,4 @@
+import { Vec2 } from "../../core/Vec2";
 import { pick } from "../../core/pick";
 import { point } from "../../core/point";
 import { CRAZY_BOMB_BOOST, CRAZY_BOMB_MAX, CRAZY_BOMB_MIN } from "../../shared/config";
@@ -15,7 +16,7 @@ export class Bomb extends Entity {
 
   time = Date.now();
   liveTime = 2000;
-  dir?: EDir;
+  dir?: Vec2;
 
   isFake = false;
   radius = 1;
@@ -69,13 +70,16 @@ export class Bomb extends Entity {
         if (player.animate === EAnimate.IDLE) continue;
         if (!MovingEffect.get(player)) continue;
         if (player.isDeath || !player.inGame) continue;
-        if (player.checkCollision(this) && !this.dir)
-          this.dir = player.dir;
+        if (player.checkCollision(this) && !this.dir) {
+          const dir = this.cminus(player).round();
+          if (dir.equal(DIRECTIONS[player.dir]))
+            this.dir = dir;
+        }
       }
     }
 
     if (this.dir !== undefined) {
-      const move = DIRECTIONS[this.dir];
+      const move = this.dir;
       const newSet = this.cplus(move.cdiv(2));
       let haveColide = false;
 
