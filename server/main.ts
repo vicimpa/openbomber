@@ -18,14 +18,14 @@ export function game(server: Server) {
     const api = verifyApi.use(socket);
     const nums = makeData();
 
-    if (await api.verify(nums) !== calc(nums))
-      return socket.disconnect();
-
-    game.join(socket);
-
     socket.once('disconnect', () => {
       api();
       game.leave(socket);
     });
+
+    if (await api.verify(nums) !== calc(nums))
+      return socket.disconnect();
+
+    game.join(socket);
   });
 }
