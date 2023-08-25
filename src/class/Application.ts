@@ -4,15 +4,9 @@ import { Entity } from "./Entity";
 export class Application {
   cameras = new Set<Camera>();
   children = new Set<Entity>();
-  time = performance.now();
+  time = -1;
+  dtime = 0;
   work = false;
-
-  get dtime() {
-    const time = performance.now();
-    const dtime = time - this.time;
-    this.time = time;
-    return dtime;
-  }
 
   constructor(autostart = true) {
     if (autostart) this.start();
@@ -21,7 +15,11 @@ export class Application {
   start() {
     if (this.work) return;
     this.work = true;
-    const tick = () => {
+
+    const tick = (current: number) => {
+      this.dtime = current - this.time;
+      this.time = current;
+
       const { dtime, time } = this;
 
       this.loop(dtime, time);
@@ -30,7 +28,7 @@ export class Application {
         requestAnimationFrame(tick);
     };
 
-    tick();
+    requestAnimationFrame(tick);
   }
 
   stop() {

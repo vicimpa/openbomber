@@ -4,9 +4,10 @@ import { useEvent } from "./useEvent";
 type TCallback = (dtime: number, time: number) => any;
 
 const listeners = new Set<TCallback>();
-let lastTime = performance.now();
+let lastTime = -1;
 
-const loop = (time = performance.now()) => {
+const loop = (time: number) => {
+  if (lastTime < 0) lastTime = time;
   const dtime = time - lastTime;
   lastTime = time;
 
@@ -17,7 +18,7 @@ const loop = (time = performance.now()) => {
   requestAnimationFrame(loop);
 };
 
-loop();
+requestAnimationFrame(loop);
 
 export const useFrame = (
   (callback: TCallback) => {

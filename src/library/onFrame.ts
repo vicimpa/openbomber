@@ -3,11 +3,12 @@ import { onMount } from "svelte";
 export const onFrame = (callback: (deltaTime: number, time: number) => any) => {
   onMount(() => {
     let work = true;
-    let last = performance.now();
+    let last = -1;
 
-    const update = () => {
+    const update = (current: number) => {
+      if (last < 0) last = current;
+
       try {
-        let current = performance.now();
         let delta = current - last;
         last = current;
 
@@ -20,7 +21,7 @@ export const onFrame = (callback: (deltaTime: number, time: number) => any) => {
         requestAnimationFrame(update);
     };
 
-    update();
+    requestAnimationFrame(update);
 
     return () => {
       work = false;
