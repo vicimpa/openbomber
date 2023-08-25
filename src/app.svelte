@@ -158,7 +158,7 @@
       on:setPosition={({ detail }) => newApi.setPosition(detail)}
     />
 
-    <Effects bind:info bind:effects />
+    <Effects bind:effects />
 
     {#if IS_DEV}
       <Debug />

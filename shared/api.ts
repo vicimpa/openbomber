@@ -118,7 +118,8 @@ export const POSITION_SOUND = new Proto({
 export const REMAINING_EFFECTS = new Proto({
   radius: 'uint16',
   bombs: 'uint16',
-  speed: 'uint16',
+  sup: 'uint16',
+  sdown: 'uint16',
   shield: 'uint16',
   crazy: 'uint16',
   moving: 'uint16',

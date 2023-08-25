@@ -6,7 +6,6 @@
   import { ACHIVMEN_DESCRIPTION, EAchivment } from "@/types";
   import Frame from "./Frame.svelte";
 
-  export let info: TProtoOut<typeof PLAYER_INFO> | null = null;
   export let effects: TProtoOut<typeof REMAINING_EFFECTS> | null = null;
 
   const effectsList = new ReactiveMap<EAchivment, string>();
@@ -16,12 +15,13 @@
     let remaining = `${value}`;
 
     switch (name) {
-      case "speed": {
-        type =
-          info && info.effects.speed > 1
-            ? EAchivment.APPEND_SPEED
-            : EAchivment.FIRE;
-
+      case "sup": {
+        type = EAchivment.APPEND_SPEED;
+        remaining += " сек.";
+        break;
+      }
+      case "sdown": {
+        type = EAchivment.FIRE;
         remaining += " сек.";
         break;
       }
