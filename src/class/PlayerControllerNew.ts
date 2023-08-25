@@ -34,8 +34,8 @@ export class PlayerControllerNew extends Vec2 {
     move: Vec2,
     obj: Vec2,
     col: Vec2,
-    top = .9,
-    down = .7,
+    top = .8,
+    down = .2,
     canCircle = false
   ) {
     if (obj.y > col.y - top && obj.y < col.y + top) {
