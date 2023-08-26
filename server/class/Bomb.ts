@@ -72,8 +72,10 @@ export class Bomb extends Entity {
         if (player.isDeath || !player.inGame) continue;
         if (player.checkCollision(this) && !this.dir) {
           const dir = this.cminus(player).round();
-          if (dir.equal(DIRECTIONS[player.dir]))
+          if (dir.equal(DIRECTIONS[player.dir])) {
+            this.player = player;
             this.dir = dir;
+          }
         }
       }
     }
