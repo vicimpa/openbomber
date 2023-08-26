@@ -155,8 +155,6 @@ export class Player extends Entity {
     ping: () => {
       this.ping = Date.now() - this.lastTestPing;
     },
-    randomColor: () => {
-    },
     sendMessage: (message) => {
       if (!message) return;
       const needTime = this.lastMessage + TIMEOUT_MESSAGE;
