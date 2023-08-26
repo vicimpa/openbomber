@@ -29,8 +29,10 @@ export class ExplodePoint extends Entity {
     const { bombs, achivments } = this.game;
 
     for (const bomb of bombs) {
-      if (bomb.checkCollision(this, .7))
+      if (bomb.checkCollision(this, .7)) {
+        bomb.player = this.explode.player;
         Explode.run(bomb);
+      }
     }
 
     if (!this.isBlock) {
