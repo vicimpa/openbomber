@@ -10,7 +10,7 @@ import { pick } from "../../core/pick";
 import { point } from "../../core/point";
 import { random } from "../../core/random";
 import { Vec2 } from "../../core/Vec2";
-import { ESounds } from "../../shared/types";
+import { EMapItem, ESounds } from "../../shared/types";
 import { IS_DEV } from "../env";
 import { Achivment } from "./Achivment";
 import { Bomb } from "./Bomb";
@@ -244,6 +244,10 @@ export class Game {
 
       for (const player of this.players) {
         player.sendInfo();
+      }
+
+      if (this.map.findIndex(e => e == EMapItem.BLOCK) == -1 && playersCount <= 1 && this.waitForRestart === -1) {
+        this.waitForRestart = 0;
       }
 
       effectObject(

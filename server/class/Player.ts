@@ -9,7 +9,14 @@ import { rem, round } from "../../core/math";
 import { pick } from "../../core/pick";
 import { Vec2 } from "../../core/Vec2";
 import { gameApi, playerApi } from "../../shared/api";
-import { MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT, SKINS_COUNT, TIMEOUT_MESSAGE, TIMEOUT_RECONNECT } from "../../shared/config";
+import {
+  MESSAGE_LENGTH,
+  NICK_LENGTH,
+  PLAYER_TIMEOUT,
+  SKINS_COUNT,
+  TIMEOUT_MESSAGE,
+  TIMEOUT_RECONNECT,
+} from "../../shared/config";
 import { EAnimate, EDir, EEffect, EMapItem, ESounds } from "../../shared/types";
 import { IS_DEV } from "../env";
 import { Bomb } from "./Bomb";
@@ -18,12 +25,12 @@ import { CrasyBombEffect } from "./CrasyBombEffect";
 import { Effect } from "./Effect";
 import { Entity } from "./Entity";
 import { Game } from "./Game";
+import { MovingEffect } from "./MovingEffect";
 import { Npc } from "./Npc";
 import { PlayerEffect } from "./PlayerEffect";
 import { RadiusEffect } from "./RadiusEffect";
 import { ShieldEffect } from "./ShieldEffect";
 import { SpeedEffect } from "./SpeedEffect";
-import { MovingEffect } from "./MovingEffect";
 
 let PLAYER_COUNTER = 0;
 
@@ -274,8 +281,10 @@ export class Player extends Entity {
       new Effect(this.game, this.x, this.y, EEffect.DEATH)
     );
 
-    this.deaths++;
-    this.game.kills++;
+    if (this.game.playersCount > 1) {
+      this.deaths++;
+      this.game.kills++;
+    }
 
     if (!isSuicide && killer instanceof Player) {
       killer.kills++;
