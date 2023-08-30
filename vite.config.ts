@@ -1,11 +1,12 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
+import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
 import commonjs from "vite-plugin-commonjs";
-import paths from "vite-tsconfig-paths";
-import react from "@vitejs/plugin-react-swc";
+import glsl from "vite-plugin-glsl";
 import { viteSingleFile } from "vite-plugin-singlefile";
+import paths from "vite-tsconfig-paths";
 
-import { game } from "./server/main";
+import { webScoketServer } from "./server/server";
 
 export default defineConfig({
   base: './',
@@ -29,18 +30,11 @@ export default defineConfig({
 
   plugins: [
     commonjs(),
+    glsl(),
     react({ plugins: [], tsDecorators: true }),
     svelte({ configFile: '../svelte.config.js' }),
     paths(),
     viteSingleFile(),
-    {
-      name: "WebSocketServer",
-      configurePreviewServer(server) {
-        return game(server.httpServer);
-      },
-      configureServer(server) {
-        return game(server.httpServer!);
-      }
-    }
+    webScoketServer()
   ],
 });

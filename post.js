@@ -1,6 +1,6 @@
-import { readFileSync, rmSync, writeFileSync } from 'fs';
-import { join } from 'path';
-import { minify } from 'html-minifier-terser';
+import { readFileSync, rmSync, writeFileSync } from "fs";
+import { minify } from "html-minifier-terser";
+import { join } from "path";
 
 const outDir = './dist';
 rmSync(join(outDir, 'assets'), { recursive: true, force: true });
@@ -13,7 +13,6 @@ minify(fileData.replace(/\/\*([^\/]+)\*\//gsm, ''), {
   collapseWhitespace: true,
   minifyCSS: true,
   minifyJS: true,
-})
-  .then(output => {
-    writeFileSync(join(outDir, 'index.html'), output);
-  });
+}).then(output => {
+  writeFileSync(join(outDir, 'index.html'), output);
+});

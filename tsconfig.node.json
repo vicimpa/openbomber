@@ -15,6 +15,6 @@
     "./core",
     "./server",
     "./shared",
-    "./vite.config.ts",
+    "./vite.config.ts"
   ]
 }

@@ -28,13 +28,17 @@
     "baseUrl": "./src",
     "types": [
       "vite/client",
-      "svelte"
+      "svelte",
+      "vite-plugin-glsl/ext"
     ],
     "paths": {
       "@/*": [
         "../shared/*",
         "../core/*",
         "../server/*"
+      ],
+      "engine/*": [
+        "../engine/*"
       ]
     }
   },
@@ -45,6 +49,7 @@
     "src/**/*.js",
     "src/**/*.mts",
     "src/**/*.svelte",
+    "engine",
     "core",
     "shared"
   ],
