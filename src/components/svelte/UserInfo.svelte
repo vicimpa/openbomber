@@ -12,6 +12,7 @@
 
   const dispatch = createEventDispatcher<{
     connect: void;
+    disconnect: void;
   }>();
 </script>
 
@@ -30,6 +31,9 @@
       <span>👑 x {info.wins}</span>
       <span>🔫 x {info.kills}</span>
       <span>💀 x {info.deaths}</span>
+      <Button disabled={!info.canJoin} on:click={() => dispatch("disconnect")}>
+        Отключиться
+      </Button>
     {:else}
       <p>Вы наблюдатель</p>
       <Button disabled={!info.canJoin} on:click={() => dispatch("connect")}>
