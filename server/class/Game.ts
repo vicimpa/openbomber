@@ -249,10 +249,11 @@ export class Game {
       effectObject(
         this,
         'clearMap',
-        this.map.findIndex(e => e == EMapItem.BLOCK) == -1 && this.waitForRestart === -1,
+        this.map.findIndex(e => e == EMapItem.BLOCK) == -1 && this.achivments.size === 0 && this.waitForRestart === -1,
         (value) => {
+          logger.info(`Change value ${value}`, { timestamp: true });
           if (value && playersCount <= 1)
-            this.waitForRestart = 0;
+            this.waitForRestart = Date.now();
         }
       );
 
