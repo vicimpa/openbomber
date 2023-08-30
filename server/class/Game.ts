@@ -15,10 +15,10 @@ import { IS_DEV } from "../env";
 import { Achivment } from "./Achivment";
 import { Bomb } from "./Bomb";
 import { Effect } from "./Effect";
+import { Entity } from "./Entity";
 import { Explode } from "./Explode";
 import { GameMap } from "./GameMap";
 import { Player } from "./Player";
-import { Entity } from "./Entity";
 
 const logger = createLogger('info', { allowClearScreen: true });
 
@@ -257,7 +257,7 @@ export class Game {
         (isRestart) => {
           if (isRestart) {
             logger.info("Wait restart", { timestamp: true });
-            this.waitForRestart = Date.now() + (IS_DEV ? 0 : 5000);
+            this.waitForRestart = Date.now() + (IS_DEV || playersCount == 1 ? 0 : 5000);
 
             if (this.playersCount > 1 && this.kills > 0) {
               const winPlayer = find(this.players, e => e.inGame && !e.isDeath);
