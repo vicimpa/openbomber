@@ -246,9 +246,15 @@ export class Game {
         player.sendInfo();
       }
 
-      if (this.map.findIndex(e => e == EMapItem.BLOCK) == -1 && playersCount <= 1 && this.waitForRestart === -1) {
-        this.waitForRestart = 0;
-      }
+      effectObject(
+        this,
+        'clearMap',
+        this.map.findIndex(e => e == EMapItem.BLOCK) == -1 && this.waitForRestart === -1,
+        (value) => {
+          if (value && playersCount <= 1)
+            this.waitForRestart = 0;
+        }
+      );
 
       effectObject(
         this,
