@@ -6,10 +6,15 @@
 
   import { point } from "@/point";
   import { NICK_LENGTH, SKINS_COUNT } from "@/config";
-  import { PLAYER_INFO, REMAINING_EFFECTS, gameApi, playerApi } from "@/api";
+  import {
+    GAME_INFO,
+    PLAYER_INFO,
+    REMAINING_EFFECTS,
+    gameApi,
+    playerApi,
+  } from "@/api";
 
   import type { TProtoOut } from "@/Proto";
-  import type { Game as TypeGame } from "@/class/Game";
 
   import { FocusCamera } from "class/FocusCamera";
   import { ChatEvent } from "class/ChatEvent";
@@ -33,7 +38,7 @@
   const newApi = gameApi.use(socket);
 
   let info: TProtoOut<typeof PLAYER_INFO> | null = null;
-  let gameInfo: TypeGame["info"] | null = null;
+  let gameInfo: TProtoOut<typeof GAME_INFO> | null = null;
   let players: TProtoOut<typeof PLAYER_INFO>[] = [];
   let effects: TProtoOut<typeof REMAINING_EFFECTS> | null = null;
   let name = localStorage.getItem("name") || "";
@@ -151,6 +156,7 @@
       <UserInfo
         bind:info
         bind:cam
+        bind:game={gameInfo}
         on:disconnect={() => newApi.toLeave()}
         on:connect={() => newApi.toGame()}
       />

@@ -102,6 +102,7 @@ export class Game {
 
   get spectratorsCount() { return map(this.players, e => e, e => !e.inGame).length; }
   get playersCount() { return map(this.players, e => e, e => e.inGame).length; }
+  get livePlayersCount() { return map(this.players, e => e, e => e.inGame && !e.isDeath).length; }
 
   get settings() {
     return { ...this.#settings };

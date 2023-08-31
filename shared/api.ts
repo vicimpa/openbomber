@@ -46,6 +46,7 @@ export const GAME_INFO = new Proto({
   height: 'uint8',
   winPlayerId: 'int8',
   playersCount: 'uint8',
+  livePlayersCount: 'uint8',
   spectratorsCount: 'uint8',
 });
 

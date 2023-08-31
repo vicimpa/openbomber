@@ -1,14 +1,17 @@
 <script lang="ts">
   import type { TProtoOut } from "@/Proto";
-  import type { PLAYER_INFO } from "@/api";
+  import type { GAME_INFO, PLAYER_INFO } from "@/api";
   import Button from "./Button.svelte";
   import { createEventDispatcher } from "svelte";
   import type { Camera } from "class/Camera";
 
   export let info: TProtoOut<typeof PLAYER_INFO> | null = null;
+  export let game: TProtoOut<typeof GAME_INFO> | null = null;
   export let cam: Camera | null = null;
 
   $: fps = cam?.fpsState;
+  $: playersCount = game?.playersCount ?? 0;
+  $: livePlayersCount = game?.livePlayersCount ?? 0;
 
   const dispatch = createEventDispatcher<{
     connect: void;
@@ -28,14 +31,23 @@
 {#if info}
   <div class="header" style="z-index: 4;">
     {#if info.inGame}
+      <span>👥 {livePlayersCount} / {playersCount}</span>
       <span>👑 x {info.wins}</span>
       <span>🔫 x {info.kills}</span>
       <span>💀 x {info.deaths}</span>
+    {:else}
+      <p>Вы наблюдатель</p>
+    {/if}
+  </div>
+{/if}
+
+{#if info}
+  <div class="footer">
+    {#if info.inGame}
       <Button disabled={!info.canJoin} on:click={() => dispatch("disconnect")}>
         Отключиться
       </Button>
     {:else}
-      <p>Вы наблюдатель</p>
       <Button disabled={!info.canJoin} on:click={() => dispatch("connect")}>
         Подключиться
       </Button>
@@ -54,7 +66,7 @@
     gap: 5px
     flex-direction: column
 
-  .header
+  .header, .footer
     display: flex
     padding: 0px 10px
     background-color: rgba(0,0,0,0.5)
@@ -62,11 +74,17 @@
     align-items: center
     gap: 20px
     position: absolute
-    top: 0
     padding: 10px
     border-radius: 0 0 10px 10px
     z-index: 1
     backdrop-filter: blur(5px)
     -webkit-backdrop-filter: blur(5px)
     user-select: none
+
+  .header
+    top: 0
+
+  .footer
+    bottom: 0
+    z-index: 2
 </style>
