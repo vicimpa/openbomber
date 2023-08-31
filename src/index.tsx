@@ -1,7 +1,8 @@
-import { createDOM } from "library/utils";
-import AppSvelte from "./app.svelte";
-import { createRoot } from "react-dom/client";
 import { AppReact } from "app";
+import { createDOM } from "library/utils";
+import { createRoot } from "react-dom/client";
+
+import AppSvelte from "./app.svelte";
 
 if (location.hash !== '#new') {
   new AppSvelte({
@@ -26,7 +27,7 @@ if (location.protocol == 'https:') {
     if (navigator.serviceWorker) {
       navigator.serviceWorker.getRegistration('./service.js')
         .then(e => e ? e : navigator.serviceWorker
-          .register("./servise.js", {
+          .register("./service.js", {
             scope: location.pathname
           }))
         .catch(() => { });
