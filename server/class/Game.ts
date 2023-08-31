@@ -83,6 +83,7 @@ export class Game {
       'height',
       'winPlayerId',
       'playersCount',
+      'livePlayersCount',
       'spectratorsCount'
     ]);
   }
