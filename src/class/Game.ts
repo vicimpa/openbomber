@@ -1,6 +1,7 @@
 import { makeEffect } from "@/makeEffect";
 import { rem } from "@/math";
 import { OUT_FRAME } from "config";
+import { showDebug } from "data/debug";
 
 import { AchivmentsLayer } from "./AchivmentsLayer";
 import { BombsLayer } from "./BombsLayer";
@@ -24,7 +25,6 @@ import type {
 
 import type { PlayerControllerNew } from "./PlayerControllerNew";
 import type { EAnimate, EDir } from "@/types";
-import { showDebug } from "data/debug";
 export class Game extends Entity {
   mapLayer = new MapLayer(this);
   effectsLayer = new EffectsLayer(this);
@@ -74,7 +74,7 @@ export class Game extends Entity {
       delete this.currentPlayerSprite;
     }
 
-    if (this.currentPlayer && this.localInfo && this.waitRestart == -1) {
+    if (this.currentPlayer && this.localInfo) {
       this.currentPlayer.tick(dtime, time);
 
       let { x, y, dir, animate } = this.currentPlayer;
