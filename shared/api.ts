@@ -70,6 +70,7 @@ export const PLAYER_INFO = new Proto({
   effects: {
     haveShield: 'boolean',
     speed: 'float32',
+    crazy: 'boolean'
   },
   ping: 'uint16'
 });
@@ -105,6 +106,7 @@ export const BOMB_INFO = new Proto({
   y: POSITION,
   radius: 'uint16',
   isCrazy: 'boolean',
+  isRadio: 'boolean'
 });
 
 export const POSITION_SOUND = new Proto({

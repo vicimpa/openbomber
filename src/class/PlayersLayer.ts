@@ -31,6 +31,7 @@ export class PlayersLayer extends Entity {
         player.color = !!info && info.color;
         player.isFire = !!info && info.effects.speed < 1;
         player.isShield = !!info && info.effects.haveShield;
+        player.isCrazy = !!info && info.effects.crazy;
       },
       (player) => {
         player.delete();

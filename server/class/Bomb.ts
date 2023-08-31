@@ -1,6 +1,6 @@
-import { Vec2 } from "../../core/Vec2";
 import { pick } from "../../core/pick";
 import { point } from "../../core/point";
+import { Vec2 } from "../../core/Vec2";
 import { CRAZY_BOMB_BOOST, CRAZY_BOMB_MAX, CRAZY_BOMB_MIN } from "../../shared/config";
 import { DIRECTIONS, EAnimate, EDir, EEffect, EMapItem, ESounds } from "../../shared/types";
 import { CrasyBombEffect } from "./CrasyBombEffect";
@@ -20,8 +20,11 @@ export class Bomb extends Entity {
 
   isFake = false;
   radius = 1;
-  isCrazy = false;
+
   maked = true;
+
+  isCrazy = false;
+  isRadio = false;
 
   constructor(
     public player: Player
@@ -54,6 +57,7 @@ export class Bomb extends Entity {
       'y',
       'radius',
       'isCrazy',
+      'isRadio',
     ]);
   }
 

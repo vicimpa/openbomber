@@ -1,15 +1,17 @@
 import { plus, point, points } from "@/point";
 import { EAnimate, EDir } from "@/types";
 import { OUT_FRAME } from "config";
+import { IS_DEV } from "env";
 import spriteSrc from "images/characters.png";
 
+import { CrazyEffectSprite } from "./CrazyEffectSprite";
 import { FireSprite } from "./FireSprite";
 import { Frame } from "./Frame";
 import { ShieldSprite } from "./ShieldSprite";
 import { Sprite } from "./Sprite";
 
 import type { Camera } from "./Camera";
-import { IS_DEV } from "env";
+
 const BASE = points('1,1;0,1;1,1;2,1');
 
 const FRAMES = {
@@ -31,9 +33,11 @@ export class PlayerSprite extends Frame {
 
   isFire = false;
   isShield = false;
+  isCrazy = false;
 
   fireAnimate = new FireSprite();
   shieldAnimate = new ShieldSprite();
+  crazyEffect = new CrazyEffectSprite();
 
   name = '';
 
@@ -47,6 +51,7 @@ export class PlayerSprite extends Frame {
 
     this.fireAnimate.update(dtime, time);
     this.shieldAnimate.update(dtime, time);
+    this.crazyEffect.update(dtime, time);
 
     const list = FRAMES[this.dir];
     const size = this.animate === EAnimate.IDLE ? 1 : list.length;
@@ -76,6 +81,9 @@ export class PlayerSprite extends Frame {
 
     if (this.isShield)
       this.shieldAnimate.render(camera);
+
+    if (this.isCrazy)
+      this.crazyEffect.render(camera);
 
     if (IS_DEV)
       ctx.strokeRect(0, 0, OUT_FRAME, OUT_FRAME);

@@ -59,6 +59,7 @@ export class Player extends Entity {
     return {
       haveShield: ShieldEffect.hasShield(this),
       speed: SpeedEffect.getValue(this),
+      crazy: !!CrasyBombEffect.get(this)
     };
   }
 
