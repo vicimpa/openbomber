@@ -10,8 +10,8 @@ export function game(server: Server) {
   const socketio = new SocketIO(server);
 
   const game = new Game({
-    fillAchivments: IS_DEV ? .9999 : .15,
-    fillBlocks: .7
+    fillAchivments: IS_DEV ? .9999 : .55,
+    fillBlocks: .4
   });
 
   socketio.on('connection', async socket => {
