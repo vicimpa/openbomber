@@ -17,5 +17,8 @@ socket.once('disconnect', () => {
 verifyApi.forward(socket, {
   verify(nums) {
     return calc(nums);
+  },
+  addressBlock(nums) {
+    alert('На вашем адресе более ' + nums + ' подключений! Подключение невозможно!');
   }
 });

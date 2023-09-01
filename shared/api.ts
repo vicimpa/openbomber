@@ -161,4 +161,5 @@ export const playerApi = makeWebSocketApi({
 
 export const verifyApi = makeWebSocketApi({
   verify: { input: ['uint8'], output: 'int32' },
+  addressBlock: { input: 'uint8' }
 });
