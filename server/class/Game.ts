@@ -218,13 +218,15 @@ export class Game {
   }
 
   async loop() {
-    while (this.running) {
+    const tick = () => {
+      if (this.running) {
+        setTimeout(tick, 1000 / 60);
+      }
+
       const { players, playersCount } = this;
       const time = performance.now();
       const dtime = time - this.time;
       this.time = time;
-
-      if (dtime > 30) continue;
 
       effectObject(
         this,
@@ -261,6 +263,46 @@ export class Game {
 
       for (const player of this.players) {
         player.sendInfo();
+      }
+
+      effectObject(
+        this,
+        'restartGame',
+        playersCount && map(
+          players,
+          e => e,
+          e => !e.isDeath && e.inGame
+        ).length <= +!!(playersCount - 1),
+        (isRestart) => {
+          if (isRestart) {
+            logger.info("Wait restart", { timestamp: true });
+            this.waitForRestart = Date.now() + (IS_DEV || playersCount == 1 ? 0 : 5000);
+
+            if (this.playersCount > 1 && this.kills > 0) {
+              const winPlayer = find(this.players, e => e.inGame && !e.isDeath);
+              if (winPlayer) {
+                winPlayer.wins++;
+                winPlayer.newApi.playSound(ESounds.win);
+                this.winPlayerId = winPlayer.id;
+                this.message(`${winPlayer.name} победил`);
+              } else {
+                this.message(`Никто не выиграл`);
+              }
+            }
+          } else {
+            if (this.waitForRestart > 0) {
+              logger.info("Cancel restart", { timestamp: true });
+            }
+            this.waitForRestart = -1;
+          }
+        }
+      );
+
+      if (this.waitForRestart > 0) {
+        if (Date.now() > this.waitForRestart + 500) {
+          logger.info("Restart", { timestamp: true });
+          this.restart();
+        }
       }
 
       effectObject(
@@ -309,48 +351,8 @@ export class Game {
           }
         }
       );
+    };
 
-      effectObject(
-        this,
-        'restartGame',
-        playersCount && map(
-          players,
-          e => e,
-          e => !e.isDeath && e.inGame
-        ).length <= +!!(playersCount - 1),
-        (isRestart) => {
-          if (isRestart) {
-            logger.info("Wait restart", { timestamp: true });
-            this.waitForRestart = Date.now() + (IS_DEV || playersCount == 1 ? 0 : 5000);
-
-            if (this.playersCount > 1 && this.kills > 0) {
-              const winPlayer = find(this.players, e => e.inGame && !e.isDeath);
-              if (winPlayer) {
-                winPlayer.wins++;
-                winPlayer.newApi.playSound(ESounds.win);
-                this.winPlayerId = winPlayer.id;
-                this.message(`${winPlayer.name} победил`);
-              } else {
-                this.message(`Никто не выиграл`);
-              }
-            }
-          } else {
-            if (this.waitForRestart > 0) {
-              logger.info("Cancel restart", { timestamp: true });
-            }
-            this.waitForRestart = -1;
-          }
-        }
-      );
-
-      if (this.waitForRestart > 0) {
-        if (Date.now() > this.waitForRestart + 500) {
-          logger.info("Restart", { timestamp: true });
-          this.restart();
-        }
-      }
-
-      await delay(1000 / 60);
-    }
+    tick();
   }
 }
