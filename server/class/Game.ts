@@ -70,7 +70,7 @@ export class Game {
   explodesCounter!: number;
   achivmentsCounter!: number;
   effectsCounter!: number;
-  slotLimits = 25;
+  slotLimits = 9;
 
   timerLimit = -1;
   limitedMap = 1;
