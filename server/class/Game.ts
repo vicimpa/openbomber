@@ -156,6 +156,7 @@ export class Game {
     this.effectsCounter = 0;
     this.explodesCounter = 0;
     this.achivmentsCounter = 0;
+    this.limitedMap = 1;
     this.timerLimit = -1;
     this.lastLimit = Date.now();
   }
