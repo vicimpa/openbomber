@@ -11,7 +11,7 @@ import { pick } from "../../core/pick";
 import { point } from "../../core/point";
 import { random } from "../../core/random";
 import { Vec2 } from "../../core/Vec2";
-import { ZONELIMIT_TIMEOUT } from "../../shared/config";
+import { WAIT_FOR_LIMIT, ZONELIMIT_TIMEOUT } from "../../shared/config";
 import { EMapItem, ESounds } from "../../shared/types";
 import { IS_DEV } from "../env";
 import { Achivment } from "./Achivment";
@@ -278,7 +278,7 @@ export class Game {
         'limitMap',
         (
           true
-          && this.lastLimit + 5000 < Date.now()
+          && this.lastLimit + WAIT_FOR_LIMIT < Date.now()
           && this.waitForRestart == -1
           && this.playersCount > 1
           && this.playersCount > this.livePlayersCount
@@ -287,7 +287,7 @@ export class Game {
         (value) => {
           if (value && this.timerLimit == -1) {
             this.timerLimit = Date.now() + ZONELIMIT_TIMEOUT;
-            this.message(`Уменьшение размера карты через ${ZONELIMIT_TIMEOUT / 1000 | 0}сек`);
+            this.message(`Уменьшение размера карты через ${ZONELIMIT_TIMEOUT / 1000 | 0} сек`);
           }
           if (!value && this.timerLimit > 0) {
             this.timerLimit = -1;
