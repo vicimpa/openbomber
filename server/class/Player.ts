@@ -70,6 +70,7 @@ export class Player extends Entity {
 
   ping = 0;
   lastTestPing = 0;
+  reconnect = 0;
 
   lastAction = Date.now();
   lastMessage = Date.now() - TIMEOUT_MESSAGE;
@@ -226,7 +227,7 @@ export class Player extends Entity {
     toGame: () => {
       if (!this.canJoin || this.inGame) return;
 
-      const needTime = this.lastConnect + TIMEOUT_RECONNECT;
+      const needTime = this.lastConnect + TIMEOUT_RECONNECT * this.reconnect;
       const deltaTime = needTime - Date.now();
 
       if (deltaTime > 0) {
@@ -253,6 +254,7 @@ export class Player extends Entity {
     toLeave: () => {
       if (!this.inGame) return;
       this.releasePosition();
+      this.reconnect++;
       this.color = -1;
       this.inGame = false;
       this.lastAction = Date.now();
@@ -279,6 +281,7 @@ export class Player extends Entity {
     if (this.isDeath) return;
     const isSuicide = killer === this;
     this.game.lastLimit = Date.now();
+    this.reconnect = 0;
 
     this.isDeath = true;
     this.newApi.playSound(ESounds.death);
