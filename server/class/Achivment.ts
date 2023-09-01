@@ -1,6 +1,6 @@
 import { pick } from "../../core/pick";
 import { random } from "../../core/random";
-import { EAchivment, ESounds } from "../../shared/types";
+import { EAchivment, EMapItem, ESounds } from "../../shared/types";
 import { BombEffect } from "./BombEffect";
 import { CrasyBombEffect } from "./CrasyBombEffect";
 import { Entity } from "./Entity";
@@ -80,6 +80,12 @@ export class Achivment extends Entity {
     }
 
     player.newApi.playSound(ESounds.bonus);
+  }
+
+  update(dtime: number, time: number): void {
+    const i = this.x + this.y * this.game.width;
+    if (this.game.map[i] === EMapItem.WALL)
+      this.game.achivments.delete(this);
   }
 
 
