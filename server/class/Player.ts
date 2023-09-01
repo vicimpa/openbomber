@@ -44,6 +44,7 @@ export class Player extends Entity {
   dir = EDir.BOTTOM;
   inGame = false;
   #animate = EAnimate.IDLE;
+  moved = false;
 
   get id() { return this.#id; }
   get canJoin() { return this.game.slotLimits > this.game.playersCount; }
@@ -150,6 +151,8 @@ export class Player extends Entity {
         return;
       }
 
+      this.moved = true;
+
       x = (x * 16 | 0) / 16;
       y = (y * 16 | 0) / 16;
 
@@ -193,7 +196,7 @@ export class Player extends Entity {
       const bombsCount = BombEffect.count(this) + 1;
       const value = this.game.map[x + y * this.game.width];
 
-      if (value === EMapItem.BLOCK || value === EMapItem.WALL)
+      if (value === EMapItem.WALL)
         return;
 
       if (find(bombs, { x, y }))
@@ -263,6 +266,7 @@ export class Player extends Entity {
     this.isDeath = false;
     this.lastAction = Date.now();
     this.randomPosition();
+    this.moved = false;
     PlayerEffect.clearEffets(this);
 
     if (startPosition) {
@@ -274,6 +278,7 @@ export class Player extends Entity {
   death(killer: Player | Npc) {
     if (this.isDeath) return;
     const isSuicide = killer === this;
+    this.game.lastLimit = Date.now();
 
     this.isDeath = true;
     this.newApi.playSound(ESounds.death);
@@ -351,6 +356,13 @@ export class Player extends Entity {
             this.newMethods.toLeave?.();
         }
       );
+
+    if (!this.isDeath && this.inGame && this.moved) {
+      const vec = this.clone().round();
+      const value = this.game.map[vec.y * this.game.width + vec.x];
+      if (value === EMapItem.WALL || value === EMapItem.BLOCK)
+        this.death(this);
+    }
 
     if (!this.isDeath && this.inGame) {
       if (speed >= 1) {

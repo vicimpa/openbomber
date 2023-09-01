@@ -1,14 +1,14 @@
 import { makeVec2Filter } from "@/makeVec2Filter";
 import { min } from "@/math";
 import { point } from "@/point";
+import { toLimit } from "@/toLimit";
+import { EEffect } from "@/types";
 import { Vec2 } from "@/Vec2";
 import { OUT_FRAME } from "config";
+import { showDebug } from "data/debug";
 
 import { Camera } from "./Camera";
 import { Game } from "./Game";
-import { toLimit } from "@/toLimit";
-import { EEffect } from "@/types";
-import { showDebug } from "data/debug";
 
 export class FocusCamera extends Camera {
   focus?: Game;

@@ -19,6 +19,7 @@ import type {
   BOMB_INFO,
   EFFECT_INFO,
   EXPLODE_INFO,
+  GAME_INFO,
   PLAYER_INFO,
   PLAYER_POSITION
 } from "@/api";

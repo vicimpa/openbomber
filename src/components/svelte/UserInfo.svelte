@@ -75,7 +75,6 @@
     gap: 20px
     position: absolute
     padding: 10px
-    border-radius: 0 0 10px 10px
     z-index: 1
     backdrop-filter: blur(5px)
     -webkit-backdrop-filter: blur(5px)
@@ -83,8 +82,10 @@
 
   .header
     top: 0
+    border-radius: 0 0 10px 10px
 
   .footer
     bottom: 0
     z-index: 2
+    border-radius: 10px 10px 0 0
 </style>

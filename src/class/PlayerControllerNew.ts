@@ -83,8 +83,7 @@ export class PlayerControllerNew extends Vec2 {
 
     for (let i = 0; i < size; i++) {
       if (
-        false
-        || map[i] === EMapItem.CLEAR
+        map[i] === EMapItem.CLEAR
         || map[i] === EMapItem.GRAS
         || map[i] === EMapItem.SAND
       ) continue;

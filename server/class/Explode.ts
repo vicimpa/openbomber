@@ -94,14 +94,12 @@ export class Explode extends Entity {
     } = game;
 
     const vec = point();
-    points.push(new ExplodePoint(this, x, y, EExplodeDir.CENTER));
 
     for (const [_id, direction] of Object.entries(EXPODER_DIRS)) {
-      if (!+_id) continue;
       const { x: dx, y: dy } = direction;
       const dir: EExplodeDir = +_id as any;
 
-      for (let i = 1; i <= radius; i++) {
+      for (let i = +_id ? 1 : 0; i <= radius; i++) {
         const x = i * dx + this.x;
         const y = i * dy + this.y;
         const index = x + y * width;

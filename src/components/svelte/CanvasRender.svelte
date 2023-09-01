@@ -41,7 +41,7 @@
     socket.connect();
 
     const unforward = playerApi.forward(socket, {
-      updateGameInfo({ width, height }) {
+      updateGameInfo({ width, height, currentLimited }) {
         const position = point(width, height).div(-2).floor().times(16).plus(0);
         game.set(position);
 
@@ -50,6 +50,7 @@
 
         game.focusCamera = cam;
         game.appendTo(app);
+        game.mapLayer.limit = currentLimited;
 
         game.updatePosition = (x, y, dir, animate) => {
           dispatch("setPosition", { x, y, dir, animate });

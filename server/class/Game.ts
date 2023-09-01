@@ -6,10 +6,12 @@ import { delay } from "../../core/delay";
 import { effectObject } from "../../core/effectObject";
 import { find } from "../../core/find";
 import { map } from "../../core/map";
+import { min } from "../../core/math";
 import { pick } from "../../core/pick";
 import { point } from "../../core/point";
 import { random } from "../../core/random";
 import { Vec2 } from "../../core/Vec2";
+import { ZONELIMIT_TIMEOUT } from "../../shared/config";
 import { EMapItem, ESounds } from "../../shared/types";
 import { IS_DEV } from "../env";
 import { Achivment } from "./Achivment";
@@ -44,6 +46,7 @@ export class Game {
   height = 1;
 
   #settings: TConfig;
+  lastLimit = 0;
   time = performance.now();
 
   map!: GameMap;
@@ -69,6 +72,9 @@ export class Game {
   effectsCounter!: number;
   slotLimits = 25;
 
+  timerLimit = -1;
+  limitedMap = 1;
+
   infoCache: Game['info'] = this.info;
   mapCache: number[] = [];
   bombsCache: Bomb['info'][] = [];
@@ -77,6 +83,10 @@ export class Game {
   effectsCache: Effect['info'][] = [];
   effectsTypeCache: Effect['infoType'][] = [];
 
+  get currentLimited() {
+    return this.timerLimit > 0 ? this.limitedMap : -1;
+  }
+
   get info() {
     return pick(this, [
       'width',
@@ -84,10 +94,10 @@ export class Game {
       'winPlayerId',
       'playersCount',
       'livePlayersCount',
-      'spectratorsCount'
+      'spectratorsCount',
+      'currentLimited',
     ]);
   }
-
 
   getFreePosition() {
     const free = Array.from(this.startPositions)
@@ -146,6 +156,8 @@ export class Game {
     this.effectsCounter = 0;
     this.explodesCounter = 0;
     this.achivmentsCounter = 0;
+    this.timerLimit = -1;
+    this.lastLimit = Date.now();
   }
 
   message(message: string, sender?: Player) {
@@ -174,6 +186,7 @@ export class Game {
     if (player) return;
     player = new Player(this, socket);
     player.connect();
+    this.lastLimit = Date.now();
     this.players.add(player);
     this.start();
   }
@@ -183,6 +196,7 @@ export class Game {
     if (!player) return;
     this.players.delete(player);
     player.disconnect();
+    this.lastLimit = Date.now();
     if (!this.players.size)
       this.stop();
   }
@@ -256,6 +270,42 @@ export class Game {
           logger.info(`Change value ${value}`, { timestamp: true });
           if (value)
             this.waitForRestart = Date.now();
+        }
+      );
+
+      effectObject(
+        this,
+        'limitMap',
+        (
+          true
+          && this.lastLimit + 5000 < Date.now()
+          && this.waitForRestart == -1
+          && this.playersCount > 1
+          && this.playersCount > this.livePlayersCount
+          && this.limitedMap < (min(this.width, this.height) / 2 - 3)
+        ),
+        (value) => {
+          if (value && this.timerLimit == -1) {
+            this.timerLimit = Date.now() + ZONELIMIT_TIMEOUT;
+            this.message(`Уменьшение размера карты через ${ZONELIMIT_TIMEOUT / 1000 | 0}сек`);
+          }
+          if (!value && this.timerLimit > 0) {
+            this.timerLimit = -1;
+            this.message(`Уменьшение размера карты отменено`);
+          }
+        }
+      );
+
+      effectObject(
+        this,
+        'limitMapExec',
+        this.timerLimit > 0 && this.timerLimit < Date.now(),
+        (value) => {
+          if (value) {
+            this.lastLimit = Date.now();
+            this.timerLimit = -1;
+            this.map.limit(this.limitedMap++);
+          }
         }
       );
 

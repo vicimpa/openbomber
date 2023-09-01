@@ -7,8 +7,9 @@ import { Game } from "./Game";
 import type { TConfig } from "./Game";
 
 export class GameMap extends Uint8Array {
-  width: number;
-  height: number;
+  get width() { return this.game.width; };
+  get height() { return this.game.height; };
+
   achivments = new Set<number>();
   noize: number[] = [];
 
@@ -17,9 +18,20 @@ export class GameMap extends Uint8Array {
   ) {
     const { width, height } = game;
     super(width * height);
-    this.width = width;
-    this.height = height;
     this.noize = generatePerlinNoise(width, height);
+  }
+
+
+  limit(n = 0) {
+    const { width, height } = this;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = x + y * width;
+
+        if (x < n || y < n || x > width - 1 - n || y > height - 1 - n)
+          this[i] = EMapItem.WALL;
+      }
+    }
   }
 
   generate(config: TConfig) {

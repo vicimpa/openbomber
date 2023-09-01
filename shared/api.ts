@@ -48,6 +48,7 @@ export const GAME_INFO = new Proto({
   playersCount: 'uint8',
   livePlayersCount: 'uint8',
   spectratorsCount: 'uint8',
+  currentLimited: 'int16',
 });
 
 export const PLAYER_POSITION = new Proto({
