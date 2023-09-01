@@ -257,6 +257,7 @@ export class Player extends Entity {
       this.reconnect++;
       this.color = -1;
       this.inGame = false;
+      this.lastConnect = Date.now();
       this.lastAction = Date.now();
       this.game.message(`${this.name ?? 'noname'} отключился`);
       PlayerEffect.clearEffets(this);
