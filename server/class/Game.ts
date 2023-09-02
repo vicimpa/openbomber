@@ -187,7 +187,6 @@ export class Game {
     if (player) return;
     player = new Player(this, socket);
     player.connect();
-    this.lastLimit = Date.now();
     this.players.add(player);
     this.start();
   }
@@ -197,7 +196,6 @@ export class Game {
     if (!player) return;
     this.players.delete(player);
     player.disconnect();
-    this.lastLimit = Date.now();
     if (!this.players.size)
       this.stop();
   }
