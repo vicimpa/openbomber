@@ -321,7 +321,7 @@ export class Game {
           true
           && this.lastLimit + WAIT_FOR_LIMIT < Date.now()
           && this.waitForRestart == -1
-          && this.playersCount > 2
+          && this.playersCount > 1
           && this.limitedMap < (min(this.width, this.height) / 2 - 3)
         ),
         (value) => {
