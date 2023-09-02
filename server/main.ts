@@ -15,7 +15,7 @@ export function game(server: Server) {
   const addresses = new Map<string, number>();
 
   const game = new Game({
-    fillAchivments: IS_DEV ? .9999 : .55,
+    fillAchivments: IS_DEV ? .9999 : .45,
     fillBlocks: .4
   });
 
