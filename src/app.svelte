@@ -204,7 +204,7 @@
       </div>
     {/if}
 
-    {#if !selectSkin && isOpenEditName}
+    {#if isOpenEditName}
       <div class="restart-back" />
       <form class="restart" on:submit={() => (isOpenEditName = false)}>
         <p>Введите имя</p>
