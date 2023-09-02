@@ -122,7 +122,9 @@ export class Explode extends Entity {
             points.push(new ExplodePoint(this, x, y, dir, true, true));
           }
 
-          points.slice(-1)[0].isFinaly = true;
+          const last = points.slice(-1)[0];
+          if (last)
+            last.isFinaly = true;
           break;
         }
 
