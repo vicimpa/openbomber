@@ -23,6 +23,10 @@
 <div class="scroll">
   <h2>Привет =)</h2>
   <div>
+    <h3>На мобильном</h3>
+    <ul>
+      <li><strong>ВЫРУБАЙ ЭКОНОМИЮ ЗАРЯДА!!!</strong></li>
+    </ul>
     <h3>Перед началом</h3>
     <ul>
       <li>Приглашай друзей и веселись 😁</li>
@@ -100,6 +104,9 @@
     font-size: 14px
     font-weight: normal
     color: #999
+
+  strong
+    color: red
   li
     margin: 5px 0px
     font-size: 12px

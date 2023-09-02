@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EXTERNAL_LINKS, OUT_FRAME } from "config";
+  import { EXTERNAL_LINKS, HOWTOPLAYKEY, OUT_FRAME } from "config";
   import { onMount } from "svelte";
   import { socket } from "socket";
   import { IS_DEV } from "env";
@@ -44,7 +44,7 @@
   let effects: TProtoOut<typeof REMAINING_EFFECTS> | null = null;
   let name = localStorage.getItem("name") || "";
   let localSkin = +(localStorage.getItem("skin") ?? -1);
-  let startScreen = !(localStorage.getItem("startscreen") ?? "");
+  let startScreen = !(localStorage.getItem(HOWTOPLAYKEY) ?? "");
   let selectSkin = localSkin < 0;
   let restartAfter = -1;
   let cam: FocusCamera | undefined;
@@ -108,7 +108,7 @@
   }
 
   $: if (!startScreen) {
-    localStorage.setItem("startscreen", "asd");
+    localStorage.setItem(HOWTOPLAYKEY, "1");
   }
 
   $: if (info && info.color !== localSkin) {

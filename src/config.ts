@@ -1,4 +1,5 @@
 export const OUT_FRAME = 16;
+export const HOWTOPLAYKEY = 'htp1';
 export const EXTERNAL_LINKS = [
   {
     href: 'https://github.com/vicimpa/openbomber/',
