@@ -14,6 +14,6 @@ export const CRAZY_BOMB_BOOST = 5;
 export const SKINS_COUNT = 52;
 export const TIMEOUT_MESSAGE = FDate.from('2s');
 export const TIMEOUT_RECONNECT = FDate.from('10s');
-export const WAIT_FOR_LIMIT = FDate.from('30s');
+export const WAIT_FOR_LIMIT = FDate.from('15s');
 export const ZONELIMIT_TIMEOUT = FDate.from('15s');
 export const MAX_ADDRESS_CONNECT = 5;
