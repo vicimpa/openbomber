@@ -281,7 +281,6 @@ export class Player extends Entity {
   death(killer: Player | Npc) {
     if (this.isDeath) return;
     const isSuicide = killer === this;
-    this.game.lastLimit = Date.now();
     this.reconnect = 0;
 
     this.isDeath = true;
