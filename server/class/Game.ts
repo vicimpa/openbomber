@@ -237,12 +237,12 @@ export class Game {
         }
       );
 
-      for (const explode of this.explodes as Set<Entity>) {
-        explode.update(dtime, time);
-      }
-
       for (const bomb of this.bombs as Set<Entity>) {
         bomb.update(dtime, time);
+      }
+
+      for (const explode of this.explodes as Set<Entity>) {
+        explode.update(dtime, time);
       }
 
       for (const achivment of this.achivments as Set<Entity>) {
