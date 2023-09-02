@@ -34,6 +34,7 @@
   import ExternalLinks from "components/svelte/ExternalLinks.svelte";
   import UserInfo from "components/svelte/UserInfo.svelte";
   import SelectSkin from "components/svelte/SelectSkin.svelte";
+  import HowToPlay from "components/svelte/HowToPlay.svelte";
 
   const newApi = gameApi.use(socket);
 
@@ -43,6 +44,7 @@
   let effects: TProtoOut<typeof REMAINING_EFFECTS> | null = null;
   let name = localStorage.getItem("name") || "";
   let localSkin = +(localStorage.getItem("skin") ?? -1);
+  let startScreen = !(localStorage.getItem("startscreen") ?? "");
   let selectSkin = localSkin < 0;
   let restartAfter = -1;
   let cam: FocusCamera | undefined;
@@ -105,6 +107,10 @@
     localStorage.setItem("name", name);
   }
 
+  $: if (!startScreen) {
+    localStorage.setItem("startscreen", "asd");
+  }
+
   $: if (info && info.color !== localSkin) {
     if (localSkin >= 0 && localSkin < SKINS_COUNT) {
       newApi.setSkin(localSkin);
@@ -116,6 +122,10 @@
 <div class="ui">
   <div class="side left">
     <div class="scroll">
+      <div class="item">
+        <Button on:click={() => (startScreen = true)}>Как играть?</Button>
+      </div>
+
       <div class="item">
         <EditName bind:name>
           <Button on:click={() => (selectSkin = true)}>Аватар</Button>
@@ -194,7 +204,7 @@
       </div>
     {/if}
 
-    {#if isOpenEditName}
+    {#if !selectSkin && isOpenEditName}
       <div class="restart-back" />
       <form class="restart" on:submit={() => (isOpenEditName = false)}>
         <p>Введите имя</p>
@@ -203,6 +213,17 @@
           Сохранить
         </Button>
       </form>
+    {/if}
+
+    {#if startScreen && !selectSkin && !isOpenEditName}
+      <div class="restart-back" />
+      <div class="restart">
+        <HowToPlay
+          on:submit={() => {
+            startScreen = false;
+          }}
+        />
+      </div>
     {/if}
 
     {#if isRestarting}

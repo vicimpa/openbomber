@@ -11,7 +11,7 @@ import { pick } from "../../core/pick";
 import { point } from "../../core/point";
 import { random } from "../../core/random";
 import { Vec2 } from "../../core/Vec2";
-import { WAIT_FOR_LIMIT, ZONELIMIT_TIMEOUT } from "../../shared/config";
+import { MAX_PLAYERS, WAIT_FOR_LIMIT, ZONELIMIT_TIMEOUT } from "../../shared/config";
 import { EMapItem, ESounds } from "../../shared/types";
 import { IS_DEV } from "../env";
 import { Achivment } from "./Achivment";
@@ -70,7 +70,7 @@ export class Game {
   explodesCounter!: number;
   achivmentsCounter!: number;
   effectsCounter!: number;
-  slotLimits = 16;
+  slotLimits = MAX_PLAYERS;
 
   timerLimit = -1;
   limitedMap = 1;
