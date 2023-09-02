@@ -8,7 +8,6 @@ const fileData = readFileSync(join(outDir, 'index.html'), 'utf-8');
 
 minify(fileData.replace(/\/\*([^\/]+)\*\//gsm, ''), {
   removeComments: true,
-  removeTagWhitespace: true,
   noNewlinesBeforeTagClose: true,
   collapseWhitespace: true,
   minifyCSS: true,
