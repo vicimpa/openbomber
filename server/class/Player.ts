@@ -54,7 +54,7 @@ export class Player extends Entity {
   startPosition?: Vec2 | undefined;
 
   name = '';
-  color = -1;
+  color = 0;
 
   get effects() {
     return {
@@ -185,7 +185,7 @@ export class Player extends Entity {
     },
 
     setSkin: (skin) => {
-      this.color = rem(skin, SKINS_COUNT);
+      this.color = rem(skin | 0, SKINS_COUNT);
     },
 
     setBomb: () => {
