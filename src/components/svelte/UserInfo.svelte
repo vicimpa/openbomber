@@ -36,7 +36,7 @@
       <span>🔫 x {info.kills}</span>
       <span>💀 x {info.deaths}</span>
     {:else}
-      <p>Вы наблюдатель</p>
+      <p>Вы наблюдаете</p>
     {/if}
   </div>
 {/if}
