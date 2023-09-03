@@ -198,7 +198,8 @@
         <SelectSkin
           selected={localSkin}
           on:changeSkin={({ detail }) => {
-            (localSkin = detail) && (selectSkin = false);
+            localSkin = detail;
+            selectSkin = false;
           }}
         />
       </div>
