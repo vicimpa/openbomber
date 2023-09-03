@@ -206,7 +206,7 @@ export class Player extends Entity {
       if (find(achivments, { x, y }))
         return;
 
-      if (map(bombs, e => e, e => e.player === this).length >= bombsCount)
+      if (map(bombs, e => e, e => e.creator === this).length >= bombsCount)
         return;
 
       bombs.add(newBomb);
@@ -278,7 +278,7 @@ export class Player extends Entity {
     }
   }
 
-  death(killer: Player | Npc) {
+  death(killer?: Player | Npc, isFire = false) {
     if (this.isDeath) return;
     const isSuicide = killer === this;
     this.reconnect = 0;
@@ -300,7 +300,9 @@ export class Player extends Entity {
       killer.newApi.playSound(ESounds.kill);
     }
 
-    const target = isSuicide ? 'самоубился' : `убит ${killer.name}`;
+    const target = killer ? (
+      isSuicide ? 'самоубился' : `${isFire ? 'сожжен' : 'убит'} ${killer.name}`
+    ) : `застрял в стене`;
     this.game.message(`${this.name ?? 'noname'} ${target}`);
     PlayerEffect.clearEffets(this);
     this.releasePosition();
@@ -364,7 +366,7 @@ export class Player extends Entity {
       const vec = this.clone().round();
       const value = this.game.map[vec.y * this.game.width + vec.x];
       if (value === EMapItem.WALL || value === EMapItem.BLOCK)
-        this.death(this);
+        this.death();
     }
 
     if (!this.isDeath && this.inGame) {
@@ -377,7 +379,7 @@ export class Player extends Entity {
             continue;
 
           if (this.checkCollision(player, .9))
-            this.death(player);
+            this.death(player, true);
         }
       }
 

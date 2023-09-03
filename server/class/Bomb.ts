@@ -13,6 +13,7 @@ import { RadiusEffect } from "./RadiusEffect";
 
 export class Bomb extends Entity {
   id!: number;
+  creator!: Player;
 
   time = Date.now();
   liveTime = 2000;
@@ -31,8 +32,8 @@ export class Bomb extends Entity {
   ) {
     const x = Math.round(player.x);
     const y = Math.round(player.y);
-
     super(player.game, x, y);
+    this.creator = player;
     this.id = player.game.bombsCounter++;
     this.radius = RadiusEffect.count(player) + 1;
     this.isCrazy = !!CrasyBombEffect.get(player);
