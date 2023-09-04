@@ -1,10 +1,20 @@
-import { readFileSync, rmSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "fs";
 import { minify } from "html-minifier-terser";
 import { join } from "path";
 
 const outDir = './dist';
 rmSync(join(outDir, 'assets'), { recursive: true, force: true });
-const fileData = readFileSync(join(outDir, 'index.html'), 'utf-8');
+let fileData = readFileSync(join(outDir, 'index.html'), 'utf-8');
+
+fileData = fileData.replace(/<!--\s*([^-\s]+)\s*-->/g, (_, file) => {
+  file = join(outDir, file);
+  if (existsSync(file)) {
+    const data = readFileSync(file);
+    rmSync(file);
+    return data;
+  }
+  return '';
+});
 
 minify(fileData.replace(/\/\*([^\/]+)\*\//gsm, ''), {
   removeComments: true,

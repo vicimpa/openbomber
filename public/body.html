@@ -1,3 +1,20 @@
+<script>
+  addEventListener("load", () => {
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.getRegistration('./service.js')
+        .then(e => e ? e : navigator.serviceWorker
+          .register("./service.js", {
+            scope: location.pathname
+          }))
+        .catch(() => { });
+    }
+
+    window.matchMedia(
+      '(display-mode: standalone)'
+    ).matches;
+  })
+</script>
+
 <!-- Yandex.Metrika counter -->
 <script type="text/javascript" >
   (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
