@@ -71,6 +71,7 @@ export class Player extends Entity {
   ping = 0;
   lastTestPing = 0;
   reconnect = 0;
+  warningPing = 0;
 
   lastAction = Date.now();
   lastMessage = Date.now() - TIMEOUT_MESSAGE;
@@ -345,6 +346,31 @@ export class Player extends Entity {
     } = this.game;
 
     const speed = SpeedEffect.getValue(this);
+
+    effectObject(
+      this,
+      'warningPing',
+      this.inGame && this.ping > 150,
+      (count) => {
+        if (count)
+          this.warningPing++;
+        else
+          this.warningPing = 0;
+      }
+    );
+
+    effectObject(
+      this,
+      'kickWarningPing',
+      this.warningPing > 50,
+      (isKick) => {
+        if (isKick) {
+
+          this.newMethods.toLeave?.();
+          this.newMethods.sendMessage?.('Вас кикнуло за высокий пинг');
+        }
+      }
+    );
 
     if (!this.isDeath && this.inGame) {
       for (const effect of PlayerEffect.effects(this))
