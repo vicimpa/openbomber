@@ -185,14 +185,14 @@
       <Debug />
     {/if}
 
-    {#if restartAfter >= 0 && restartAfter <= 3}
+    {#if !isRestarting && restartAfter >= 0 && restartAfter <= 3}
       <div class="restart-back" />
       <div class="restart">
         <p>Новая игра через {restartAfter} сек</p>
       </div>
     {/if}
 
-    {#if !isOpenEditName && selectSkin}
+    {#if !isRestarting && !isOpenEditName && selectSkin}
       <div class="restart-back" />
       <div class="restart">
         <SelectSkin
@@ -205,7 +205,7 @@
       </div>
     {/if}
 
-    {#if isOpenEditName}
+    {#if !isRestarting && isOpenEditName}
       <div class="restart-back" />
       <form class="restart" on:submit={() => (isOpenEditName = false)}>
         <p>Введите имя</p>
@@ -216,7 +216,7 @@
       </form>
     {/if}
 
-    {#if startScreen && !selectSkin && !isOpenEditName}
+    {#if !isRestarting && startScreen && !selectSkin && !isOpenEditName}
       <div class="restart-back" />
       <div class="restart">
         <HowToPlay
@@ -334,7 +334,9 @@
       .restart
         position: absolute
         margin: auto
-        background-color: rgba(0,0,0,1)
+        background-color: rgba(0,0,0,.7)
+        backdrop-filter: blur(10px)
+        -webkit-backdrop-filter: blur(10px)
         padding: 20px 50px
         font-size: 30px
         z-index: 1
