@@ -18,10 +18,6 @@ export const EXTERNAL_LINKS = [
     name: 'Группа игроков в TG',
   },
   {
-    href: 'https://www.donationalerts.com/r/promise',
-    name: 'Поддержать на DonationAlerts',
-  },
-  {
     href: 'https://boosty.to/vic_dev',
     name: 'Поддержать на Boosty'
   }
