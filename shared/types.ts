@@ -14,12 +14,12 @@ export enum EMapItem {
 }
 
 export const MAP_ITEMS = {
-  [EMapItem.CLEAR]: point(6, 0),
-  [EMapItem.WALL]: point(3, 3),
-  [EMapItem.BLOCK]: point(4, 3),
-  [EMapItem.GRAS]: point(6, 1),
-  [EMapItem.SAND]: point(7, 0),
-  [EMapItem.WATER]: point(7, 1),
+  [EMapItem.CLEAR]: point(0, 0),
+  [EMapItem.WALL]: point(2, 0),
+  [EMapItem.BLOCK]: point(2, 1),
+  [EMapItem.GRAS]: point(0, 1),
+  [EMapItem.SAND]: point(1, 0),
+  [EMapItem.WATER]: point(1, 1),
 };
 
 export enum ESounds {

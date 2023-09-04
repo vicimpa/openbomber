@@ -1,7 +1,8 @@
 import { points } from "@/point";
+import { EMapItem, MAP_ITEMS } from "@/types";
 import { generatePerlinNoise } from "@vicimpa/perlin-noise";
 import { OUT_FRAME } from "config";
-import sprite from "images/sprite.png";
+import sprite from "images/world.png";
 
 import { Entity } from "./Entity";
 import { Sprite } from "./Sprite";
@@ -14,7 +15,7 @@ export class Background extends Entity {
   pattern?: CanvasPattern;
 
   sprite = new Sprite(sprite, 16);
-  points = points('6,1;7,0;6,0');
+  points = [MAP_ITEMS[EMapItem.GRAS], MAP_ITEMS[EMapItem.SAND], MAP_ITEMS[EMapItem.CLEAR]];
   persent = [.2, .4];
 
   constructor(public width: number, public height: number) {

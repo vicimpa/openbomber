@@ -1,5 +1,5 @@
 <script lang="ts">
-  import achivmentSrc from "images/sprite.png";
+  import achivmentSrc from "images/bonus.png";
   import { createEventDispatcher } from "svelte";
   import Button from "./Button.svelte";
   import { ACHIVMEN_DESCRIPTION } from "@/types";
@@ -13,7 +13,7 @@
     ([key, value]) => ({
       key: +key,
       value,
-      frame: point(+key, 14),
+      frame: point(+key, 0),
     })
   );
 

@@ -1,17 +1,18 @@
 import { plus, point, points } from "@/point";
 import { EExplodeDir, EXPODER_DIRS } from "@/types";
-import spriteSrc from "images/sprite.png";
+import blockSrc from "images/blockDestroy.png";
+import explodeSrc from "images/explode.png";
 
 import { Frame } from "./Frame";
 import { Sprite } from "./Sprite";
 
 import type { Camera } from "./Camera";
 
-const BASE = points("2,6;7,6;2,11;7,11");
-const BLOCK = points("5,3;6,3;7,3;8,3;9,3,10,3;0,5");
+const BASE = points("2,2;7,2;2,7;7,7");
+const BLOCK = points("0,0;1,0;2,0;3,0;4,0;5,0");
 
 class BlockSprite extends Frame {
-  sprite = new Sprite(spriteSrc);
+  sprite = new Sprite(blockSrc);
   speed = 100;
   startAnimate = -1;
 
@@ -28,7 +29,7 @@ class BlockSprite extends Frame {
 }
 
 export class ExplodeSprite extends Frame {
-  sprite = new Sprite(spriteSrc);
+  sprite = new Sprite(explodeSrc);
   speed = 100;
 
   isFinaly = false;

@@ -1,10 +1,10 @@
 import { points } from "@/point";
-import spriteSrc from "images/sprite.png";
+import spriteSrc from "images/fire.png";
 
 import { Frame } from "./Frame";
 import { Sprite } from "./Sprite";
 
-const FRAMES = points('0,2;1,2;2,2;3,2;4,2');
+const FRAMES = points('0,0;1,0;2,0;3,0;4,0');
 
 export class FireSprite extends Frame {
   sprite = new Sprite(spriteSrc);

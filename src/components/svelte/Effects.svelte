@@ -1,5 +1,5 @@
 <script lang="ts">
-  import achivmentSrc from "images/sprite.png";
+  import achivmentSrc from "images/bonus.png";
   import type { TProtoOut } from "@/Proto";
   import { ReactiveMap } from "@/ReactiveMap";
   import type { PLAYER_INFO, REMAINING_EFFECTS } from "@/api";
@@ -66,7 +66,7 @@
   {#each [...$effectsList] as [type, remaining]}
     <div class="item" title={ACHIVMEN_DESCRIPTION[type]}>
       <div class="info">
-        <Frame s={2} src={achivmentSrc} x={type} y={14} />
+        <Frame s={2} src={achivmentSrc} x={type} />
       </div>
       <span class="desc">{ACHIVMEN_DESCRIPTION[type]}</span>
       <span>
