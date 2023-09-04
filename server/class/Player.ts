@@ -347,7 +347,7 @@ export class Player extends Entity {
 
     const speed = SpeedEffect.getValue(this);
 
-    if (this.inGame && this.ping > 180) {
+    if (this.inGame && this.ping > 250) {
       this.warningPing++;
     } else {
       this.warningPing = 0;
