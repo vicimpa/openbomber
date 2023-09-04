@@ -2,7 +2,7 @@ import { PluginOption } from "vite";
 
 import { game } from "./main";
 
-export const webScoketServer = (): PluginOption => {
+export const webSocketServer = (): PluginOption => {
   return {
     name: "WebSocketServer",
     configurePreviewServer(server) {

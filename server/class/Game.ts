@@ -2,7 +2,6 @@ import { Socket } from "socket.io";
 import { createLogger } from "vite";
 
 import { calcMap } from "../../core/calcMap";
-import { delay } from "../../core/delay";
 import { effectObject } from "../../core/effectObject";
 import { find } from "../../core/find";
 import { map } from "../../core/map";

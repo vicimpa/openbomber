@@ -142,7 +142,7 @@ export const gameApi = makeWebSocketApi({
 
 export const playerApi = makeWebSocketApi({
   setStartPosition: { input: START_POSITION },
-  updateMap: { input: ['int8'] },
+  updateMap: { input: ['uint8'] },
   updateBombs: { input: [BOMB_INFO] },
   updatePlayers: { input: [PLAYER_INFO] },
   updateExplodes: { input: [EXPLODE_INFO] },

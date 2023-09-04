@@ -6,7 +6,7 @@ import glsl from "vite-plugin-glsl";
 import { viteSingleFile } from "vite-plugin-singlefile";
 import paths from "vite-tsconfig-paths";
 
-import { webScoketServer } from "./server/server";
+import { webSocketServer } from "./server/server";
 
 export default defineConfig({
   base: './',
@@ -35,6 +35,6 @@ export default defineConfig({
     svelte({ configFile: '../svelte.config.js' }),
     paths(),
     viteSingleFile(),
-    webScoketServer()
+    webSocketServer()
   ],
 });
