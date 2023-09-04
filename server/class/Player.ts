@@ -347,7 +347,7 @@ export class Player extends Entity {
 
     const speed = SpeedEffect.getValue(this);
 
-    if (this.inGame && this.ping > 150) {
+    if (this.inGame && this.ping > 180) {
       this.warningPing++;
     } else {
       this.warningPing = 0;
@@ -356,11 +356,15 @@ export class Player extends Entity {
     effectObject(
       this,
       'kickWarningPing',
-      this.warningPing > 50,
+      this.warningPing > 200,
       (isKick) => {
         if (isKick) {
           this.newMethods.toLeave?.();
-          this.newMethods.sendMessage?.('Вас кикнуло за высокий пинг');
+          this.newApi.onMessage({
+            message: 'Вас кикнуло за высокий пинг',
+            sender: { name: 'server' },
+            isMe: false
+          });
         }
       }
     );
