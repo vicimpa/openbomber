@@ -87,7 +87,7 @@ export class Bomb extends Entity {
 
     if (this.dir !== undefined) {
       const move = this.dir;
-      const newSet = this.cplus(move.cdiv(2));
+      const newSet = this.cplus(move.ctimes(.3));
       let haveColide = false;
 
       for (const item of bombs) {
