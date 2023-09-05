@@ -74,6 +74,7 @@ export class Game {
   limitedMap = 1;
 
   isHaveWin = false;
+  kills = 0;
 
   infoCache: Game['info'] = this.info;
   mapCache: number[] = [];
@@ -157,6 +158,7 @@ export class Game {
     this.effectsCounter = 0;
     this.explodesCounter = 0;
     this.achivmentsCounter = 0;
+    this.kills = 0;
     this.limitedMap = 1;
     this.timerLimit = -1;
     this.lastLimit = Date.now();
@@ -233,6 +235,9 @@ export class Game {
         this.playersCount,
         count => {
           logger.info('Players count ' + count, { timestamp: true });
+
+          if (this.isHaveWin && count < 2 && !this.kills)
+            this.isHaveWin = false;
         }
       );
 
@@ -267,11 +272,7 @@ export class Game {
       effectObject(
         this,
         'restartGame',
-        playersCount && map(
-          players,
-          e => e,
-          e => !e.isDeath && e.inGame
-        ).length <= +!!(playersCount - 1),
+        playersCount && this.livePlayersCount <= +!!(playersCount - 1),
         (isRestart) => {
           if (isRestart) {
             logger.info("Wait restart", { timestamp: true });
@@ -285,7 +286,7 @@ export class Game {
         }
       );
 
-      if (this.isHaveWin && this.waitForRestart > 0 && !this.explodes.size) {
+      if (this.isHaveWin && this.livePlayersCount < 2 && !this.explodes.size) {
         const winPlayer = find(this.players, e => e.inGame && !e.isDeath);
         if (winPlayer) {
           winPlayer.wins++;
@@ -295,7 +296,6 @@ export class Game {
         } else {
           this.message(`Никто не выиграл`);
         }
-
         this.isHaveWin = false;
       }
 

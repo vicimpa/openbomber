@@ -293,6 +293,7 @@ export class Player extends Entity {
 
     if (this.game.playersCount > 1) {
       this.deaths++;
+      this.game.kills++;
     }
 
     if (!isSuicide && killer instanceof Player) {
