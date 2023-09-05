@@ -1,7 +1,7 @@
 import { pick } from "../../core/pick";
 import { point } from "../../core/point";
 import { Vec2 } from "../../core/Vec2";
-import { CRAZY_BOMB_BOOST, CRAZY_BOMB_MAX, CRAZY_BOMB_MIN } from "../../shared/config";
+import { BOMB_TIME, CRAZY_BOMB_BOOST, CRAZY_BOMB_MAX, CRAZY_BOMB_MIN } from "../../shared/config";
 import { DIRECTIONS, EAnimate, EEffect, EMapItem, ESounds } from "../../shared/types";
 import { CrasyBombEffect } from "./CrasyBombEffect";
 import { Effect } from "./Effect";
@@ -16,7 +16,7 @@ export class Bomb extends Entity {
   creator!: Player;
 
   time = Date.now();
-  liveTime = 2000;
+  liveTime = BOMB_TIME;
   dir?: Vec2;
 
   isFake = false;
@@ -64,7 +64,12 @@ export class Bomb extends Entity {
 
   update(dtime: number): void {
     const { time, liveTime, game: { waitForRestart, players, bombs, map, achivments }, player } = this;
+    const mapValue = this.game.map[this.cfloor().times(1, this.game.width).sum()];
 
+    if (mapValue === EMapItem.WALL || mapValue === EMapItem.BLOCK) {
+      this.game.bombs.delete(this);
+      return;
+    }
 
     if (!player.checkCollision(this, .5) && this.maked) {
       this.maked = false;
