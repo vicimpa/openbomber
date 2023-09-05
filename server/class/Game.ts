@@ -60,7 +60,6 @@ export class Game {
   usedPositions = new Set<Vec2>();
 
   running = false;
-  kills = 0;
   winPlayerId: Player['id'] = -1;
 
   waitForRestart = -1;
@@ -73,6 +72,8 @@ export class Game {
 
   timerLimit = -1;
   limitedMap = 1;
+
+  isHaveWin = false;
 
   infoCache: Game['info'] = this.info;
   mapCache: number[] = [];
@@ -128,6 +129,8 @@ export class Game {
   restart() {
     const { size, positions } = calcMap(this.playersCount);
 
+    this.isHaveWin = this.playersCount > 1;
+
     if (!size.equal(this.width, this.height)) {
       this.width = size.x;
       this.height = size.y;
@@ -146,7 +149,6 @@ export class Game {
     this.achivments.clear();
     this.explodes.clear();
     this.effects.clear();
-    this.kills = 0;
     this.map = new GameMap(this);
     this.map.generate(this.settings);
 
@@ -274,18 +276,6 @@ export class Game {
           if (isRestart) {
             logger.info("Wait restart", { timestamp: true });
             this.waitForRestart = Date.now() + (IS_DEV || playersCount == 1 ? 0 : 5000);
-
-            if (this.playersCount > 1 && this.kills > 0) {
-              const winPlayer = find(this.players, e => e.inGame && !e.isDeath);
-              if (winPlayer) {
-                winPlayer.wins++;
-                winPlayer.newApi.playSound(ESounds.win);
-                this.winPlayerId = winPlayer.id;
-                this.message(`${winPlayer.name} победил`);
-              } else {
-                this.message(`Никто не выиграл`);
-              }
-            }
           } else {
             if (this.waitForRestart > 0) {
               logger.info("Cancel restart", { timestamp: true });
@@ -294,6 +284,20 @@ export class Game {
           }
         }
       );
+
+      if (this.isHaveWin && this.waitForRestart > 0 && !this.explodes.size) {
+        const winPlayer = find(this.players, e => e.inGame && !e.isDeath);
+        if (winPlayer) {
+          winPlayer.wins++;
+          winPlayer.newApi.playSound(ESounds.win);
+          this.winPlayerId = winPlayer.id;
+          this.message(`${winPlayer.name} победил`);
+        } else {
+          this.message(`Никто не выиграл`);
+        }
+
+        this.isHaveWin = false;
+      }
 
       if (this.waitForRestart > 0) {
         if (Date.now() > this.waitForRestart + 500) {
