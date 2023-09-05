@@ -61,7 +61,7 @@ export class Achivment extends Entity {
       }
 
       case EAchivment.FIRE: {
-        SpeedEffect.append(player, 0.5);
+        SpeedEffect.append(player, 0.7);
         break;
       }
 
