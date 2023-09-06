@@ -64,11 +64,14 @@ export class Bomb extends Entity {
 
   update(dtime: number): void {
     const { time, liveTime, game: { waitForRestart, players, bombs, map, achivments }, player } = this;
-    const mapValue = this.game.map[this.cfloor().times(1, this.game.width).sum()];
 
-    if (mapValue === EMapItem.WALL || mapValue === EMapItem.BLOCK) {
-      this.game.bombs.delete(this);
-      return;
+    if (!this.dir) {
+      const mapValue = this.game.map[this.cfloor().times(1, this.game.width).sum()];
+
+      if (mapValue === EMapItem.WALL || mapValue === EMapItem.BLOCK) {
+        this.game.bombs.delete(this);
+        return;
+      }
     }
 
     if (!player.checkCollision(this, .5) && this.maked) {
