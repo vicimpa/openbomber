@@ -208,8 +208,8 @@ export class Player extends Entity {
 
               for (const player of this.game.players) {
                 if (player.id === +id) {
-                  player.lastConnect = Date.now() + timeValue;
                   player.newMethods.toLeave?.();
+                  player.lastConnect = Date.now() + timeValue;
                   this.game.message(`Игрок ${player.name} был забанен на ${timeValue / 1000 | 0} сек`);
                   break;
                 }
