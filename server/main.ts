@@ -22,7 +22,7 @@ export function game(server: Server) {
   socketio.on('connection', async socket => {
     const api = verifyApi.use(socket);
     const nums = makeData();
-    const address = socket.handshake.headers['x-real-ip'] as string;
+    const address = socket.handshake.address ?? socket.handshake.headers['x-real-ip'] as string;
 
     addresses.set(
       address,

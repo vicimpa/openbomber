@@ -138,6 +138,9 @@
           padding: 0px 10px
           word-wrap: break-word
           word-break: break-all
+          white-space: pre
+          line-height: 16px
+          
 
     .input
       display: flex

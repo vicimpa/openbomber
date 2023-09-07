@@ -2,6 +2,7 @@ import { Socket } from "socket.io";
 
 import { calcSpeed } from "../../core/calcSpeed";
 import { effectObject } from "../../core/effectObject";
+import { FDate } from "../../core/FDate";
 import { find } from "../../core/find";
 import { TMethodsOut } from "../../core/makeWebSocketApi";
 import { map } from "../../core/map";
@@ -14,10 +15,12 @@ import {
   NICK_LENGTH,
   PLAYER_TIMEOUT,
   SKINS_COUNT,
+  TEST_ADMIN_IP,
   TIMEOUT_MESSAGE,
   TIMEOUT_RECONNECT,
 } from "../../shared/config";
 import { EAnimate, EDir, EEffect, EMapItem, ESounds } from "../../shared/types";
+import { getTime, setTime } from "../data/addressTime";
 import { IS_DEV } from "../env";
 import { Bomb } from "./Bomb";
 import { BombEffect } from "./BombEffect";
@@ -81,7 +84,13 @@ export class Player extends Entity {
 
   lastAction = Date.now();
   lastMessage = Date.now() - TIMEOUT_MESSAGE;
-  lastConnect = Date.now() - TIMEOUT_RECONNECT;
+  get lastConnect() {
+    return getTime(this.address);
+  }
+
+  set lastConnect(v) {
+    setTime(this.address, v);
+  }
 
   get posInfo() {
     return pick(
@@ -175,7 +184,70 @@ export class Player extends Entity {
       this.ping = Date.now() - this.lastTestPing;
     },
     sendMessage: (message) => {
+      message.trim();
       if (!message) return;
+      if (message[0] === '/') {
+        const [cmd, ...args] = message.slice(1).split(/\s+/);
+
+        let output = '';
+
+        if (!TEST_ADMIN_IP.test(this.address))
+          return;
+
+        switch (cmd) {
+          case 'ban': {
+            const [id, time = '30m'] = args;
+            if (!id) {
+              output += 'Кого забанить?\n';
+
+              for (const player of this.game.players) {
+                output += `${player.id}) ${player.name} - ${player.address}\n`;
+              }
+            } else {
+              const timeValue = FDate.from(time);
+
+              for (const player of this.game.players) {
+                if (player.id === +id) {
+                  player.lastConnect = Date.now() + timeValue;
+                  player.newMethods.toLeave?.();
+                  this.game.message(`Игрок ${player.name} был забанен на ${timeValue / 1000 | 0} сек`);
+                  break;
+                }
+              }
+            }
+
+            break;
+          }
+
+          case 'unban': {
+            const [id] = args;
+            if (!id) {
+              output += 'Кого разбанить?\n';
+
+              for (const player of this.game.players) {
+                output += `${player.id}) ${player.name} - ${player.address}\n`;
+              }
+            } else {
+
+              for (const player of this.game.players) {
+                if (player.id === +id) {
+                  player.lastConnect = Date.now() - TIMEOUT_RECONNECT;
+                  this.game.message(`Игрок ${player.name} был разбанен`);
+                  break;
+                }
+              }
+            }
+
+            break;
+          }
+
+        }
+
+        if (output)
+          this.newApi.onMessage({ message: output, sender: { name: 'cmd' }, isMe: true });
+
+        return;
+      }
       const needTime = this.lastMessage + TIMEOUT_MESSAGE;
       const deltaTime = needTime - Date.now();
       if (deltaTime > 0) {

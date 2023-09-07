@@ -1,5 +1,6 @@
 import { FDate } from "../core/FDate";
 
+export const TEST_ADMIN_IP = /(10\.242\.\d+\.\d+)/;
 export const MAX_PLAYERS = 16;
 export const NICK_LENGTH = 18;
 export const MESSAGE_LENGTH = 100;
