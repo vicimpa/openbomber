@@ -301,10 +301,19 @@ export class Player extends Entity {
       killer.newApi.playSound(ESounds.kill);
     }
 
-    const target = killer ? (
-      isSuicide ? 'самоубился' : `${isFire ? 'сожжен' : 'убит'} ${killer.name}`
-    ) : `застрял в стене`;
-    this.game.message(`${this.name ?? 'noname'} ${target}`);
+    const deathFn = ()=>{
+      const murder = `${isFire ? 'сожжег' : 'убил'}`
+      if (killer) {
+        switch (isSuicide) {
+          case true:
+            return `${this.name} самоубился`
+          case false:
+            return `${killer.name} ${murder} ${this.name}`
+        }       
+      }
+      return `${this.name ?? 'noname'} застрял в стене`
+    }
+    this.game.message(deathFn());
     PlayerEffect.clearEffets(this);
     this.releasePosition();
   }
