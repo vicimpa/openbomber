@@ -357,6 +357,7 @@ export class Player extends Entity {
     }
   }
 
+
   death(killer?: Player | Npc, isFire = false) {
     if (this.isDeath) return;
     const isSuicide = killer === this;
@@ -379,12 +380,23 @@ export class Player extends Entity {
       killer.newApi.playSound(ESounds.kill);
     }
 
-    const target = killer ? (
-      isSuicide ? 'самоубился' : `${isFire ? 'сожжен' : 'убит'} ${killer.name}`
-    ) : `застрял в стене`;
-    this.game.message(`${this.name ?? 'noname'} ${target}`);
+    const name = this.name ?? 'noname';
+    const killerName = killer?.name ?? 'noname';
+
     PlayerEffect.clearEffets(this);
     this.releasePosition();
+
+    if (!killer) {
+      this.game.message(`${name} застрял в стене`);
+      return;
+    }
+
+    if (isSuicide) {
+      this.game.message(`${name} самоубился`);
+      return;
+    }
+
+    this.game.message(`${killerName} ${isFire ? 'поджег' : 'убил'} ${name}`);
   }
 
   randomPosition() {
