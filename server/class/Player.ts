@@ -51,6 +51,12 @@ export class Player extends Entity {
   get animate() { return this.#animate; }
   set animate(v) { this.#animate = v; }
 
+  get address(): string {
+    const { handshake } = this.socket;
+    const address = handshake.headers['x-real-ip'];
+    return (Array.isArray(address) ? address[0] : address) ?? handshake.address;
+  }
+
   startPosition?: Vec2 | undefined;
 
   name = '';
