@@ -38,6 +38,8 @@
 
   const newApi = gameApi.use(socket);
 
+  let ui: HTMLDivElement | null;
+
   let info: TProtoOut<typeof PLAYER_INFO> | null = null;
   let gameInfo: TProtoOut<typeof GAME_INFO> | null = null;
   let players: TProtoOut<typeof PLAYER_INFO>[] = [];
@@ -50,6 +52,11 @@
   let cam: FocusCamera | undefined;
   let isRestarting = false;
   let isOpenEditName = !name;
+
+  const toggleFullScreen = () => {
+    if (document.fullscreenElement != ui) ui?.requestFullscreen();
+    else document.exitFullscreen();
+  };
 
   onMount(() => {
     socket.connect();
@@ -119,7 +126,7 @@
   }
 </script>
 
-<div class="ui">
+<div bind:this={ui} class="ui">
   <div class="side left">
     <div class="scroll">
       <div class="item">
@@ -141,6 +148,10 @@
           />
         </div>
       {/if}
+
+      <div class="item">
+        <Button on:click={toggleFullScreen}>Полный экран</Button>
+      </div>
 
       {#if info}
         <div class="item">
