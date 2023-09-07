@@ -528,7 +528,7 @@ export class Player extends Entity {
       }
     }
 
-    if (this.lastTestPing + 3000 < Date.now()) {
+    if (this.lastTestPing + 500 < Date.now()) {
       this.lastTestPing = Date.now();
       this.newApi.ping();
     }
