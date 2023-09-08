@@ -1,0 +1,63 @@
+.button
+  padding: 8px 10px
+  background-color: rgba(0,0,0,1)
+  border-radius: 10px
+  text-transform: uppercase
+  font-weight: bold
+  font-size: 14px
+
+  transition: 0.3s
+
+  &:disabled
+    cursor: default
+    opacity: 0.2
+
+  &[data-color=primary]
+    border: 2px solid #aaa
+    color: #aaa
+
+    &:not(:disabled)
+      &:hover
+        border-color: #fff
+        color: #fff
+        box-shadow: 0 0 10px #fff
+
+  &[data-color=secondary]
+    border: 2px solid #ffffff
+    color: #ffffff
+
+    &:not(:disabled)
+      &:hover
+        border-color: #ffe8e8
+        color: #ffe8e8
+        box-shadow: 0 0 10px #ffe8e8
+
+  &[data-color=info]
+    border: 2px solid #048b45
+    color: #048b45
+
+    &:not(:disabled)
+      &:hover
+        border-color: #04bc5d
+        color: #04bc5d
+        box-shadow: 0 0 10px #04bc5d
+
+  &[data-color=warning]
+    border: 2px solid #8b7204
+    color: #8b7204
+
+    &:not(:disabled)
+      &:hover
+        border-color: #d6af03
+        color: #d6af03
+        box-shadow: 0 0 10px #d6af03
+
+  &[data-color=error]
+    border: 2px solid #b90a01
+    color: #b90a01
+
+    &:not(:disabled)
+      &:hover
+        border-color: #f50e02
+        color: #f50e02
+        box-shadow: 0 0 10px #f50e02
