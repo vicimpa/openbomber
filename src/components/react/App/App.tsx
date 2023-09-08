@@ -1,23 +1,31 @@
-import { createContext, useContext, useMemo, useEffect, useRef, useState } from "react";
-import type { ReactNode, FC } from "react";
 import { Application } from "class/Application";
-import { FocusCamera } from "class/FocusCamera";
 import { Background } from "class/Background";
+import { Character } from "class/Character";
+import { FocusCamera } from "class/FocusCamera";
+import { OUT_FRAME } from "config";
+import { useFrame } from "hooks/useFrame";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import styles from "./App.module.sass";
-import { useFrame } from "hooks/useFrame";
-import { Character } from "class/Character";
-import { OUT_FRAME } from "config";
 
+import type { ReactNode, FC } from "react";
 const AppCTX = createContext<Application | null>(null);
 const CamCTX = createContext<FocusCamera | null>(null);
 
 const { Provider: AppProvider } = AppCTX;
 const { Provider: CamProvider } = CamCTX;
 
-export const useApp = () => (
-  useContext(AppCTX)
-);
+export const useApp = () => {
+  const app = useContext(AppCTX);
+  if (!app) throw new Error('Can\'t used app without context');
+  return app;
+};
+
+export const useCam = () => {
+  const app = useContext(CamCTX);
+  if (!app) throw new Error('Can\'t used cam without context');
+  return app;
+};
 
 export type TAppProps = {
   children?: ReactNode;
@@ -26,10 +34,6 @@ export type TAppProps = {
 export const App: FC<TAppProps> = ({ children }) => {
   const refCanvas = useRef<HTMLCanvasElement>(null);
   const [cam, setCam] = useState<FocusCamera | null>(null);
-
-  const character = useMemo(() => (
-    new Character()
-  ), []);
 
   const app = useMemo(() => (
     new Application(false)
@@ -45,8 +49,6 @@ export const App: FC<TAppProps> = ({ children }) => {
 
     app.cameras.add(newCam);
     back.appendTo(app);
-    character.set(-OUT_FRAME / 2);
-    character.appendTo(newCam);
 
     return () => {
       newCam.delete();
@@ -65,14 +67,13 @@ export const App: FC<TAppProps> = ({ children }) => {
         className={styles.canvas}
       />
 
-
-      <div className={styles.app}>
-        {cam && (
-          <CamProvider value={cam}>
+      {cam && (
+        <CamProvider value={cam}>
+          <div className={styles.app}>
             {children}
-          </CamProvider>
-        )}
-      </div>
+          </div>
+        </CamProvider>
+      )}
     </AppProvider>
   );
 };
