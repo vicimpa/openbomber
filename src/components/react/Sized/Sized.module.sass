@@ -1,0 +1,46 @@
+.sized
+  position: relative
+  overflow: hidden
+
+  display: flex
+  justify-content: center
+
+  transition: 0.3s
+
+  &[data-direction=column]
+    flex-direction: column
+
+  &[data-direction=row]
+    flex-direction: row
+
+  &[data-align=start]
+    align-items: flex-start
+
+  &[data-align=center]
+    align-items: center
+
+  &[data-align=end]
+    align-items: flex-end
+
+  .precontent
+    position: absolute
+    width: 100vw
+    height: 100vh
+
+    display: flex
+    justify-content: center
+
+    &[data-direction=column]
+      flex-direction: column
+
+    &[data-direction=row]
+      flex-direction: row
+
+    &[data-align=start]
+      align-items: flex-start
+
+    &[data-align=center]
+      align-items: center
+
+    &[data-align=end]
+      align-items: flex-end
