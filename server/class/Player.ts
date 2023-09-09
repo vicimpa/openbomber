@@ -63,7 +63,10 @@ export class Player extends Entity {
   startPosition?: Vec2 | undefined;
 
   name = '';
-  color = 0;
+  #color = 0;
+
+  get color() { return this.isCat ? 52 : this.#color; }
+  set color(v) { this.#color = v; }
 
   get effects() {
     return {
@@ -82,6 +85,7 @@ export class Player extends Entity {
   lastTestPing = 0;
   reconnect = 0;
   warningPing = 0;
+  isCat = false;
 
   lastAction = Date.now();
   lastMessage = Date.now() - TIMEOUT_MESSAGE;
@@ -192,11 +196,16 @@ export class Player extends Entity {
 
         let output = '';
 
-        if (!TEST_ADMIN_IP.test(this.address))
-          return;
 
         switch (cmd) {
+          case 'cat': {
+            this.isCat = true;
+            break;
+          }
+
           case 'ban': {
+            if (!TEST_ADMIN_IP.test(this.address))
+              return;
             const [id, time = '30m'] = args;
             if (!id) {
               output += 'Кого забанить?\n';
@@ -221,6 +230,9 @@ export class Player extends Entity {
           }
 
           case 'unban': {
+            if (!TEST_ADMIN_IP.test(this.address))
+              return;
+
             const [id] = args;
             if (!id) {
               output += 'Кого разбанить?\n';
