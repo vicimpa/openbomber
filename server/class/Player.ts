@@ -336,6 +336,7 @@ export class Player extends Entity {
       this.kills = 0;
       this.deaths = 0;
       this.wins = 0;
+      this.isCat = false;
       this.inGame = true;
       this.lastConnect = Date.now();
       this.lastAction = Date.now();
@@ -349,6 +350,7 @@ export class Player extends Entity {
       this.reconnect++;
       this.color = -1;
       this.inGame = false;
+      this.isCat = false;
       this.lastConnect = Date.now();
       this.lastAction = Date.now();
       this.game.message(`${this.name ?? 'noname'} отключился`);
@@ -361,6 +363,7 @@ export class Player extends Entity {
     this.isDeath = false;
     this.lastAction = Date.now();
     this.randomPosition();
+    this.isCat = false;
     this.moved = false;
     PlayerEffect.clearEffets(this);
 
