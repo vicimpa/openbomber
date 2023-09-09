@@ -83,7 +83,7 @@
       maxlength={MESSAGE_LENGTH}
       bind:value={message}
       on:keydown={keydown}
-      placeholder="Message"
+      placeholder="Сообщения"
       tabindex="-1"
     />
     <Button disabled={!canSend} on:click={sendMessage}>Send (Enter)</Button>
@@ -100,7 +100,7 @@
     position: relative
     
     .list[data-hide="true"] .item
-      filter: blur(10px)
+      filter: blur(5px)
 
     .list
       position: absolute
@@ -122,6 +122,9 @@
         align-items: flex-end
         padding: 10px
         border-radius: 10px
+
+        margin-right: 10px
+
         
         &[data-isme="true"]
           align-items: flex-start
