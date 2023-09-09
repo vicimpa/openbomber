@@ -7,11 +7,11 @@ import spriteSrc from "images/characters.png";
 import { CrazyEffectSprite } from "./CrazyEffectSprite";
 import { FireSprite } from "./FireSprite";
 import { Frame } from "./Frame";
+import { MovingSprite } from "./MovingSprite";
 import { ShieldSprite } from "./ShieldSprite";
 import { Sprite } from "./Sprite";
 
 import type { Camera } from "./Camera";
-
 const BASE = points('1,1;0,1;1,1;2,1');
 
 const FRAMES = {
@@ -34,10 +34,12 @@ export class PlayerSprite extends Frame {
   isFire = false;
   isShield = false;
   isCrazy = false;
+  isMoving = false;
 
   fireAnimate = new FireSprite();
   shieldAnimate = new ShieldSprite();
   crazyEffect = new CrazyEffectSprite();
+  movingAnimate = new MovingSprite();
 
   name = '';
 
@@ -52,6 +54,7 @@ export class PlayerSprite extends Frame {
     this.fireAnimate.update(dtime, time);
     this.shieldAnimate.update(dtime, time);
     this.crazyEffect.update(dtime, time);
+    this.movingAnimate.update(dtime, time);
 
     const list = FRAMES[this.dir];
     const size = this.animate === EAnimate.IDLE ? 1 : list.length;
@@ -79,13 +82,16 @@ export class PlayerSprite extends Frame {
       ctx.globalAlpha = 1;
     }
 
+    if (this.isMoving)
+      this.movingAnimate.render(camera);
+
     if (this.isShield)
       this.shieldAnimate.render(camera);
 
     if (this.isCrazy)
       this.crazyEffect.render(camera);
 
-    if (IS_DEV)
-      ctx.strokeRect(0, 0, OUT_FRAME, OUT_FRAME);
+    // if (IS_DEV)
+    //   ctx.strokeRect(0, 0, OUT_FRAME, OUT_FRAME);
   }
 }

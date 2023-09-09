@@ -72,7 +72,8 @@ export const PLAYER_INFO = new Proto({
   effects: {
     haveShield: 'boolean',
     speed: 'float32',
-    crazy: 'boolean'
+    crazy: 'boolean',
+    haveMove: 'boolean'
   },
   ping: 'uint16'
 });
