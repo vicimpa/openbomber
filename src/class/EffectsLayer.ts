@@ -23,9 +23,10 @@ export class EffectsLayer extends Entity {
         effect.appendTo(this);
         return effect;
       },
-      ({ x, y, type }, effect) => {
+      ({ x, y, type, meta }, effect) => {
         effect.set(x, y).times(OUT_FRAME);
         effect.type = type;
+        effect.meta = meta;
       },
       (bomb) => {
         bomb.delete();

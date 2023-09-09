@@ -38,7 +38,8 @@ export const EFFECT_INFO = new Proto({
   x: POSITION,
   y: POSITION,
   type: EFFECT,
-  deltaTime: 'float64'
+  deltaTime: 'float64',
+  meta: ['uint8'],
 });
 
 export const GAME_INFO = new Proto({

@@ -6,7 +6,7 @@ import { FDate } from "../../core/FDate";
 import { find } from "../../core/find";
 import { TMethodsOut } from "../../core/makeWebSocketApi";
 import { map } from "../../core/map";
-import { rem, round } from "../../core/math";
+import { random, rem, round } from "../../core/math";
 import { pick } from "../../core/pick";
 import { Vec2 } from "../../core/Vec2";
 import { gameApi, playerApi } from "../../shared/api";
@@ -19,7 +19,7 @@ import {
   TIMEOUT_MESSAGE,
   TIMEOUT_RECONNECT,
 } from "../../shared/config";
-import { EAnimate, EDir, EEffect, EMapItem, ESounds } from "../../shared/types";
+import { DEATH_FRAMES, EAnimate, EDir, EEffect, EMapItem, ESounds } from "../../shared/types";
 import { getTime, setTime } from "../data/addressTime";
 import { IS_DEV } from "../env";
 import { Bomb } from "./Bomb";
@@ -368,7 +368,7 @@ export class Player extends Entity {
     this.newApi.playSound(ESounds.death);
 
     this.game.effects.add(
-      new Effect(this.game, this.x, this.y, EEffect.DEATH)
+      new Effect(this.game, this.x, this.y, EEffect.DEATH, [random() * DEATH_FRAMES.length | 0])
     );
 
     if (this.game.playersCount > 1) {

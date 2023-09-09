@@ -1,4 +1,4 @@
-import { point } from "../core/point";
+import { point, points } from "../core/point";
 
 export type TChatInfo = {
   name: string;
@@ -12,6 +12,8 @@ export enum EMapItem {
   SAND,
   WATER,
 }
+
+export const DEATH_FRAMES = points('0,0;0,1;0,2;0,3;0,4;0,5;0,6;0,7');
 
 export const MAP_ITEMS = {
   [EMapItem.CLEAR]: point(0, 0),

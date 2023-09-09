@@ -7,12 +7,15 @@ export class Effect extends Entity {
   id!: number;
   type: EEffect;
   time = Date.now();
+  meta: number[] = [];
+
   get deltaTime() { return Date.now() - this.time; }
 
-  constructor(game: Game, x: number, y: number, type: EEffect) {
+  constructor(game: Game, x: number, y: number, type: EEffect, meta: number[] = []) {
     super(game, x, y);
     this.id = game.effectsCounter++;
     this.type = type;
+    this.meta = meta;
   }
 
   get info() {
@@ -23,7 +26,8 @@ export class Effect extends Entity {
         'x',
         'y',
         'type',
-        'deltaTime'
+        'deltaTime',
+        'meta'
       ]
     );
   }
