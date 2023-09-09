@@ -46,6 +46,7 @@ export class Player extends Entity {
 
   dir = EDir.BOTTOM;
   inGame = false;
+  isAdmin = false;
   #animate = EAnimate.IDLE;
   moved = false;
 
@@ -137,7 +138,8 @@ export class Player extends Entity {
       'deaths',
       'effects',
       'color',
-      'ping'
+      'ping',
+      'isAdmin',
     ]);
   }
 
@@ -156,6 +158,7 @@ export class Player extends Entity {
   ) {
     super(game, 0, 0);
     this.newApi = playerApi.use(socket);
+    this.isAdmin = TEST_ADMIN_IP.test(this.address);
 
     if (IS_DEV)
       this.newMethods.toGame?.();
@@ -196,7 +199,6 @@ export class Player extends Entity {
 
         let output = '';
 
-
         switch (cmd) {
           case 'cat': {
             this.isCat = true;
@@ -204,8 +206,8 @@ export class Player extends Entity {
           }
 
           case 'ban': {
-            if (!TEST_ADMIN_IP.test(this.address))
-              return;
+            if (!this.isAdmin) return;
+
             const [id, time = '30m'] = args;
             if (!id) {
               output += 'Кого забанить?\n';
@@ -230,8 +232,7 @@ export class Player extends Entity {
           }
 
           case 'unban': {
-            if (!TEST_ADMIN_IP.test(this.address))
-              return;
+            if (!this.isAdmin) return;
 
             const [id] = args;
             if (!id) {

@@ -103,6 +103,7 @@ export class Game extends Entity {
       this.currentPlayerSprite.isMoving = this.localInfo.effects.haveMove;
       this.currentPlayerSprite.color = this.localInfo.color;
       this.currentPlayerSprite.name = this.localInfo.name;
+      this.currentPlayerSprite.isAdmin = this.localInfo.isAdmin;
     }
 
     if (this.focusCamera) {

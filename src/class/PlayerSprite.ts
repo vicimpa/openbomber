@@ -35,6 +35,7 @@ export class PlayerSprite extends Frame {
   isShield = false;
   isCrazy = false;
   isMoving = false;
+  isAdmin = false;
 
   fireAnimate = new FireSprite();
   shieldAnimate = new ShieldSprite();
@@ -74,8 +75,8 @@ export class PlayerSprite extends Frame {
 
     if (this.name) {
       ctx.globalAlpha = 0.6;
-      ctx.fillStyle = '#fff';
-      ctx.font = "normal 3px BetterVCR";
+      ctx.fillStyle = this.isAdmin ? '#f00' : '#fff';
+      ctx.font = this.isAdmin ? "bold 4px BetterVCR" : "normal 3px BetterVCR";
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
       ctx.fillText(this.name, OUT_FRAME / 2, 0);

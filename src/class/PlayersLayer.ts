@@ -33,6 +33,7 @@ export class PlayersLayer extends Entity {
         player.isShield = !!info && info.effects.haveShield;
         player.isCrazy = !!info && info.effects.crazy;
         player.isMoving = !!info && info.effects.haveMove;
+        player.isAdmin = !!info && info.isAdmin;
       },
       (player) => {
         player.delete();

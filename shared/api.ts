@@ -70,6 +70,7 @@ export const PLAYER_INFO = new Proto({
   wins: 'uint8',
   kills: 'uint8',
   deaths: 'uint8',
+  isAdmin: 'boolean',
   effects: {
     haveShield: 'boolean',
     speed: 'float32',
