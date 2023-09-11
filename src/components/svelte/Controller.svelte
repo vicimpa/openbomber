@@ -152,6 +152,7 @@
       if (![...touches].find((e) => e.identifier === startId)) startId = null;
       const move = touchMove;
       move.set(0);
+      updatePoint(move);
     };
 
     ref.oncontextmenu = (e) => e.preventDefault();
@@ -244,7 +245,7 @@
       transition: opacity 0.3s
 
       &[data-show="false"]
-        opacity: 0
+        opacity: .4
 
       .point
         opacity: .6
@@ -255,12 +256,12 @@
         
 
     .bomb
-      width: 60px
-      height: 60px
+      width: 80px
+      height: 80px
       display: flex
       align-items: center
       justify-content: center
       font-size: 40px
-      bottom: 50px
-      right: 50px
+      bottom: 70px
+      right: 70px
 </style>
