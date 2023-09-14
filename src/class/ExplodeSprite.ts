@@ -1,19 +1,19 @@
 import { plus, point, points } from "@/point";
+import { toLimit } from "@/toLimit";
 import { EExplodeDir, EXPODER_DIRS } from "@/types";
-import blockSrc from "images/blockDestroy.png";
+import blockSrc from "images/destroyBlock2.png";
 import explodeSrc from "images/explode.png";
 
 import { Frame } from "./Frame";
 import { Sprite } from "./Sprite";
 
 import type { Camera } from "./Camera";
-
 const BASE = points("2,2;7,2;2,7;7,7");
-const BLOCK = points("0,0;1,0;2,0;3,0;4,0;5,0");
+const BLOCK = points("0,0;1,0;2,0;3,0;4,0;5,0;6,0;7,0;8,0");
 
 class BlockSprite extends Frame {
   sprite = new Sprite(blockSrc);
-  speed = 100;
+  speed = 50;
   startAnimate = -1;
 
   update(dtime: number, time: number): void {
@@ -23,7 +23,7 @@ class BlockSprite extends Frame {
 
     const list = BLOCK;
     const size = list.length;
-    const frame = ((time - this.startAnimate) / this.speed | 0) % size;
+    const frame = toLimit(((time - this.startAnimate) / this.speed | 0), 0, size - 1);
     this.frame.set(list[frame]);
   }
 }
@@ -60,9 +60,9 @@ export class ExplodeSprite extends Frame {
   }
 
   render(camera: Camera): void {
-    super.render(camera);
-
     if (this.block)
       this.block.render(camera);
+
+    super.render(camera);
   }
 }
