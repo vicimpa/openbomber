@@ -245,6 +245,10 @@ export class Game {
         bomb.update(dtime, time);
       }
 
+      for (const explode of this.effects as Set<Entity>) {
+        explode.update(dtime, time);
+      }
+
       for (const explode of this.explodes as Set<Entity>) {
         explode.update(dtime, time);
       }
