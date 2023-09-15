@@ -1,5 +1,5 @@
 import { pick } from "../../core/pick";
-import { EEffect } from "../../shared/types";
+import { EEffect, EMapItem } from "../../shared/types";
 import { Entity } from "./Entity";
 import { Game } from "./Game";
 
@@ -16,6 +16,15 @@ export class Effect extends Entity {
     this.id = game.effectsCounter++;
     this.type = type;
     this.meta = meta;
+  }
+
+  update(dtime: number, time: number): void {
+    const { x, y } = this.cfloor();
+    const { map, width } = this.game;
+    const value = map[width * y + x];
+
+    if (value === EMapItem.WALL || value === EMapItem.BLOCK)
+      this.game.effects.delete(this);
   }
 
   get info() {
