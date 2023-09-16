@@ -3,11 +3,14 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+
   "main": "src/types.mts",
+
   "scripts": {
     "dev": "vite",
     "build": "vite build --emptyOutDir && node post.js",
     "preview": "vite preview",
+    "img" : "node autoImages.js",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {
