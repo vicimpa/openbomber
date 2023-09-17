@@ -10,6 +10,7 @@ async function main() {
   const screenshotPath4 = path.join(__dirname, 'screen', 'screen4.png');
   const screenshotPath5 = path.join(__dirname, 'screen', 'screen5.png');
   const screenshotPath6 = path.join(__dirname, 'screen', 'screen6.png');
+  const screenshotPathPublic = path.join(__dirname, 'public/images', 'screen.png');
 
 
   const browser = await puppeteer.launch({
@@ -72,7 +73,7 @@ async function main() {
   await page.waitForTimeout(1500);
 
   await page.screenshot({ path: screenshotPath6 });
-
+  await page.screenshot({ path: screenshotPathPublic });
 
   await browser.close();
 }
