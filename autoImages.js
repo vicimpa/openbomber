@@ -8,40 +8,71 @@ async function main() {
   const screenshotPath2 = path.join(__dirname, 'screen', 'screen2.png');
   const screenshotPath3 = path.join(__dirname, 'screen', 'screen3.png');
   const screenshotPath4 = path.join(__dirname, 'screen', 'screen4.png');
+  const screenshotPath5 = path.join(__dirname, 'screen', 'screen5.png');
+  const screenshotPath6 = path.join(__dirname, 'screen', 'screen6.png');
+
 
   const browser = await puppeteer.launch({
     headless: 'false',
   });
   const page = await browser.newPage();
-
   await page.goto(localPageUrl);
+  await page.waitForTimeout(500);  
 
+  
   await page.waitForSelector('form');
   await page.waitForSelector('input');
 
   await page.setViewport({ width: 1200, height: 800 });
 
+
+  // write NickName 
+  await page.type('input', 'nickname');
   await page.screenshot({ path: screenshotPath1 });
 
-  await page.type('input', 'NickName');
+  const buttonSelector = 'form.restart > div.button';
+  await page.waitForTimeout(100);
 
 
-  const buttonSelector = '.button';
-
-  await page.waitForTimeout(200);
   await page.click(buttonSelector);
-
   await page.screenshot({ path: screenshotPath2 });
+  await page.waitForTimeout(500);
 
-  await page.mouse.move(1200, 0);
-  await page.waitForTimeout(1000);
 
+  // left side
+  await page.mouse.move(0, 0);
+
+  await page.waitForTimeout(250);  
+  await page.screenshot({ path: screenshotPath4 });
+
+  // right side
+  const RigthSelector = 'div.right';
+  await page.click(RigthSelector);
+  await page.waitForTimeout(250);  
   await page.screenshot({ path: screenshotPath3 });
 
-  await page.mouse.move(1200, 0);
-  await page.waitForTimeout(1000);
+  // select selector skins
+  await page.waitForTimeout(300);
+  const buttonSelector2 = 'div.restart > div.skins > div.skin-item';
+  const buttonSelector3 = 'div.restart > div.button';
 
-  await page.screenshot({ path: screenshotPath4 });
+  // click into Skins and confim
+  await page.click(buttonSelector2);
+  await page.waitForTimeout(100);
+  await page.click(buttonSelector3);
+
+  await page.screenshot({ path: screenshotPath5 });
+
+
+  // join into Game
+  const buttonSelectorConfim = 'div.restart > div.scroll > div.button';
+  await page.click(buttonSelectorConfim);
+  const joinButton = 'div.footer > div.button';
+  await page.click(joinButton);
+  await page.waitForTimeout(1500);
+
+  await page.screenshot({ path: screenshotPath6 });
+
 
   await browser.close();
 }
