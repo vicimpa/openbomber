@@ -19,7 +19,7 @@ export class Effect extends Entity {
   }
 
   update(dtime: number, time: number): void {
-    const { x, y } = this.cfloor();
+    const { x, y } = this.cround();
     const { map, width } = this.game;
     const value = map[width * y + x];
 
