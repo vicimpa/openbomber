@@ -1,6 +1,10 @@
-const puppeteer = require('puppeteer');
-const fs = require('fs');
-const path = require('path');
+import { spawn } from "child_process";
+import fs from "fs";
+import path from "path";
+import puppeteer from "puppeteer";
+
+const __dirname = process.cwd();
+
 
 async function main() {
   const localPageUrl = 'http://127.0.0.1:3000/';
@@ -12,15 +16,14 @@ async function main() {
   const screenshotPath6 = path.join(__dirname, 'screen', 'screen6.png');
   const screenshotPathPublic = path.join(__dirname, 'public/images', 'screen.png');
 
-
   const browser = await puppeteer.launch({
     headless: 'false',
   });
   const page = await browser.newPage();
   await page.goto(localPageUrl);
-  await page.waitForTimeout(500);  
+  await page.waitForTimeout(500);
 
-  
+
   await page.waitForSelector('form');
   await page.waitForSelector('input');
 
@@ -43,13 +46,13 @@ async function main() {
   // left side
   await page.mouse.move(0, 0);
 
-  await page.waitForTimeout(250);  
+  await page.waitForTimeout(250);
   await page.screenshot({ path: screenshotPath4 });
 
   // right side
   const RigthSelector = 'div.right';
   await page.click(RigthSelector);
-  await page.waitForTimeout(250);  
+  await page.waitForTimeout(250);
   await page.screenshot({ path: screenshotPath3 });
 
   // select selector skins
@@ -78,4 +81,14 @@ async function main() {
   await browser.close();
 }
 
-main().catch(console.error);
+let running = false;
+spawn('npm', ['run', 'dev']).stdout.on('data', (d) => {
+  if (`${d}`.indexOf('http') != -1 && !running) {
+    running = true;
+    main()
+      .catch(console.error)
+      .finally(() => {
+        process.exit(0);
+      });
+  }
+});
