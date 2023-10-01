@@ -200,8 +200,13 @@ export class Player extends Entity {
         let output = '';
 
         switch (cmd) {
+          case 'cat': {
+            this.#customSkin = 0;
+            break;
+          }
+
           case 'skin': {
-            const [customSkin = '-1'] = args;
+            const [customSkin = '0'] = args;
             if (isNaN(+customSkin)) {
               output += 'Неверный параметр скина!';
               break;
