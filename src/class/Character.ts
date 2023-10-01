@@ -1,11 +1,12 @@
-import { effectObject } from "@/effectObject";
-import type { Camera } from "./Camera";
+import { OUT_FRAME } from "config";
+import { effectObject } from "core/effectObject";
+import { point } from "core/point";
+import spriteMode from "images/characters-model.png";
+
 import { Frame } from "./Frame";
 import { Sprite } from "./Sprite";
-import spriteMode from "images/characters-model.png";
-import { OUT_FRAME } from "config";
-import { point } from "@/point";
 
+import type { Camera } from "./Camera";
 export class Character extends Frame {
   sourceFrame = new Sprite(spriteMode);
 

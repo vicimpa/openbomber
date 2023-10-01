@@ -1,11 +1,11 @@
-import { points } from "@/point";
-import { EMapItem, MAP_ITEMS } from "@/types";
 import { generatePerlinNoise } from "@vicimpa/perlin-noise";
 import { OUT_FRAME } from "config";
 import sprite from "images/world.png";
+import { EMapItem, MAP_ITEMS } from "shared/types";
 
 import { Entity } from "./Entity";
 import { Sprite } from "./Sprite";
+
 
 import type { Camera } from "./Camera";
 export class Background extends Entity {

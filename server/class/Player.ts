@@ -4,7 +4,6 @@ import { calcSpeed } from "../../core/calcSpeed";
 import { effectObject } from "../../core/effectObject";
 import { FDate } from "../../core/FDate";
 import { find } from "../../core/find";
-import { TMethodsOut } from "../../core/makeWebSocketApi";
 import { map } from "../../core/map";
 import { random, rem, round } from "../../core/math";
 import { pick } from "../../core/pick";
@@ -35,6 +34,7 @@ import { RadiusEffect } from "./RadiusEffect";
 import { ShieldEffect } from "./ShieldEffect";
 import { SpeedEffect } from "./SpeedEffect";
 
+import type { TMethodsOut } from "../../core/makeWebSocketApi";
 let PLAYER_COUNTER = 0;
 
 export class Player extends Entity {

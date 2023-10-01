@@ -1,9 +1,9 @@
 <script lang="ts">
   import { ChatEvent } from "class/ChatEvent";
   import { createEventDispatcher, onMount } from "svelte";
-  import { FDate } from "@/FDate";
-  import { MESSAGE_LENGTH, TIMEOUT_MESSAGE } from "@/config";
-  import type { TChatInfo } from "@/types";
+  import { FDate } from "core/FDate";
+  import { MESSAGE_LENGTH, TIMEOUT_MESSAGE } from "shared/config";
+  import type { TChatInfo } from "shared/types";
   import Button from "./Button.svelte";
   import { onFrame } from "library/onFrame";
 

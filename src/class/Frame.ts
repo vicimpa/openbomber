@@ -1,4 +1,4 @@
-import { Vec2 } from "@/Vec2";
+import { Vec2 } from "core/Vec2";
 
 import { Entity } from "./Entity";
 

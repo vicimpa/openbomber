@@ -1,5 +1,5 @@
 {
-  "extends": "./node_modules/@tsconfig/svelte/tsconfig.json",
+  "extends": "@tsconfig/svelte",
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
@@ -8,15 +8,19 @@
     /* Bundler mode */
     "allowJs": true,
     "checkJs": true,
-    "declaration": false,
     "experimentalDecorators": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "noEmit": true,
+    "declaration": false,
     "jsx": "react-jsx",
+    "sourceMap": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
     "jsxImportSource": "react",
     "resolveJsonModule": true,
+    "outDir": "./tmp",
 
     /* Linting */
     "strict": true,
@@ -32,25 +36,17 @@
       "vite-plugin-glsl/ext"
     ],
     "paths": {
-      "@/*": [
-        "../shared/*",
-        "../core/*",
-      ],
-      "engine/*": [
-        "../engine/*"
-      ]
+      "shared/*": ["../shared/*"],
+      "core/*": [ "../core/*"],
+      "server/*": ["../server/*"]
     }
   },
   "include": [
-    "src/**/*.d.ts",
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.js",
-    "src/**/*.mts",
-    "src/**/*.svelte",
-    "engine",
-    "core",
-    "shared"
+    "./src/**/*.svelte",
+    "./src",
+    "./core",
+    "./server",
+    "./shared",
   ],
   "exclude": [
     "./vite.config.ts"

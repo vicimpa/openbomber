@@ -1,4 +1,4 @@
-import type { TChatInfo } from "@/types";
+import type { TChatInfo } from "shared/types";
 
 export class ChatEvent extends Event {
   constructor(

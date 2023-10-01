@@ -1,10 +1,8 @@
-import { point } from "@/point";
-import { Vec2 } from "@/Vec2";
+import { makeNumberFilter } from "core/makeNumberFilter";
+import { point } from "core/point";
+import { writable } from "svelte/store";
 
 import { Entity } from "./Entity";
-import { ceil, round } from "@/math";
-import { writable } from "svelte/store";
-import { makeNumberFilter } from "@/makeNumberFilter";
 
 export class Camera extends Entity {
   ctx!: CanvasRenderingContext2D;

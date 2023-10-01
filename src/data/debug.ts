@@ -1,4 +1,4 @@
-import { ReactiveMap } from "@/ReactiveMap";
+import { ReactiveMap } from "core/ReactiveMap";
 import { IS_DEV } from "env";
 
 export const debug = new ReactiveMap<string, any>();

@@ -1,6 +1,6 @@
-import { makeEffect } from "@/makeEffect";
-import { rem } from "@/math";
 import { OUT_FRAME } from "config";
+import { makeEffect } from "core/makeEffect";
+import { rem } from "core/math";
 import { showDebug } from "data/debug";
 
 import { AchivmentsLayer } from "./AchivmentsLayer";
@@ -13,7 +13,7 @@ import { PlayersLayer } from "./PlayersLayer";
 import { PlayerSprite } from "./PlayerSprite";
 
 import type { FocusCamera } from "./FocusCamera";
-import type { TProtoOut } from "@/Proto";
+import type { TProtoOut } from "core/Proto";
 import type {
   ACHIVMENT_INFO,
   BOMB_INFO,
@@ -22,10 +22,10 @@ import type {
   GAME_INFO,
   PLAYER_INFO,
   PLAYER_POSITION
-} from "@/api";
+} from "shared/api";
 
 import type { PlayerControllerNew } from "./PlayerControllerNew";
-import type { EAnimate, EDir } from "@/types";
+import type { EAnimate, EDir } from "shared/types";
 export class Game extends Entity {
   mapLayer = new MapLayer(this);
   effectsLayer = new EffectsLayer(this);

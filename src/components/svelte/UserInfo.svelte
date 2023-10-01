@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { TProtoOut } from "@/Proto";
-  import type { GAME_INFO, PLAYER_INFO } from "@/api";
+  import type { TProtoOut } from "core/Proto";
+  import type { GAME_INFO, PLAYER_INFO } from "shared/api";
   import Button from "./Button.svelte";
   import { createEventDispatcher } from "svelte";
   import type { Camera } from "class/Camera";

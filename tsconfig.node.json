@@ -7,14 +7,11 @@
     "esModuleInterop": true,
     "moduleResolution": "Node",
     "experimentalDecorators": true,
+    "verbatimModuleSyntax": true,
     "strict": true,
-    "outDir": "./server-dist",
-    "noEmit": false
+    "noEmit": false,
   },
   "include": [
-    "./core",
-    "./server",
-    "./shared",
     "./vite.config.ts"
   ]
 }

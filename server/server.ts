@@ -1,6 +1,6 @@
-import { PluginOption } from "vite";
-
 import { game } from "./main";
+
+import type { PluginOption } from "vite";
 
 export const webSocketServer = (): PluginOption => {
   return {

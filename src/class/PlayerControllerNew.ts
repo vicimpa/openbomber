@@ -1,7 +1,7 @@
-import { calcSpeed } from "@/calcSpeed";
-import { abs } from "@/math";
-import { EAnimate, EDir, EMapItem } from "@/types";
-import { Vec2 } from "@/Vec2";
+import { calcSpeed } from "core/calcSpeed";
+import { abs } from "core/math";
+import { Vec2 } from "core/Vec2";
+import { EAnimate, EDir, EMapItem } from "shared/types";
 
 import { Game } from "./Game";
 

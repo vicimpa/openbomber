@@ -1,7 +1,7 @@
-import { toLimit } from "@/toLimit";
-import { ESounds } from "@/types";
+import { ESounds } from "shared/types";
 
-import type { Vec2 } from "@/Vec2";
+import type { Vec2 } from "core/Vec2";
+
 const audioCtx = new (AudioContext || (window as any)['webkitAudioContext']) as AudioContext;
 export const gainNode = audioCtx.createGain();
 

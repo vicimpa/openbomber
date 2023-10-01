@@ -33,7 +33,7 @@ export default defineConfig({
     glsl(),
     react({ plugins: [], tsDecorators: true }),
     svelte({ configFile: '../svelte.config.js' }),
-    paths(),
+    paths({ projects: ['../tsconfig.json'] }),
     viteSingleFile(),
     webSocketServer()
   ],

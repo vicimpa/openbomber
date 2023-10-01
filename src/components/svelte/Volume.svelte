@@ -1,12 +1,12 @@
 <script lang="ts">
   import { Sound, gainNode } from "library/sounds";
   import { stylesVariable } from "library/stylesVariable";
-  import { toLimit } from "@/toLimit";
+  import { toLimit } from "core/toLimit";
   import { beforeUpdate } from "svelte";
   import { onMount } from "svelte";
   import Button from "./Button.svelte";
-  import { Vec2 } from "@/Vec2";
-  import { point } from "@/point";
+  import { Vec2 } from "core/Vec2";
+  import { point } from "core/point";
 
   let volume = toLimit(+(localStorage.getItem("volume") ?? 0.2), 0, 1);
   let step = 0.01;
@@ -56,6 +56,7 @@
 </div>
 <div class="container">
   <Button on:click={() => change(-step)}>-</Button>
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="volume" bind:this={span} on:mousedown={mouseDown}>
     <div class="slider" style="{stylesVariable({ w: `${persent}%` })})}" />
     <span title="Тест звука">

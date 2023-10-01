@@ -1,8 +1,8 @@
-import { plus, point, points } from "@/point";
-import { EAnimate, EDir } from "@/types";
 import { OUT_FRAME } from "config";
+import { plus, point, points } from "core/point";
 import { IS_DEV } from "env";
 import spriteSrc from "images/characters.png";
+import { EAnimate, EDir } from "shared/types";
 
 import { CrazyEffectSprite } from "./CrazyEffectSprite";
 import { FireSprite } from "./FireSprite";

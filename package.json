@@ -6,7 +6,7 @@
   "main": "src/types.mts",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --emptyOutDir && node post.js",
+    "build": "tsc && vite build --emptyOutDir && node post.js",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
@@ -23,7 +23,7 @@
     "socket.io-client": "^4.7.2",
     "svelte": "^4.2.0",
     "svelte-check": "^3.3.1",
-    "typescript": "^5.0.2",
+    "typescript": "^5.2.2",
     "vite": "^4.3.9",
     "vite-plugin-commonjs": "^0.9.0",
     "vite-plugin-glsl": "^1.1.2",

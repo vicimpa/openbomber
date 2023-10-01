@@ -1,6 +1,6 @@
-import { point } from "@/point";
-import { EAchivment } from "@/types";
+import { point } from "core/point";
 import spriteSrc from "images/bonus.png";
+import { EAchivment } from "shared/types";
 
 import { Frame } from "./Frame";
 import { Sprite } from "./Sprite";

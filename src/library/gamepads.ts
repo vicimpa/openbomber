@@ -1,5 +1,5 @@
-import { Events } from "@/Events";
-import { abs } from "@/math";
+import { Events } from "core/Events";
+import { abs } from "core/math";
 import getGamepadInfo from "gamepad-info";
 
 interface IGampadButton {

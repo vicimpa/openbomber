@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Player as TypePlayer } from "@/class/Player";
+  import type { Player as TypePlayer } from "server/class/Player";
   import Frame from "./Frame.svelte";
   import spriteSrc from "images/characters.png";
 

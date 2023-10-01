@@ -2,10 +2,10 @@
   import achivmentSrc from "images/bonus.png";
   import { createEventDispatcher } from "svelte";
   import Button from "./Button.svelte";
-  import { ACHIVMEN_DESCRIPTION } from "@/types";
-  import { point } from "@/point";
+  import { ACHIVMEN_DESCRIPTION } from "shared/types";
+  import { point } from "core/point";
   import Frame from "./Frame.svelte";
-  import { MAX_PLAYERS } from "@/config";
+  import { MAX_PLAYERS } from "shared/config";
   import { EXTERNAL_LINKS } from "config";
   import Link from "./Link.svelte";
 

@@ -1,4 +1,4 @@
-import { points } from "@/point";
+import { points } from "core/point";
 import spriteSrc from "images/bombs.png";
 
 import { CrazyEffectSprite } from "./CrazyEffectSprite";

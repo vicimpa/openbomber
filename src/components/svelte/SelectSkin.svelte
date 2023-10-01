@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SKINS_COUNT } from "@/config";
+  import { SKINS_COUNT } from "shared/config";
   import { each } from "library/each";
   import Frame from "./Frame.svelte";
   import spriteSrc from "images/characters.png";
@@ -15,6 +15,7 @@
 
 <div class="skins">
   {#each each(SKINS_COUNT) as skin}
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div
       on:mousedown={() => (selected = skin)}
       class="skin-item"

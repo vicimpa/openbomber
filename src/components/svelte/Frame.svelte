@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { point } from "@/point";
+  import { point } from "core/point";
   import { stylesVariable } from "library/stylesVariable";
 
   export let src = "";

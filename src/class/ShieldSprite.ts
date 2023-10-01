@@ -1,4 +1,4 @@
-import { points } from "@/point";
+import { points } from "core/point";
 import spriteSrc from "images/shield.png";
 
 import { Frame } from "./Frame";

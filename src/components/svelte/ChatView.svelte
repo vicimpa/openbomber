@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { FDate } from "@/FDate";
-  import type { TChatInfo } from "@/types";
+  import { FDate } from "core/FDate";
+  import type { TChatInfo } from "shared/types";
   import { ChatEvent } from "class/ChatEvent";
   import { onMount } from "svelte";
 

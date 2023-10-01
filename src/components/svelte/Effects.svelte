@@ -1,9 +1,9 @@
 <script lang="ts">
   import achivmentSrc from "images/bonus.png";
-  import type { TProtoOut } from "@/Proto";
-  import { ReactiveMap } from "@/ReactiveMap";
-  import type { PLAYER_INFO, REMAINING_EFFECTS } from "@/api";
-  import { ACHIVMEN_DESCRIPTION, EAchivment } from "@/types";
+  import type { TProtoOut } from "core/Proto";
+  import { ReactiveMap } from "core/ReactiveMap";
+  import type { PLAYER_INFO, REMAINING_EFFECTS } from "shared/api";
+  import { ACHIVMEN_DESCRIPTION, EAchivment } from "shared/types";
   import Frame from "./Frame.svelte";
 
   export let effects: TProtoOut<typeof REMAINING_EFFECTS> | null = null;

@@ -8,6 +8,7 @@
   }>();
 </script>
 
+<!-- svelte-ignore a11y-no-static-element-interactions -->
 <div
   on:mousedown={() => {
     !disabled && dispatch("click");

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Vec2 } from "@/Vec2";
+  import { Vec2 } from "core/Vec2";
   import { showDebug } from "data/debug";
   import { makeController, makeVectorController } from "library/makeController";
   import { onFrame } from "library/onFrame";
