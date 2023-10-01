@@ -9,9 +9,12 @@
     "experimentalDecorators": true,
     "verbatimModuleSyntax": true,
     "strict": true,
-    "noEmit": false,
+    "noEmit": true,
   },
   "include": [
+    "./core",
+    "./server",
+    "./shared",
     "./vite.config.ts"
   ]
 }
