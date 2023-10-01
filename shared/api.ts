@@ -63,7 +63,7 @@ export const PLAYER_POSITION = new Proto({
 export const PLAYER_INFO = new Proto({
   id: 'uint32',
   name: 'string',
-  color: 'uint8',
+  skin: 'uint8',
   inGame: 'boolean',
   isDeath: 'boolean',
   canJoin: 'boolean',

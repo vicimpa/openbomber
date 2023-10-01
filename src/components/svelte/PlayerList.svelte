@@ -27,7 +27,7 @@
   {#each [...leavePlayers, ...deathPlayers] as player}
     <li data-death={player.isDeath} data-me={player === current}>
       <div class="player">
-        <Frame src={spriteSrc} x={1} y={player.color} />
+        <Frame src={spriteSrc} x={1} y={player.skin} />
       </div>
       <span class="name">
         {player.name || "noname"}

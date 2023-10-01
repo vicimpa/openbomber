@@ -10,6 +10,7 @@ import { pick } from "../../core/pick";
 import { Vec2 } from "../../core/Vec2";
 import { gameApi, playerApi } from "../../shared/api";
 import {
+  CUSTOM_SKINS_COUNT,
   MESSAGE_LENGTH,
   NICK_LENGTH,
   PLAYER_TIMEOUT,
@@ -64,10 +65,11 @@ export class Player extends Entity {
   startPosition?: Vec2 | undefined;
 
   name = '';
-  #color = 0;
+  #skin = 0;
+  #customSkin = -1;
 
-  get color() { return this.isCat ? 52 : this.#color; }
-  set color(v) { this.#color = v; }
+  get skin() { return this.#customSkin >= 0 ? SKINS_COUNT + this.#customSkin : this.#skin; }
+  set skin(v) { this.#skin = v; }
 
   get effects() {
     return {
@@ -86,7 +88,6 @@ export class Player extends Entity {
   lastTestPing = 0;
   reconnect = 0;
   warningPing = 0;
-  isCat = false;
 
   lastAction = Date.now();
   lastMessage = Date.now() - TIMEOUT_MESSAGE;
@@ -129,7 +130,7 @@ export class Player extends Entity {
     return pick(this, [
       'id',
       'name',
-      'color',
+      'skin',
       'inGame',
       'isDeath',
       'canJoin',
@@ -137,7 +138,6 @@ export class Player extends Entity {
       'kills',
       'deaths',
       'effects',
-      'color',
       'ping',
       'isAdmin',
     ]);
@@ -146,7 +146,7 @@ export class Player extends Entity {
   get chatInfo() {
     return pick(this, [
       'name',
-      'color',
+      'skin',
       'inGame',
       'isDeath'
     ]);
@@ -200,8 +200,14 @@ export class Player extends Entity {
         let output = '';
 
         switch (cmd) {
-          case 'cat': {
-            this.isCat = true;
+          case 'skin': {
+            const [customSkin = '-1'] = args;
+            if (isNaN(+customSkin)) {
+              output += 'Неверный параметр скина!';
+              break;
+            }
+
+            this.#customSkin = rem(+customSkin | 0, CUSTOM_SKINS_COUNT);
             break;
           }
 
@@ -278,7 +284,7 @@ export class Player extends Entity {
     },
 
     setSkin: (skin) => {
-      this.color = rem(skin | 0, SKINS_COUNT);
+      this.skin = rem(skin | 0, SKINS_COUNT);
     },
 
     setBomb: () => {
@@ -337,7 +343,7 @@ export class Player extends Entity {
       this.kills = 0;
       this.deaths = 0;
       this.wins = 0;
-      this.isCat = false;
+      this.#customSkin = -1;
       this.inGame = true;
       this.lastConnect = Date.now();
       this.lastAction = Date.now();
@@ -349,9 +355,9 @@ export class Player extends Entity {
       if (!this.inGame) return;
       this.releasePosition();
       this.reconnect++;
-      this.color = -1;
+      this.skin = -1;
       this.inGame = false;
-      this.isCat = false;
+      this.#customSkin = -1;
       this.lastConnect = Date.now();
       this.lastAction = Date.now();
       this.game.message(`${this.name ?? 'noname'} отключился`);
@@ -364,7 +370,7 @@ export class Player extends Entity {
     this.isDeath = false;
     this.lastAction = Date.now();
     this.randomPosition();
-    this.isCat = false;
+    this.#customSkin = -1;
     this.moved = false;
     PlayerEffect.clearEffets(this);
 

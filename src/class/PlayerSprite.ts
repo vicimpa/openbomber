@@ -25,7 +25,8 @@ export class PlayerSprite extends Frame {
   id = -1;
   sprite = new Sprite(spriteSrc);
   speed = 150;
-  color = 0;
+  skin = 0;
+  customSkin = -1;
 
   dir = EDir.BOTTOM;
   animate = EAnimate.IDLE;
@@ -61,7 +62,7 @@ export class PlayerSprite extends Frame {
     const size = this.animate === EAnimate.IDLE ? 1 : list.length;
     const frame = ((time - this.startAnimate) / this.speed | 0) % size;
 
-    this.frame.set(list[frame].ctimes(1, this.color));
+    this.frame.set(list[frame].ctimes(1, this.skin));
   }
 
   render(camera: Camera): void {
