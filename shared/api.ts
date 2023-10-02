@@ -111,6 +111,7 @@ export const BOMB_INFO = new Proto({
   x: POSITION,
   y: POSITION,
   radius: 'uint16',
+  isMove: 'boolean',
   isCrazy: 'boolean',
   isRadio: 'boolean'
 });

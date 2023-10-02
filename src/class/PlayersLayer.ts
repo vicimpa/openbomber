@@ -36,10 +36,7 @@ export class PlayersLayer extends Entity {
         player.isMoving = !!info && info.effects.haveMove;
         player.isAdmin = !!info && info.isAdmin;
         player.moveSpeed = speed;
-        effectObject(this, 'pos', { x, y, dir, animate }, () => {
-          player.lastTime = time;
-          player.lastPos.set(player);
-        });
+        player.effect(x, y, dir, animate, time);
       },
       (player) => {
         player.delete();

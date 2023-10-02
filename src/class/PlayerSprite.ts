@@ -1,5 +1,6 @@
 import { OUT_FRAME } from "config";
 import { calcSpeed } from "core/calcSpeed";
+import { effectObject } from "core/effectObject";
 import { makeVec2Filter } from "core/makeVec2Filter";
 import { plus, point, points } from "core/point";
 import { debug } from "data/debug";
@@ -55,6 +56,13 @@ export class PlayerSprite extends Frame {
   name = '';
 
   startAnimate = 0;
+
+  effect(x: number, y: number, dir: EDir, animate: EAnimate, time: number) {
+    effectObject(this, 'pos', { x, y, dir, animate }, () => {
+      this.lastTime = time;
+      this.lastPos.set(x, y);
+    });
+  }
 
   update(dtime: number, time: number): void {
     if (this.animate !== this.previewAnimate) {

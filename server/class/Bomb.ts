@@ -26,6 +26,7 @@ export class Bomb extends Entity {
 
   isCrazy = false;
   isRadio = false;
+  get isMove() { return !!this.dir; }
 
   constructor(
     public player: Player
@@ -56,6 +57,7 @@ export class Bomb extends Entity {
       'id',
       'x',
       'y',
+      'isMove',
       'radius',
       'isCrazy',
       'isRadio',

@@ -21,10 +21,12 @@ export class BombsLayer extends Entity {
         new BombSprite()
           .appendTo(this)
       ),
-      ({ x, y, isCrazy, isRadio }, bomb) => {
+      ({ x, y, isCrazy, isRadio, isMove }, bomb) => {
         bomb.set(x, y).times(OUT_FRAME);
         bomb.isCrazy = isCrazy;
         bomb.isRadio = isRadio;
+        bomb.isMove = isMove;
+        bomb.effect(x, y, isMove, time);
       },
       (bomb) => {
         bomb.delete();
