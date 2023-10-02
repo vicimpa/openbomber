@@ -1,4 +1,5 @@
 import { OUT_FRAME } from "config";
+import { effectObject } from "core/effectObject";
 import { createUpdateDelete } from "library/createUpdateDelete";
 
 import { Entity } from "./Entity";
@@ -21,7 +22,7 @@ export class PlayersLayer extends Entity {
         new PlayerSprite()
           .appendTo(this)
       ),
-      ({ id, x, y, dir, animate, }, player) => {
+      ({ id, x, y, dir, animate, speed }, player) => {
         const info = this.game.players.get(id)!;
         player.set(x, y).times(OUT_FRAME);
         player.id = id;
@@ -34,6 +35,11 @@ export class PlayersLayer extends Entity {
         player.isCrazy = !!info && info.effects.crazy;
         player.isMoving = !!info && info.effects.haveMove;
         player.isAdmin = !!info && info.isAdmin;
+        player.moveSpeed = speed;
+        effectObject(this, 'pos', { x, y, dir, animate }, () => {
+          player.lastTime = time;
+          player.lastPos.set(player);
+        });
       },
       (player) => {
         player.delete();

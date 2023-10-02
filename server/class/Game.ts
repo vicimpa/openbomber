@@ -221,7 +221,7 @@ export class Game {
   async loop() {
     const tick = () => {
       if (this.running) {
-        setTimeout(tick, 1000 / 60);
+        setTimeout(tick, 1000 / 30);
       }
 
       const { players, playersCount } = this;

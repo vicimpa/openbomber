@@ -80,6 +80,10 @@ export class Player extends Entity {
     };
   }
 
+  get speed() {
+    return SpeedEffect.getValue(this);
+  }
+
   wins = 0;
   kills = 0;
   deaths = 0;
@@ -106,6 +110,7 @@ export class Player extends Entity {
         'id',
         'x',
         'y',
+        'speed',
         'dir',
         'animate',
       ]

@@ -66,6 +66,7 @@ export class Game extends Entity {
     if (this.currentPlayer && !this.currentPlayerSprite) {
       this.currentPlayerSprite = new PlayerSprite();
       this.currentPlayerSprite.appendTo(this);
+      this.currentPlayerSprite.isMe = true;
     }
 
     showDebug('Player', this.currentPlayer);

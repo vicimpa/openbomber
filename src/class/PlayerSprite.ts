@@ -1,8 +1,11 @@
 import { OUT_FRAME } from "config";
+import { calcSpeed } from "core/calcSpeed";
+import { makeVec2Filter } from "core/makeVec2Filter";
 import { plus, point, points } from "core/point";
+import { debug } from "data/debug";
 import { IS_DEV } from "env";
 import spriteSrc from "images/characters.png";
-import { EAnimate, EDir } from "shared/types";
+import { DIRECTIONS, EAnimate, EDir } from "shared/types";
 
 import { CrazyEffectSprite } from "./CrazyEffectSprite";
 import { FireSprite } from "./FireSprite";
@@ -43,6 +46,12 @@ export class PlayerSprite extends Frame {
   crazyEffect = new CrazyEffectSprite();
   movingAnimate = new MovingSprite();
 
+  moveSpeed = 0;
+  posFilter = makeVec2Filter(10);
+  lastPos = this.clone();
+  lastTime = 0;
+  isMe = false;
+
   name = '';
 
   startAnimate = 0;
@@ -63,6 +72,20 @@ export class PlayerSprite extends Frame {
     const frame = ((time - this.startAnimate) / this.speed | 0) % size;
 
     this.frame.set(list[frame].ctimes(1, this.skin));
+
+    if (!this.isMe && time - this.lastTime < 50) {
+      this.set(
+        this.posFilter(
+          DIRECTIONS[this.dir]
+            .ctimes(this.animate)
+            .normalize()
+            .times(OUT_FRAME)
+            .times(calcSpeed(time - this.lastTime, this.moveSpeed))
+            .plus(this.lastPos))
+      );
+    } else {
+      this.set(this.posFilter(this));
+    }
   }
 
   render(camera: Camera): void {

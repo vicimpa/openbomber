@@ -56,6 +56,7 @@ export const PLAYER_POSITION = new Proto({
   id: 'uint32',
   x: POSITION,
   y: POSITION,
+  speed: 'float32',
   dir: DIRECTION,
   animate: ANIMATION,
 });
