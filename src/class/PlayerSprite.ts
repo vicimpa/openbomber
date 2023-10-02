@@ -60,7 +60,7 @@ export class PlayerSprite extends Frame {
   effect(x: number, y: number, dir: EDir, animate: EAnimate, time: number) {
     effectObject(this, 'pos', { x, y, dir, animate }, () => {
       this.lastTime = time;
-      this.lastPos.set(x, y);
+      this.lastPos.set(this);
     });
   }
 
