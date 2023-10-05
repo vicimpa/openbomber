@@ -276,7 +276,7 @@ export class Game {
       effectObject(
         this,
         'restartGame',
-        playersCount && this.livePlayersCount <= +!!(playersCount - 1),
+        playersCount && this.livePlayersCount <= +!!(playersCount - 1) && !this.explodes.size && !this.bombs.size,
         (isRestart) => {
           if (isRestart) {
             logger.info("Wait restart", { timestamp: true });
@@ -290,7 +290,7 @@ export class Game {
         }
       );
 
-      if (this.isHaveWin && this.livePlayersCount < 2 && !this.explodes.size) {
+      if (this.isHaveWin && this.livePlayersCount < 2 && !this.explodes.size && !this.bombs.size) {
         const winPlayer = find(this.players, e => e.inGame && !e.isDeath);
         if (winPlayer) {
           winPlayer.wins++;

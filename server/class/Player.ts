@@ -298,7 +298,13 @@ export class Player extends Entity {
     },
 
     setBomb: () => {
-      if (this.game.waitForRestart !== -1 || this.isDeath || !this.inGame) return;
+      const { isHaveWin, livePlayersCount } = this.game;
+      if (false
+        || this.game.waitForRestart !== -1
+        || this.isDeath
+        || !this.inGame
+        || isHaveWin && livePlayersCount < 2
+      ) return;
 
       const { bombs, achivments } = this.game;
       const newBomb = new Bomb(this);
