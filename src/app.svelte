@@ -46,6 +46,8 @@
   let effects: TProtoOut<typeof REMAINING_EFFECTS> | null = null;
   let name = localStorage.getItem("name") || "";
   let localSkin = +(localStorage.getItem("skin") ?? -1);
+  let customSkin = +(localStorage.getItem("customSkin") ?? -1);
+
   let startScreen = !(localStorage.getItem(HOWTOPLAYKEY) ?? "");
   let selectSkin = localSkin < 0;
   let restartAfter = -1;
@@ -122,6 +124,9 @@
     if (localSkin >= 0 && localSkin < SKINS_COUNT) {
       newApi.setSkin(localSkin);
       localStorage.setItem("skin", localSkin + "");
+
+      newApi.setCustomSkin(customSkin);
+      localStorage.setItem("CustomSkin", customSkin + "");           
     }
   }
 </script>
