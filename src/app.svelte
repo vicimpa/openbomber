@@ -125,8 +125,9 @@
       newApi.setSkin(localSkin);
       localStorage.setItem("skin", localSkin + "");
 
-      newApi.setCustomSkin(customSkin);
-      localStorage.setItem("CustomSkin", customSkin + "");           
+      // work with IT 
+      // newApi.setCustomSkin(customSkin);
+      // localStorage.setItem("CustomSkin", customSkin + "");           
     }
   }
 </script>
