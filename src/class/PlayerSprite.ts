@@ -30,7 +30,7 @@ const FRAMES = {
 export class PlayerSprite extends Frame {
   id = -1;
   MainSprites = new Sprite(spriteSrc);
-  CostumSprites = new Sprite(CustomSpriteSrc);
+  CustumSprites = new Sprite(CustomSpriteSrc);
   sprite = this.MainSprites;
   speed = 150;
   skin = 0;
