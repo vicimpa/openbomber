@@ -213,6 +213,10 @@ export class Player extends Entity {
             this.#customSkin = 0;
             break;
           }
+          case 'grand': {
+            this.#customSkin = 9;
+            break;
+          }
 
           case 'skin': {
             const [customSkin = '0'] = args;
