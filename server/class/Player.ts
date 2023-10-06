@@ -298,12 +298,12 @@ export class Player extends Entity {
     },
 
     setBomb: () => {
-      const { isHaveWin, livePlayersCount } = this.game;
+      const { playersCount, livePlayersCount } = this.game;
       if (false
         || this.game.waitForRestart !== -1
         || this.isDeath
         || !this.inGame
-        || isHaveWin && livePlayersCount < 2
+        || (playersCount > 1 && livePlayersCount < 2)
       ) return;
 
       const { bombs, achivments } = this.game;
