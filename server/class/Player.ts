@@ -68,7 +68,7 @@ export class Player extends Entity {
   #skin = 0;
   #customSkin = -1;
 
-  get customSkin() { return this.#customSkin }
+  get customSkin() { return this.#customSkin; }
   set customSkin(v) { this.#skin = v; }
 
   // change for that ↑ ( when is Working )
@@ -140,6 +140,7 @@ export class Player extends Entity {
       'id',
       'name',
       'skin',
+      'customSkin',
       'inGame',
       'isDeath',
       'canJoin',
