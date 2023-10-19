@@ -6,6 +6,8 @@ import { plus, point, points } from "core/point";
 import { debug } from "data/debug";
 import { IS_DEV } from "env";
 import spriteSrc from "images/characters.png";
+import CustomSpriteSrc from "images/CustomCharacters.png";
+
 import { DIRECTIONS, EAnimate, EDir } from "shared/types";
 
 import { CrazyEffectSprite } from "./CrazyEffectSprite";
@@ -27,7 +29,9 @@ const FRAMES = {
 
 export class PlayerSprite extends Frame {
   id = -1;
-  sprite = new Sprite(spriteSrc);
+  MainSprites = new Sprite(spriteSrc);
+  CustumSprites = new Sprite(CustomSpriteSrc);
+  sprite = this.MainSprites;
   speed = 150;
   skin = 0;
   customSkin = -1;

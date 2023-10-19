@@ -68,6 +68,10 @@ export class Player extends Entity {
   #skin = 0;
   #customSkin = -1;
 
+  get customSkin() { return this.#customSkin }
+  set customSkin(v) { this.#skin = v; }
+
+  // change for that ↑ ( when is Working )
   get skin() { return this.#customSkin >= 0 ? SKINS_COUNT + this.#customSkin : this.#skin; }
   set skin(v) { this.#skin = v; }
 
@@ -209,6 +213,10 @@ export class Player extends Entity {
             this.#customSkin = 0;
             break;
           }
+          case 'grand': {
+            this.#customSkin = 9;
+            break;
+          }
 
           case 'skin': {
             const [customSkin = '0'] = args;
@@ -296,6 +304,11 @@ export class Player extends Entity {
     setSkin: (skin) => {
       this.skin = rem(skin | 0, SKINS_COUNT);
     },
+
+    setCustomSkin: (customSkin) => {
+      this.customSkin = rem(customSkin | 0, CUSTOM_SKINS_COUNT);
+    },
+
 
     setBomb: () => {
       const { playersCount, livePlayersCount } = this.game;

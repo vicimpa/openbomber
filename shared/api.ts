@@ -65,6 +65,7 @@ export const PLAYER_INFO = new Proto({
   id: 'uint32',
   name: 'string',
   skin: 'uint8',
+  customSkin: 'uint8',
   inGame: 'boolean',
   isDeath: 'boolean',
   canJoin: 'boolean',
@@ -142,6 +143,7 @@ export const gameApi = makeWebSocketApi({
   toLeave: {},
   sendMessage: { input: 'string' },
   setSkin: { input: 'uint8' },
+  setCustomSkin: { input: 'uint8' },
   ping: {},
 });
 
