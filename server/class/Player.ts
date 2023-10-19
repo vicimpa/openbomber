@@ -283,7 +283,7 @@ export class Player extends Entity {
         }
 
         if (output)
-          this.newApi.onMessage({ message: output, sender: { name: 'cmd' }, isMe: true });
+          this.newApi.onMessage({ message: output, sender: { name: '@cmd' }, isMe: true });
 
         return;
       }
@@ -292,7 +292,7 @@ export class Player extends Entity {
       if (deltaTime > 0) {
         this.newApi.onMessage({
           message: `Сообщение можно отправить через ${deltaTime / 1000 | 0} сек.`,
-          sender: { name: 'server' },
+          sender: { name: '@server' },
           isMe: false
         });
         return;
@@ -350,6 +350,8 @@ export class Player extends Entity {
 
     setName: (name: string) => {
       if (!name) return;
+      if (name[0] === '@')
+        name = name.slice(1);
       this.name = name.slice(0, NICK_LENGTH);
     },
 
@@ -362,7 +364,7 @@ export class Player extends Entity {
       if (deltaTime > 0) {
         this.newApi.onMessage({
           message: `Подключитесь через ${deltaTime / 1000 | 0} сек.`,
-          sender: { name: 'server' },
+          sender: { name: '@server' },
           isMe: false
         });
         return;
@@ -505,7 +507,7 @@ export class Player extends Entity {
           this.newMethods.toLeave?.();
           this.newApi.onMessage({
             message: 'Вас кикнуло за высокий пинг',
-            sender: { name: 'server' },
+            sender: { name: '@server' },
             isMe: false
           });
         }

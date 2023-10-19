@@ -48,6 +48,12 @@
   let localSkin = +(localStorage.getItem("skin") ?? -1);
   let customSkin = +(localStorage.getItem("customSkin") ?? -1);
 
+  $: {
+    if (name[0] === "@") {
+      name = name.slice(1);
+    }
+  }
+
   let startScreen = !(localStorage.getItem(HOWTOPLAYKEY) ?? "");
   let selectSkin = localSkin < 0;
   let restartAfter = -1;
@@ -125,9 +131,9 @@
       newApi.setSkin(localSkin);
       localStorage.setItem("skin", localSkin + "");
 
-      // work with IT 
+      // work with IT
       // newApi.setCustomSkin(customSkin);
-      // localStorage.setItem("CustomSkin", customSkin + "");           
+      // localStorage.setItem("CustomSkin", customSkin + "");
     }
   }
 </script>

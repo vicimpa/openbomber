@@ -179,7 +179,7 @@ export class Game {
 
       player.newApi.onMessage({
         message,
-        sender: sender instanceof Player ? ({ name: sender.name }) : ({ name: 'server' }),
+        sender: sender instanceof Player ? ({ name: sender.name }) : ({ name: '@server' }),
         isMe: sender === player
       });
     }

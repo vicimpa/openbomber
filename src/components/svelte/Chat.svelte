@@ -6,12 +6,14 @@
   import type { TChatInfo } from "shared/types";
   import Button from "./Button.svelte";
   import { onFrame } from "library/onFrame";
+  import { slide } from "svelte/transition";
 
   let message: string = "";
   let isHide = false;
   let canSend = true;
   let lastMessage = 0;
 
+  const regex = /https?\:\/\/([\w\.\d]+\/?)+/gm;
   const format = FDate.makeFormat("hh:mm:ss DD.MM.YYYY");
 
   const dispatch = createEventDispatcher<{
@@ -38,6 +40,45 @@
     isMe: boolean;
     date: Date;
   }[] = [];
+
+  const elem = document.createElement("p");
+
+  function split(message: string) {
+    let m: RegExpExecArray | null;
+
+    const output: string[] = [];
+    const finds: { index: number; length: number }[] = [];
+
+    while ((m = regex.exec(message)) !== null) {
+      if (m.index === regex.lastIndex) {
+        regex.lastIndex++;
+      }
+
+      if (m) {
+        finds.push({ index: m.index, length: m[0].length });
+      }
+    }
+
+    let delta = 0;
+
+    for (const { index, length } of finds) {
+      let pre = message.slice(0, index - delta);
+      message = message.slice(index - delta);
+      delta += pre.length;
+      elem.innerText = pre;
+      output.push(`<span>${elem.innerText}</span>`);
+      let link = message.slice(index - delta, index - delta + length);
+      message = message.slice(index - delta + length);
+      delta += link.length;
+      output.push(
+        `<a style="color: #999" target="_blank" href="${link}">${link}</a>`
+      );
+    }
+
+    elem.innerText = message;
+    output.push(`<span>${elem.innerText}</span>`);
+    return output;
+  }
 
   onMount(() => {
     return ChatEvent.subscribe(({ player, message, isMe }) => {
@@ -71,8 +112,14 @@
             {format(date)}
           </span>
         </div>
-        <div class="message">
-          {message}
+        <div class="message p-{player.name === '@cmd' ? 'server' : 'player'}">
+          {#if player.name === "@cmd"}
+            {message}
+          {:else}
+            {#each split(message) as html}
+              <span>{@html html}</span>
+            {/each}
+          {/if}
         </div>
       </div>
     {/each}
@@ -139,10 +186,12 @@
 
         .message
           padding: 0px 10px
-          word-wrap: break-word
-          word-break: break-all
-          white-space: pre
           line-height: 16px
+
+          &.p-server
+            word-wrap: break-word
+            word-break: break-all
+            white-space: pre
           
 
     .input
