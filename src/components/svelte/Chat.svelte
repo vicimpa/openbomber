@@ -6,7 +6,6 @@
   import type { TChatInfo } from "shared/types";
   import Button from "./Button.svelte";
   import { onFrame } from "library/onFrame";
-  import { slide } from "svelte/transition";
 
   let message: string = "";
   let isHide = false;
@@ -46,8 +45,9 @@
   function split(message: string) {
     let m: RegExpExecArray | null;
 
-    const output: string[] = [];
-    const finds: { index: number; length: number }[] = [];
+    let newMessage = "";
+
+    let delta = 0;
 
     while ((m = regex.exec(message)) !== null) {
       if (m.index === regex.lastIndex) {
@@ -55,29 +55,25 @@
       }
 
       if (m) {
-        finds.push({ index: m.index, length: m[0].length });
+        const { index } = m;
+        const { length } = m[0];
+
+        const pre = message.slice(0, index - delta);
+        message = message.slice(index - delta);
+        delta += pre.length;
+        elem.innerText = pre;
+        newMessage += elem.innerText;
+
+        const link = message.slice(index - delta, index - delta + length);
+        message = message.slice(index - delta + length);
+        delta += link.length;
+        newMessage += `<a style="color: #999" target="_blank" href="${link}">${link}</a>`;
       }
     }
 
-    let delta = 0;
-
-    for (const { index, length } of finds) {
-      let pre = message.slice(0, index - delta);
-      message = message.slice(index - delta);
-      delta += pre.length;
-      elem.innerText = pre;
-      output.push(`<span>${elem.innerText}</span>`);
-      let link = message.slice(index - delta, index - delta + length);
-      message = message.slice(index - delta + length);
-      delta += link.length;
-      output.push(
-        `<a style="color: #999" target="_blank" href="${link}">${link}</a>`
-      );
-    }
-
     elem.innerText = message;
-    output.push(`<span>${elem.innerText}</span>`);
-    return output;
+    newMessage += elem.innerText;
+    return newMessage;
   }
 
   onMount(() => {
@@ -116,9 +112,7 @@
           {#if player.name === "@cmd"}
             {message}
           {:else}
-            {#each split(message) as html}
-              <span>{@html html}</span>
-            {/each}
+            {@html split(message)}
           {/if}
         </div>
       </div>
