@@ -46,7 +46,6 @@
   let effects: TProtoOut<typeof REMAINING_EFFECTS> | null = null;
   let name = localStorage.getItem("name") || "";
   let localSkin = +(localStorage.getItem("skin") ?? -1);
-  let customSkin = +(localStorage.getItem("customSkin") ?? -1);
 
   $: {
     if (name[0] === "@") {
