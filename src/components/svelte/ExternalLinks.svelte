@@ -1,14 +1,18 @@
 <script lang="ts">
   import Link from "./Link.svelte";
 
-  export let links: { href: string; name: string }[] = [];
+  export let links: {
+    href: string;
+    name: string;
+    icon?: string | undefined;
+  }[] = [];
 </script>
 
 <p>Ссылки:</p>
 <ul>
-  {#each links as { href, name }}
+  {#each links as { href, name, icon }}
     <li>
-      <Link url={href}>
+      <Link url={href} {icon}>
         {name}
       </Link>
     </li>

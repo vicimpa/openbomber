@@ -1,7 +1,9 @@
 <script lang="ts">
   export let url = "";
+  export let icon: string | undefined = undefined;
   const regExp = /^https?:\/\/([^\/]+)/;
 
+  console.log(icon);
   function getDomain(url: string) {
     const result = regExp.exec(url);
     if (!result) return null;
@@ -9,10 +11,11 @@
   }
 
   $: domain = getDomain(url);
+  $: iconUrl = icon ?? `//www.google.com/s2/favicons?domain=${domain}`;
 </script>
 
 <a target="_blank" href={url}>
-  <img src={`//www.google.com/s2/favicons?domain=${domain}`} alt="favicon" />
+  <img width="16" src={iconUrl} alt="⚡️" />
   <slot />
 </a>
 
