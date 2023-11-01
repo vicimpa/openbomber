@@ -13,7 +13,7 @@ export const EXTERNAL_LINKS = [
   },
   {
     href: 'https://discord.gg/hGEcsZ5',
-    name: 'Сервак программистов',
+    name: 'Сервак айтишников',
     icon: ptchbz
   },
   {
