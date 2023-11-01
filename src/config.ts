@@ -25,6 +25,10 @@ export const EXTERNAL_LINKS = [
     name: 'Группа игроков в TG',
   },
   {
+    href: 'https://www.youtube.com/@OpenBomber',
+    name: 'Наш YouTube'
+  },
+  {
     href: 'https://boosty.to/vic_dev',
     name: 'Поддержать на Boosty'
   }
