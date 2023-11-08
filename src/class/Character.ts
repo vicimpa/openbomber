@@ -7,6 +7,7 @@ import { Frame } from "./Frame";
 import { Sprite } from "./Sprite";
 
 import type { Camera } from "./Camera";
+
 export class Character extends Frame {
   sourceFrame = new Sprite(spriteMode);
 

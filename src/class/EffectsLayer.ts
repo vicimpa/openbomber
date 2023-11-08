@@ -5,6 +5,7 @@ import { EffectSprite } from "./EffectSprite";
 import { Entity } from "./Entity";
 
 import type { Game } from "./Game";
+
 export class EffectsLayer extends Entity {
   constructor(public game: Game) {
     super(0, 0);

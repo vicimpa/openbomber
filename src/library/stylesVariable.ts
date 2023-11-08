@@ -1,6 +1,7 @@
 export type TStylesVariable = {
   [key: string]: string | number | undefined | null;
 };
+
 export const stylesVariable = <T extends TStylesVariable>(obj: T) => {
   let outputString = '';
 

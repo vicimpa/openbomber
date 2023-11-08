@@ -3,7 +3,6 @@
   export let icon: string | undefined = undefined;
   const regExp = /^https?:\/\/([^\/]+)/;
 
-  console.log(icon);
   function getDomain(url: string) {
     const result = regExp.exec(url);
     if (!result) return null;

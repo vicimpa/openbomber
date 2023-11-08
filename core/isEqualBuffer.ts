@@ -7,4 +7,4 @@ export const isEqualBuffer = (buffer1: ArrayBuffer, buffer2: ArrayBuffer) => {
       return false;
 
   return true;
-};
+}; 

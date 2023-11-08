@@ -9,6 +9,7 @@ import { Sprite } from "./Sprite";
 
 import type { Camera } from "./Camera";
 import type { Vec2 } from "core/Vec2";
+
 const BASE = points('0,0;1,0;2,0;1,0');
 const CRAZY = points('0,1;1,1;2,1;1,1');
 const RADIO = points('0,2;1,2;2,2;1,2');

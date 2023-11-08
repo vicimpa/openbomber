@@ -7,7 +7,7 @@ export class SpeedEffect extends PlayerEffect {
   value = 1;
 
   onCreate(): void {
-    const {value, player: { newApi }} = this
+    const { value, player: { newApi } } = this;
 
     if (value > 1)
       newApi.playSound(ESounds.speedOn);
@@ -17,7 +17,7 @@ export class SpeedEffect extends PlayerEffect {
   }
 
   onDelete(): void {
-    const { value, player: { newApi } } = this
+    const { value, player: { newApi } } = this;
 
     if (value > 1)
       newApi.playSound(ESounds.speedOff);

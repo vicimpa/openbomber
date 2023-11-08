@@ -26,6 +26,7 @@ import type {
 
 import type { PlayerControllerNew } from "./PlayerControllerNew";
 import type { EAnimate, EDir } from "shared/types";
+
 export class Game extends Entity {
   mapLayer = new MapLayer(this);
   effectsLayer = new EffectsLayer(this);

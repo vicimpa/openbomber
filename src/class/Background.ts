@@ -1,13 +1,14 @@
-import { generatePerlinNoise } from "@vicimpa/perlin-noise";
 import { OUT_FRAME } from "config";
 import sprite from "images/world.png";
 import { EMapItem, MAP_ITEMS } from "shared/types";
 
+import { generatePerlinNoise } from "@vicimpa/perlin-noise";
+
 import { Entity } from "./Entity";
 import { Sprite } from "./Sprite";
 
-
 import type { Camera } from "./Camera";
+
 export class Background extends Entity {
   can = document.createElement('canvas');
   ctx = this.can.getContext('2d')!;

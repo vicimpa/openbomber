@@ -1,6 +1,7 @@
 import { OUT_FRAME } from "config";
 
 import type { Vec2 } from "core/Vec2";
+
 const CACHE = new Map<string | HTMLImageElement | HTMLCanvasElement, Sprite>();
 
 export class Sprite {

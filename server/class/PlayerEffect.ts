@@ -8,7 +8,7 @@ export class PlayerEffect {
   created = Date.now();
   lifetime = Infinity;
 
-  get remaining() { return this.created + this.lifetime - Date.now() }
+  get remaining() { return this.created + this.lifetime - Date.now(); }
 
   constructor(public player: Player) { }
 
@@ -22,7 +22,7 @@ export class PlayerEffect {
   update() {
     if (!this.isCreated) {
       this.isCreated = true;
-      this.onCreate()
+      this.onCreate();
     }
 
     if (!isFinite(this.lifetime)) return;
@@ -31,10 +31,10 @@ export class PlayerEffect {
   }
 
   delete() {
-    const result = PlayerEffect.effects(this.player).delete(this)
+    const result = PlayerEffect.effects(this.player).delete(this);
 
     if (result) {
-      this.onDelete()
+      this.onDelete();
     }
 
     return result;

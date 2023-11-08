@@ -5,7 +5,6 @@ import { EAnimate, EDir, EMapItem } from "shared/types";
 
 import { Game } from "./Game";
 
-
 export class PlayerControllerNew extends Vec2 {
   dir: EDir = EDir.BOTTOM;
   animate: EAnimate = EAnimate.IDLE;

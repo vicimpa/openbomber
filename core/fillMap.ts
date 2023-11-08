@@ -7,4 +7,4 @@ export const fillMap = (map: Uint8Array, width: number) => {
     if (x & 1 && y & 1)
       map[i] = 1;
   }
-};
+}; 

@@ -5,6 +5,7 @@ import { BombSprite } from "./BombSprite";
 import { Entity } from "./Entity";
 
 import type { Game } from "./Game";
+
 export class BombsLayer extends Entity {
   constructor(public game: Game) {
     super(0, 0);

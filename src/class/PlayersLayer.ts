@@ -6,6 +6,7 @@ import { Entity } from "./Entity";
 import { PlayerSprite } from "./PlayerSprite";
 
 import type { Game } from "./Game";
+
 export class PlayersLayer extends Entity {
   constructor(public game: Game) {
     super(0, 0);

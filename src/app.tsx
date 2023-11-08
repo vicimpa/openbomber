@@ -6,7 +6,6 @@ import { Panel } from "components/react/Panel";
 import { Profile } from "components/react/Profile";
 import { Sized } from "components/react/Sized";
 import { Typo } from "components/react/Typo";
-import { useCalc } from "hooks/useCalc";
 
 const SettingsMenu = makeMenu({
   main: m => (

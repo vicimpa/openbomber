@@ -10,14 +10,8 @@ import { pick } from "../../core/pick";
 import { Vec2 } from "../../core/Vec2";
 import { gameApi, playerApi } from "../../shared/api";
 import {
-  CUSTOM_SKINS_COUNT,
-  MESSAGE_LENGTH,
-  NICK_LENGTH,
-  PLAYER_TIMEOUT,
-  SKINS_COUNT,
-  TEST_ADMIN_IP,
-  TIMEOUT_MESSAGE,
-  TIMEOUT_RECONNECT,
+  CUSTOM_SKINS_COUNT, MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT, SKINS_COUNT, TEST_ADMIN_IP,
+  TIMEOUT_MESSAGE, TIMEOUT_RECONNECT
 } from "../../shared/config";
 import { DEATH_FRAMES, EAnimate, EDir, EEffect, EMapItem, ESounds } from "../../shared/types";
 import { getTime, setTime } from "../data/addressTime";

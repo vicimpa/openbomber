@@ -7,7 +7,6 @@ import { debug } from "data/debug";
 import { IS_DEV } from "env";
 import spriteSrc from "images/characters.png";
 import CustomSpriteSrc from "images/CustomCharacters.png";
-
 import { DIRECTIONS, EAnimate, EDir } from "shared/types";
 
 import { CrazyEffectSprite } from "./CrazyEffectSprite";
@@ -18,6 +17,7 @@ import { ShieldSprite } from "./ShieldSprite";
 import { Sprite } from "./Sprite";
 
 import type { Camera } from "./Camera";
+
 const BASE = points('1,1;0,1;1,1;2,1');
 
 const FRAMES = {
