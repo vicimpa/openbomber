@@ -1,5 +1,5 @@
 import { OUT_FRAME } from "config";
-import sprite from "images/world.png";
+import sprite from "images/Map/Tile.png";
 import { EMapItem, MAP_ITEMS } from "shared/types";
 
 import { generatePerlinNoise } from "@vicimpa/perlin-noise";
@@ -15,7 +15,7 @@ export class Background extends Entity {
 
   pattern?: CanvasPattern;
 
-  sprite = new Sprite(sprite, 16);
+  sprite = new Sprite(sprite, 32);
   points = [MAP_ITEMS[EMapItem.GRAS], MAP_ITEMS[EMapItem.SAND], MAP_ITEMS[EMapItem.CLEAR]];
   persent = [.2, .4];
 

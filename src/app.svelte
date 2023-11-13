@@ -82,16 +82,13 @@
         effects = newEffects;
       },
       playSoundPosition({ sound, position }) {
-        if (!cam || !gameInfo) return sounds[sound]?.play();
-        const delta = cam.cminus(
-          point(position)
-            .times(OUT_FRAME)
-            .minus(
-              point(gameInfo.width || gameInfo.height)
-                .times(OUT_FRAME)
-                .div(2)
-            )
-        );
+        if (!cam || !cam.focus || !gameInfo) return sounds[sound]?.play();
+        const p = point(position).times(OUT_FRAME);
+        const delta = cam
+          .cminus(cam.focus)
+          .minus(OUT_FRAME / 2)
+          .minus(p);
+
         sounds[sound].play(delta);
       },
       updatePlayers(newPlayers) {

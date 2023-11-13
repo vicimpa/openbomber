@@ -1,5 +1,4 @@
 import { OUT_FRAME } from "config";
-import { effectObject } from "core/effectObject";
 import { createUpdateDelete } from "library/createUpdateDelete";
 
 import { Entity } from "./Entity";
@@ -31,6 +30,7 @@ export class PlayersLayer extends Entity {
         player.animate = animate;
         player.name = !!info && info.name;
         player.skin = !!info && info.skin;
+        player.isSpeedUp = !!info && info.effects.speed > 1;
         player.isFire = !!info && info.effects.speed < 1;
         player.isShield = !!info && info.effects.haveShield;
         player.isCrazy = !!info && info.effects.crazy;

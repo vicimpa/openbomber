@@ -28,6 +28,7 @@ export class FocusCamera extends Camera {
 
       showDebug({ focusSize });
 
+
       const focusPlayer = focus.waitRestart === -1 ? (
         focus.currentPlayerSprite // ?? focus.focusPlayer
       ) : undefined;
@@ -99,6 +100,9 @@ export class FocusCamera extends Camera {
           this.width / (focusSize.x + this.padding)
         );
       }
+
+      const camGame = this.cminus(focus);
+      showDebug({ camGame });
     } else {
       this.need.set(this.cplus(dtime * .5, dtime * .3));
 

@@ -5,6 +5,7 @@
   import spriteSrc from "images/characters.png";
   import Button from "./Button.svelte";
   import { createEventDispatcher } from "svelte";
+  import { SPRITES } from "images/Heroes";
 
   export let selected: number | null = null;
 
@@ -22,7 +23,7 @@
       data-select={selected === skin}
     >
       <div class="scale">
-        <Frame src={spriteSrc} x={1} y={skin} />
+        <Frame src={SPRITES[skin]} s={0.6} padding={16} y={3} />
       </div>
     </div>
   {/each}

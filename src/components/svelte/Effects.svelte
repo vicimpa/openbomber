@@ -1,9 +1,13 @@
 <script lang="ts">
-  import achivmentSrc from "images/bonus.png";
+  import achivmentSrc from "images/Bonus/Ikonki.png";
   import type { TProtoOut } from "core/Proto";
   import { ReactiveMap } from "core/ReactiveMap";
-  import type { PLAYER_INFO, REMAINING_EFFECTS } from "shared/api";
-  import { ACHIVMEN_DESCRIPTION, EAchivment } from "shared/types";
+  import type { REMAINING_EFFECTS } from "shared/api";
+  import {
+    ACHIVMEN_DESCRIPTION,
+    ACHIVMEN_POINTS,
+    EAchivment,
+  } from "shared/types";
   import Frame from "./Frame.svelte";
 
   export let effects: TProtoOut<typeof REMAINING_EFFECTS> | null = null;
@@ -63,10 +67,16 @@
 </script>
 
 <div class="effects">
-  {#each [...$effectsList] as [type, remaining]}
+  {#each $effectsList.entries() as [type, remaining]}
     <div class="item" title={ACHIVMEN_DESCRIPTION[type]}>
       <div class="info">
-        <Frame s={2} src={achivmentSrc} x={type} />
+        <Frame
+          s={1}
+          size={32}
+          padding={16}
+          src={achivmentSrc}
+          frame={ACHIVMEN_POINTS[type]}
+        />
       </div>
       <span class="desc">{ACHIVMEN_DESCRIPTION[type]}</span>
       <span>

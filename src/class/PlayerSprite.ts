@@ -2,39 +2,44 @@ import { OUT_FRAME } from "config";
 import { calcSpeed } from "core/calcSpeed";
 import { effectObject } from "core/effectObject";
 import { makeVec2Filter } from "core/makeVec2Filter";
-import { plus, point, points } from "core/point";
-import { debug } from "data/debug";
+import { point, points } from "core/point";
+import { Vec2 } from "core/Vec2";
 import { IS_DEV } from "env";
-import spriteSrc from "images/characters.png";
-import CustomSpriteSrc from "images/CustomCharacters.png";
+import dust1Src from "images/Dust/Dust1.png";
+import dust2Src from "images/Dust/Dust2.png";
+import { SPRITES } from "images/Heroes/";
 import { DIRECTIONS, EAnimate, EDir } from "shared/types";
 
 import { CrazyEffectSprite } from "./CrazyEffectSprite";
+import { Entity } from "./Entity";
 import { FireSprite } from "./FireSprite";
-import { Frame } from "./Frame";
 import { MovingSprite } from "./MovingSprite";
 import { ShieldSprite } from "./ShieldSprite";
 import { Sprite } from "./Sprite";
 
 import type { Camera } from "./Camera";
+const IDLE = points('0,0;1,0;2,0;3,0');
+const RUNNING = points('0,0;1,0;2,0;3,0;4,0;5,0');
 
-const BASE = points('1,1;0,1;1,1;2,1');
+const sprites = SPRITES.map(e => new Sprite(e, 32, 16));
 
 const FRAMES = {
-  [EDir.TOP]: plus(BASE, point(9, 0)),
-  [EDir.LEFT]: plus(BASE, point(3, 0)),
-  [EDir.RIGHT]: plus(BASE, point(6, 0)),
-  [EDir.BOTTOM]: plus(BASE, point(0, 0)),
+  [EDir.TOP]: point(0, 5 * 3),
+  [EDir.LEFT]: point(0, 5 * 1),
+  [EDir.RIGHT]: point(0, 5 * 2),
+  [EDir.BOTTOM]: point(0, 5 * 0),
 };
 
-export class PlayerSprite extends Frame {
+export class PlayerSprite extends Entity {
   id = -1;
-  MainSprites = new Sprite(spriteSrc);
-  CustumSprites = new Sprite(CustomSpriteSrc);
-  sprite = this.MainSprites;
+  frame = new Vec2();
   speed = 150;
   skin = 0;
   customSkin = -1;
+
+  get sprite() { return sprites[this.skin] ?? sprites[0]; };
+  dust1 = new Sprite(dust1Src, 32, 16);
+  dust2 = new Sprite(dust2Src, 32, 16);
 
   dir = EDir.BOTTOM;
   animate = EAnimate.IDLE;
@@ -45,6 +50,7 @@ export class PlayerSprite extends Frame {
   isCrazy = false;
   isMoving = false;
   isAdmin = false;
+  isSpeedUp = false;
 
   fireAnimate = new FireSprite();
   shieldAnimate = new ShieldSprite();
@@ -79,11 +85,14 @@ export class PlayerSprite extends Frame {
     this.crazyEffect.update(dtime, time);
     this.movingAnimate.update(dtime, time);
 
-    const list = FRAMES[this.dir];
-    const size = this.animate === EAnimate.IDLE ? 1 : list.length;
-    const frame = ((time - this.startAnimate) / this.speed | 0) % size;
+    const speed = this.animate === EAnimate.IDLE ? 200 : 100;
+    const list = this.animate === EAnimate.IDLE ? IDLE : RUNNING;
+    const size = list.length;
+    const frame = ((time - this.startAnimate) / speed | 0) % size;
 
     this.frame.set(list[frame].ctimes(1, this.skin));
+    this.frame.plus(0, this.animate === EAnimate.IDLE ? 3 : 4);
+    this.frame.plus(FRAMES[this.dir]);
 
     if (!this.isMe && time - this.lastTime < 50) {
       this.set(
@@ -103,32 +112,40 @@ export class PlayerSprite extends Frame {
   render(camera: Camera): void {
     const { ctx } = camera;
 
+    if (this.isShield)
+      this.shieldAnimate.renderBack(camera);
+
     if (this.isFire)
-      this.fireAnimate.render(camera);
+      this.fireAnimate.renderBack(camera);
 
-    super.render(camera);
+    if (this.isSpeedUp)
+      this.dust1.render(ctx, this.frame);
 
+    this.sprite.render(ctx, this.frame);
 
-    if (this.name) {
-      ctx.globalAlpha = 0.6;
-      ctx.fillStyle = this.isAdmin ? '#f00' : '#fff';
-      ctx.font = this.isAdmin ? "bold 4px BetterVCR" : "normal 3px BetterVCR";
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(this.name, OUT_FRAME / 2, 0);
-      ctx.globalAlpha = 1;
-    }
-
-    if (this.isMoving)
-      this.movingAnimate.render(camera);
+    if (this.isSpeedUp)
+      this.dust2.render(ctx, this.frame);
 
     if (this.isShield)
       this.shieldAnimate.render(camera);
 
+    if (this.isFire)
+      this.fireAnimate.render(camera);
+
+    if (this.isMoving)
+      this.movingAnimate.render(camera);
+
     if (this.isCrazy)
       this.crazyEffect.render(camera);
 
-    // if (IS_DEV)
-    //   ctx.strokeRect(0, 0, OUT_FRAME, OUT_FRAME);
+    if (this.name) {
+      ctx.globalAlpha = 0.6;
+      ctx.fillStyle = this.isAdmin ? '#f00' : '#fff';
+      ctx.font = this.isAdmin ? "bold 5px BetterVCR" : "normal 4px BetterVCR";
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(this.name, OUT_FRAME / 2, -2);
+      ctx.globalAlpha = 1;
+    }
   }
 }

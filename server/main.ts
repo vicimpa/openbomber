@@ -43,7 +43,7 @@ export function game(server: Server) {
 
     const count = addresses.get(address) ?? 0;
 
-    if (count > MAX_ADDRESS_CONNECT) {
+    if (count > MAX_ADDRESS_CONNECT && !IS_DEV) {
       logger.info(`Address block ${address}`);
       api.addressBlock(MAX_ADDRESS_CONNECT);
       return;

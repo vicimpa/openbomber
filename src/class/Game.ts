@@ -99,6 +99,7 @@ export class Game extends Entity {
     }
 
     if (this.currentPlayerSprite && this.localInfo) {
+      this.currentPlayerSprite.isSpeedUp = this.localInfo.effects.speed > 1;
       this.currentPlayerSprite.isFire = this.localInfo.effects.speed < 1;
       this.currentPlayerSprite.isShield = this.localInfo.effects.haveShield;
       this.currentPlayerSprite.isCrazy = this.localInfo.effects.crazy;

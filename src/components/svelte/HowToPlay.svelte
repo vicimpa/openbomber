@@ -1,9 +1,12 @@
 <script lang="ts">
-  import achivmentSrc from "images/bonus.png";
+  import achivmentSrc from "images/Bonus/Ikonki.png";
   import { createEventDispatcher } from "svelte";
   import Button from "./Button.svelte";
-  import { ACHIVMEN_DESCRIPTION } from "shared/types";
-  import { point } from "core/point";
+  import {
+    ACHIVMEN_DESCRIPTION,
+    ACHIVMEN_POINTS,
+    EAchivment,
+  } from "shared/types";
   import Frame from "./Frame.svelte";
   import { MAX_PLAYERS } from "shared/config";
   import { EXTERNAL_LINKS } from "config";
@@ -11,9 +14,9 @@
 
   const boosts = [...Object.entries(ACHIVMEN_DESCRIPTION)].map(
     ([key, value]) => ({
-      key: +key,
+      key: +key as EAchivment,
       value,
-      frame: point(+key, 0),
+      frame: ACHIVMEN_POINTS[+key as EAchivment],
     })
   );
 
@@ -66,7 +69,10 @@
     <h3>Бусты</h3>
     <ul>
       {#each boosts as { key, frame, value }}
-        <li><Frame src={achivmentSrc} {frame} /> <small>{value}</small></li>
+        <li>
+          <Frame src={achivmentSrc} {frame} s={0.8} padding={16} />
+          <small>{value}</small>
+        </li>
       {/each}
     </ul>
 

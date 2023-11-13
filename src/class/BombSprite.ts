@@ -1,21 +1,27 @@
 import { effectObject } from "core/effectObject";
 import { makeVec2Filter } from "core/makeVec2Filter";
 import { point, points } from "core/point";
+import baseSpriteSrc from "images/Bomb/cammon bomb3.png";
+import radioSpriteSrc from "images/Bomb/distance bomb1.png";
+import crazySpriteSrc from "images/Bomb/random bomb.png";
 import spriteSrc from "images/bombs.png";
 
 import { CrazyEffectSprite } from "./CrazyEffectSprite";
-import { Frame } from "./Frame";
+import { FrameAnimation } from "./FrameAnimation";
 import { Sprite } from "./Sprite";
 
 import type { Camera } from "./Camera";
 import type { Vec2 } from "core/Vec2";
+const BASE = points('0,0;1,0;2,0;3,0');
 
-const BASE = points('0,0;1,0;2,0;1,0');
-const CRAZY = points('0,1;1,1;2,1;1,1');
-const RADIO = points('0,2;1,2;2,2;1,2');
+export class BombSprite extends FrameAnimation {
+  baseBomb = new Sprite(baseSpriteSrc, 32, 16);
+  crazyBomb = new Sprite(crazySpriteSrc, 32, 16);
+  radioBomb = new Sprite(radioSpriteSrc, 32, 16);
 
-export class BombSprite extends Frame {
-  sprite = new Sprite(spriteSrc);
+  sprite = this.baseBomb;
+  frames = BASE;
+
   speed = 150;
   isCrazy = false;
   isRadio = false;
@@ -51,15 +57,14 @@ export class BombSprite extends Frame {
   }
 
   update(dtime: number, time: number): void {
-    if (this.startAnimate === -1)
-      this.startAnimate = time;
+    if (this.isCrazy)
+      this.sprite = this.crazyBomb;
+    else if (this.isRadio)
+      this.sprite = this.radioBomb;
+    else
+      this.sprite = this.baseBomb;
 
-    const speed = this.isCrazy ? this.speed / 2 : this.speed;
-    const list = this.isRadio ? RADIO : this.isCrazy ? CRAZY : BASE;
-    const size = list.length;
-    const frame = ((time - this.startAnimate) / speed | 0) % size;
-
-    this.frame.set(list[frame]);
+    super.update(dtime, time);
     this.crazyEffect.update(dtime, time);
 
     if (this.dir && this.isMove) {

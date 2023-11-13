@@ -1,7 +1,7 @@
 import { OUT_FRAME } from "config";
 import { points } from "core/point";
+import spriteSrc from "images/Map/Tile.png";
 import wartingSrc from "images/warning.png";
-import spriteSrc from "images/world.png";
 import { EMapItem, MAP_ITEMS } from "shared/types";
 
 import { Entity } from "./Entity";
@@ -13,7 +13,7 @@ import type { Game } from "./Game";
 const WARNING_FRAMES = points('0,0;1,0;2,0;3,0;4,0;5,0');
 
 export class MapLayer extends Entity {
-  sprite = new Sprite(spriteSrc);
+  sprite = new Sprite(spriteSrc, 32);
   warning = new Sprite(wartingSrc);
 
   constructor(public game: Game) {

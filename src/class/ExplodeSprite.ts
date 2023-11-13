@@ -1,7 +1,7 @@
-import { plus, point, points } from "core/point";
+import { plus, points } from "core/point";
 import { toLimit } from "core/toLimit";
-import blockSrc from "images/destroyBlock2.png";
-import explodeSrc from "images/explode.png";
+import blockSrc from "images/DestroyBox/DestroyBox.png";
+import explodeSrc from "images/explode/explode.png";
 import { EExplodeDir, EXPODER_DIRS } from "shared/types";
 
 import { Frame } from "./Frame";
@@ -9,11 +9,11 @@ import { Sprite } from "./Sprite";
 
 import type { Camera } from "./Camera";
 
-const BASE = points("2,2;7,2;2,7;7,7");
+const BASE = points("12,2;22,2;27,2;27,2;27,2;27,2;32,2;37,2;42,2");
 const BLOCK = points("0,0;1,0;2,0;3,0;4,0;5,0;6,0;7,0;8,0");
 
 class BlockSprite extends Frame {
-  sprite = new Sprite(blockSrc);
+  sprite = new Sprite(blockSrc, 32, 16);
   speed = 50;
   startAnimate = -1;
 
@@ -30,9 +30,6 @@ class BlockSprite extends Frame {
 }
 
 export class ExplodeSprite extends Frame {
-  sprite = new Sprite(explodeSrc);
-  speed = 100;
-
   isFinaly = false;
   isBlock = false;
   dir = EExplodeDir.CENTER;
@@ -40,6 +37,10 @@ export class ExplodeSprite extends Frame {
   block?: BlockSprite;
 
   startAnimate = -1;
+
+  sprite = new Sprite(explodeSrc, 32, 0);
+  speed = 500 / BASE.length;
+  frames = plus(BASE, EXPODER_DIRS[this.dir], 1 + +this.isFinaly);
 
   update(dtime: number, time: number): void {
     if (this.startAnimate === -1)

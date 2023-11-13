@@ -16,11 +16,11 @@ export enum EMapItem {
 export const DEATH_FRAMES = points('0,0;0,1;0,2;0,3;0,4;0,5;0,6;0,7');
 
 export const MAP_ITEMS = {
-  [EMapItem.CLEAR]: point(0, 0),
-  [EMapItem.WALL]: point(2, 0),
-  [EMapItem.BLOCK]: point(2, 1),
-  [EMapItem.GRAS]: point(0, 1),
-  [EMapItem.SAND]: point(1, 0),
+  [EMapItem.CLEAR]: point(1, 3),
+  [EMapItem.WALL]: point(0, 3),
+  [EMapItem.BLOCK]: point(0, 4),
+  [EMapItem.GRAS]: point(1, 1),
+  [EMapItem.SAND]: point(1, 4),
   [EMapItem.WATER]: point(1, 1),
 };
 
@@ -65,26 +65,35 @@ export const DIRECTIONS = {
 export enum EAchivment {
   APPEND_BOMB,
   APPEND_EXPO,
-  ROLLERS,
   APPEND_SPEED,
+  RANDOM,
   APPEND_SHIELD,
   MOVING_BOMB,
   FIRE,
-  RANDOM,
   CRAZY_BOMB,
 }
+
+export const ACHIVMEN_POINTS = {
+  [EAchivment.APPEND_BOMB]: point(0, 0),
+  [EAchivment.APPEND_EXPO]: point(1, 0),
+  [EAchivment.APPEND_SPEED]: point(2, 0),
+  [EAchivment.RANDOM]: point(3, 0),
+  [EAchivment.APPEND_SHIELD]: point(4, 0),
+  [EAchivment.MOVING_BOMB]: point(5, 0),
+  [EAchivment.CRAZY_BOMB]: point(6, 0),
+  [EAchivment.FIRE]: point(7, 0),
+} as const;
 
 export const ACHIVMEN_DESCRIPTION = {
   [EAchivment.APPEND_BOMB]: "Дополнительная бомба",
   [EAchivment.APPEND_EXPO]: "Увеличение радиуса",
-  [EAchivment.ROLLERS]: "Эффект \"ролики\"",
   [EAchivment.APPEND_SPEED]: "Увеличение скорости",
+  [EAchivment.RANDOM]: "Случайный эффект",
   [EAchivment.APPEND_SHIELD]: "Щит, защищающий от взрыва",
   [EAchivment.MOVING_BOMB]: "Толкание бомбы",
+  [EAchivment.CRAZY_BOMB]: "Шальная (рандомная) бомба",
   [EAchivment.FIRE]: "Уменьшение скорости + огонь",
-  [EAchivment.RANDOM]: "Случайный эффект",
-  [EAchivment.CRAZY_BOMB]: "Шальная (рандомная) бомба"
-};
+} as const;
 
 export enum EEffect {
   DEATH,

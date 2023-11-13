@@ -1,6 +1,6 @@
 import ptchbz from "icons/ptchbz.png";
 
-export const OUT_FRAME = 16;
+export const OUT_FRAME = 32;
 export const HOWTOPLAYKEY = 'htp1';
 export const EXTERNAL_LINKS = [
   {

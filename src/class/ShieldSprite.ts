@@ -1,23 +1,21 @@
 import { points } from "core/point";
-import spriteSrc from "images/shield.png";
+import spriteSrc from "images/Shild/Shild1.png";
+import backSpriteSrc from "images/Shild/Shild2.png";
 
-import { Frame } from "./Frame";
+import { FrameAnimation } from "./FrameAnimation";
 import { Sprite } from "./Sprite";
 
-const FRAMES = points('0,0;1,0;2,0;3,0;4,0;5,0;6,0;7,0;8,0;9,0;10,0;11,0;12,0;13,0;14,0');
+import type { Camera } from "./Camera";
 
-export class ShieldSprite extends Frame {
-  sprite = new Sprite(spriteSrc);
-  speed = 100;
+const FRAMES = points('0,0;1,0;2,0;3,0;4,0;5,0;6,0');
 
-  startAnimate = -1;
+export class ShieldSprite extends FrameAnimation {
+  sprite = new Sprite(spriteSrc, 32, 16);
+  backSprite = new Sprite(backSpriteSrc, 32, 16);
+  speed = 140;
+  frames = FRAMES;
 
-  update(dtime: number, time: number): void {
-    if (this.startAnimate === -1)
-      this.startAnimate = time;
-
-    const frame = ((time - this.startAnimate) / this.speed | 0) % FRAMES.length;
-
-    this.frame.set(FRAMES[frame]);
+  renderBack({ ctx }: Camera): void {
+    this.backSprite.render(ctx, this.frame);
   }
 }

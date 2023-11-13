@@ -2,6 +2,7 @@
   import type { Player as TypePlayer } from "server/class/Player";
   import Frame from "./Frame.svelte";
   import spriteSrc from "images/characters.png";
+  import { SPRITES } from "images/Heroes";
 
   export let players: TypePlayer["info"][] = [];
   export let current: TypePlayer["info"] | null = null;
@@ -27,7 +28,7 @@
   {#each [...leavePlayers, ...deathPlayers] as player}
     <li data-death={player.isDeath} data-me={player === current}>
       <div class="player">
-        <Frame src={spriteSrc} x={1} y={player.skin} />
+        <Frame src={SPRITES[player.skin]} padding={16} s={0.8} y={3} />
       </div>
       <span class="name">
         {player.name || "noname"}
@@ -48,6 +49,9 @@
     width: 16px
     height: 16px
     transform: scale(1.5)
+    display: flex
+    align-items: center
+    justify-content: center
 
   .name
     flex-grow: 1
