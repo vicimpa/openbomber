@@ -31,7 +31,7 @@
   };
 
   const app = new Application(true);
-  const back = new Background(256, 256);
+  const back = new Background(128, 128);
 
   let game = new Game();
   export let cam: FocusCamera | undefined;
