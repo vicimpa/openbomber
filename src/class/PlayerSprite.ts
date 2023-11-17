@@ -38,6 +38,7 @@ export class PlayerSprite extends Entity {
   customSkin = -1;
 
   get sprite() { return sprites[this.skin] ?? sprites[0]; };
+
   dust1 = new Sprite(dust1Src, 32, 16);
   dust2 = new Sprite(dust2Src, 32, 16);
 

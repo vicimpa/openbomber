@@ -60,13 +60,9 @@ export class Player extends Entity {
 
   name = '';
   #skin = 0;
-  #customSkin = -1;
-
-  get customSkin() { return this.#customSkin; }
-  set customSkin(v) { this.#skin = v; }
 
   // change for that ↑ ( when is Working )
-  get skin() { return this.#customSkin >= 0 ? SKINS_COUNT + this.#customSkin : this.#skin; }
+  get skin() { return this.#skin; }
   set skin(v) { this.#skin = v; }
 
   get effects() {
@@ -134,7 +130,6 @@ export class Player extends Entity {
       'id',
       'name',
       'skin',
-      'customSkin',
       'inGame',
       'isDeath',
       'canJoin',
@@ -204,26 +199,6 @@ export class Player extends Entity {
         let output = '';
 
         switch (cmd) {
-          case 'cat': {
-            this.#customSkin = 0;
-            break;
-          }
-          case 'grand': {
-            this.#customSkin = 9;
-            break;
-          }
-
-          case 'skin': {
-            const [customSkin = '0'] = args;
-            if (isNaN(+customSkin)) {
-              output += 'Неверный параметр скина!';
-              break;
-            }
-
-            this.#customSkin = rem(+customSkin | 0, CUSTOM_SKINS_COUNT);
-            break;
-          }
-
           case 'ban': {
             if (!this.isAdmin) return;
 
@@ -300,11 +275,6 @@ export class Player extends Entity {
       this.skin = rem(skin | 0, SKINS_COUNT);
     },
 
-    setCustomSkin: (customSkin) => {
-      this.customSkin = rem(customSkin | 0, CUSTOM_SKINS_COUNT);
-    },
-
-
     setBomb: () => {
       const { playersCount, livePlayersCount } = this.game;
       if (false
@@ -369,7 +339,6 @@ export class Player extends Entity {
       this.kills = 0;
       this.deaths = 0;
       this.wins = 0;
-      this.#customSkin = -1;
       this.inGame = true;
       this.lastConnect = Date.now();
       this.lastAction = Date.now();
@@ -383,7 +352,6 @@ export class Player extends Entity {
       this.reconnect++;
       this.skin = -1;
       this.inGame = false;
-      this.#customSkin = -1;
       this.lastConnect = Date.now();
       this.lastAction = Date.now();
       this.game.message(`${this.name ?? 'noname'} отключился`);
@@ -396,7 +364,6 @@ export class Player extends Entity {
     this.isDeath = false;
     this.lastAction = Date.now();
     this.randomPosition();
-    this.#customSkin = -1;
     this.moved = false;
     PlayerEffect.clearEffets(this);
 
