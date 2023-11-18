@@ -16,12 +16,11 @@
 - случайный (Выдаёт случайный буст игроку.)
 
 ## Скриншоты
-![](screen/screen1.png)
-![](screen/screen2.png)
-![](screen/screen3.png)
-![](screen/screen4.png)
-![](screen/screen5.png)
-![](screen/screen6.png)
+![](screen/1.png)
+![](screen/2.png)
+![](screen/3.png)
+![](screen/4.png)
+![](screen/5.png)
 
 
 ## Для запуска 
