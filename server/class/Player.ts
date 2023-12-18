@@ -516,6 +516,10 @@ export class Player extends Entity {
 
     if (!this.isDeath && this.inGame && this.moved) {
       const vec = this.clone().round();
+
+      if (vec.x < 0 || vec.y < 0 || vec.x > this.game.map.width - 1 || vec.y > this.game.map.height - 1)
+        this.death();
+
       const value = this.game.map[vec.y * this.game.width + vec.x];
       if (value === EMapItem.WALL || value === EMapItem.BLOCK)
         this.death();
