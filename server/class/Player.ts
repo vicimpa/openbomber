@@ -11,7 +11,7 @@ import { Vec2 } from "../../core/Vec2";
 import { gameApi, playerApi } from "../../shared/api";
 import {
   CUSTOM_SKINS_COUNT, MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT, SKINS_COUNT, TEST_ADMIN_IP,
-  TIMEOUT_MESSAGE, TIMEOUT_RECONNECT
+  TIMEOUT_MESSAGE, TIMEOUT_NICKNAME, TIMEOUT_RECONNECT, TIMEOUT_SKIN
 } from "../../shared/config";
 import { DEATH_FRAMES, EAnimate, EDir, EEffect, EMapItem, ESounds } from "../../shared/types";
 import { getTime, setTime } from "../data/addressTime";
@@ -89,6 +89,9 @@ export class Player extends Entity {
 
   lastAction = Date.now();
   lastMessage = Date.now() - TIMEOUT_MESSAGE;
+  lastNick = Date.now() - TIMEOUT_NICKNAME;
+  lastSkin = Date.now() - TIMEOUT_SKIN;
+
   get lastConnect() {
     return getTime(this.address);
   }
@@ -163,6 +166,12 @@ export class Player extends Entity {
       this.newMethods.toGame?.();
   }
 
+  ban(time: number) {
+    this.newMethods.toLeave?.();
+    this.lastConnect = Date.now() + time - TIMEOUT_RECONNECT;
+    this.game.message(`Игрок ${this.name} был забанен на ${time / 1000 | 0} сек`);
+  }
+
   newMethods: Parameters<typeof gameApi['forward']>[1] = {
     setPosition: ({ x, y, dir, animate }) => {
       if (this.isDeath && !this.inGame) return;
@@ -214,9 +223,12 @@ export class Player extends Entity {
 
               for (const player of this.game.players) {
                 if (player.id === +id) {
-                  player.newMethods.toLeave?.();
-                  player.lastConnect = Date.now() + timeValue - TIMEOUT_RECONNECT;
-                  this.game.message(`Игрок ${player.name} был забанен на ${timeValue / 1000 | 0} сек`);
+                  for (const p of this.game.players) {
+                    if (p.address === player.address) {
+                      player.ban(timeValue);
+                    }
+                  }
+
                   break;
                 }
               }
@@ -272,6 +284,11 @@ export class Player extends Entity {
     },
 
     setSkin: (skin) => {
+      if (Date.now() - this.lastSkin < TIMEOUT_SKIN) {
+        this.ban(FDate.from('30m'));
+        return;
+      }
+      this.lastSkin = Date.now();
       this.skin = rem(skin | 0, SKINS_COUNT);
     },
 
@@ -316,6 +333,12 @@ export class Player extends Entity {
       if (!name) return;
       if (name[0] === '@')
         name = name.slice(1);
+
+      if (Date.now() - this.lastNick < TIMEOUT_NICKNAME) {
+        this.ban(FDate.from('30m'));
+        return;
+      }
+      this.lastNick = Date.now();
       this.name = name.slice(0, NICK_LENGTH);
     },
 
