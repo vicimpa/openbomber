@@ -167,6 +167,8 @@ export class Player extends Entity {
   }
 
   ban(time: number) {
+    if (!this.inGame)
+      return;
     this.newMethods.toLeave?.();
     this.lastConnect = Date.now() + time - TIMEOUT_RECONNECT;
     this.game.message(`Игрок ${this.name} был забанен на ${time / 1000 | 0} сек`);
