@@ -45,7 +45,7 @@ export const EFFECT_INFO = new Proto({
 export const GAME_INFO = new Proto({
   width: 'uint8',
   height: 'uint8',
-  winPlayerId: 'int8',
+  winPlayerId: 'uint32',
   playersCount: 'uint8',
   livePlayersCount: 'uint8',
   spectratorsCount: 'uint8',
