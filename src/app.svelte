@@ -122,7 +122,7 @@
     localStorage.setItem(HOWTOPLAYKEY, "1");
   }
 
-  $: if (info && info.skin !== localSkin) {
+  $: if (info && info.skin !== localSkin && !isOpenEditName) {
     if (localSkin >= 0 && localSkin < SKINS_COUNT) {
       newApi.setSkin(localSkin);
       localStorage.setItem("skin", localSkin + "");
