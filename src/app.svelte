@@ -113,7 +113,9 @@
     };
   });
 
-  $: if (info && info.name !== name) {
+  let editingName = false;
+
+  $: if (info && info.name !== name && !editingName) {
     newApi.setName(name);
     localStorage.setItem("name", name);
   }
@@ -122,7 +124,7 @@
     localStorage.setItem(HOWTOPLAYKEY, "1");
   }
 
-  $: if (info && info.skin !== localSkin && !isOpenEditName) {
+  $: if (info && info.skin !== localSkin) {
     if (localSkin >= 0 && localSkin < SKINS_COUNT) {
       newApi.setSkin(localSkin);
       localStorage.setItem("skin", localSkin + "");
@@ -142,7 +144,7 @@
       </div>
 
       <div class="item">
-        <EditName bind:name>
+        <EditName bind:name bind:editName={editingName}>
           <Button on:click={() => (selectSkin = true)}>Аватар</Button>
         </EditName>
       </div>
