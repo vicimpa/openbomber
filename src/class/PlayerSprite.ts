@@ -7,7 +7,7 @@ import { Vec2 } from "core/Vec2";
 import { IS_DEV } from "env";
 import dust1Src from "images/Dust/Dust1.png";
 import dust2Src from "images/Dust/Dust2.png";
-import { SPRITES } from "images/Heroes/";
+import { NewYear, SPRITES } from "images/Heroes/";
 import { DIRECTIONS, EAnimate, EDir } from "shared/types";
 
 import { CrazyEffectSprite } from "./CrazyEffectSprite";
@@ -36,6 +36,8 @@ export class PlayerSprite extends Entity {
   speed = 150;
   skin = 0;
   customSkin = -1;
+
+  cap = new Sprite(NewYear, 32, 16);
 
   get sprite() { return sprites[this.skin] ?? sprites[0]; };
 
@@ -123,6 +125,7 @@ export class PlayerSprite extends Entity {
       this.dust1.render(ctx, this.frame);
 
     this.sprite.render(ctx, this.frame);
+    this.cap.render(ctx, this.frame);
 
     if (this.isSpeedUp)
       this.dust2.render(ctx, this.frame);
