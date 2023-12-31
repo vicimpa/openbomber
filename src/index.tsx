@@ -1,4 +1,5 @@
 import "library/gamepads";
+import "library/music";
 
 import { AppReact } from "app";
 import { createRoot } from "react-dom/client";

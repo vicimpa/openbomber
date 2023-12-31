@@ -2,11 +2,9 @@ import { ESounds } from "shared/types";
 
 import type { Vec2 } from "core/Vec2";
 
-const audioCtx = new (AudioContext || (window as any)['webkitAudioContext']) as AudioContext;
+export const audioCtx = new (AudioContext || (window as any)['webkitAudioContext']) as AudioContext;
 export const gainNode = audioCtx.createGain();
-
-
-let connected = false;
+export let connected = false;
 
 addEventListener('mousedown', () => {
   connected = true;
