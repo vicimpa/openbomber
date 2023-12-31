@@ -11,7 +11,12 @@ const playlist = [
   '6.mp3',
   '7.mp3',
   '8.mp3',
-  '9.mp3'
+  '9.mp3',
+  '10.mp3',
+  '11.mp3',
+  '12.mp3',
+  '13.mp3',
+  '14.mp3'
 ];
 const audio = new Audio();
 const audioNode = audioCtx.createMediaElementSource(audio);
