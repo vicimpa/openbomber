@@ -21,11 +21,18 @@
     <meta property="og:url" content="https://openbomber.ru/">
     <meta property="og:description" content="OpenBomber.ru - бесплатная, OpenSource игра по мотивам знаменитого BomberMan прямиком из 80х. Заходи сам и приглашай друзей для того, чтобы создавать эпичные и незабываемые баталии. Игра абсолютно бесплатная и работает практически на любом устройстве.">
     <meta name="keywords" content="openbomber, open, bomber, online, game, multiplayer, 2023, @vic_dev, опенбомбер, опен, бомбер, онлайн, игра, играть, с друзьями, по сети, бесплатно, опенсорс, opensource, git">
+    <link rel="stylesheet" href="/styles/snow.min.css">
     <!-- head.html -->
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="index.tsx"></script>
+    <script src="/scripts/snow.min.js"></script>
+    <script>
+      new Snow ({
+        showSnowBalls: false,
+      });
+    </script>
     <!-- body.html -->
   </body>
 </html>
