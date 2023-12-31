@@ -2,8 +2,17 @@ import { delay } from "core/delay";
 
 import { audioCtx, connected, gainNode } from "./sounds";
 
-const data = import.meta.glob("/music/*.mp3");
-const playlist = Object.keys(data);
+const playlist = [
+  '1.mp3',
+  '2.mp3',
+  '3.mp3',
+  '4.mp3',
+  '5.mp3',
+  '6.mp3',
+  '7.mp3',
+  '8.mp3',
+  '9.mp3'
+];
 const audio = new Audio();
 const audioNode = audioCtx.createMediaElementSource(audio);
 
@@ -21,14 +30,7 @@ const main = async () => {
     current++;
     if (!playlist[current]) current = 0;
     localStorage.setItem('music', current + '');
-    const mod = data[playlist[current]];
-    await Promise.resolve()
-      .then(e => mod())
-      .then((e: any) => {
-        const { default: src } = e as any as { default: string; };
-        if (audio) audio.src = src;
-      });
-
+    audio.src = '/music/' + playlist[current];
     await audio.play().catch(() => { });
   }
 };

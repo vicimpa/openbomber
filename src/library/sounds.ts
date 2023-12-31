@@ -6,17 +6,16 @@ export const audioCtx = new (AudioContext || (window as any)['webkitAudioContext
 export const gainNode = audioCtx.createGain();
 export let connected = false;
 
-addEventListener('mousedown', () => {
+const connect = () => {
   connected = true;
-}, { once: true });
+  audioCtx.resume();
+};
 
-addEventListener('touchstart', () => {
-  connected = true;
-}, { once: true });
-
-addEventListener('keydown', () => {
-  connected = true;
-}, { once: true });
+addEventListener('mousedown', connect, { once: true });
+addEventListener('touchstart', connect, { once: true });
+addEventListener('keydown', connect, { once: true });
+addEventListener('mousemove', connect, { once: true });
+addEventListener('focus', connect, { once: true });
 
 export class Sound {
   #buffer!: AudioBuffer;
