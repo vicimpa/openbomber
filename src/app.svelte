@@ -115,7 +115,7 @@
 
   let editingName = false;
 
-  $: if (info && info.name !== name && !editingName) {
+  $: if (info && info.name !== name && !editingName && !isOpenEditName) {
     newApi.setName(name);
     localStorage.setItem("name", name);
   }

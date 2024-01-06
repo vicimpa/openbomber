@@ -1,10 +1,11 @@
-import { svelte } from "@sveltejs/vite-plugin-svelte";
-import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
 import commonjs from "vite-plugin-commonjs";
 import glsl from "vite-plugin-glsl";
 import { viteSingleFile } from "vite-plugin-singlefile";
 import paths from "vite-tsconfig-paths";
+
+import { svelte } from "@sveltejs/vite-plugin-svelte";
+import react from "@vitejs/plugin-react-swc";
 
 import { webSocketServer } from "./server/server";
 
