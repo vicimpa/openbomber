@@ -37,7 +37,7 @@ export class PlayerSprite extends Entity {
   skin = 0;
   customSkin = -1;
 
-  cap = new Sprite(NewYear, 32, 16);
+  // cap = new Sprite(NewYear, 32, 16);
 
   get sprite() { return sprites[this.skin] ?? sprites[0]; };
 
@@ -125,7 +125,7 @@ export class PlayerSprite extends Entity {
       this.dust1.render(ctx, this.frame);
 
     this.sprite.render(ctx, this.frame);
-    this.cap.render(ctx, this.frame);
+    // this.cap.render(ctx, this.frame);
 
     if (this.isSpeedUp)
       this.dust2.render(ctx, this.frame);
