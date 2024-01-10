@@ -6,7 +6,8 @@
   <slot />
 </div>
 
-<style lang="sass">
-  div
-    display: contents
+<style lang="scss">
+  div {
+    display: contents;
+  }
 </style>

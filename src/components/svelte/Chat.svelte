@@ -131,74 +131,80 @@
   </div>
 </div>
 
-<style lang="sass">
-  .header
-    display: flex
-    justify-content: space-between
+<style lang="scss">
+  .header {
+    display: flex;
+    justify-content: space-between;
+  }
+  .chat {
+    flex-grow: 1;
+    position: relative;
 
-  .chat
-    flex-grow: 1
-    position: relative
-    
-    .list[data-hide="true"] .item
-      filter: blur(5px)
+    .list[data-hide="true"] .item {
+      filter: blur(5px);
+    }
+    .list {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-grow: 1;
+      overflow-y: scroll;
+      flex-direction: column-reverse;
+      gap: 20px;
+      padding-bottom: 30px;
 
-    .list
-      position: absolute
-      top: 0
-      left: 0
-      right: 0
-      bottom: 0
-      display: flex
-      flex-grow: 1
-      overflow-y: scroll
-      flex-direction: column-reverse
-      gap: 20px
-      padding-bottom: 30px
+      .item {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        align-items: flex-end;
+        padding: 10px;
+        border-radius: 10px;
 
-      .item
-        display: flex
-        flex-direction: column
-        gap: 5px
-        align-items: flex-end
-        padding: 10px
-        border-radius: 10px
+        margin-right: 10px;
 
-        margin-right: 10px
 
-        
-        &[data-isme="true"]
-          align-items: flex-start
-          background-color: rgba(100,100,100,0.3)
+        &[data-isme="true"] {
+          align-items: flex-start;
+          background-color: rgba(100,100,100,0.3);
+        }
+        .name {
+          display: flex;
+          gap: 10px;
+          font-size: 10px;
+          .date {
+            font-size: 8px;
+          }
+        }
+        .message {
+          padding: 0px 10px;
+          line-height: 16px;
 
-        .name
-          display: flex
-          gap: 10px
-          font-size: 10px
-          .date
-            font-size: 8px
+          &.p-server {
+            word-wrap: break-word;
+            word-break: break-all;
+            white-space: pre;
+          }
+        }
+      }
+    }
+    .input {
+      display: flex;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
 
-        .message
-          padding: 0px 10px
-          line-height: 16px
-
-          &.p-server
-            word-wrap: break-word
-            word-break: break-all
-            white-space: pre
-          
-
-    .input
-      display: flex
-      position: absolute
-      bottom: 0
-      left: 0
-      right: 0
-      
-      &[data-cansend="false"]
-        box-shadow: 0 0 10px red
-
-      input
-        outline: none
-        flex-grow: 1
+      &[data-cansend="false"] {
+        box-shadow: 0 0 10px red;
+      }
+      input {
+        outline: none;
+        flex-grow: 1;
+      }
+    }
+  }
 </style>

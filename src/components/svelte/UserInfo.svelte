@@ -55,37 +55,39 @@
   </div>
 {/if}
 
-<style lang="sass">
-  .debug
-    position: absolute
-    top: 10px
-    left: 30px
-    z-index: 1
-    font-size: 8px
-    display: flex
-    gap: 5px
-    flex-direction: column
-
-  .header, .footer
-    display: flex
-    padding: 0px 10px
-    background-color: rgba(0,0,0,0.5)
-    justify-content: center
-    align-items: center
-    gap: 20px
-    position: absolute
-    padding: 10px
-    z-index: 1
-    backdrop-filter: blur(5px)
-    -webkit-backdrop-filter: blur(5px)
-    user-select: none
-
-  .header
-    top: 0
-    border-radius: 0 0 10px 10px
-
-  .footer
-    bottom: 0
-    z-index: 2
-    border-radius: 10px 10px 0 0
+<style lang="scss">
+  .debug {
+    position: absolute;
+    top: 10px;
+    left: 30px;
+    z-index: 1;
+    font-size: 8px;
+    display: flex;
+    gap: 5px;
+    flex-direction: column;
+  }
+  .header,
+  .footer {
+    display: flex;
+    padding: 0px 10px;
+    background-color: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    position: absolute;
+    padding: 10px;
+    z-index: 1;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    user-select: none;
+  }
+  .header {
+    top: 0;
+    border-radius: 0 0 10px 10px;
+  }
+  .footer {
+    bottom: 0;
+    z-index: 2;
+    border-radius: 10px 10px 0 0;
+  }
 </style>

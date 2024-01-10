@@ -208,60 +208,64 @@
   {/if}
 </div>
 
-<style lang="sass">
-  .touch
-    z-index: 1
-    font-size: 30px
-    position: absolute
-    top: 0
-    left: 0
-    right: 0
-    bottom: 0
-    user-select: none
-    -webkit-user-select: none
-    background-color: rgba(0,0,0,0.01)
+<style lang="scss">
+  .touch {
+    z-index: 1;
+    font-size: 30px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    background-color: rgba(0,0,0,0.01);
 
-    *
-      user-select: none
-      -webkit-user-select: none
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    $axis: 120px;
+    $point: 30px;
 
-    $axis: 120px
-    $point: 30px
+    .axis,
+    .bomb,
+    .point {
+      position: absolute;
+      background-color: rgb(100,100,100);
+      opacity: 0.5;
+      border-radius: 100%;
+    }
+    .axis {
+      width: $axis;
+      height: $axis;
+      top: calc(100% - 50px - $axis);
+      left: calc(50px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.3s;
 
-    .axis, .bomb, .point
-      position: absolute
-      background-color: rgb(100,100,100)
-      opacity: 0.5
-      border-radius: 100%
-
-    .axis
-      width: $axis
-      height: $axis
-      top: calc(100% - 50px - $axis)
-      left: calc(50px)
-      display: flex
-      align-items: center
-      justify-content: center
-      transition: opacity 0.3s
-
-      &[data-show="false"]
-        opacity: .4
-
-      .point
-        opacity: .6
-        width: $point
-        height: $point
-        position: relative
-        background-color: #fff
-        
-
-    .bomb
-      width: 80px
-      height: 80px
-      display: flex
-      align-items: center
-      justify-content: center
-      font-size: 40px
-      bottom: 70px
-      right: 70px
+      &[data-show="false"] {
+        opacity: .4;
+      }
+      .point {
+        opacity: .6;
+        width: $point;
+        height: $point;
+        position: relative;
+        background-color: #fff;
+      }
+    }
+    .bomb {
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      bottom: 70px;
+      right: 70px;
+    }
+  }
 </style>

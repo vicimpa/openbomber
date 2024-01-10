@@ -24,7 +24,7 @@
   <slot />
 </p>
 
-<style>
+<style lang="scss">
   p {
     display: flex;
     gap: 2px;

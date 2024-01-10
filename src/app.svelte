@@ -270,108 +270,114 @@
   </div>
 </div>
 
-<style lang="sass">
-  .ui 
-    width: 100%
-    height: 100%
-    display: flex
+<style lang="scss">
+.ui {
+  width: 100%;
+  height: 100%;
+  display: flex;
 
-    $side: 370px
+  $side: 370px;
 
-    .side
-      background-color: rgba(11, 10, 45,0.7) 
-      box-shadow: 0 0 10px #000
-      padding: 0px
-      width: $side
-      display: flex
-      flex-direction: column
-      gap: 20px
-      font-size: 12px
-      position: absolute
-      top: 0
-      bottom: 0
-      z-index: 2
-      transition: transform 0.3s
-      backdrop-filter: blur(10px)
-      -webkit-backdrop-filter: blur(10px)
-      z-index: 11
-      user-select: none
+  .side {
+    background-color: rgba(11, 10, 45,0.7);
+    box-shadow: 0 0 10px #000;
+    padding: 0px;
+    width: $side;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    font-size: 12px;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 2;
+    transition: transform 0.3s;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 11;
+    user-select: none;
 
-      .scroll
-        display: flex
-        flex-direction: column
-        flex-grow: 1
-        overflow-y: scroll
+    .scroll {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      overflow-y: scroll;
+    }
+    &:after {
+      display: block;
+      position: absolute;
+      width: 30px;
+      height: 100px;
+      top: 0;
+      bottom: 0;
+      margin: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(100,100,100, 0.5);
+      border-radius: 100px;
+      font-size: 20px;
+    }
+    &.left {
+      left: 0;
+      transform: translateX(-$side + 15px);
 
-      &:after
-        display: block
-        position: absolute
-        width: 30px
-        height: 100px
-        top: 0
-        bottom: 0
-        margin: auto
-        display: flex
-        align-items: center
-        justify-content: center
-        background-color: rgba(100,100,100, 0.5)
-        border-radius: 100px
-        font-size: 20px
+      &:after {
+        content: '🕹️';
+        right: -15px;
+      }
+    }
+    &.right {
+      right: 0;
+      transform: translateX($side - 15px);
 
-      &.left
-        left: 0
-        transform: translateX(-$side + 15px)
+      &:after {
+        content: '💬';
+        left: -15px;
+      }
+    }
+    &:hover {
+      transform: translateX(0);
+    }
+    .item {
+      background-color: rgba(0,0,0,0.3);
+      padding: 10px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+  .container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    justify-content: center;
+    align-items: center;
 
-        &:after
-          content: '🕹️'
-          right: -15px
-
-      &.right
-        right: 0
-        transform: translateX($side - 15px)
-
-        &:after
-          content: '💬'
-          left: -15px 
-
-      &:hover
-        transform: translateX(0)
-
-      .item
-        background-color: rgba(0,0,0,0.3)
-        padding: 10px
-        position: relative
-        display: flex
-        flex-direction: column
-
-    .container
-      flex-grow: 1
-      display: flex
-      flex-direction: column
-      position: relative
-      justify-content: center
-      align-items: center
-
-      .restart
-        position: absolute
-        margin: auto
-        background-color: rgba(0,0,0,.7)
-        backdrop-filter: blur(10px)
-        -webkit-backdrop-filter: blur(10px)
-        padding: 20px 50px
-        font-size: 30px
-        z-index: 1
-        display: flex
-        flex-direction: column
-        align-items: center
-        gap: 20px
-        z-index: 12
-
-      .restart-back
-        position: absolute
-        top: 0
-        left: 0
-        right: 0
-        bottom: 0
-        z-index: 1
+    .restart {
+      position: absolute;
+      margin: auto;
+      background-color: rgba(0,0,0,.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 20px 50px;
+      font-size: 30px;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      z-index: 12;
+    }
+    .restart-back {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1;
+    }
+  }
+}
 </style>

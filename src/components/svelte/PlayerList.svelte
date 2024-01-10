@@ -43,68 +43,72 @@
   {/each}
 </ul>
 
-<style lang="sass">
-  .player
-    position: relative
-    width: 16px
-    height: 16px
-    transform: scale(1.5)
-    display: flex
-    align-items: center
-    justify-content: center
+<style lang="scss">
+  .player {
+    position: relative;
+    width: 16px;
+    height: 16px;
+    transform: scale(1.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .name {
+    flex-grow: 1;
+    font-size: 12px;
+  }
+  ul,
+  li {
+    padding: 0px;
+    margin: 0;
+    list-style: none;
+  }
+  ul {
+    padding: 10px 0px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  li {
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 10px;
+    padding: 10px 15px;
+    background-color: rgba(0,0,0,0.2);
 
-  .name
-    flex-grow: 1
-    font-size: 12px
-    
-  ul, li
-    padding: 0px 
-    margin: 0
-    list-style: none
+    .stats {
+      display: flex;
+      gap: 10px;
 
-  ul
-    padding: 10px 0px
-    display: flex
-    flex-direction: column
-    gap: 5px
-  
-  li
-    display: flex
-    gap: 10px
-    justify-content: space-between
-    align-items: center
-    border-radius: 10px
-    padding: 10px 15px
-    background-color: rgba(0,0,0,0.2)
+      .stat {
+        transform: scale(1.4);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        height: 30px;
 
-    .stats
-      display: flex
-      gap: 10px
-
-      .stat
-        transform: scale(1.4)
-        display: flex
-        flex-direction: column
-        align-items: center
-        justify-content: center
-        flex-wrap: wrap
-        height: 30px
-
-        b
-          color: #fff
-
-    &[data-me="true"]
-      background-color: rgba(255,255,255,0.1)
-
-    small
-      gap: 3px
-      display: flex
-      font-size: 9px
-
-
-  li[data-death="true"]
-    color: red
-
-  li[data-death="false"]
-    color: green
+        b {
+          color: #fff;
+        }
+      }
+    }
+    &[data-me="true"] {
+      background-color: rgba(255,255,255,0.1);
+    }
+    small {
+      gap: 3px;
+      display: flex;
+      font-size: 9px;
+    }
+  }
+  li[data-death="true"] {
+    color: red;
+  }
+  li[data-death="false"] {
+    color: green;
+  }
 </style>

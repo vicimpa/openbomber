@@ -66,35 +66,38 @@
   <Button on:click={() => change(+step)}>+</Button>
 </div>
 
-<style lang="sass">
-  .header
-    display: flex
-    justify-content: space-between
-    margin-bottom: 5px
+<style lang="scss">
+  .header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+  }
+  .container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    user-select: none;
 
-  .container
-    display: flex
-    gap: 10px
-    align-items: center
-    user-select: none
+    .volume {
+      display: flex;
+      justify-content: center;
+      flex-grow: 1;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      user-select: none;
 
-    .volume
-      display: flex
-      justify-content: center
-      flex-grow: 1
-      text-align: center
-      cursor: pointer
-      position: relative
-      user-select: none
-
-      .slider
-        position: absolute
-        top: 0
-        left: 0
-        bottom: 0
-        width: var(--w)
-        background-color: rgba(255,255,255,0.3)
-
-      span
-        z-index: 2
+      .slider {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: var(--w);
+        background-color: rgba(255,255,255,0.3);
+      }
+      span {
+        z-index: 2;
+      }
+    }
+  }
 </style>

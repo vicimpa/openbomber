@@ -19,17 +19,19 @@
   <slot />
 </div>
 
-<style lang="sass">
-  .button
-    display: inline-block
-    padding: 3px 10px
-    cursor: pointer
-    background-color: #444
-    color: #fff
-    text-align: center
+<style lang="scss">
+  .button {
+    display: inline-block;
+    padding: 3px 10px;
+    cursor: pointer;
+    background-color: #444;
+    color: #fff;
+    text-align: center;
 
-    &[data-disabled="true"]
-      cursor: not-allowed
-      opacity: .8
-      background-color: #222
+    &[data-disabled="true"] {
+      cursor: not-allowed;
+      opacity: .8;
+      background-color: #222;
+    }
+  }
 </style>

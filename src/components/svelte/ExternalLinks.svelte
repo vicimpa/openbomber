@@ -19,10 +19,12 @@
   {/each}
 </ul>
 
-<style lang="sass">
-ul, li
-  list-style: none
-
-ul
-  padding: 5px 0
+<style lang="scss">
+  ul,
+  li {
+    list-style: none;
+  }
+  ul {
+    padding: 5px 0;
+  }
 </style>
