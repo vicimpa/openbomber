@@ -11,6 +11,7 @@
     "strict": true,
     "noEmit": true,
     "baseUrl": "./",
+    "skipDefaultLibCheck": true,
     "paths": {
       "shared/*": ["./shared/*"],
       "core/*": [ "./core/*"],

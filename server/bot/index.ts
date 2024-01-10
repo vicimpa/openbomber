@@ -5,7 +5,10 @@ import { Webhook } from "simple-discord-webhooks";
 
 import type { IServerEvents } from "server/events";
 import type { TCustomEventListener } from "core/Events";
-const hook = new Webhook(import.meta.env.DISCORD_HOOK_URL);
+
+const { DISCORD_HOOK_URL = '' } = process.env;
+
+const hook = new Webhook(new URL(DISCORD_HOOK_URL));
 
 export async function run(): Promise<void | Function> {
   await hook.send('', [
