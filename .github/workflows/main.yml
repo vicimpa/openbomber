@@ -33,6 +33,7 @@ jobs:
           rm -rf testing
           git clone git@github.com:vicimpa/openbomber.git testing
           cd testing
+          PATH=/root/.bun/bin:$PATH
           echo "${{ secrets.DOTENVFILE }}" >> .env
           bun install
           bun --bun run build
