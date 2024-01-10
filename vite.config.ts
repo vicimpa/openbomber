@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import { defineConfig } from "vite";
 import commonjs from "vite-plugin-commonjs";
 import glsl from "vite-plugin-glsl";
@@ -13,7 +15,8 @@ export default defineConfig({
   base: './',
   root: './src',
   publicDir: '../public',
-
+  envDir: '../',
+  envPrefix: "APP_",
   build: {
     outDir: '../dist',
     target: 'esnext',

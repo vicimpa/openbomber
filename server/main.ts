@@ -5,12 +5,24 @@ import { createLogger } from "vite";
 import { calc, makeData } from "../core/verify";
 import { verifyApi } from "../shared/api";
 import { MAX_ADDRESS_CONNECT } from "../shared/config";
+import * as bot from "./bot";
 import { Game } from "./class/Game";
 import { IS_DEV } from "./env";
 
 const logger = createLogger('info', { allowClearScreen: true });
 
 export function game(server: Server) {
+  Promise.resolve()
+    .then(() => bot.run())
+    .then(func => {
+      if (func instanceof Function) {
+        server.once('close', () => {
+          func();
+        });
+      }
+    })
+    .catch(console.error);
+
   const socketio = new SocketIO(server);
   const addresses = new Map<string, number>();
 

@@ -14,6 +14,7 @@ import {
   TIMEOUT_MESSAGE, TIMEOUT_NICKNAME, TIMEOUT_RECONNECT, TIMEOUT_SKIN
 } from "../../shared/config";
 import { DEATH_FRAMES, EAnimate, EDir, EEffect, EMapItem, ESounds } from "../../shared/types";
+import { events } from "../bot";
 import { getTime, setTime } from "../data/addressTime";
 import { IS_DEV } from "../env";
 import { Bomb } from "./Bomb";
@@ -368,6 +369,7 @@ export class Player extends Entity {
       this.lastConnect = Date.now();
       this.lastAction = Date.now();
       this.game.message(`${this.name ?? 'noname'} подключился`);
+      events.emit('change', { type: 'in', name: this.name, totalCount: this.game.playersCount });
       PlayerEffect.clearEffets(this);
     },
 
@@ -380,6 +382,7 @@ export class Player extends Entity {
       this.lastConnect = Date.now();
       this.lastAction = Date.now();
       this.game.message(`${this.name ?? 'noname'} отключился`);
+      events.emit('change', { type: 'out', name: this.name, totalCount: this.game.playersCount });
       PlayerEffect.clearEffets(this);
     }
   };
