@@ -28,22 +28,22 @@ jobs:
         port: ${{ secrets.SSH_PORT }}
         script_stop: true
         script: |
-          echo "${{ secrets.AUTH_TOKEN }}" >> token
-        # script: |
-        #   mkdir -p /root/deploy
-        #   cd /root/deploy
-        #   rm -rf testing
-        #   git clone git@github.com:vicimpa/openbomber.git testing
-        #   cd testing
-        #   npm install
-        #   npm run build
-        #   pm2 ls | grep openbomber && pm2 delete openbomber || echo ""
-        #   cd ..
-        #   rm -rf current
-        #   mv testing current
-        #   cd current
-        #   rm -rf /var/www/openbomber
-        #   mv dist /var/www/openbomber
-        #   chmod -R 755 /var/www/openbomber
-        #   pm2 start npm --name openbomber -- run preview
-        #   pm2 save
+          mkdir -p /root/deploy
+          cd /root/deploy
+          rm -rf testing
+          git clone git@github.com:vicimpa/openbomber.git testing
+          cd testing
+          echo "${{ secrets.DOTENVFILE }}" >> .env
+          
+        # npm install
+        # npm run build
+        # pm2 ls | grep openbomber && pm2 delete openbomber || echo ""
+        # cd ..
+        # rm -rf current
+        # mv testing current
+        # cd current
+        # rm -rf /var/www/openbomber
+        # mv dist /var/www/openbomber
+        # chmod -R 755 /var/www/openbomber
+        # pm2 start npm --name openbomber -- run preview
+        # pm2 save
