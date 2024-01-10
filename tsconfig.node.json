@@ -10,6 +10,12 @@
     "verbatimModuleSyntax": true,
     "strict": true,
     "noEmit": true,
+    "baseUrl": "./",
+    "paths": {
+      "shared/*": ["./shared/*"],
+      "core/*": [ "./core/*"],
+      "server/*": ["./server/*"]
+    }
   },
   "include": [
     "./core",

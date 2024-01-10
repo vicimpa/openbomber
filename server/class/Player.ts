@@ -1,22 +1,22 @@
+import { calcSpeed } from "core/calcSpeed";
+import { effectObject } from "core/effectObject";
+import { FDate } from "core/FDate";
+import { find } from "core/find";
+import { map } from "core/map";
+import { random, rem, round } from "core/math";
+import { pick } from "core/pick";
+import { Vec2 } from "core/Vec2";
+import { getTime, setTime } from "server/data/addressTime";
+import { IS_DEV } from "server/env";
+import { events } from "server/events";
+import { gameApi, playerApi } from "shared/api";
+import {
+  MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT, SKINS_COUNT, TEST_ADMIN_IP, TIMEOUT_MESSAGE,
+  TIMEOUT_NICKNAME, TIMEOUT_RECONNECT, TIMEOUT_SKIN
+} from "shared/config";
+import { DEATH_FRAMES, EAnimate, EDir, EEffect, EMapItem, ESounds } from "shared/types";
 import { Socket } from "socket.io";
 
-import { calcSpeed } from "../../core/calcSpeed";
-import { effectObject } from "../../core/effectObject";
-import { FDate } from "../../core/FDate";
-import { find } from "../../core/find";
-import { map } from "../../core/map";
-import { random, rem, round } from "../../core/math";
-import { pick } from "../../core/pick";
-import { Vec2 } from "../../core/Vec2";
-import { gameApi, playerApi } from "../../shared/api";
-import {
-  CUSTOM_SKINS_COUNT, MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT, SKINS_COUNT, TEST_ADMIN_IP,
-  TIMEOUT_MESSAGE, TIMEOUT_NICKNAME, TIMEOUT_RECONNECT, TIMEOUT_SKIN
-} from "../../shared/config";
-import { DEATH_FRAMES, EAnimate, EDir, EEffect, EMapItem, ESounds } from "../../shared/types";
-import { events } from "../bot";
-import { getTime, setTime } from "../data/addressTime";
-import { IS_DEV } from "../env";
 import { Bomb } from "./Bomb";
 import { BombEffect } from "./BombEffect";
 import { CrasyBombEffect } from "./CrasyBombEffect";
@@ -30,7 +30,8 @@ import { RadiusEffect } from "./RadiusEffect";
 import { ShieldEffect } from "./ShieldEffect";
 import { SpeedEffect } from "./SpeedEffect";
 
-import type { TMethodsOut } from "../../core/makeWebSocketApi";
+import type { TMethodsOut } from "core/makeWebSocketApi";
+
 let PLAYER_COUNTER = 0;
 
 export class Player extends Entity {
@@ -161,15 +162,13 @@ export class Player extends Entity {
   ) {
     super(game, 0, 0);
     this.newApi = playerApi.use(socket);
-    this.isAdmin = TEST_ADMIN_IP.test(this.address);
-
-    if (IS_DEV)
-      this.newMethods.toGame?.();
+    this.isAdmin = this.address ? TEST_ADMIN_IP.test(this.address) : true;
   }
 
   ban(time: number) {
-    if (!this.inGame)
+    if (!this.inGame || (this.isAdmin && IS_DEV))
       return;
+
     this.newMethods.toLeave?.();
     this.lastConnect = Date.now() + time - TIMEOUT_RECONNECT;
     this.game.message(`Игрок ${this.name} был забанен на ${time / 1000 | 0} сек`);
@@ -351,7 +350,7 @@ export class Player extends Entity {
       const needTime = this.lastConnect + TIMEOUT_RECONNECT * this.reconnect;
       const deltaTime = needTime - Date.now();
 
-      if (deltaTime > 0) {
+      if (deltaTime > 0 && !(this.isAdmin && IS_DEV)) {
         this.newApi.onMessage({
           message: `Подключитесь через ${deltaTime / 1000 | 0} сек.`,
           sender: { name: '@server' },
@@ -369,7 +368,7 @@ export class Player extends Entity {
       this.lastConnect = Date.now();
       this.lastAction = Date.now();
       this.game.message(`${this.name ?? 'noname'} подключился`);
-      events.emit('change', { type: 'in', name: this.name, totalCount: this.game.playersCount });
+      events.emit('changePlayes', { type: 'in', nickname: this.name, totalCount: this.game.playersCount });
       PlayerEffect.clearEffets(this);
     },
 
@@ -382,7 +381,7 @@ export class Player extends Entity {
       this.lastConnect = Date.now();
       this.lastAction = Date.now();
       this.game.message(`${this.name ?? 'noname'} отключился`);
-      events.emit('change', { type: 'out', name: this.name, totalCount: this.game.playersCount });
+      events.emit('changePlayes', { type: 'out', nickname: this.name, totalCount: this.game.playersCount });
       PlayerEffect.clearEffets(this);
     }
   };

@@ -1,4 +1,4 @@
-import { point, points } from "../core/point";
+import { point, points } from "core/point";
 
 export type TChatInfo = {
   name: string;

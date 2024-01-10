@@ -1,8 +1,9 @@
-import { pick } from "../../core/pick";
-import { point } from "../../core/point";
-import { Vec2 } from "../../core/Vec2";
-import { BOMB_TIME, CRAZY_BOMB_BOOST, CRAZY_BOMB_MAX, CRAZY_BOMB_MIN } from "../../shared/config";
-import { DIRECTIONS, EAnimate, EEffect, EMapItem, ESounds } from "../../shared/types";
+import { pick } from "core/pick";
+import { point } from "core/point";
+import { Vec2 } from "core/Vec2";
+import { BOMB_TIME, CRAZY_BOMB_BOOST, CRAZY_BOMB_MAX, CRAZY_BOMB_MIN } from "shared/config";
+import { DIRECTIONS, EAnimate, EEffect, EMapItem, ESounds } from "shared/types";
+
 import { CrasyBombEffect } from "./CrasyBombEffect";
 import { Effect } from "./Effect";
 import { Entity } from "./Entity";

@@ -1,6 +1,7 @@
-import { isColide } from "../../core/isColide";
-import { point } from "../../core/point";
-import { Vec2 } from "../../core/Vec2";
+import { isColide } from "core/isColide";
+import { point } from "core/point";
+import { Vec2 } from "core/Vec2";
+
 import { Game } from "./Game";
 
 const me = point();

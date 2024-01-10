@@ -1,5 +1,6 @@
-import { SPEED_TIME } from "../../shared/config";
-import { ESounds } from "../../shared/types";
+import { SPEED_TIME } from "shared/config";
+import { ESounds } from "shared/types";
+
 import { Player } from "./Player";
 import { PlayerEffect } from "./PlayerEffect";
 

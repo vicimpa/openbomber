@@ -1,5 +1,6 @@
-import { MOVING_TIME } from "../../shared/config";
-import { ESounds } from "../../shared/types";
+import { MOVING_TIME } from "shared/config";
+import { ESounds } from "shared/types";
+
 import { Player } from "./Player";
 import { PlayerEffect } from "./PlayerEffect";
 

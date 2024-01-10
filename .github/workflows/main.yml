@@ -34,8 +34,8 @@ jobs:
           git clone git@github.com:vicimpa/openbomber.git testing
           cd testing
           echo "${{ secrets.DOTENVFILE }}" >> .env
-          npm install
-          npm run build
+          bun install
+          bun --bun run build
           pm2 ls | grep openbomber && pm2 delete openbomber || echo ""
           cd ..
           rm -rf current
@@ -44,5 +44,5 @@ jobs:
           rm -rf /var/www/openbomber
           mv dist /var/www/openbomber
           chmod -R 755 /var/www/openbomber
-          pm2 start npm --name openbomber -- run preview
+          pm2 start bun --name openbomber -- --bun run preview
           pm2 save
