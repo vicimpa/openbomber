@@ -1,17 +1,18 @@
-import { effectObject } from "core/effectObject";
-import { makeVec2Filter } from "core/makeVec2Filter";
-import { point, points } from "core/point";
 import baseSpriteSrc from "images/Bomb/cammon bomb3.png";
 import radioSpriteSrc from "images/Bomb/distance bomb1.png";
 import crazySpriteSrc from "images/Bomb/random bomb.png";
 import spriteSrc from "images/bombs.png";
+
+import { effectObject } from "@core/effectObject";
+import { makeVec2Filter } from "@core/makeVec2Filter";
+import { point, points } from "@core/point";
 
 import { CrazyEffectSprite } from "./CrazyEffectSprite";
 import { FrameAnimation } from "./FrameAnimation";
 import { Sprite } from "./Sprite";
 
 import type { Camera } from "./Camera";
-import type { Vec2 } from "core/Vec2";
+import type { Vec2 } from "@core/Vec2";
 const BASE = points('0,0;1,0;2,0;3,0');
 
 export class BombSprite extends FrameAnimation {

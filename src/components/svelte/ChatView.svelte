@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { FDate } from "core/FDate";
-  import type { TChatInfo } from "shared/types";
+  import { FDate } from "@core/FDate";
+  import type { TChatInfo } from "@shared/types";
   import { ChatEvent } from "class/ChatEvent";
   import { onMount } from "svelte";
 
@@ -65,8 +65,8 @@
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      animation: hide .3s 5s linear forwards;
-      background-color: rgba(0,0,0,0.4);
+      animation: hide 0.3s 5s linear forwards;
+      background-color: rgba(0, 0, 0, 0.4);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       border-radius: 10px;

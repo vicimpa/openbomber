@@ -1,5 +1,5 @@
-import { SHIELD_TIME } from "shared/config";
-import { ESounds } from "shared/types";
+import { SHIELD_TIME } from "@shared/config";
+import { ESounds } from "@shared/types";
 
 import { Player } from "./Player";
 import { PlayerEffect } from "./PlayerEffect";

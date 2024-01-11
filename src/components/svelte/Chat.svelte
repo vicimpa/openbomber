@@ -1,9 +1,9 @@
 <script lang="ts">
   import { ChatEvent } from "class/ChatEvent";
   import { createEventDispatcher, onMount } from "svelte";
-  import { FDate } from "core/FDate";
-  import { MESSAGE_LENGTH, TIMEOUT_MESSAGE } from "shared/config";
-  import type { TChatInfo } from "shared/types";
+  import { FDate } from "@core/FDate";
+  import { MESSAGE_LENGTH, TIMEOUT_MESSAGE } from "@shared/config";
+  import type { TChatInfo } from "@shared/types";
   import Button from "./Button.svelte";
   import { onFrame } from "library/onFrame";
 
@@ -166,10 +166,9 @@
 
         margin-right: 10px;
 
-
         &[data-isme="true"] {
           align-items: flex-start;
-          background-color: rgba(100,100,100,0.3);
+          background-color: rgba(100, 100, 100, 0.3);
         }
         .name {
           display: flex;

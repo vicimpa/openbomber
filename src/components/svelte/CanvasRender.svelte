@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Vec2 } from "core/Vec2";
-  import { INPUT_POSITION, playerApi } from "shared/api";
-  import { point } from "core/point";
+  import { Vec2 } from "@core/Vec2";
+  import { INPUT_POSITION, playerApi } from "@shared/api";
+  import { point } from "@core/point";
   import { Application } from "class/Application";
   import { Background } from "class/Background";
   import { FocusCamera } from "class/FocusCamera";
@@ -11,7 +11,7 @@
   import { updateIdMap } from "library/updateIdMap";
   import type { Socket } from "socket.io-client";
   import { PlayerControllerNew } from "class/PlayerControllerNew";
-  import type { TProtoOut } from "core/Proto";
+  import type { TProtoOut } from "@core/Proto";
   import { onFrame } from "library/onFrame";
   import type { PlayerSprite } from "class/PlayerSprite";
 

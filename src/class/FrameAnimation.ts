@@ -1,6 +1,6 @@
-import type { Vec2 } from "core/Vec2";
-import { effectObject } from "core/effectObject";
-import { point } from "core/point";
+import type { Vec2 } from "@core/Vec2";
+import { effectObject } from "@core/effectObject";
+import { point } from "@core/point";
 
 import { Frame } from "./Frame";
 

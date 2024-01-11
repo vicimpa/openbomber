@@ -1,5 +1,6 @@
-import { points } from "core/point";
 import spriteSrc from "images/bombKicking.png";
+
+import { points } from "@core/point";
 
 import { Frame } from "./Frame";
 import { Sprite } from "./Sprite";

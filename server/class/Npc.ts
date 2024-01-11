@@ -1,4 +1,4 @@
-import { EDir } from "shared/types";
+import { EDir } from "@shared/types";
 
 import { Entity } from "./Entity";
 

@@ -1,7 +1,7 @@
 import { OUT_FRAME } from "config";
 import sprite from "images/Map/Tile.png";
-import { EMapItem, MAP_ITEMS } from "shared/types";
 
+import { EMapItem, MAP_ITEMS } from "@shared/types";
 import { generatePerlinNoise } from "@vicimpa/perlin-noise";
 
 import { Entity } from "./Entity";

@@ -1,4 +1,4 @@
-import { delay } from "core/delay";
+import { delay } from "@core/delay";
 
 import { audioCtx, connected, gainNode } from "./sounds";
 

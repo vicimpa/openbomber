@@ -4,17 +4,17 @@
   import { socket } from "socket";
   import { IS_DEV } from "env";
 
-  import { point } from "core/point";
-  import { NICK_LENGTH, SKINS_COUNT } from "shared/config";
+  import { point } from "@core/point";
+  import { NICK_LENGTH, SKINS_COUNT } from "@shared/config";
   import {
     GAME_INFO,
     PLAYER_INFO,
     REMAINING_EFFECTS,
     gameApi,
     playerApi,
-  } from "shared/api";
+  } from "@shared/api";
 
-  import type { TProtoOut } from "core/Proto";
+  import type { TProtoOut } from "@core/Proto";
 
   import { FocusCamera } from "class/FocusCamera";
   import { ChatEvent } from "class/ChatEvent";

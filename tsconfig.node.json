@@ -13,9 +13,9 @@
     "baseUrl": "./",
     "skipDefaultLibCheck": true,
     "paths": {
-      "shared/*": ["./shared/*"],
-      "core/*": [ "./core/*"],
-      "server/*": ["./server/*"]
+      "@shared/*": ["./shared/*"],
+      "@core/*": [ "./core/*"],
+      "@server/*": ["./server/*"]
     }
   },
   "include": [

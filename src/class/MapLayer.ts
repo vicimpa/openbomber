@@ -1,8 +1,9 @@
 import { OUT_FRAME } from "config";
-import { points } from "core/point";
 import spriteSrc from "images/Map/Tile.png";
 import wartingSrc from "images/warning.png";
-import { EMapItem, MAP_ITEMS } from "shared/types";
+
+import { points } from "@core/point";
+import { EMapItem, MAP_ITEMS } from "@shared/types";
 
 import { Entity } from "./Entity";
 import { Sprite } from "./Sprite";

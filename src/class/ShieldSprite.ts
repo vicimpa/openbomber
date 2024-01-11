@@ -1,6 +1,7 @@
-import { points } from "core/point";
 import spriteSrc from "images/Shild/Shild1.png";
 import backSpriteSrc from "images/Shild/Shild2.png";
+
+import { points } from "@core/point";
 
 import { FrameAnimation } from "./FrameAnimation";
 import { Sprite } from "./Sprite";

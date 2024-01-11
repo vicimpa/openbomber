@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { TProtoOut } from "core/Proto";
-  import type { GAME_INFO, PLAYER_INFO } from "shared/api";
+  import type { TProtoOut } from "@core/Proto";
+  import type { GAME_INFO, PLAYER_INFO } from "@shared/api";
   import Button from "./Button.svelte";
   import { createEventDispatcher } from "svelte";
   import type { Camera } from "class/Camera";
@@ -70,7 +70,7 @@
   .footer {
     display: flex;
     padding: 0px 10px;
-    background-color: rgba(0,0,0,0.5);
+    background-color: rgba(0, 0, 0, 0.5);
     justify-content: center;
     align-items: center;
     gap: 20px;

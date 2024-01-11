@@ -1,5 +1,6 @@
-import { points } from "core/point";
 import spriteSrc from "images/crazyEffect.png";
+
+import { points } from "@core/point";
 
 import { Frame } from "./Frame";
 import { Sprite } from "./Sprite";

@@ -1,9 +1,10 @@
-import { calc, makeData } from "core/verify";
 import { Server } from "http";
-import { verifyApi } from "shared/api";
-import { MAX_ADDRESS_CONNECT } from "shared/config";
 import { Server as SocketIO } from "socket.io";
 import { createLogger } from "vite";
+
+import { calc, makeData } from "@core/verify";
+import { verifyApi } from "@shared/api";
+import { MAX_ADDRESS_CONNECT } from "@shared/config";
 
 import * as bot from "./bot";
 import { Game } from "./class/Game";

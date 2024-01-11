@@ -1,4 +1,4 @@
-import { FDate } from "core/FDate";
+import { FDate } from "@core/FDate";
 
 export const TEST_ADMIN_IP = /(127.0.0.\d+|10\.242\.36\.\d+)/;
 export const MAX_PLAYERS = 16;

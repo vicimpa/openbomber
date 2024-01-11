@@ -1,6 +1,7 @@
-import { Events } from "core/Events";
-import { abs } from "core/math";
 import getGamepadInfo from "gamepad-info";
+
+import { Events } from "@core/Events";
+import { abs } from "@core/math";
 
 interface IGampadButton {
   target: GamepadController;

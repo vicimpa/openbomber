@@ -1,10 +1,11 @@
-import { trim } from "core/trim";
-import { events } from "server/events";
-import { MAX_PLAYERS } from "shared/config";
 import { Webhook } from "simple-discord-webhooks";
 
-import type { IServerEvents } from "server/events";
-import type { TCustomEventListener } from "core/Events";
+import { trim } from "@core/trim";
+import { events } from "@server/events";
+import { MAX_PLAYERS } from "@shared/config";
+
+import type { IServerEvents } from "@server/events";
+import type { TCustomEventListener } from "@core/Events";
 
 const { DISCORD_HOOK_URL = '' } = process.env;
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { NICK_LENGTH } from "shared/config";
+  import { NICK_LENGTH } from "@shared/config";
   import { createEventDispatcher, onMount } from "svelte";
   import Button from "./Button.svelte";
 

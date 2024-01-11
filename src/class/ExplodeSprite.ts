@@ -1,8 +1,9 @@
-import { plus, points } from "core/point";
-import { toLimit } from "core/toLimit";
 import blockSrc from "images/DestroyBox/DestroyBox.png";
 import explodeSrc from "images/explode/explode.png";
-import { EExplodeDir, EXPODER_DIRS } from "shared/types";
+
+import { plus, points } from "@core/point";
+import { toLimit } from "@core/toLimit";
+import { EExplodeDir, EXPODER_DIRS } from "@shared/types";
 
 import { Frame } from "./Frame";
 import { Sprite } from "./Sprite";

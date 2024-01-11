@@ -1,6 +1,5 @@
-import { random } from "core/random";
-import { DIRECTIONS, EMapItem } from "shared/types";
-
+import { random } from "@core/random";
+import { DIRECTIONS, EMapItem } from "@shared/types";
 import { generatePerlinNoise } from "@vicimpa/perlin-noise";
 
 import { Game } from "./Game";

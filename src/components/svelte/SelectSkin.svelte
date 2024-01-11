@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SKINS_COUNT } from "shared/config";
+  import { SKINS_COUNT } from "@shared/config";
   import { each } from "library/each";
   import Frame from "./Frame.svelte";
   import spriteSrc from "images/characters.png";
@@ -59,7 +59,7 @@
       & > .scale {
         transform: scale(2.4);
       }
-      &[data-select='true'] {
+      &[data-select="true"] {
         background-color: #999;
         border-radius: 100%;
       }

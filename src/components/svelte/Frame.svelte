@@ -2,7 +2,7 @@
   import { OUT_FRAME } from "config";
   import { stylesVariable } from "library/stylesVariable";
   import Size from "./Size.svelte";
-  import type { Vec2 } from "core/Vec2";
+  import type { Vec2 } from "@core/Vec2";
 
   export let src = "";
 
@@ -40,32 +40,31 @@
 </Size>
 
 <style lang="scss">
-.frame {
-  --x: 0;
-  --y: 0;
-  --sx: 0;
-  --sy: 0;
-  transform: scaleX(var(--sx)) scaleY(var(--sy));
+  .frame {
+    --x: 0;
+    --y: 0;
+    --sx: 0;
+    --sy: 0;
+    transform: scaleX(var(--sx)) scaleY(var(--sy));
 
-  width: var(--size);
-  height: var(--size);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
+    width: var(--size);
+    height: var(--size);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
 
-  .image {
-    position: absolute;
-    --t: calc(var(--padding) * -1);
-    --a: calc(var(--padding) * 2);
-    --s: calc(var(--size) + var(--a));
-    width: var(--s);
-    height: var(--s);
+    .image {
+      position: absolute;
+      --t: calc(var(--padding) * -1);
+      --a: calc(var(--padding) * 2);
+      --s: calc(var(--size) + var(--a));
+      width: var(--s);
+      height: var(--s);
       // transform: translateX(var(--t)) translateY(var(--t))
-    image-rendering: pixelated;
-    background-position-x: calc(var(--x) * var(--s) * -1);
-    background-position-y: calc(var(--y) * var(--s) * -1);
+      image-rendering: pixelated;
+      background-position-x: calc(var(--x) * var(--s) * -1);
+      background-position-y: calc(var(--y) * var(--s) * -1);
+    }
   }
-}
-
 </style>

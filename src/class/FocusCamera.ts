@@ -1,11 +1,12 @@
 import { OUT_FRAME } from "config";
-import { makeVec2Filter } from "core/makeVec2Filter";
-import { min } from "core/math";
-import { point } from "core/point";
-import { toLimit } from "core/toLimit";
-import { Vec2 } from "core/Vec2";
 import { showDebug } from "data/debug";
-import { EEffect } from "shared/types";
+
+import { makeVec2Filter } from "@core/makeVec2Filter";
+import { min } from "@core/math";
+import { point } from "@core/point";
+import { toLimit } from "@core/toLimit";
+import { Vec2 } from "@core/Vec2";
+import { EEffect } from "@shared/types";
 
 import { Camera } from "./Camera";
 import { Game } from "./Game";

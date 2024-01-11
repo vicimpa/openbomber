@@ -36,9 +36,9 @@
       "vite-plugin-glsl/ext"
     ],
     "paths": {
-      "shared/*": ["../shared/*"],
-      "core/*": [ "../core/*"],
-      "server/*": ["../server/*"]
+      "@shared/*": ["../shared/*"],
+      "@core/*": [ "../core/*"],
+      "@server/*": ["../server/*"]
     }
   },
   "include": [

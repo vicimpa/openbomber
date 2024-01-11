@@ -1,4 +1,4 @@
-import { TIMEOUT_RECONNECT } from "shared/config";
+import { TIMEOUT_RECONNECT } from "@shared/config";
 
 export const ADDRESS_STORE = new Map<string, number>();
 

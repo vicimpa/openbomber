@@ -1,9 +1,10 @@
-import { points } from "core/point";
-import { toLimit } from "core/toLimit";
 import deathIconsSrc from "images/Dead/deathSkins.png";
 import deathSrc from "images/death.png";
 import fakeSrc from "images/explodeFake/explodeFake.png";
-import { DEATH_FRAMES, EEffect } from "shared/types";
+
+import { points } from "@core/point";
+import { toLimit } from "@core/toLimit";
+import { DEATH_FRAMES, EEffect } from "@shared/types";
 
 import { Frame } from "./Frame";
 import { Sprite } from "./Sprite";

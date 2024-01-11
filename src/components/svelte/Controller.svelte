@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Vec2 } from "core/Vec2";
+  import { Vec2 } from "@core/Vec2";
   import { showDebug } from "data/debug";
   import { makeController, makeVectorController } from "library/makeController";
   import { onFrame } from "library/onFrame";
@@ -219,7 +219,7 @@
     bottom: 0;
     user-select: none;
     -webkit-user-select: none;
-    background-color: rgba(0,0,0,0.01);
+    background-color: rgba(0, 0, 0, 0.01);
 
     * {
       user-select: none;
@@ -232,7 +232,7 @@
     .bomb,
     .point {
       position: absolute;
-      background-color: rgb(100,100,100);
+      background-color: rgb(100, 100, 100);
       opacity: 0.5;
       border-radius: 100%;
     }
@@ -247,10 +247,10 @@
       transition: opacity 0.3s;
 
       &[data-show="false"] {
-        opacity: .4;
+        opacity: 0.4;
       }
       .point {
-        opacity: .6;
+        opacity: 0.6;
         width: $point;
         height: $point;
         position: relative;

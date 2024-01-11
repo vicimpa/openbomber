@@ -1,4 +1,4 @@
-import { abs, ceil, floor, pow, rem, round, sqrt } from "./math";
+import { abs, ceil, floor, hypot, pow, rem, round, sqrt } from "./math";
 
 export interface IVec2 { x: number; y: number; }
 export type TVec2 = [] | [xy: number] | [x: number, y: number] | [vec: IVec2];
@@ -16,6 +16,7 @@ const _lower = <V extends IVec2>(x: number, y: number, vec: V) => (vec.x > x && 
 const _bigger = <V extends IVec2>(x: number, y: number, vec: V) => (vec.x > x && vec.y > y);
 const _minLimit = <V extends IVec2>(x: number, y: number, vec: V) => (vec.x < x && (vec.x = x), vec.y < y && (vec.y = y), vec);
 const _maxLimit = <V extends IVec2>(x: number, y: number, vec: V) => (vec.x > x && (vec.x = x), vec.y > y && (vec.y = y), vec);;
+const _length = <V extends IVec2>(x: number, y: number, vec: V) => hypot(vec.x - x, vec.y - y);
 
 const vec2 = <V extends IVec2, O>(
   args: TVec2,
@@ -52,23 +53,21 @@ export class Vec2 {
   x: number = 0;
   y: number = 0;
 
+  *[Symbol.iterator]() {
+    yield this.x;
+    yield this.y;
+  }
+
+  [Symbol.toStringTag]() {
+    return this.toLog();
+  }
+
   constructor(...args: TVec2) {
     this.set(...args);
   }
 
-  length(...args: TVec2) {
-    return (
-      sqrt(
-        this
-          .cminus(...args)
-          .pow(2)
-          .sum()
-      )
-    );
-  }
-
+  length(...args: TVec2) { return vec2(args, _length, this); }
   toLog() { return `Vec2<x: ${this.x.toFixed(2)}, y: ${this.y.toFixed(2)}>`; }
-  [Symbol.toStringTag]() { return this.toLog(); }
   toString() { return this.toLog(); }
 
   sum() { return this.x + this.y; }

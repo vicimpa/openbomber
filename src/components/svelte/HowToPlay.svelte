@@ -6,9 +6,9 @@
     ACHIVMEN_DESCRIPTION,
     ACHIVMEN_POINTS,
     EAchivment,
-  } from "shared/types";
+  } from "@shared/types";
   import Frame from "./Frame.svelte";
-  import { MAX_PLAYERS } from "shared/config";
+  import { MAX_PLAYERS } from "@shared/config";
   import { EXTERNAL_LINKS } from "config";
   import Link from "./Link.svelte";
 
@@ -128,7 +128,7 @@
     align-items: center;
     height: 20px;
     &::before {
-      content: '#';
+      content: "#";
       color: #333;
     }
   }

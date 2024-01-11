@@ -1,12 +1,12 @@
 <script lang="ts">
   import { Sound, gainNode } from "library/sounds";
   import { stylesVariable } from "library/stylesVariable";
-  import { toLimit } from "core/toLimit";
+  import { toLimit } from "@core/toLimit";
   import { beforeUpdate } from "svelte";
   import { onMount } from "svelte";
   import Button from "./Button.svelte";
-  import { Vec2 } from "core/Vec2";
-  import { point } from "core/point";
+  import { Vec2 } from "@core/Vec2";
+  import { point } from "@core/point";
 
   let volume = toLimit(+(localStorage.getItem("volume") ?? 0.2), 0, 1);
   let step = 0.01;
@@ -93,7 +93,7 @@
         left: 0;
         bottom: 0;
         width: var(--w);
-        background-color: rgba(255,255,255,0.3);
+        background-color: rgba(255, 255, 255, 0.3);
       }
       span {
         z-index: 2;

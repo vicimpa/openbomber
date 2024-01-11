@@ -1,7 +1,8 @@
 import { OUT_FRAME } from "config";
-import { effectObject } from "core/effectObject";
-import { point } from "core/point";
 import spriteMode from "images/characters-model.png";
+
+import { effectObject } from "@core/effectObject";
+import { point } from "@core/point";
 
 import { Frame } from "./Frame";
 import { Sprite } from "./Sprite";

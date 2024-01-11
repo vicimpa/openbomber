@@ -1,6 +1,7 @@
-import { calc } from "core/verify";
-import { verifyApi } from "shared/api";
 import { connect } from "socket.io-client";
+
+import { calc } from "@core/verify";
+import { verifyApi } from "@shared/api";
 
 export const socket = connect({
   reconnectionDelay: 500,

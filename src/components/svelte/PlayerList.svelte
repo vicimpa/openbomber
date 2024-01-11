@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Player as TypePlayer } from "server/class/Player";
+  import type { Player as TypePlayer } from "@server/class/Player";
   import Frame from "./Frame.svelte";
   import spriteSrc from "images/characters.png";
   import { SPRITES } from "images/Heroes";
@@ -11,12 +11,12 @@
     b.wins > a.wins
       ? 1
       : a.wins > b.wins
-      ? -1
-      : b.kills > a.kills
-      ? 1
-      : a.kills > b.kills
-      ? -1
-      : b.name.localeCompare(a.name)
+        ? -1
+        : b.kills > a.kills
+          ? 1
+          : a.kills > b.kills
+            ? -1
+            : b.name.localeCompare(a.name)
   );
 
   $: leavePlayers = sortedPlayers.filter((e) => !e.isDeath);
@@ -76,7 +76,7 @@
     align-items: center;
     border-radius: 10px;
     padding: 10px 15px;
-    background-color: rgba(0,0,0,0.2);
+    background-color: rgba(0, 0, 0, 0.2);
 
     .stats {
       display: flex;
@@ -97,7 +97,7 @@
       }
     }
     &[data-me="true"] {
-      background-color: rgba(255,255,255,0.1);
+      background-color: rgba(255, 255, 255, 0.1);
     }
     small {
       gap: 3px;

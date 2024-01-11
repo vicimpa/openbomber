@@ -1,13 +1,13 @@
 <script lang="ts">
   import achivmentSrc from "images/Bonus/Ikonki.png";
-  import type { TProtoOut } from "core/Proto";
-  import { ReactiveMap } from "core/ReactiveMap";
-  import type { REMAINING_EFFECTS } from "shared/api";
+  import type { TProtoOut } from "@core/Proto";
+  import { ReactiveMap } from "@core/ReactiveMap";
+  import type { REMAINING_EFFECTS } from "@shared/api";
   import {
     ACHIVMEN_DESCRIPTION,
     ACHIVMEN_POINTS,
     EAchivment,
-  } from "shared/types";
+  } from "@shared/types";
   import Frame from "./Frame.svelte";
 
   export let effects: TProtoOut<typeof REMAINING_EFFECTS> | null = null;
@@ -100,7 +100,7 @@
     .item {
       padding: 5px 30px;
       border-radius: 15px;
-      background-color: rgba(0,0,0,0.4);
+      background-color: rgba(0, 0, 0, 0.4);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       display: flex;
@@ -112,7 +112,7 @@
         display: inline-block;
         overflow: hidden;
         max-width: 0px;
-        transition: .3s;
+        transition: 0.3s;
         white-space: nowrap;
       }
       &:hover {

@@ -1,6 +1,7 @@
-import { point } from "core/point";
 import spriteSrc from "images/Bonus/Ikonki.png";
-import { ACHIVMEN_POINTS, EAchivment } from "shared/types";
+
+import { point } from "@core/point";
+import { ACHIVMEN_POINTS, EAchivment } from "@shared/types";
 
 import { Frame } from "./Frame";
 import { Sprite } from "./Sprite";

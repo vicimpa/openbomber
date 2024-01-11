@@ -1,14 +1,15 @@
 import { OUT_FRAME } from "config";
-import { calcSpeed } from "core/calcSpeed";
-import { effectObject } from "core/effectObject";
-import { makeVec2Filter } from "core/makeVec2Filter";
-import { point, points } from "core/point";
-import { Vec2 } from "core/Vec2";
 import { IS_DEV } from "env";
 import dust1Src from "images/Dust/Dust1.png";
 import dust2Src from "images/Dust/Dust2.png";
 import { NewYear, SPRITES } from "images/Heroes/";
-import { DIRECTIONS, EAnimate, EDir } from "shared/types";
+
+import { calcSpeed } from "@core/calcSpeed";
+import { effectObject } from "@core/effectObject";
+import { makeVec2Filter } from "@core/makeVec2Filter";
+import { point, points } from "@core/point";
+import { Vec2 } from "@core/Vec2";
+import { DIRECTIONS, EAnimate, EDir } from "@shared/types";
 
 import { CrazyEffectSprite } from "./CrazyEffectSprite";
 import { Entity } from "./Entity";

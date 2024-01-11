@@ -1,6 +1,7 @@
-import { points } from "core/point";
 import spriteSrc from "images/Fire/Fire1.png";
 import spriteBackSrc from "images/Fire/Fire2.png";
+
+import { points } from "@core/point";
 
 import { FrameAnimation } from "./FrameAnimation";
 import { Sprite } from "./Sprite";
