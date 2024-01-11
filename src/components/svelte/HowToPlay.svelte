@@ -88,43 +88,51 @@
   <Button on:click={() => dispatch("submit")}>Продолжить</Button>
 </div>
 
-<style lang="sass">
-  .scroll
-    display: flex
-    flex-direction: column
-    overflow-y: scroll
-    gap: 10px
-    max-height: calc(100vh - 50px)
-    position: relative
-
-  h2,h3,p
-    margin: 0
-    padding: 0
-  h3
-    font-size: 16px
-    margin-top: 10px
-    margin-bottom: 8px
-  ul
-    margin-bottom: 20px
-  p
-    font-size: 14px
-    font-weight: normal
-    color: #999
-
-  strong
-    color: red
-  li
-    margin: 5px 0px
-    font-size: 12px
-    color: #999
-    display: flex
-    gap: 10px
-    align-items: center
-    height: 20px
-    &::before
-      content: '#'
-      color: #333
-
-  b
-    color: #fff
+<style lang="scss">
+  .scroll {
+    display: flex;
+    flex-direction: column;
+    overflow-y: scroll;
+    gap: 10px;
+    max-height: calc(100vh - 50px);
+    position: relative;
+  }
+  h2,
+  h3,
+  p {
+    margin: 0;
+    padding: 0;
+  }
+  h3 {
+    font-size: 16px;
+    margin-top: 10px;
+    margin-bottom: 8px;
+  }
+  ul {
+    margin-bottom: 20px;
+  }
+  p {
+    font-size: 14px;
+    font-weight: normal;
+    color: #999;
+  }
+  strong {
+    color: red;
+  }
+  li {
+    margin: 5px 0px;
+    font-size: 12px;
+    color: #999;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    height: 20px;
+    &::before {
+      content: '#';
+      color: #333;
+    }
+  }
+  b {
+    color: #fff;
+  }
 </style>

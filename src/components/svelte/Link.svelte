@@ -18,12 +18,13 @@
   <slot />
 </a>
 
-<style lang="sass">
-  a
-    color: #fff
-    text-decoration: none
-    cursor: pointer
-    display: flex
-    gap: 5px
-    padding: 5px
+<style lang="scss">
+  a {
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+    display: flex;
+    gap: 5px;
+    padding: 5px;
+  }
 </style>

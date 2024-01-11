@@ -86,45 +86,49 @@
   {/each}
 </div>
 
-<style lang="sass">
-.effects
-  position: absolute
-  top: 50px
-  left: 0px
-  display: flex
-  flex-direction: column
-  align-items: flex-start
-  gap: 10px
-  z-index: 1
+<style lang="scss">
+  .effects {
+    position: absolute;
+    top: 50px;
+    left: 0px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    z-index: 1;
 
-  .item
-    padding: 5px 30px
-    border-radius: 15px
-    background-color: rgba(0,0,0,0.4)
-    backdrop-filter: blur(10px)
-    -webkit-backdrop-filter: blur(10px)
-    display: flex
-    align-items: center
-    justify-content: space-between
-    gap: 15px
+    .item {
+      padding: 5px 30px;
+      border-radius: 15px;
+      background-color: rgba(0,0,0,0.4);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
 
-    .desc
-      display: inline-block
-      overflow: hidden
-      max-width: 0px
-      transition: .3s
-      white-space: nowrap
-
-    &:hover
-      .desc
-        max-width: 200px
-
-    .info
-      display: flex
-      flex-direction: column
-      align-items: flex-start
-      gap: 10px
-
-    span
-      font-size: 10px
+      .desc {
+        display: inline-block;
+        overflow: hidden;
+        max-width: 0px;
+        transition: .3s;
+        white-space: nowrap;
+      }
+      &:hover {
+        .desc {
+          max-width: 200px;
+        }
+      }
+      .info {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      span {
+        font-size: 10px;
+      }
+    }
+  }
 </style>
