@@ -3,16 +3,16 @@ name: CI
 on:
   push:
     branches: [ main ]
-    # paths:
-    #   - '.github/workflows/main.yml'
-    #   - 'public/**'
-    #   - 'server/**'
-    #   - 'core/**'
-    #   - 'src/**'
-    #   - 'shared/**'
-    #   - 'engine/**'
-    #   - '*.ts'
-    #   - '*.json'
+    paths:
+      - '.github/workflows/main.yml'
+      - 'public/**'
+      - 'server/**'
+      - 'core/**'
+      - 'src/**'
+      - 'shared/**'
+      - 'engine/**'
+      - '*.ts'
+      - '*.json'
 
 jobs:
   build:
@@ -33,10 +33,9 @@ jobs:
           rm -rf testing
           git clone git@github.com:vicimpa/openbomber.git testing
           cd testing
-          PATH=/root/.bun/bin:$PATH
           echo "${{ secrets.DOTENVFILE }}" >> .env
-          bun install
-          bun --bun run build
+          npm install
+          npm run build
           pm2 ls | grep openbomber && pm2 delete openbomber || echo ""
           cd ..
           rm -rf current
@@ -45,5 +44,5 @@ jobs:
           rm -rf /var/www/openbomber
           mv dist /var/www/openbomber
           chmod -R 755 /var/www/openbomber
-          pm2 start bun --name openbomber -- --bun run preview
+          pm2 start npm --name openbomber -- run preview
           pm2 save

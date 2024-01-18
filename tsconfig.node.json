@@ -12,11 +12,6 @@
     "noEmit": true,
     "baseUrl": "./",
     "skipDefaultLibCheck": true,
-    "paths": {
-      "@shared/*": ["./shared/*"],
-      "@core/*": [ "./core/*"],
-      "@server/*": ["./server/*"]
-    }
   },
   "include": [
     "./core",

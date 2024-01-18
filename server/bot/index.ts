@@ -1,17 +1,17 @@
 import { Webhook } from "simple-discord-webhooks";
 
-import { trim } from "@core/trim";
-import { events } from "@server/events";
-import { MAX_PLAYERS } from "@shared/config";
+import { trim } from "../../core/trim";
+import { MAX_PLAYERS } from "../../shared/config";
+import { events } from "../events";
 
-import type { IServerEvents } from "@server/events";
-import type { TCustomEventListener } from "@core/Events";
+import type { IServerEvents } from "../events";
+import type { TCustomEventListener } from "../../core/Events";
 
 const { DISCORD_HOOK_URL = '' } = process.env;
 
-const hook = new Webhook(new URL(DISCORD_HOOK_URL));
 
 export async function run(): Promise<void | Function> {
+  const hook = new Webhook(new URL(DISCORD_HOOK_URL));
   await hook.send('', [
     {
       title: "💣 Обновление состояния игры",

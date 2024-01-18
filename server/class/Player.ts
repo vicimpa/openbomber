@@ -1,23 +1,22 @@
 import { Socket } from "socket.io";
 
-import { calcSpeed } from "@core/calcSpeed";
-import { effectObject } from "@core/effectObject";
-import { FDate } from "@core/FDate";
-import { find } from "@core/find";
-import { map } from "@core/map";
-import { random, rem, round } from "@core/math";
-import { pick } from "@core/pick";
-import { Vec2 } from "@core/Vec2";
-import { getTime, setTime } from "@server/data/addressTime";
-import { IS_DEV } from "@server/env";
-import { events } from "@server/events";
-import { gameApi, playerApi } from "@shared/api";
+import { calcSpeed } from "../../core/calcSpeed";
+import { effectObject } from "../../core/effectObject";
+import { FDate } from "../../core/FDate";
+import { find } from "../../core/find";
+import { map } from "../../core/map";
+import { random, rem, round } from "../../core/math";
+import { pick } from "../../core/pick";
+import { Vec2 } from "../../core/Vec2";
+import { gameApi, playerApi } from "../../shared/api";
 import {
   MESSAGE_LENGTH, NICK_LENGTH, PLAYER_TIMEOUT, SKINS_COUNT, TEST_ADMIN_IP, TIMEOUT_MESSAGE,
   TIMEOUT_NICKNAME, TIMEOUT_RECONNECT, TIMEOUT_SKIN
-} from "@shared/config";
-import { DEATH_FRAMES, EAnimate, EDir, EEffect, EMapItem, ESounds } from "@shared/types";
-
+} from "../../shared/config";
+import { DEATH_FRAMES, EAnimate, EDir, EEffect, EMapItem, ESounds } from "../../shared/types";
+import { getTime, setTime } from "../data/addressTime";
+import { IS_DEV } from "../env";
+import { events } from "../events";
 import { Bomb } from "./Bomb";
 import { BombEffect } from "./BombEffect";
 import { CrasyBombEffect } from "./CrasyBombEffect";
@@ -31,7 +30,7 @@ import { RadiusEffect } from "./RadiusEffect";
 import { ShieldEffect } from "./ShieldEffect";
 import { SpeedEffect } from "./SpeedEffect";
 
-import type { TMethodsOut } from "@core/makeWebSocketApi";
+import type { TMethodsOut } from "../../core/makeWebSocketApi";
 
 let PLAYER_COUNTER = 0;
 

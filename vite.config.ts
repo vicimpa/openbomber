@@ -4,9 +4,10 @@ import glsl from "vite-plugin-glsl";
 import { viteSingleFile } from "vite-plugin-singlefile";
 import paths from "vite-tsconfig-paths";
 
-import { webSocketServer } from "@server/server";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import react from "@vitejs/plugin-react-swc";
+
+import { webSocketServer } from "./server/server";
 
 export default defineConfig({
   base: './',
@@ -17,6 +18,7 @@ export default defineConfig({
   build: {
     outDir: '../dist',
     target: 'esnext',
+    emptyOutDir: true,
   },
 
   preview: {

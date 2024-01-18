@@ -1,6 +1,5 @@
-import { makeWebSocketApi } from "@core/makeWebSocketApi";
-import { makeCustomType, makeEnum, Proto } from "@core/Proto";
-
+import { makeWebSocketApi } from "../core/makeWebSocketApi";
+import { makeCustomType, makeEnum, Proto } from "../core/Proto";
 import { EAchivment, EAnimate, EDir, EEffect, EExplodeDir, ESounds } from "./types";
 
 export const POSITION = makeCustomType<number>(
