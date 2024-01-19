@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import { Webhook } from "simple-discord-webhooks";
 
 import { trim } from "../../core/trim";
