@@ -6,6 +6,7 @@
   import type { TChatInfo } from "@shared/types";
   import Button from "./Button.svelte";
   import { onFrame } from "library/onFrame";
+  import { escapeHtml } from "library/escapeHtml";
 
   let message: string = "";
   let isHide = false;
@@ -48,6 +49,8 @@
     let newMessage = "";
 
     let delta = 0;
+
+    message = escapeHtml(message);
 
     while ((m = regex.exec(message)) !== null) {
       if (m.index === regex.lastIndex) {
