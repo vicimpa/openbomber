@@ -20,25 +20,25 @@ jobs:
       - name: Build project
         run: bun install
 
-      - name: Deploy Client
-        uses: easingthemes/ssh-deploy@main
-        with:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.SSH_HOST }}
-          REMOTE_USER: ${{ secrets.SSH_USER }}
-          SOURCE: 'package/client/dist'
-          TARGET: '/var/www/openbomber'
-          ARGS: "-rlgoDzvc -i --delete"
+      # - name: Deploy Client
+      #   uses: easingthemes/ssh-deploy@main
+      #   with:
+      #     SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+      #     REMOTE_HOST: ${{ secrets.SSH_HOST }}
+      #     REMOTE_USER: ${{ secrets.SSH_USER }}
+      #     SOURCE: 'package/client/dist'
+      #     TARGET: '/var/www/openbomber'
+      #     ARGS: "-rlgoDzvc -i --delete"
 
       - name: Deploy Server
-        uses: easingthemes/ssh-deploy@main
+        uses: appleboy/scp-action@v0.1.7
         with:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.SSH_HOST }}
-          REMOTE_USER: ${{ secrets.SSH_USER }}
-          SCRIPT_BEFORE: pm2 ls | grep openbomber && pm2 delete openbomber || echo ""
-          SCRIPT_AFTER: cd /root/openbomber && pm2 start npm --name openbomber index.js
-          SOURCE: 'package/server/dist'
-          TARGET: '/root/openbomber'
-          ARGS: "-rlgoDzvc -i --delete"
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: "packages/server/dist/*"
+          target: "/root/openbomber"
+          strip_components: 1
+          rm: true
         
