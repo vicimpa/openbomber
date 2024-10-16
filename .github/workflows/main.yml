@@ -39,6 +39,6 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           source: "packages/server/dist/*"
           target: "/root/openbomber"
-          strip_components: 1
+          strip_components: 3
           rm: true
         
