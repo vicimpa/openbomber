@@ -1,0 +1,21 @@
+{
+  "name": "@ob/server",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "build": "bun build src/index.ts --target=node --outfile=dist/index.js --minify"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^22.7.5"
+  },
+  "dependencies": {
+    "@vicimpa/lib-vec2": "^0.2.7",
+    "@vicimpa/math": "^0.0.9",
+    "simple-discord-webhooks": "^2.1.0",
+    "socket.io": "^4.8.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
