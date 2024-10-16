@@ -54,5 +54,5 @@ jobs:
           script: |
             pm2 delete openbomber --force --silent
             cd /root/openbomber
-            echo "${{ DOTENVFILE }}" > .env
+            echo "${{ secrets.DOTENVFILE }}" > .env
             pm2 start --name openbomber index.js
