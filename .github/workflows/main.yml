@@ -5,44 +5,40 @@ on:
     branches: [ main ]
     paths:
       - '.github/workflows/main.yml'
-      - 'public/**'
-      - 'server/**'
-      - 'core/**'
-      - 'src/**'
-      - 'shared/**'
-      - 'engine/**'
-      - '*.ts'
-      - '*.json'
+      - 'packages/**'
 
 jobs:
   build:
     name: Deploy
     runs-on: ubuntu-latest
     steps:
-    - name: Running deploy on remote
-      uses: appleboy/ssh-action@v1.0.0
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_KEY }}
-        port: ${{ secrets.SSH_PORT }}
-        script_stop: true
-        script: |
-          mkdir -p /root/deploy
-          cd /root/deploy
-          rm -rf testing
-          git clone git@github.com:vicimpa/openbomber.git testing
-          cd testing
-          echo "${{ secrets.DOTENVFILE }}" >> .env
-          npm install
-          npm run build
-          pm2 ls | grep openbomber && pm2 delete openbomber || echo ""
-          cd ..
-          rm -rf current
-          mv testing current
-          cd current
-          rm -rf /var/www/openbomber
-          mv dist /var/www/openbomber
-          chmod -R 755 /var/www/openbomber
-          pm2 start npm --name openbomber -- run preview
-          pm2 save
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.1.30
+
+      - name: Build project
+        run: bun install
+
+      - name: Deploy Client
+        uses: easingthemes/ssh-deploy@main
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.SSH_HOST }}
+          REMOTE_USER: ${{ secrets.SSH_USER }}
+          SOURCE: 'package/client/dist'
+          TARGET: '/var/www/openbomber'
+          ARGS: "-rlgoDzvc -i --delete"
+
+      - name: Deploy Server
+        uses: easingthemes/ssh-deploy@main
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.SSH_HOST }}
+          REMOTE_USER: ${{ secrets.SSH_USER }}
+          SCRIPT_BEFORE: pm2 ls | grep openbomber && pm2 delete openbomber || echo ""
+          SCRIPT_AFTER: cd /root/openbomber && pm2 start npm --name openbomber index.js
+          SOURCE: 'package/server/dist'
+          TARGET: '/root/openbomber'
+          ARGS: "-rlgoDzvc -i --delete"
+        

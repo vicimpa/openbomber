@@ -1,43 +1,7 @@
 {
-  "name": "client",
-  "private": true,
+  "name": "openbomber",
   "version": "0.0.0",
-  "type": "module",
-  "main": "src/types.mts",
-  "scripts": {
-    "dev": "vite",
-    "build": "echo \"[TSC] Checking...\" && tsc -p tsconfig.json && echo \"[TSC] Client OK\" && tsc -p ./tsconfig.node.json && echo \"[TSC] Server OK\" && vite build && node post.js",
-    "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.json"
-  },
-  "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^2.0.4",
-    "@tsconfig/svelte": "^5.0.2",
-    "@types/react": "^18.2.21",
-    "@types/react-dom": "^18.2.7",
-    "@vitejs/plugin-react-swc": "^3.3.2",
-    "dotenv": "^16.3.1",
-    "html-minifier-terser": "^7.2.0",
-    "sass": "^1.69.7",
-    "simple-discord-webhooks": "^2.1.0",
-    "socket.io": "^4.7.2",
-    "socket.io-client": "^4.7.2",
-    "svelte": "^4.2.0",
-    "svelte-check": "^3.3.1",
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.2.2",
-    "vite": "^4.3.9",
-    "vite-plugin-commonjs": "^0.9.0",
-    "vite-plugin-glsl": "^1.1.2",
-    "vite-plugin-singlefile": "^0.13.5",
-    "vite-tsconfig-paths": "^4.2.0"
-  },
-  "dependencies": {
-    "@vicimpa/nick-name": "^1.0.3",
-    "@vicimpa/perlin-noise": "^0.0.2",
-    "fast-deep-equal": "^3.1.3",
-    "gamepad-info": "^1.2.4",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  }
+  "workspaces": [
+    "./packages/*"
+  ]
 }
