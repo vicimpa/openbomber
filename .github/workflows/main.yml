@@ -44,3 +44,13 @@ jobs:
           strip_components: 3
           rm: true
         
+      - name: Restart Server
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          script: 
+            pm2 delete openbomber --force --silent
+            cd /root/openbomber
+            pm2 start --name openbomber index.js
