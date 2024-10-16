@@ -20,15 +20,17 @@ jobs:
       - name: Build project
         run: bun install
 
-      # - name: Deploy Client
-      #   uses: easingthemes/ssh-deploy@main
-      #   with:
-      #     SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
-      #     REMOTE_HOST: ${{ secrets.SSH_HOST }}
-      #     REMOTE_USER: ${{ secrets.SSH_USER }}
-      #     SOURCE: 'package/client/dist'
-      #     TARGET: '/var/www/openbomber'
-      #     ARGS: "-rlgoDzvc -i --delete"
+      - name: Deploy Client
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: "packages/client/dist/*"
+          target: "/var/www/openbomber"
+          strip_components: 3
+          rm: true
 
       - name: Deploy Server
         uses: appleboy/scp-action@v0.1.7
