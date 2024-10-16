@@ -1,9 +1,10 @@
 import { API_VERSION } from "@shared/config";
+import { IS_DEV } from "@server/src/env";
 import { calc } from "@ob/core/verify";
 import { connect } from "socket.io-client";
 import { verifyApi } from "@ob/shared/api";
 
-export const socket = connect('localhost:3001', {
+export const socket = connect(IS_DEV ? 'localhost:3001' : location.origin, {
   reconnectionDelay: 500,
   reconnectionDelayMax: 500,
   autoConnect: false,
