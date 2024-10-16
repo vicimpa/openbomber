@@ -1,3 +1,4 @@
+import { API_VERSION } from "@shared/config";
 import { calc } from "@ob/core/verify";
 import { connect } from "socket.io-client";
 import { verifyApi } from "@ob/shared/api";
@@ -20,5 +21,5 @@ verifyApi.forward(socket, {
   },
   addressBlock(nums) {
     alert('На вашем адресе более ' + nums + ' подключений! Подключение невозможно!');
-  }
+  },
 });

@@ -1,5 +1,6 @@
 import { FDate } from "@ob/core/FDate";
 
+export const API_VERSION = 1;
 export const TEST_ADMIN_IP = /(127.0.0.\d+|10\.242\.36\.\d+)/;
 export const MAX_PLAYERS = 16;
 export const NICK_LENGTH = 18;

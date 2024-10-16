@@ -131,8 +131,8 @@
 
         const limit = delta
           .clone()
-          .cropMax(-max)
-          .cropMin(max)
+          .cropMin(-max)
+          .cropMax(max)
           .div(max)
           .normalize()
           .abs()
@@ -140,8 +140,8 @@
 
         const newMove = delta
           .clone()
-          .cropMax(limit.times(-1))
           .cropMin(limit.times(-1))
+          .cropMax(limit.times(-1))
           .div(max);
 
         if (newMove.cabs().length() > 0.3) move.set(newMove);

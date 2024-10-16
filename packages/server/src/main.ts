@@ -1,10 +1,10 @@
 import * as bot from "./bot";
 
+import { API_VERSION, MAX_ADDRESS_CONNECT } from "@ob/shared/config";
 import { calc, makeData } from "@ob/core/verify";
 
 import { Game } from "./class/Game";
 import { IS_DEV } from "./env";
-import { MAX_ADDRESS_CONNECT } from "@ob/shared/config";
 import type { Server } from "http";
 import { Server as SocketIO } from "socket.io";
 import { verifyApi } from "@ob/shared/api";
@@ -21,7 +21,16 @@ export function game(server: Server) {
     })
     .catch(console.error);
 
-  const socketio = new SocketIO(server);
+  const socketio = new SocketIO(server, {
+    cors: {
+      origin: IS_DEV ? 'http://localhost:3000' : 'https://openbomber.ru',
+      allowedHeaders: [
+        ...(IS_DEV ? ['localhost'] : []),
+        'openbomber.ru'
+      ]
+    }
+  });
+
   const addresses = new Map<string, number>();
 
   const game = new Game({

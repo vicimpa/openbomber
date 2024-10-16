@@ -132,8 +132,8 @@ export class PlayerControllerNew extends Vec2 {
 
     this.plus(move);
 
-    this.cropMax(0);
-    this.cropMin(width - 1, height - 1);
+    this.cropMin(0);
+    this.cropMax(width - 1, height - 1);
 
     this.dir = dir;
     this.animate = animate;

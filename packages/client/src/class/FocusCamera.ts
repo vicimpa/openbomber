@@ -24,8 +24,6 @@ export class FocusCamera extends Camera {
       const focusSize = new Vec2(focus.width, focus.height)
         .times(OUT_FRAME);
 
-
-
       const focusPlayer = focus.waitRestart === -1 ? (
         focus.currentPlayerSprite // ?? focus.focusPlayer
       ) : undefined;
@@ -57,13 +55,12 @@ export class FocusCamera extends Camera {
           const { created, type } = item;
           if (type !== EEffect.DEATH) continue;
           if (created + 3000 < time) continue;
-          minVec.cropMin(item);
-          maxVec.cropMax(item);
+          minVec.cropMax(item);
+          maxVec.cropMin(item);
         }
 
         const size = maxVec.minus(minVec);
         const center = size.cdiv(2).plus(minVec).plus(.5 * OUT_FRAME);
-
 
         this.need.set(
           this.filterNeed(

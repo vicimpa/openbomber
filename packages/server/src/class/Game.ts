@@ -203,7 +203,7 @@ export class Game {
   start() {
     if (this.running) return;
     this.running = true;
-    console.info('Game starting', { timestamp: true });
+    console.info('Game starting');
     this.restart();
     this.loop()
       .catch(console.error);
@@ -211,7 +211,7 @@ export class Game {
 
   stop() {
     if (!this.running) return;
-    console.info('Game stoping', { timestamp: true });
+    console.info('Game stoping');
     this.running = false;
   }
 
@@ -231,7 +231,7 @@ export class Game {
         'playersCount',
         this.playersCount,
         count => {
-          console.info('Players count ' + count, { timestamp: true });
+          console.info('Players count ' + count);
 
           if (this.isHaveWin && count < 2 && !this.kills)
             this.isHaveWin = false;
@@ -276,11 +276,11 @@ export class Game {
         playersCount && this.livePlayersCount <= +!!(playersCount - 1) && !this.explodes.size && !this.bombs.size,
         (isRestart) => {
           if (isRestart) {
-            console.info("Wait restart", { timestamp: true });
+            console.info("Wait restart");
             this.waitForRestart = Date.now() + (IS_DEV || playersCount == 1 ? 0 : 5000);
           } else {
             if (this.waitForRestart > 0) {
-              console.info("Cancel restart", { timestamp: true });
+              console.info("Cancel restart");
             }
             this.waitForRestart = -1;
           }
@@ -302,7 +302,7 @@ export class Game {
 
       if (this.waitForRestart > 0) {
         if (Date.now() > this.waitForRestart + 500) {
-          console.info("Restart", { timestamp: true });
+          console.info("Restart");
           this.restart();
         }
       }
@@ -312,7 +312,7 @@ export class Game {
         'clearMap',
         this.map.findIndex(e => e == EMapItem.BLOCK) == -1 && playersCount <= 1 && this.achivments.size === 0 && this.waitForRestart === -1,
         (value) => {
-          console.info(`Change value ${value}`, { timestamp: true });
+          console.info(`Change value ${value}`);
           if (value)
             this.waitForRestart = Date.now();
         }

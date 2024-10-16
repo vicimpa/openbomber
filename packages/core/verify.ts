@@ -1,3 +1,4 @@
+import { API_VERSION } from "@ob/shared/config";
 import { random } from "@vicimpa/math";
 
 export const makeData = () => (
@@ -13,5 +14,5 @@ export const calc = (numbers: number[]) => (
       i & 1 && i & 2 ? acc * e : acc + e
     ),
     0
-  ) | 0
+  ) * API_VERSION | 0
 );

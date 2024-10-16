@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc && vite build && bun post.js",
     "preview": "vite preview",
+    "postinstall": "bun run -- build",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {
@@ -27,7 +28,7 @@
     "vite-tsconfig-paths": "^5.0.1"
   },
   "dependencies": {
-    "@vicimpa/lib-vec2": "^0.2.7",
+    "@vicimpa/lib-vec2": "^0.2.8",
     "@vicimpa/math": "^0.0.9",
     "@vicimpa/nick-name": "^1.0.9",
     "@vicimpa/perlin-noise": "^0.0.7",
