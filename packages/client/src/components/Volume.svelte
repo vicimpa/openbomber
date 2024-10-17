@@ -6,7 +6,6 @@
   import { onMount } from "svelte";
   import Button from "./Button.svelte";
   import { Vec2 } from "@vicimpa/lib-vec2";
-  import { point } from "@ob/core/point";
 
   let volume = clamp(+(localStorage.getItem("volume") ?? 0.2), 0, 1);
   let step = 0.01;
@@ -20,7 +19,7 @@
 
   const mouseDown = ({ x, y }: MouseEvent) => {
     startVolume = volume;
-    start = point(x, y);
+    start = new Vec2(x, y);
   };
 
   const mouseUp = ({}: MouseEvent) => {

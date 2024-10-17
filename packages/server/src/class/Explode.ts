@@ -4,8 +4,8 @@ import { Achivment } from "./Achivment";
 import { Bomb } from "./Bomb";
 import { Entity } from "./Entity";
 import { Player } from "./Player";
+import { Vec2 } from "@vicimpa/lib-vec2";
 import { pick } from "@ob/core/pick";
-import { point } from "@ob/core/point";
 
 export interface IExplodePoin {
   x: number;
@@ -94,7 +94,7 @@ export class Explode extends Entity {
       map
     } = game;
 
-    const vec = point();
+    const vec = new Vec2();
 
     for (const [_id, direction] of Object.entries(EXPODER_DIRS)) {
       const { x: dx, y: dy } = direction;

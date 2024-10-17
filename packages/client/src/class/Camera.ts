@@ -1,6 +1,6 @@
 import { Entity } from "./Entity";
+import { Vec2 } from "@vicimpa/lib-vec2";
 import { makeNumberFilter } from "@ob/core/makeNumberFilter";
-import { point } from "@ob/core/point";
 import { writable } from "svelte/store";
 
 export class Camera extends Entity {
@@ -47,7 +47,7 @@ export class Camera extends Entity {
 
   apply() {
     const { ctx, width, height, s } = this;
-    const translate = point(width, height)
+    const translate = new Vec2(width, height)
       .times(.5)
       .minus(this.ctimes(s));
 

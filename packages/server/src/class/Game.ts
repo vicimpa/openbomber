@@ -17,7 +17,6 @@ import { find } from "@ob/core/find";
 import { map } from "@ob/core/map";
 import { min } from "@vicimpa/math";
 import { pick } from "@ob/core/pick";
-import { point } from "@ob/core/point";
 import { random } from "@ob/core/random";
 
 export const defaultConfig = {
@@ -29,10 +28,10 @@ export const defaultConfig = {
 };
 
 export const defaultStartPositions: Vec2[] = [
-  point(0, 0),
-  point(1, 0),
-  point(1, 1),
-  point(0, 1)
+  new Vec2(0, 0),
+  new Vec2(1, 0),
+  new Vec2(1, 1),
+  new Vec2(0, 1)
 ];
 
 export type TConfig = typeof defaultConfig;

@@ -3,7 +3,6 @@
   import { onMount } from "svelte";
   import { socket } from "./socket";
 
-  import { point } from "@ob/core/point";
   import { NICK_LENGTH, SKINS_COUNT } from "@ob/shared/config";
   import {
     GAME_INFO,
@@ -33,6 +32,7 @@
   import UserInfo from "./components/UserInfo.svelte";
   import SelectSkin from "./components/SelectSkin.svelte";
   import HowToPlay from "./components/HowToPlay.svelte";
+  import { Vec2 } from "@vicimpa/lib-vec2";
 
   const newApi = gameApi.use(socket);
 
@@ -81,7 +81,7 @@
       },
       playSoundPosition({ sound, position }) {
         if (!cam || !cam.focus || !gameInfo) return sounds[sound]?.play();
-        const p = point(position).times(OUT_FRAME);
+        const p = new Vec2(position).times(OUT_FRAME);
         const delta = cam
           .cminus(cam.focus)
           .minus(OUT_FRAME / 2)

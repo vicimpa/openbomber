@@ -6,7 +6,6 @@ import { Game } from "./Game";
 import { OUT_FRAME } from "../config";
 import { Vec2 } from "@vicimpa/lib-vec2";
 import { makeVec2Filter } from "@ob/core/makeVec2Filter";
-import { point } from "@ob/core/point";
 
 export class FocusCamera extends Camera {
   focus?: Game;
@@ -15,7 +14,7 @@ export class FocusCamera extends Camera {
   padding = 0;
 
   filterNeed = makeVec2Filter(25);
-  need = point(0);
+  need = new Vec2(0);
 
   update(dtime: number, time: number): void {
     const { focus } = this;
@@ -40,8 +39,8 @@ export class FocusCamera extends Camera {
         this.scale = min(this.width, this.height) / (OUT_FRAME * 10);
       } else if (focus.waitRestart == -1 && focus.positions.size) {
         const time = Date.now();
-        const minVec = point(Infinity);
-        const maxVec = point(-Infinity);
+        const minVec = new Vec2(Infinity);
+        const maxVec = new Vec2(-Infinity);
 
         for (const [_, item] of focus.positions) {
           minVec.cropMax(item);
@@ -68,7 +67,7 @@ export class FocusCamera extends Camera {
           )
         );
 
-        const vec = point(this.width, this.height)
+        const vec = new Vec2(this.width, this.height)
           .div(size.plus(8 * OUT_FRAME));
 
         this.scale = clamp(

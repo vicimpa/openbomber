@@ -2,8 +2,8 @@ import type { Camera } from "./Camera";
 import { Frame } from "./Frame";
 import { OUT_FRAME } from "../config";
 import { Sprite } from "./Sprite";
+import { Vec2 } from "@vicimpa/lib-vec2";
 import { effectObject } from "@ob/core/effectObject";
-import { point } from "@ob/core/point";
 import spriteMode from "images/characters-model.png";
 
 export class Character extends Frame {
@@ -32,7 +32,7 @@ export class Character extends Frame {
         can.width = 12 * OUT_FRAME;
         can.height = OUT_FRAME;
 
-        this.sourceFrame.render(ctx, point(0, 0), 0, 0);
+        this.sourceFrame.render(ctx, new Vec2(0, 0), 0, 0);
         this.sprite = new Sprite(can);
       }
     );

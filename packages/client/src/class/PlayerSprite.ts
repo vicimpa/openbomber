@@ -1,6 +1,4 @@
 import { DIRECTIONS, EAnimate, EDir } from "@ob/shared/types";
-import { NewYear, SPRITES } from "../images/Heroes/";
-import { point, points } from "@ob/core/point";
 
 import type { Camera } from "./Camera";
 import { CrazyEffectSprite } from "./CrazyEffectSprite";
@@ -8,6 +6,7 @@ import { Entity } from "./Entity";
 import { FireSprite } from "./FireSprite";
 import { MovingSprite } from "./MovingSprite";
 import { OUT_FRAME } from "../config";
+import { SPRITES } from "../images/Heroes/";
 import { ShieldSprite } from "./ShieldSprite";
 import { Sprite } from "./Sprite";
 import { Vec2 } from "@vicimpa/lib-vec2";
@@ -16,6 +15,7 @@ import dust1Src from "../images/Dust/Dust1.png";
 import dust2Src from "../images/Dust/Dust2.png";
 import { effectObject } from "@ob/core/effectObject";
 import { makeVec2Filter } from "@ob/core/makeVec2Filter";
+import { points } from "@ob/core/point";
 
 const IDLE = points('0,0;1,0;2,0;3,0');
 const RUNNING = points('0,0;1,0;2,0;3,0;4,0;5,0');
@@ -23,10 +23,10 @@ const RUNNING = points('0,0;1,0;2,0;3,0;4,0;5,0');
 const sprites = SPRITES.map(e => new Sprite(e, 32, 16));
 
 const FRAMES = {
-  [EDir.TOP]: point(0, 5 * 3),
-  [EDir.LEFT]: point(0, 5 * 1),
-  [EDir.RIGHT]: point(0, 5 * 2),
-  [EDir.BOTTOM]: point(0, 5 * 0),
+  [EDir.TOP]: new Vec2(0, 5 * 3),
+  [EDir.LEFT]: new Vec2(0, 5 * 1),
+  [EDir.RIGHT]: new Vec2(0, 5 * 2),
+  [EDir.BOTTOM]: new Vec2(0, 5 * 0),
 };
 
 export class PlayerSprite extends Entity {

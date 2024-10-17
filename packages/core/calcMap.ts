@@ -1,7 +1,6 @@
 import { ceil, clamp, floor } from "@vicimpa/math";
 
 import { Vec2 } from "@vicimpa/lib-vec2";
-import { point } from "@ob/core/point";
 
 const PADDING = 6;
 const MARGIN = 8;
@@ -32,7 +31,7 @@ export const calcMap = (players = 0) => {
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       positions.push(
-        point(
+        new Vec2(
           px + m * x,
           py + m * y
         )
@@ -41,7 +40,7 @@ export const calcMap = (players = 0) => {
   }
 
   return {
-    size: point(
+    size: new Vec2(
       2 * px + m * (width - 1) + 1,
       2 * py + m * (height - 1) + 1,
     ),

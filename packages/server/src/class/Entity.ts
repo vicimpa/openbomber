@@ -1,12 +1,11 @@
 import { Game } from "./Game";
 import { Vec2 } from "@vicimpa/lib-vec2";
 import { isColide } from "@ob/core/isColide";
-import { point } from "@ob/core/point";
 
-const me = point();
-const size = point();
-const pos = point();
-const obj = point();
+const me = new Vec2();
+const size = new Vec2();
+const pos = new Vec2();
+const obj = new Vec2();
 
 export class Entity extends Vec2 {
   constructor(

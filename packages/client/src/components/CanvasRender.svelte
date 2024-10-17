@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Vec2 } from "@vicimpa/lib-vec2";
   import { INPUT_POSITION, playerApi } from "@ob/shared/api";
-  import { point } from "@ob/core/point";
   import { Application } from "../class/Application";
   import { Background } from "../class/Background";
   import { FocusCamera } from "../class/FocusCamera";
@@ -42,7 +41,11 @@
 
     const unforward = playerApi.forward(socket, {
       updateGameInfo({ width, height, currentLimited }) {
-        const position = point(width, height).div(-2).floor().times(16).plus(0);
+        const position = new Vec2(width, height)
+          .div(-2)
+          .floor()
+          .times(16)
+          .plus(0);
         game.set(position);
 
         game.width = width;

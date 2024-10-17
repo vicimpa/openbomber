@@ -10,7 +10,6 @@ import { Player } from "./Player";
 import { RadiusEffect } from "./RadiusEffect";
 import { Vec2 } from "@vicimpa/lib-vec2";
 import { pick } from "@ob/core/pick";
-import { point } from "@ob/core/point";
 
 export class Bomb extends Entity {
   id!: number;
@@ -119,7 +118,7 @@ export class Bomb extends Entity {
         if (item.checkCollision(newSet, .8)) haveColide = true;
       }
 
-      const vec = point();
+      const vec = new Vec2();
 
       for (let i = 0; i < map.length; i++) {
         if (haveColide) continue;

@@ -2,7 +2,7 @@ import { ACHIVMEN_POINTS, EAchivment } from "@ob/shared/types";
 
 import { Frame } from "./Frame";
 import { Sprite } from "./Sprite";
-import { point } from "@ob/core/point";
+import { Vec2 } from "@vicimpa/lib-vec2";
 import spriteSrc from "../images/Bonus/Ikonki.png";
 
 export class AchivmentSprite extends Frame {
@@ -10,6 +10,6 @@ export class AchivmentSprite extends Frame {
   type!: EAchivment;
 
   update(dtime: number, time: number): void {
-    this.frame.set(ACHIVMEN_POINTS[this.type] ?? point(-1, 0));
+    this.frame.set(ACHIVMEN_POINTS[this.type] ?? new Vec2(-1, 0));
   }
 }
