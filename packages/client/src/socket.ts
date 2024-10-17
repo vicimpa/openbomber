@@ -1,5 +1,4 @@
-import { API_VERSION } from "@shared/config";
-import { IS_DEV } from "@server/src/env";
+import { IS_DEV } from "./env";
 import { calc } from "@ob/core/verify";
 import { connect } from "socket.io-client";
 import { verifyApi } from "@ob/shared/api";
