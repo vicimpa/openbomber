@@ -1,6 +1,13 @@
 {
   "name": "openbomber",
   "version": "0.0.0",
+  "scripts": {
+    "build-client": "cd packages/client && bun run build",
+    "build-server": "cd packages/server && bun run build",
+    "dev-client": "cd packages/client && bun dev",
+    "dev-server": "cd packages/server && bun dev",
+    "rebuild-all": "rm -rf node_modules && bun install"
+  },
   "workspaces": [
     "./packages/*"
   ]

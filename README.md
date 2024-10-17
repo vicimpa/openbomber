@@ -23,22 +23,34 @@
 ![](screen/5.png)
 
 
-## Для запуска 
+## Установка зависимостей 
 ```bash
-> npm i
-> npm run dev
+> bun install
 ```
 
-## Для билда
+## Ребилд 
 ```bash
-> npm i
-> npm run build
+> bun rebuild-all
 ```
 
-## Чтобы проверить сервер
+## Для билда сервера 
 ```bash
-> npm i
-> npm run preview
+> bun build-server
+```
+
+## Для билда клиента 
+```bash
+> bun build-client
+```
+
+## Для запуска сервера
+```bash
+> bun dev-server
+```
+
+## Для запуска клиента
+```bash
+> bun dev-client
 ```
 
 ## Donate
