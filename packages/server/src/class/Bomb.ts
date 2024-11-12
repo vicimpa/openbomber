@@ -26,6 +26,9 @@ export class Bomb extends Entity {
 
   isCrazy = false;
   isRadio = false;
+
+  ignore = new Set<Player>();
+
   get isMove() { return !!this.dir; }
 
   constructor(

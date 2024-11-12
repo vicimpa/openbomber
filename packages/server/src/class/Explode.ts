@@ -53,9 +53,9 @@ export class Explode extends Entity {
   radius = 1;
   player: Player;
 
-  ignore = new Set<Player>();
+  get ignore() { return this.bomb.ignore; }
 
-  constructor(bomb: Bomb) {
+  constructor(public bomb: Bomb) {
     super(bomb.game, bomb.x, bomb.y);
     this.id = bomb.game.explodesCounter++;
     this.radius = bomb.radius;
