@@ -144,10 +144,8 @@ export class Explode extends Entity {
     const { explodes } = this.game;
     const { created, liveTime } = this;
 
-    if (Date.now() > created + liveTime) {
+    if (Date.now() > created + liveTime)
       explodes.delete(this);
-      this.ignore.clear();
-    }
 
     for (const point of this.points as Entity[]) {
       point.update(dtime, time);
