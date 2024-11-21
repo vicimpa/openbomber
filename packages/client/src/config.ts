@@ -1,3 +1,4 @@
+import hellcord from "./icons/hellcord.png";
 import ptchbz from "./icons/ptchbz.png";
 
 export const OUT_FRAME = 32;
@@ -12,8 +13,13 @@ export const EXTERNAL_LINKS = [
     name: 'Наш сервер в Discord',
   },
   {
+    href: 'https://discord.gg/hellcord',
+    name: 'Discord айтишников',
+    icon: hellcord
+  },
+  {
     href: 'https://discord.gg/hGEcsZ5',
-    name: 'Сервак айтишников',
+    name: 'Еще один Discord айтишников',
     icon: ptchbz
   },
   {
