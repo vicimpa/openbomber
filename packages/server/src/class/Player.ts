@@ -292,10 +292,10 @@ export class Player extends Entity {
     },
 
     setSkin: (skin) => {
-      if (Date.now() - this.lastSkin < TIMEOUT_SKIN) {
-        this.ban(FDate.from('30m'));
-        return;
-      }
+      // if (Date.now() - this.lastSkin < TIMEOUT_SKIN) {
+      //   this.ban(FDate.from('30m'));
+      //   return;
+      // }
       this.lastSkin = Date.now();
       this.skin = rem(skin | 0, SKINS_COUNT);
     },
@@ -342,10 +342,10 @@ export class Player extends Entity {
       if (name[0] === '@')
         name = name.slice(1);
 
-      if (Date.now() - this.lastNick < TIMEOUT_NICKNAME) {
-        this.ban(FDate.from('30m'));
-        return;
-      }
+      // if (Date.now() - this.lastNick < TIMEOUT_NICKNAME) {
+      //   this.ban(FDate.from('30m'));
+      //   return;
+      // }
       this.lastNick = Date.now();
       this.name = name.slice(0, NICK_LENGTH);
     },
