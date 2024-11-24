@@ -2,7 +2,7 @@ import { FDate } from "@ob/core/FDate";
 
 export const API_VERSION = 1;
 export const TEST_ADMIN_IP = /(127.0.0.\d+|10\.242\.36\.\d+)/;
-export const MAX_PLAYERS = 16;
+export const MAX_PLAYERS = 32;
 export const NICK_LENGTH = 18;
 export const MESSAGE_LENGTH = 100;
 export const PLAYER_TIMEOUT = FDate.from('1m');
