@@ -30,9 +30,9 @@ export class ExplodePoint extends Entity {
     const { bombs, achivments } = this.game;
 
     for (const bomb of bombs) {
-      if (bomb.checkCollision(this, .7)) {
+      if (bomb.checkCollision(this, .7) && bomb.time > 100) {
         bomb.player = this.explode.player;
-        Explode.run(bomb);
+        bomb.time = 100;
       }
     }
 
@@ -95,6 +95,10 @@ export class Explode extends Entity {
     } = game;
 
     const vec = new Vec2();
+    const bombs = new Set<`${number}:${number}`>();
+
+    for (const bomb of this.game.bombs)
+      bombs.add(`${bomb.x}:${bomb.y}`);
 
     for (const [_id, direction] of Object.entries(EXPODER_DIRS)) {
       const { x: dx, y: dy } = direction;
@@ -120,12 +124,20 @@ export class Explode extends Entity {
               );
             }
 
+
+
             points.push(new ExplodePoint(this, x, y, dir, true, true));
           }
+
 
           const last = points.slice(-1)[0];
           if (last)
             last.isFinaly = true;
+          break;
+        }
+
+        if (bombs.has(`${x}:${y}`)) {
+          points.push(new ExplodePoint(this, x, y, dir, true, false));
           break;
         }
 

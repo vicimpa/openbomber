@@ -96,7 +96,7 @@ export const soundStore = {
   [ESounds.bonus]: import('../sound/bonus.wav'),
   [ESounds.death]: import('../sound/death.wav'),
   [ESounds.putBomb]: import('../sound/put_bomb.mp3'),
-  [ESounds.explode]: import('../sound/explode.mp3'),
+  [ESounds.explode]: import('../sound/explode2.mp3'),
   [ESounds.newLife]: import('../sound/new_life.wav'),
   [ESounds.message]: import('../sound/message.mp3'),
   [ESounds.shield]: import('../sound/shield.mp3'),

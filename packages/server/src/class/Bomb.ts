@@ -15,8 +15,7 @@ export class Bomb extends Entity {
   id!: number;
   creator!: Player;
 
-  time = Date.now();
-  liveTime = BOMB_TIME;
+  time = BOMB_TIME;
   dir?: Vec2;
 
   isFake = false;
@@ -45,7 +44,7 @@ export class Bomb extends Entity {
     if (this.isCrazy) {
       this.isFake = Math.random() < .1 ? true : false;
 
-      this.liveTime = CRAZY_BOMB_MIN + (
+      this.time = CRAZY_BOMB_MIN + (
         Math.random() * (CRAZY_BOMB_MAX - CRAZY_BOMB_MIN)
       );
 
@@ -68,7 +67,8 @@ export class Bomb extends Entity {
   }
 
   update(dtime: number): void {
-    const { time, liveTime, game: { waitForRestart, players, bombs, map, achivments }, player } = this;
+    this.time -= dtime;
+    const { time, game: { waitForRestart, players, bombs, map, achivments }, player } = this;
 
     if (!this.dir) {
       const vec = this.cfloor().times(1, this.game.width);
@@ -143,7 +143,7 @@ export class Bomb extends Entity {
       }
     }
 
-    if (Date.now() > time + liveTime && waitForRestart < 0) {
+    if (time <= 0 && waitForRestart < 0) {
       if (this.isFake) {
         this.game.bombs.delete(this);
         this.game.effects.add(
