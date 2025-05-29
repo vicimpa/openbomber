@@ -4,8 +4,8 @@ on:
   push:
     branches: [ main ]
     paths:
-      - '.github/workflows/main.yml'
       - 'packages/**'
+      - '.github/workflows/main.yml'
 
 jobs:
   build:
