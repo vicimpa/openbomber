@@ -6,7 +6,7 @@ import { Entity } from "./Entity";
 import { FireSprite } from "./FireSprite";
 import { MovingSprite } from "./MovingSprite";
 import { OUT_FRAME } from "../config";
-import { SPRITES } from "../images/Heroes/";
+import { SPRITES } from "../images/Heroes2/";
 import { ShieldSprite } from "./ShieldSprite";
 import { Sprite } from "./Sprite";
 import { Vec2 } from "@vicimpa/lib-vec2";
@@ -23,9 +23,9 @@ const RUNNING = points('0,0;1,0;2,0;3,0;4,0;5,0');
 const sprites = SPRITES.map(e => new Sprite(e, 32, 16));
 
 const FRAMES = {
-  [EDir.TOP]: new Vec2(0, 5 * 3),
-  [EDir.LEFT]: new Vec2(0, 5 * 1),
-  [EDir.RIGHT]: new Vec2(0, 5 * 2),
+  [EDir.TOP]: new Vec2(0, 2 * 4),
+  [EDir.LEFT]: new Vec2(0, 3 * 4),
+  [EDir.RIGHT]: new Vec2(0, 1 * 4),
   [EDir.BOTTOM]: new Vec2(0, 5 * 0),
 };
 
@@ -93,7 +93,7 @@ export class PlayerSprite extends Entity {
     const frame = ((time - this.startAnimate) / speed | 0) % size;
 
     this.frame.set(list[frame].ctimes(1, this.skin));
-    this.frame.plus(0, this.animate === EAnimate.IDLE ? 3 : 4);
+    this.frame.plus(0, this.animate === EAnimate.IDLE ? 2 : 3);
     this.frame.plus(FRAMES[this.dir]);
 
     if (!this.isMe && time - this.lastTime < 50) {
@@ -124,6 +124,7 @@ export class PlayerSprite extends Entity {
       this.dust1.render(ctx, this.frame);
 
     this.sprite.render(ctx, this.frame);
+
     // this.cap.render(ctx, this.frame);
 
     if (this.isSpeedUp)

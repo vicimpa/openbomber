@@ -27,7 +27,7 @@
   {#each [...leavePlayers, ...deathPlayers] as player}
     <li data-death={player.isDeath} data-me={player === current}>
       <div class="player">
-        <Frame src={SPRITES[player.skin]} padding={16} s={0.8} y={3} />
+        <Frame src={SPRITES[player.skin]} size={64} s={0.8} y={3} />
       </div>
       <span class="name">
         {player.name || "noname"}
@@ -45,7 +45,7 @@
 <style lang="scss">
   .player {
     position: relative;
-    width: 16px;
+    width: 32px;
     height: 16px;
     transform: scale(1.5);
     display: flex;

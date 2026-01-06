@@ -36,7 +36,7 @@ export class Game extends Entity {
   height = 0;
 
   focusCamera?: FocusCamera;
-  newRender?: Uint8Array;
+  newRender?: Uint8Array<ArrayBuffer>;
 
   players = new Map<number, TProtoOut<typeof PLAYER_INFO>>();
   positions = new Map<number, TProtoOut<typeof PLAYER_POSITION>>();

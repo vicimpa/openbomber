@@ -27,10 +27,11 @@
     background-color: #444;
     color: #fff;
     text-align: center;
+    padding: 10px 20px;
 
     &[data-disabled="true"] {
       cursor: not-allowed;
-      opacity: .8;
+      opacity: 0.8;
       background-color: #222;
     }
   }

@@ -17,8 +17,14 @@ jobs:
         with:
           bun-version: 1.1.30
 
-      - name: Build project
-        run: bun install
+      - name: Install deps
+        run: bun install 
+
+      - name: Build Client
+        run: bun build-client 
+
+      - name: Build Server
+        run: bun build-server
 
       - name: Deploy Client
         uses: appleboy/scp-action@v0.1.7

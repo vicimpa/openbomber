@@ -17,18 +17,16 @@
   $: _x = x ?? frame?.x ?? 0;
   $: _y = y ?? frame?.y ?? 0;
 
-  export let scale: number | undefined = undefined;
-
   export let s = 1;
 
-  export let sx = scale ?? s;
-  export let sy = scale ?? s;
+  export let sx = 1;
+  export let sy = 1;
 
   $: style = stylesVariable({
     x: _x,
     y: _y,
-    sx: sx,
-    sy: sy,
+    sx: sx * s,
+    sy: sy * s,
     padding: padding + "px",
   });
 </script>

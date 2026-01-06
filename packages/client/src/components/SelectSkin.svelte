@@ -4,9 +4,23 @@
   import Frame from "./Frame.svelte";
   import Button from "./Button.svelte";
   import { createEventDispatcher } from "svelte";
-  import { SPRITES } from "../images/Heroes";
+  import { SPRITES } from "../images/Heroes2";
+  import { onFrame } from "../library/onFrame";
 
-  export let selected: number | null = null;
+  const rows = [4, 9, 19, 14];
+
+  export let selected = 0;
+
+  let loop1 = 0;
+  let loop2 = 0;
+
+  $: frame = (loop1 | 0) % 6;
+  $: dir = loop2 % 4 | 0;
+
+  onFrame((dt) => {
+    loop1 += dt / 100;
+    loop2 += dt / 1000;
+  });
 
   const dispatch = createEventDispatcher<{ changeSkin: number }>();
 </script>
@@ -17,13 +31,17 @@
   {#each each(SKINS_COUNT) as skin}
     <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div
-      on:mousedown={() => (selected = skin)}
+      on:mousedown={() => ((selected = skin), (loop1 = 0), (loop2 = 0))}
       class="skin-item"
       data-select={selected === skin}
     >
-      <div class="scale">
-        <Frame src={SPRITES[skin]} s={0.6} padding={16} y={3} />
-      </div>
+      <Frame
+        src={SPRITES[skin]}
+        s={2}
+        size={64}
+        x={selected === skin ? frame : 0}
+        y={3 + (selected === skin ? dir * 4 : 0)}
+      />
     </div>
   {/each}
 </div>
@@ -39,25 +57,27 @@
     display: flex;
     flex-wrap: wrap;
     width: 40vw;
-    height: 20vh;
-    max-width: 300px;
-    max-height: 200px;
+    max-width: 350px;
     overflow: hidden;
-    overflow-y: scroll;
-    justify-content: space-around;
+    justify-content: center;
+    align-content: start;
+    gap: 10px;
+    padding: 10px;
+    box-sizing: content-box;
 
     .skin-item {
-      width: 48px;
-      height: 48px;
+      width: 64px;
+      height: 64px;
       position: relative;
       display: flex;
       justify-content: center;
       align-items: center;
       cursor: pointer;
 
-      & > .scale {
-        transform: scale(2.4);
+      & :global(.frame) {
+        pointer-events: none;
       }
+
       &[data-select="true"] {
         background-color: #999;
         border-radius: 100%;
