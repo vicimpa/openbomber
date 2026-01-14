@@ -90,7 +90,7 @@ export class PlayerSprite extends Entity {
     const speed = this.animate === EAnimate.IDLE ? 200 : 100;
     const list = this.animate === EAnimate.IDLE ? IDLE : RUNNING;
     const size = list.length;
-    const frame = ((time - this.startAnimate) / speed | 0) % size;
+    const frame = (((time - this.startAnimate) / speed | 0) + +(this.animate === EAnimate.RUNNING)) % size;
 
     this.frame.set(list[frame].ctimes(1, this.skin));
     this.frame.plus(0, this.animate === EAnimate.IDLE ? 2 : 3);
