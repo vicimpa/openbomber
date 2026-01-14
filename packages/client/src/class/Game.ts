@@ -54,8 +54,8 @@ export class Game extends Entity {
   localInfo?: TProtoOut<typeof PLAYER_INFO>;
   waitRestart = -1;
 
-  playerEffect = makeEffect<{ x: number, y: number, dir: EDir, animate: EAnimate; }>();
-  updatePosition(x: number, y: number, dir: EDir, animate: EAnimate) { }
+  playerEffect = makeEffect<{ x: number, y: number, dir: EDir, animate: EAnimate; isUp: boolean; }>();
+  updatePosition(x: number, y: number, dir: EDir, animate: EAnimate, isUp: boolean) { }
 
   update(dtime: number, time: number): void {
     const players = [...this.playersLayer.players.values()];
@@ -75,18 +75,19 @@ export class Game extends Entity {
     if (this.currentPlayer && this.localInfo) {
       this.currentPlayer.tick(dtime, time);
 
-      let { x, y, dir, animate } = this.currentPlayer;
+      let { x, y, dir, animate, isUp } = this.currentPlayer;
 
       x = ((x * 16) | 0) / 16;
       y = ((y * 16) | 0) / 16;
 
-      this.playerEffect({ x, y, dir, animate }, () => (
-        this.updatePosition(x, y, dir, animate)
+      this.playerEffect({ x, y, dir, animate, isUp }, () => (
+        this.updatePosition(x, y, dir, animate, isUp)
       ));
 
       if (this.currentPlayerSprite) {
         this.currentPlayerSprite.dir = this.currentPlayer.dir;
         this.currentPlayerSprite.animate = this.currentPlayer.animate;
+        this.currentPlayerSprite.isUp = this.currentPlayer.isUp;
         this.currentPlayerSprite.set(
           this.currentPlayer
         ).times(OUT_FRAME);
@@ -102,6 +103,7 @@ export class Game extends Entity {
       this.currentPlayerSprite.skin = this.localInfo.skin;
       this.currentPlayerSprite.name = this.localInfo.name;
       this.currentPlayerSprite.isAdmin = this.localInfo.isAdmin;
+      this.currentPlayerSprite.isUp = this.localInfo.isUp;
     }
 
     if (this.focusCamera) {

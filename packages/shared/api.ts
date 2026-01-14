@@ -24,6 +24,7 @@ export const INPUT_POSITION = new Proto({
   y: POSITION,
   dir: DIRECTION,
   animate: ANIMATION,
+  isUp: 'boolean'
 });
 
 export const MESSAGE_INFO = new Proto({
@@ -79,7 +80,8 @@ export const PLAYER_INFO = new Proto({
     crazy: 'boolean',
     haveMove: 'boolean'
   },
-  ping: 'uint16'
+  ping: 'uint16',
+  isUp: 'boolean'
 });
 
 export const ACHIVMENT_INFO = new Proto({

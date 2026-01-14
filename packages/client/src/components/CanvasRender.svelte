@@ -25,6 +25,7 @@
 
   let canvas: HTMLCanvasElement;
   let move = new Vec2();
+  let isUp = false;
   let state = {
     inGame: false,
   };
@@ -55,8 +56,8 @@
         game.appendTo(app);
         game.mapLayer.limit = currentLimited;
 
-        game.updatePosition = (x, y, dir, animate) => {
-          dispatch("setPosition", { x, y, dir, animate });
+        game.updatePosition = (x, y, dir, animate, isUp) => {
+          dispatch("setPosition", { x, y, dir, animate, isUp });
         };
       },
 
@@ -113,6 +114,9 @@
   });
 
   onFrame(() => {
+    if (game.currentPlayer) {
+      game.currentPlayer.isUp = isUp;
+    }
     game.viewCount = viewCount;
     view = game.focusPlayer ?? null;
   });
@@ -123,6 +127,7 @@
   <Controller
     inGame={state.inGame}
     bind:move
+    bind:isUp
     on:bomb={() => dispatch("setBomb")}
   />
 </div>

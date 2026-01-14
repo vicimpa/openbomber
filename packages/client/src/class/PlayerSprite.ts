@@ -53,6 +53,7 @@ export class PlayerSprite extends Entity {
   isMoving = false;
   isAdmin = false;
   isSpeedUp = false;
+  isUp = false;
 
   fireAnimate = new FireSprite();
   shieldAnimate = new ShieldSprite();
@@ -93,7 +94,8 @@ export class PlayerSprite extends Entity {
     const frame = (((time - this.startAnimate) / speed | 0) + +(this.animate === EAnimate.RUNNING)) % size;
 
     this.frame.set(list[frame].ctimes(1, this.skin));
-    this.frame.plus(0, this.animate === EAnimate.IDLE ? 2 : 3);
+    this.frame.plus(0, this.animate === EAnimate.IDLE ? 0 : 1);
+    this.frame.plus(0, this.isUp ? 0 : 2);
     this.frame.plus(FRAMES[this.dir]);
 
     if (!this.isMe && time - this.lastTime < 50) {

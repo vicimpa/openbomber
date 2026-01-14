@@ -11,6 +11,7 @@ export class PlayerControllerNew extends Vec2 {
   animate: EAnimate = EAnimate.IDLE;
   speedMulti = 1;
   move = new Vec2();
+  isUp = false;
 
   constructor(public game: Game) {
     super();

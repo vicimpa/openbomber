@@ -52,6 +52,7 @@ export class Player extends Entity {
   isAdmin = false;
   #animate = EAnimate.IDLE;
   moved = false;
+  isUp = false;
 
   get id() { return this.#id; }
   get canJoin() { return this.game.slotLimits > this.game.playersCount; }
@@ -150,6 +151,7 @@ export class Player extends Entity {
       'effects',
       'ping',
       'isAdmin',
+      'isUp'
     ]);
   }
 
@@ -181,7 +183,7 @@ export class Player extends Entity {
   }
 
   newMethods: Parameters<typeof gameApi['forward']>[1] = {
-    setPosition: ({ x, y, dir, animate }) => {
+    setPosition: ({ x, y, dir, animate, isUp }) => {
       if (this.isDeath && !this.inGame) return;
       const { speed } = this.effects;
       const deltatime = Date.now() - this.lastAction;
@@ -197,6 +199,7 @@ export class Player extends Entity {
       x = (x * 16 | 0) / 16;
       y = (y * 16 | 0) / 16;
 
+      this.isUp = isUp;
       this.lastAction = Date.now();
       this.x = x;
       this.y = y;

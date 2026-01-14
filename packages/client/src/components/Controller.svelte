@@ -10,6 +10,7 @@
 
   export let move = new Vec2();
   export let inGame = true;
+  export let isUp = false;
 
   const dispatch = createEventDispatcher<{
     bomb: void;
@@ -50,10 +51,12 @@
 
   const keys = makeController({
     bomb: ["Space", "Enter"],
+    up: ["KeyE", "RightShift"],
   });
 
   const gamepad = makeController({
     bomb: [() => !!gamepads.find((e) => e.buttons[0].pressed)],
+    up: [() => !!gamepads.find((e) => e.buttons[1].pressed)],
   });
 
   const filter = (x: number, y: number) => {
@@ -189,6 +192,9 @@
     }
 
     keys.bomb.isSingle() && dispatch("bomb");
+
+    if (keys.up.isDown() && !isUp) isUp = true;
+    if (keys.up.isUp() && isUp) isUp = false;
 
     if (keyboardMove.length()) move.set(keyboardMove);
     else if (gamepadMove.length()) move.set(gamepadMove);

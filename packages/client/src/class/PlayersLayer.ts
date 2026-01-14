@@ -35,6 +35,7 @@ export class PlayersLayer extends Entity {
         player.isMoving = !!info && info.effects.haveMove;
         player.isAdmin = !!info && info.isAdmin;
         player.moveSpeed = speed;
+        player.isUp = !!info && info.isUp;
         player.effect(x, y, dir, animate, time);
       },
       (player) => {

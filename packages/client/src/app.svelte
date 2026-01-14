@@ -330,7 +330,8 @@
           left: -15px;
         }
       }
-      &:hover {
+      &:hover,
+      &:has(input:focus) {
         transform: translateX(0);
       }
       .item {
