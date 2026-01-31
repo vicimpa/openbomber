@@ -11,14 +11,18 @@ import { ShieldSprite } from "./ShieldSprite";
 import { Sprite } from "./Sprite";
 import { Vec2 } from "@vicimpa/lib-vec2";
 import { calcSpeed } from "@ob/core/calcSpeed";
-import dust1Src from "../images/Dust/Dust1.png";
-import dust2Src from "../images/Dust/Dust2.png";
+import dust1Src from "../images/Dust 2/dust1.png";
+import dust2Src from "../images/Dust 2/dust2.png";
 import { effectObject } from "@ob/core/effectObject";
 import { makeVec2Filter } from "@ob/core/makeVec2Filter";
 import { points } from "@ob/core/point";
+import { loadHero } from "../library/loadHero";
 
 const IDLE = points('0,0;1,0;2,0;3,0');
 const RUNNING = points('0,0;1,0;2,0;3,0;4,0;5,0');
+
+const dust1hero = await loadHero(dust1Src);
+const dust2hero = await loadHero(dust2Src);
 
 const sprites = SPRITES.map(e => new Sprite(e, 32, 16));
 
@@ -40,8 +44,8 @@ export class PlayerSprite extends Entity {
 
   get sprite() { return sprites[this.skin] ?? sprites[0]; };
 
-  dust1 = new Sprite(dust1Src, 32, 16);
-  dust2 = new Sprite(dust2Src, 32, 16);
+  dust1 = new Sprite(dust1hero, 32, 16);
+  dust2 = new Sprite(dust2hero, 32, 16);
 
   dir = EDir.BOTTOM;
   animate = EAnimate.IDLE;
@@ -123,14 +127,14 @@ export class PlayerSprite extends Entity {
       this.fireAnimate.renderBack(camera);
 
     if (this.isSpeedUp)
-      this.dust1.render(ctx, this.frame);
+      this.dust2.render(ctx, this.frame);
 
     this.sprite.render(ctx, this.frame);
 
     // this.cap.render(ctx, this.frame);
 
     if (this.isSpeedUp)
-      this.dust2.render(ctx, this.frame);
+      this.dust1.render(ctx, this.frame);
 
     if (this.isShield)
       this.shieldAnimate.render(camera);
