@@ -144,7 +144,7 @@ function kill(m: Mock, victim: PlayerState, killer: string) {
   victim.deaths++;
   const k = m.world.players.get(killer);
   if (k && k !== victim) k.kills++;
-  emit(m, [{ type: 'playerDied', player: victim.id, killer, x: victim.x, y: victim.y }]);
+  emit(m, [{ type: 'playerDied', player: victim.id, killer, x: victim.x, y: victim.y, cause: 'blast' }]);
   if (victim.id === LOCAL) m.input.vibrate([60, 40, 120], 1);
 }
 

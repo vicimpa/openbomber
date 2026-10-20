@@ -469,7 +469,7 @@ describe('players & effects', () => {
     h.p('a').x = 8;
     h.p('a').y = 0;
     h.until((e) => ev(e, 'playerDied').length > 0, BOMB_FUSE + 5);
-    expect(ev(h.events, 'playerDied')[0]).toMatchObject({ player: 'b', killer: 'a' });
+    expect(ev(h.events, 'playerDied')[0]).toMatchObject({ player: 'b', killer: 'a', cause: 'blast' });
     expect(h.p('a').kills).toBe(1);
     expect(h.p('b').deaths).toBe(1);
   });
@@ -547,7 +547,7 @@ describe('players & effects', () => {
     h.p('a').effects.fire = 600;
     h.set('a', 1, 0);
     h.until((e) => ev(e, 'playerDied').length > 0, 30);
-    expect(ev(h.events, 'playerDied')[0]).toMatchObject({ player: 'b', killer: 'a' });
+    expect(ev(h.events, 'playerDied')[0]).toMatchObject({ player: 'b', killer: 'a', cause: 'fire' });
   });
 
   test('eliminated players scatter their pickups', () => {
@@ -662,7 +662,7 @@ describe('round flow (canon: continuous, no lobby)', () => {
     const fell = run(sim, FALL_TIME + 40);
     expect(fell.filter((e) => e.type === 'blockFell').length).toBe(ring.length);
     expect(ring.every((i) => w.tiles[i] === Tile.Wall)).toBe(true);
-    expect(fell).toContainEqual({ type: 'playerDied', player: 'c', killer: '', x: 0, y: 0 });
+    expect(fell).toContainEqual({ type: 'playerDied', player: 'c', killer: '', x: 0, y: 0, cause: 'crushed' });
     expect(w.players.get('a')!.alive && w.players.get('b')!.alive).toBe(true);
     // the next warning comes WAIT_FOR_LIMIT after the shrink
     const next = until(sim, (e) => e.some((x) => x.type === 'zoneWarning'), WAIT_FOR_LIMIT + 5);

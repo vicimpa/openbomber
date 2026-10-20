@@ -11,7 +11,7 @@ import {
   START_RADIUS,
 } from '../contract/constants';
 import type { NewPlayer } from '../contract/api';
-import { Button } from '../contract/protocol';
+import { Button, type DeathCause } from '../contract/protocol';
 import { Ability, Curse, Dir, DIR_VEC, Phase, Tile, type PlayerState } from '../contract/types';
 import { circleTouchesTile } from './collision';
 import { emptyEffects, syncAbilities, TIMED_ABILITIES } from './effects';
@@ -172,18 +172,18 @@ export function burnPlayers(ctx: SimCtx) {
   for (const p of w.players.values()) {
     if (!p.alive || !p.inRound) continue;
     const id = flameTouching(ctx, p);
-    if (id) killPlayer(ctx, p, w.flames.get(id)?.owner ?? '', false);
+    if (id) killPlayer(ctx, p, w.flames.get(id)?.owner ?? '', 'blast');
   }
 }
 
 /**
- * Kill (or shield / ignore) a player. `force` (falling blocks) ignores shield and
+ * Kill (or shield / ignore) a player. Falling blocks (`crushed`) ignore shield and
  * invulnerability.
  */
-export function killPlayer(ctx: SimCtx, p: PlayerState, killer: string, force: boolean) {
+export function killPlayer(ctx: SimCtx, p: PlayerState, killer: string, cause: DeathCause) {
   const w = ctx.world;
   if (!p.alive || w.phase === Phase.RoundOver || w.phase === Phase.Countdown) return;
-  if (!force) {
+  if (cause !== 'crushed') {
     if (p.effects.invulnerable > 0) return;
     if (p.effects.shield > 0) {
       p.effects.shield = 0;
@@ -203,7 +203,7 @@ export function killPlayer(ctx: SimCtx, p: PlayerState, killer: string, force: b
     const k = w.players.get(killer);
     if (k) k.kills++;
   }
-  emit(ctx, { type: 'playerDied', player: p.id, killer, x: Math.round(p.x) | 0, y: Math.round(p.y) | 0 });
+  emit(ctx, { type: 'playerDied', player: p.id, killer, x: Math.round(p.x) | 0, y: Math.round(p.y) | 0, cause });
   if (p.lives > 0) {
     p.lives--;
     p.respawnIn = RESPAWN_DELAY;
@@ -223,7 +223,7 @@ export function touchPlayers(ctx: SimCtx) {
       const dx = a.x - b.x;
       const dy = a.y - b.y;
       if (dx * dx + dy * dy >= TOUCH2) continue;
-      if (aFire && b.effects.fire <= 0) killPlayer(ctx, b, a.id, false);
+      if (aFire && b.effects.fire <= 0) killPlayer(ctx, b, a.id, 'fire');
       if (aCurse && b.alive && b.curse === Curse.None && ctx.players.get(b.id)!.curseImmune <= 0) {
         applyCurse(ctx, b, a.curse, a.id);
       }

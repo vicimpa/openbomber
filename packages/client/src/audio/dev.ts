@@ -66,7 +66,7 @@ const EVENTS: Record<string, () => GameEvent[]> = {
   bombLanded: () => { const a = at(); return [{ type: 'bombLanded', bomb: id++, x: a.x, y: a.y }]; },
   bombStopped: () => { const a = at(); return [{ type: 'bombStopped', bomb: id++, x: a.x, y: a.y }]; },
   playerStunned: () => [{ type: 'playerStunned', player: at().who }],
-  playerDied: () => { const a = at(); return [{ type: 'playerDied', player: a.who, killer: 'left', x: a.x, y: a.y }]; },
+  playerDied: () => { const a = at(); return [{ type: 'playerDied', player: a.who, killer: 'left', x: a.x, y: a.y, cause: 'blast' }]; },
   playerRespawned: () => { const a = at(); return [{ type: 'playerRespawned', player: a.who, x: a.x, y: a.y }]; },
   curseApplied: () => [{ type: 'curseApplied', player: at().who, curse: Curse.Reverse, from: '' }],
   effectEnded: () => [{ type: 'effectEnded', player: at().who, effect: 'shield' }],

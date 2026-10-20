@@ -235,7 +235,7 @@ function landBlock(ctx: SimCtx, x: number, y: number) {
   }
   emit(ctx, { type: 'blockFell', x, y });
   for (const p of w.players.values()) {
-    if (p.alive && Math.round(p.x) === x && Math.round(p.y) === y) killPlayer(ctx, p, '', true);
+    if (p.alive && Math.round(p.x) === x && Math.round(p.y) === y) killPlayer(ctx, p, '', 'crushed');
   }
 }
 

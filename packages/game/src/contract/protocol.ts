@@ -28,6 +28,9 @@ export const unpackAxis = (v: number) => v / 127;
 // Emitted by Simulation.step(); the server broadcasts them, the client turns them into
 // sound, particles, screen shake and haptics. They are cosmetic: state is authoritative.
 
+/** What killed a player: a bomb's flame, a burning player's touch (Fire), a falling zone block. */
+export type DeathCause = 'blast' | 'fire' | 'crushed';
+
 export type GameEvent =
   | { type: 'bombPlaced'; bomb: number; x: number; y: number; owner: string }
   | { type: 'bombKicked'; bomb: number; by: string; dir: Dir }
@@ -46,7 +49,7 @@ export type GameEvent =
   | { type: 'pickupBurned'; pickup: number; x: number; y: number }
   | { type: 'shieldBlocked'; player: string }
   | { type: 'playerStunned'; player: string }
-  | { type: 'playerDied'; player: string; killer: string; x: number; y: number }
+  | { type: 'playerDied'; player: string; killer: string; x: number; y: number; cause: DeathCause }
   | { type: 'playerRespawned'; player: string; x: number; y: number }
   | { type: 'curseApplied'; player: string; curse: Curse; from: string }
   | { type: 'effectEnded'; player: string; effect: EffectName }
