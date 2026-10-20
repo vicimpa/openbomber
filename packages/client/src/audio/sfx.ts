@@ -139,15 +139,21 @@ export const RECIPES = {
     k.noise({ color: 'brown', type: 'lowpass', f: 380, q: 0.5, a: 0.55, d: 0.8, peak: 0.35 });
     [0.24, 0.31, 0.38, 0.45].forEach((at, i) => k.tone({ type: 'sine', f: 1760 + i * 220 + k.r() * 60, a: 0.004, d: 0.18, peak: 0.07, at }));
   } },
-  /** A frozen hero of the old arena beams away: a short rising chiptune zap with a shimmer. */
-  beamOut: { dur: 0.35, level: 0.2, vary: 1.2, reverb: 0.25, group: 'beam', build(k) {
-    k.tone({ type: 'square', f: 330, to: 1760, glide: 0.16, a: 0.002, d: 0.18, peak: 0.3, lp: 3200 });
-    k.tone({ type: 'triangle', f: 1320, to: 2640, glide: 0.12, a: 0.002, d: 0.16, peak: 0.2, at: 0.04 });
-    k.noise({ type: 'highpass', f: 5000, a: 0.002, d: 0.1, peak: 0.08, at: 0.03 });
+  /** A hero beams away (frozen old-arena hero, or a player leaving): a bright chiptune arpeggio up,
+   *  a rising sweep and a ping on top. */
+  beamOut: { dur: 0.6, level: 0.35, vary: 0.6, reverb: 0.3, group: 'beam', build(k) {
+    k.tone({ type: 'square', f: 440, to: 2640, glide: 0.2, a: 0.002, d: 0.22, peak: 0.22, lp: 4200 });
+    arp(k, [81, 85, 88, 93, 97], 0.032, { d: 0.09, peak: 0.26, lp: 6000 });
+    k.bell(mtof(84), 0.16, 0.3, 0.26); // partials up to ~9x: keep under Nyquist
+    k.noise({ type: 'highpass', f: 6500, to: 9000, sweep: 0.2, a: 0.004, d: 0.2, peak: 0.12, at: 0.02 });
+    for (let i = 0; i < 5; i++) k.tone({ type: 'sine', f: 3500 + k.r() * 3000, a: 0.001, d: 0.04, peak: 0.08, at: 0.06 + k.r() * 0.25 });
   } },
-  /** A hero drops in on a new map: descending zap, then a soft landing thump. */
-  dropIn: { dur: 0.45, level: 0.3, vary: 0.8, reverb: 0.2, build(k) {
-    k.tone({ type: 'square', f: 1760, to: 260, glide: 0.18, a: 0.002, d: 0.2, peak: 0.22, lp: 2800 });
+  /** A hero drops in on a new map: a bright arpeggio down with a ping, then a soft landing thump. */
+  dropIn: { dur: 0.6, level: 0.4, vary: 0.5, reverb: 0.22, build(k) {
+    k.bell(mtof(84), 0, 0.24, 0.24);
+    arp(k, [97, 93, 88, 85, 81], 0.03, { d: 0.08, peak: 0.24, lp: 6000 });
+    k.tone({ type: 'square', f: 2200, to: 300, glide: 0.18, a: 0.002, d: 0.2, peak: 0.18, lp: 3600 });
+    k.noise({ type: 'highpass', f: 6000, a: 0.002, d: 0.12, peak: 0.08 });
     k.tone({ type: 'sine', f: 150, to: 48, glide: 0.08, a: 0.002, d: 0.14, peak: 0.75, at: 0.2 });
     k.noise({ color: 'brown', type: 'lowpass', f: 900, to: 200, sweep: 0.1, a: 0.002, d: 0.1, peak: 0.35, at: 0.2 });
   } },

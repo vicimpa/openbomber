@@ -384,6 +384,14 @@ class PixiRenderer implements GameRenderer {
     this.ground.setClearings(list);
   }
 
+  /** A hero leaving the arena: the pixel teleport-out (and its sound) at their last spot and pose. */
+  private beamAway(hero: Container) {
+    const box = new Container();
+    this.fx.hold(box, this.fx.over, 0.5);
+    box.addChild(hero);
+    this.fx.teleportOut(box, hero, 0);
+  }
+
   private syncPlayers(world: WorldState, dt: number, fresh: boolean) {
     for (const v of this.players.values()) v.seen = false;
     // round start: heroes drop in as the camera arrives, a little staggered
@@ -401,10 +409,17 @@ class PixiRenderer implements GameRenderer {
         if (!fresh) v.update(p, 0, p.id === this.localId, true, false);
       }
       v.seen = true;
+      // left the round alive (stopped playing): beam out from the last pose
+      const leaving = !fresh && !p.inRound && v.shown ? v.freeze() : null;
       const stagger = delay < 0 ? -1 : p.id === this.localId ? delay : delay + (n++ % 6) * 0.05 - 0.1;
       v.update(p, dt, p.id === this.localId, fresh, p.carrying >= 0 && carried.has(p.carrying), stagger < 0 ? (delay < 0 ? -1 : 0) : stagger);
+      if (leaving) this.beamAway(leaving);
     }
-    for (const [id, v] of this.players) if (!v.seen) { v.destroy(); this.players.delete(id); }
+    for (const [id, v] of this.players) if (!v.seen) {
+      // gone from the world alive (left the arena, bot removed) — not a death, not a map switch
+      if (!fresh && v.shown) { const f = v.freeze(); if (f) this.beamAway(f); }
+      v.destroy(); this.players.delete(id);
+    }
     // local tag on top of the others
     const me = this.players.get(this.localId);
     if (me && me.tag.parent === this.tags && this.tags.children[this.tags.children.length - 1] !== me.tag) this.tags.addChild(me.tag);

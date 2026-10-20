@@ -79,6 +79,9 @@ export class PlayerView {
     this.tag.addChild(this.name, this.marker);
   }
 
+  /** On screen right now (alive, in the round, not waiting to drop in). */
+  get shown() { return this.root.visible && this.alive; }
+
   /** A still copy of the hero as it looks right now (shadow + body), for the frozen old arena. */
   freeze(): Container | null {
     if (!this.root.visible || !this.alive) return null;

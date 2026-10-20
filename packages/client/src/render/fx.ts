@@ -149,6 +149,9 @@ export class Effects {
     step(0, 0);
   }
 
+  /** Keep `obj` in `parent` for `dur` seconds, then destroy it (or on clear()). */
+  hold(obj: Container, parent: Container, dur: number) { this.shot(obj, parent, dur, () => {}); }
+
   /** Pixel-art flipbook: frame i is shown until ends[i] (s); then the sprite is gone. */
   private frames(frames: Texture[], ends: number[], parent: Container, x: number, y: number, anchor: { x: number; y: number } | number = 0.5, delay = 0) {
     const s = new Sprite({ texture: frames[0], anchor, x: Math.round(x), y: Math.round(y), visible: false });
@@ -173,7 +176,7 @@ export class Effects {
       s.step(k, dt);
       if (k >= 1) {
         if (s.obj instanceof BitmapText && s.obj.label === 'pooled') { s.obj.removeFromParent(); this.labelPool.push(s.obj); }
-        else s.obj.destroy({ children: true });
+        else if (!s.obj.destroyed) s.obj.destroy({ children: true });
         shots[i] = shots[shots.length - 1];
         shots.pop();
       }
@@ -182,7 +185,7 @@ export class Effects {
 
   clear() {
     this.particles.clear();
-    for (const s of this.shots) s.obj.destroy({ children: true });
+    for (const s of this.shots) if (!s.obj.destroyed) s.obj.destroy({ children: true });
     this.shots.length = 0;
   }
 
