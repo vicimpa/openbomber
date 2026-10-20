@@ -23,35 +23,21 @@
 ![](screen/5.png)
 
 
-## Установка зависимостей 
+## Разработка (v2)
+
+Монорепо на Bun: `packages/game` — общая детерминированная симуляция и боты, `packages/server` — Colyseus-сервер,
+`packages/client` — Pixi v8 + Preact. Архитектура и канон описаны в [docs/REWRITE_PLAN.md](docs/REWRITE_PLAN.md).
+Старая версия лежит в `legacy/`.
+
 ```bash
-> bun install
+bun install
+bun run dev:server   # ws://localhost:2567 (env: PORT, BASE_PATH=/api, BOTS_MAIN, MAX_CLIENTS)
+bun run dev:client   # http://localhost:8080  (?mock — UI без сервера)
+bun run test         # тесты симуляции и сервера
+bun run build        # packages/client/dist + packages/server/dist
 ```
 
-## Ребилд 
-```bash
-> bun rebuild-all
-```
-
-## Для билда сервера 
-```bash
-> bun build-server
-```
-
-## Для билда клиента 
-```bash
-> bun build-client
-```
-
-## Для запуска сервера
-```bash
-> bun dev-server
-```
-
-## Для запуска клиента
-```bash
-> bun dev-client
-```
+Стенды: `/render/dev.html` (рендер на локальной симуляции с ботами), `/audio/dev.html` (процедурный звук).
 
 ## Donate
 - Поддержать меня можно на [Boosty](https://boosty.to/vic_dev)
