@@ -161,6 +161,10 @@ const ru = {
   'connect.back': 'В меню',
   'connect.offline': 'Играть с ботами',
   'connect.stub': 'Сервер ещё не подключён (заглушка)',
+  'net.reconnecting': 'Связь потеряна, переподключаемся…',
+  'net.disconnected': 'Соединение с сервером потеряно',
+  'net.offlineFallback': 'Сервер недоступен — играем с ботами офлайн',
+  'net.full': 'Нет свободных мест',
 
   'toast.gamepad': 'Геймпад подключён',
   'toast.gamepadOff': 'Геймпад отключён',
@@ -371,6 +375,10 @@ const en: Record<I18nKey, string> = {
   'connect.back': 'Main menu',
   'connect.offline': 'Play with bots',
   'connect.stub': 'Server is not wired yet (stub)',
+  'net.reconnecting': 'Connection lost, reconnecting…',
+  'net.disconnected': 'Disconnected from the server',
+  'net.offlineFallback': 'Server unavailable — playing offline with bots',
+  'net.full': 'The arena is full',
 
   'toast.gamepad': 'Gamepad connected',
   'toast.gamepadOff': 'Gamepad disconnected',

@@ -5,10 +5,12 @@ import { render } from 'preact';
 import './styles/global.css';
 import { App } from './ui/App';
 import { installMockActions } from './ui/mock';
+import { startSession } from './session';
 import { actions, parseRoomHash, pendingInvite, room, screen } from './ui/store';
 
-// TODO(session): remove once src/session binds the real actions (its bindActions() call wins anyway).
-installMockActions();
+// `?mock` runs the UI against the scripted fake world (no server / renderer needed).
+if (new URLSearchParams(location.search).has('mock')) installMockActions();
+else startSession();
 
 render(<App />, document.getElementById('app')!);
 
