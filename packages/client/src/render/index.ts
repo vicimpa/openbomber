@@ -77,6 +77,8 @@ class PixiRenderer implements GameRenderer {
   private lastWorld: WorldState | null = null;
   private nextMap: 'travel' | 'snap' | null = null;
   private spawnDelay = -1;
+  /** prime(): the next new map is already running (no spawn wave); scorch these cells into it. */
+  private primed: { x: number; y: number }[][] | null = null;
 
   constructor(private app: Application, private parent: HTMLElement, private a: GameAssets, private tx: ProcTextures, quality: 'low' | 'high') {
     this.fx = new Effects(a, tx);
@@ -157,6 +159,24 @@ class PixiRenderer implements GameRenderer {
    */
   transition(kind: 'travel' | 'snap' = 'travel') { this.nextMap = kind; }
 
+  /**
+   * Optional extra: the next world handed to render() has been running for a while (e.g. a
+   * fast-forwarded menu match). Call it right after switching to that source, before its first
+   * render(). Only the lasting marks of `events` are applied (scorch trails of the current round's
+   * explosions), with no particles, shake, flashes or sounds, and that map gets no spawn wave: its
+   * heroes are simply there. The camera still travels to it from a previous map.
+   */
+  prime(events: GameEvent[]) {
+    // only this round's explosions (a round opens with its 'countdown' events)
+    let from = 0;
+    events.forEach((e, i) => { if (e.type === 'countdown') from = i + 1; });
+    this.primed = [];
+    for (let i = from; i < events.length; i++) {
+      const e = events[i];
+      if (e.type === 'explosion') this.primed.push(e.cells);
+    }
+  }
+
   setQuality(q: 'low' | 'high') {
     this.fx.lowQuality = q === 'low';
     this.fx.particles.max = q === 'low' ? 350 : 1400;
@@ -188,6 +208,11 @@ class PixiRenderer implements GameRenderer {
     this.arena.keepGhost = travel && !young;
     const fresh = this.arena.sync(world, dt, swapped || this.nextMap !== null);
     if (fresh) this.onNewMap(world, travel, travel && young);
+    if (fresh && this.primed) {
+      for (const cells of this.primed) this.arena.scorch(cells);
+      this.primed = null;
+      this.spawnDelay = -1;
+    }
 
     this.syncPlayers(world, dt, fresh);
     this.syncBombs(world, dt);
@@ -271,7 +296,7 @@ class PixiRenderer implements GameRenderer {
       this.ghost = null;
       this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
       this.camera.reset();
-      this.spawnDelay = 0.1;
+      this.spawnDelay = m.shown ? 0.1 : -1; // the very first map simply appears
     }
     m.w = world.width; m.h = world.height; m.shown = true; m.age = 0;
     this.mapRoot.position.set(m.ox * T, m.oy * T);
@@ -517,6 +542,7 @@ export interface RendererExt extends GameRenderer {
   setCameraMode(mode: CameraMode): void;
   setViewInset(left: number): void;
   transition(kind?: 'travel' | 'snap'): void;
+  prime(events: GameEvent[]): void;
 }
 
 /** Where the next map goes: a random direction, clear of the old arena by a stretch of countryside. */

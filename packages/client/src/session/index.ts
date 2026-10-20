@@ -91,7 +91,9 @@ export function startSession() {
   function toMenu() {
     // start the backdrop mid-game (20-35 s in), not on a pristine map
     const warmupTicks = sec(20 + Math.random() * 15);
-    setSource(new LocalSource({ bots: ATTRACT_BOTS, difficulty: 'normal', warmupTicks }), null, 'menu');
+    const src = new LocalSource({ bots: ATTRACT_BOTS, difficulty: 'normal', warmupTicks });
+    setSource(src, null, 'menu');
+    if (renderer) renderer.prime(src.takePrimeEvents());
   }
 
   async function connect(kind: 'quick' | 'private' | 'join', job: () => Promise<NetSource>, code?: string) {
