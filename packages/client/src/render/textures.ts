@@ -249,8 +249,6 @@ export function makeTextures() {
     return fromCanvas(c);
   };
   const flames = {
-    aura: [0, 1, 2, 3].map(i => flame(36, 40, 1, 11 + i, { wide: 1.2 })),
-    front: [0, 1, 2, 3].map(i => flame(22, 9, 1, 31 + i, { wide: 2 })),
     climb: [0.2, 0.4, 0.62, 0.82, 1, 1, 0.9].map((gr, i) => flame(28, 38, gr, 51 + i, { wide: 1.6 })),
   };
 

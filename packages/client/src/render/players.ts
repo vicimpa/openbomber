@@ -33,9 +33,6 @@ export class PlayerView {
   private hero: Anim;
   private shieldBack: Anim; private shieldFront: Anim;
   private fireBack: Anim; private fireFront: Anim;
-  /** Fire boost: pixel flames licking up behind and in front of the hero. */
-  private flameBack: Anim; private flameFront: Anim;
-  private emberT = 0;
   private dustBack = new Sprite({ anchor: 0.5 });
   private dustFront = new Sprite({ anchor: 0.5 });
   private crazy: Anim;
@@ -67,11 +64,9 @@ export class PlayerView {
     this.shieldFront = new Anim(a.shield.front, 14);
     this.fireBack = new Anim(a.fxFire.back, 16);
     this.fireFront = new Anim(a.fxFire.front, 16);
-    this.flameBack = new Anim(tx.flames.aura, 11, { anchor: { x: 0.5, y: 1 }, y: 17 });
-    this.flameFront = new Anim(tx.flames.front, 13, { anchor: { x: 0.5, y: 1 }, y: 17 });
     this.crazy = new Anim(a.crazy, 10, { scale: 2 });
     this.kicking = new Anim(a.kicking, 6, { scale: 2 });
-    this.body.addChild(this.shieldBack, this.flameBack, this.fireBack, this.dustBack, this.hero, this.dustFront, this.fireFront, this.flameFront, this.shieldFront, this.crazy, this.kicking);
+    this.body.addChild(this.shieldBack, this.fireBack, this.dustBack, this.hero, this.dustFront, this.fireFront, this.shieldFront, this.crazy, this.kicking);
     this.upper.addChild(this.body);
     for (let i = 0; i < 3; i++) this.stars.addChild(new Sprite({ texture: tx.star, anchor: 0.5 }));
     this.skull = new Sprite({ texture: tx.skull, anchor: 0.5, y: -34 });
@@ -84,20 +79,23 @@ export class PlayerView {
   }
 
   /** Death event: drop the body at once and leave only the ghost of this player's own skin. */
-  kill(cause?: string) {
+  kill(cause?: string, from?: { x: number; y: number } | null) {
     if (!this.alive) return;
-    this.die(this.root.x / T, this.root.y / T, cause);
+    this.die(this.root.x / T, this.root.y / T, cause, from);
     this.hold = 0.6;
   }
 
-  private die(x: number, y: number, cause?: string) {
+  private die(x: number, y: number, cause?: string, from?: { x: number; y: number } | null) {
     this.alive = false;
     this.root.visible = false;
     this.tag.visible = false;
     const src = this.a.heroes[this.ownSkin];
     const ghost = (src.IdleDown ?? Object.values(src)[0])[0] ?? Texture.EMPTY;
-    if (cause === 'fire' && this.hero.texture !== Texture.EMPTY) this.fx.burnDeath(x, y, this.hero.texture, this.hero.scale.x, ghost);
-    else this.fx.death(x, y, ghost);
+    if (cause === 'fire' && this.hero.texture !== Texture.EMPTY) {
+      // knocked away from the burning player who touched us
+      const dx = from ? Math.sign(Math.round((x - from.x) * 4)) : 0;
+      this.fx.burnDeath(x, y, this.hero.texture, this.hero.scale.x, ghost, dx);
+    } else this.fx.death(x, y, ghost);
   }
 
   /** Play the spawn animation after `delay` seconds (hidden until then). */
@@ -194,13 +192,6 @@ export class PlayerView {
     const shield = warn(p.effects.shield), fire = warn(p.effects.fire);
     this.shieldBack.visible = this.shieldFront.visible = shield;
     this.fireBack.visible = this.fireFront.visible = fire;
-    this.flameBack.visible = this.flameFront.visible = fire;
-    if (fire) {
-      this.flameBack.tick(dt); this.flameFront.tick(dt);
-      // embers: a trail while running, a few while standing
-      this.emberT -= dt;
-      if (this.emberT <= 0 && !this.fx.lowQuality) { this.emberT = moving ? 0.05 : 0.16; this.fx.ember(x, y); }
-    }
     this.crazy.visible = p.effects.crazy > 0;
     // abilities are timed in v2 (effects.kick etc. when present): blink the overlay before it runs out
     const kickLeft = (p.effects as unknown as Record<string, number | undefined>).kick;
@@ -224,7 +215,6 @@ export class PlayerView {
       const k = (Math.sin(this.time * 7) + 1) / 2;
       tint = lerpColor(0xffffff, Math.floor(this.time * 1.5) % 2 ? 0xb88cff : 0x9cff9c, 0.35 + 0.35 * k);
     }
-    if (fire && Math.floor(this.time * 12) % 3 === 0) tint = lerpColor(tint, 0xffd0a0, 0.6); // flicker
     this.hero.tint = tint;
     this.skull.visible = cursed;
     if (cursed) {

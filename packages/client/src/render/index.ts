@@ -527,7 +527,7 @@ class PixiRenderer implements GameRenderer {
         }
         case 'playerDied': {
           // hide the body right away, even if the state saying alive=false is a patch behind
-          this.players.get(e.player)?.kill((e as { cause?: string }).cause);
+          this.players.get(e.player)?.kill(e.cause, e.killer ? this.playerPos(e.killer) : null);
           this.shakeAt(e.x, e.y, 0.4);
           this.recentDeaths.push({ x: e.x, y: e.y, t: this.time });
           if (this.recentDeaths.length > 16) this.recentDeaths.shift();

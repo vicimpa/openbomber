@@ -559,8 +559,19 @@ export class Effects {
    * the body chars black with glowing cracks, crumbles into ash and embers; then the usual ghost
    * and grave. `body` is the frame the hero was showing, `flip` its facing (-1 = mirrored).
    */
-  burnDeath(x: number, y: number, body: Texture, flip: number, ghostTex: Texture) {
+  burnDeath(x: number, y: number, body: Texture, flip: number, ghostTex: Texture, knock = 0) {
     const px = Math.round(x * T), py = Math.round(y * T);
+    // ---- the touch: a hot pixel starburst on the body and a ring of sparks
+    this.frames(this.tx.burst, [0.04, 0.08, 0.13, 0.18], this.over, px - knock * 6, py - 10).tint = 0xffb040;
+    this.frames(this.tx.ringOut, [0.04, 0.09, 0.15, 0.22], this.under, px, py + 7).tint = 0xff8a3a;
+    for (let i = 0; i < this.q(12); i++) {
+      const a = (i / 12) * Math.PI * 2 + rand(-0.2, 0.2), v = rand(60, 100);
+      this.particles.spawn({
+        tex: this.tx.white, x: px + Math.cos(a) * 5, y: py - 4 + Math.sin(a) * 4, z: rand(2, 10), vx: Math.cos(a) * v + knock * 20, vy: Math.sin(a) * v * 0.55,
+        vz: rand(30, 70), gravity: 260, drag: 2.5, life: rand(0.25, 0.45), scale: i % 3 ? 1 : 2,
+        tint: [0xfff4b0, 0xffc23a, 0xff7a1e][i % 3], alpha: 1, alphaEnd: 0.3, pix: true,
+      });
+    }
     const white = this.whiteOf(body);
     const ch = this.charOf(body);
     const s = new Sprite({ texture: white, anchor: 0.5, x: px, y: py - 8 });
@@ -572,13 +583,15 @@ export class Effects {
       else if (t < CLIMB) { s.texture = body; s.tint = t < 0.2 ? 0xffc8a0 : t < 0.32 ? 0xd07a5a : t < 0.42 ? 0x8a4a40 : 0x5a3038; }
       else if (t < CHAR) { s.texture = ch.char[Math.floor(t * 16) % 2]; s.tint = 0xffffff; }
       else { s.texture = ch.crumble[Math.min(2, Math.floor((t - CHAR) / (GONE - CHAR) * 3))]; }
-      s.x = px + (t > FLASH && t < CHAR ? (Math.floor(t * 40) % 2 ? 1 : 0) : 0);
+      // knocked a few px away from the touch, then shaking while it burns
+      const kb = t < 0.12 ? Math.round(knock * 4 * Math.sin((t / 0.12) * Math.PI * 0.5)) : knock * 3;
+      s.x = px + kb + (t > FLASH && t < CHAR ? (Math.floor(t * 40) % 2 ? 1 : 0) : 0);
       s.visible = k < 1;
     });
     // flames climbing up the body, then licking on until it chars
     const fl = this.tx.flames.climb;
     this.frames([fl[0], fl[1], fl[2], fl[3], fl[4], fl[5], fl[4], fl[6], fl[3], fl[1]],
-      [0.11, 0.16, 0.22, 0.29, 0.37, 0.45, 0.53, 0.62, 0.7, 0.78], this.over, px, py + 9, { x: 0.5, y: 1 }, 0.04);
+      [0.11, 0.16, 0.22, 0.29, 0.37, 0.45, 0.53, 0.62, 0.7, 0.78], this.over, px + knock * 3, py + 9, { x: 0.5, y: 1 }, 0.04);
     // embers flying off while it burns
     for (let i = 0; i < this.q(10); i++) this.particles.spawn({
       tex: this.tx.white, x: px + Math.round(rand(-8, 8)), y: py + Math.round(rand(-4, 6)), z: rand(4, 26), vx: rand(-20, 20), vz: rand(30, 70),
@@ -593,8 +606,8 @@ export class Effects {
       const lx = flip < 0 ? ch.w - 1 - sx : sx;
       const ember = i % 5 === 0;
       this.particles.spawn({
-        tex: this.tx.white, x: x0 + lx, y: py + 8 + rand(-1, 2), z: py + 8 - (y0 + sy),
-        vx: rand(-25, 25), vy: rand(-6, 6), vz: ember ? rand(30, 70) : rand(-10, 20), gravity: ember ? 60 : 300, bounce: 0, drag: 2,
+        tex: this.tx.white, x: x0 + lx + knock * 3, y: py + 8 + rand(-1, 2), z: py + 8 - (y0 + sy),
+        vx: (lx - ch.w / 2) * rand(2, 4) + knock * rand(10, 30), vy: rand(-14, 14), vz: ember ? rand(30, 70) : rand(-10, 20), gravity: ember ? 60 : 300, bounce: 0, drag: 2,
         delay: CHAR + ((sy / ch.h) * 0.6 + rand(0, 0.25)) * (GONE - CHAR), life: rand(0.35, 0.6),
         scale: Math.random() < 0.25 ? 2 : 1, tint: ember ? 0xff8a3a : Math.random() < 0.5 ? 0x3a3440 : 0x6a6470, alpha: 1, alphaEnd: 0.3, pix: true,
       });
@@ -604,21 +617,13 @@ export class Effects {
       delay: CHAR + i * 0.05, life: rand(0.5, 0.7), scale: 1, alpha: 0.8, alphaEnd: 0.2, tint: 0x5a5262, pix: true,
     });
     // the ash heap stays a while, then the canon ghost + grave
-    const ash = new Sprite({ texture: this.ash(), anchor: { x: 0.5, y: 1 }, x: px + 9, y: py + 11, visible: false });
+    const ash = new Sprite({ texture: this.ash(), anchor: { x: 0.5, y: 1 }, x: px + (knock < 0 ? -9 : 9), y: py + 11, visible: false });
     this.shot(ash, this.under, 5 + GONE, k => {
       const t = k * (5 + GONE);
       ash.visible = t > CHAR + 0.1;
       ash.alpha = t < 4 + GONE ? 1 : Math.ceil((5 + GONE - t) * 3) / 3;
     });
     this.shot(new Container(), this.over, GONE, k => { if (k >= 1) this.death(x, y, ghostTex); });
-  }
-
-  /** A burning hero sheds an ember. */
-  ember(x: number, y: number) {
-    this.particles.spawn({
-      tex: this.tx.white, x: Math.round(x + rand(-7, 7)), y: Math.round(y + rand(-2, 4)), z: rand(2, 18), vx: rand(-8, 8), vz: rand(25, 55), drag: 1,
-      life: rand(0.3, 0.5), scale: Math.random() < 0.3 ? 2 : 1, tint: [0xffd060, 0xff8a3a, 0xd04a2a][Math.floor(Math.random() * 3)], alpha: 1, alphaEnd: 0.3, pix: true,
-    });
   }
 
   /** Death: no body swap or flash, only a ghost of the player's own skin floating up, plus a grave decal. */
