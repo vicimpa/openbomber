@@ -1,0 +1,51 @@
+{
+  "extends": "@tsconfig/svelte",
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    /* Bundler mode */
+    "allowJs": true,
+    "checkJs": true,
+    "experimentalDecorators": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "declaration": false,
+    "sourceMap": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "outDir": "./tmp",
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    /* Project */
+    "types": [
+      "vite/client",
+      "svelte"
+    ],
+    "paths": {
+      "@shared/*": [
+        "../shared/*"
+      ],
+      "@core/*": [
+        "../core/*"
+      ],
+      "@server/*": [
+        "../server/*"
+      ]
+    }
+  },
+  "include": [
+    "./src/**/*.svelte",
+    "./src/**/*.ts",
+    "./src/**/*.js",
+  ],
+  "exclude": [
+    "vite.config.ts"
+  ]
+}

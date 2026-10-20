@@ -1,14 +1,17 @@
 {
   "name": "openbomber",
-  "version": "0.0.0",
-  "scripts": {
-    "build-client": "cd packages/client && bun run build",
-    "build-server": "cd packages/server && bun run build",
-    "dev-client": "cd packages/client && bun dev",
-    "dev-server": "cd packages/server && bun dev",
-    "rebuild-all": "rm -rf node_modules && bun install"
-  },
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
   "workspaces": [
     "./packages/*"
-  ]
+  ],
+  "scripts": {
+    "dev": "bun run --filter '@ob/server' dev & bun run --filter '@ob/client' dev",
+    "dev:client": "bun run --filter '@ob/client' dev",
+    "dev:server": "bun run --filter '@ob/server' dev",
+    "build": "bun run --filter '@ob/client' build && bun run --filter '@ob/server' build",
+    "test": "bun test packages",
+    "typecheck": "bun run --filter '*' typecheck"
+  }
 }

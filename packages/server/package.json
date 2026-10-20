@@ -1,22 +1,25 @@
 {
   "name": "@ob/server",
+  "version": "2.0.0",
+  "private": true,
   "type": "module",
+  "main": "src/index.ts",
   "scripts": {
-    "dev": "bun run --watch src/index.ts",
-    "build": "tsc && bun build src/index.ts --target=node --outfile=dist/index.js --minify && cp .dist/* dist"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "@types/node": "^22.7.5"
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "bun build src/index.ts --target=bun --outfile=dist/index.js --minify",
+    "test": "bun test",
+    "typecheck": "tsc -p ."
   },
   "dependencies": {
-    "@vicimpa/lib-vec2": "^0.2.8",
-    "@vicimpa/math": "^0.0.9",
-    "dotenv": "^16.4.5",
-    "simple-discord-webhooks": "^2.1.0",
-    "socket.io": "^4.8.0"
+    "@colyseus/core": "^0.18.18",
+    "@colyseus/schema": "^5.0.41",
+    "@colyseus/sdk": "^0.18.5",
+    "@colyseus/ws-transport": "^0.18.4",
+    "@ob/game": "workspace:*"
   },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
+  "devDependencies": {
+    "@types/bun": "^1.4.3",
+    "typescript": "^5.9"
   }
 }
