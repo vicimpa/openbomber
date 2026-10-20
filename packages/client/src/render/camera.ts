@@ -38,7 +38,7 @@ export class Camera {
   x = 0; y = 0; zoom = 1;
   /** World px of the current map's (0, 0) tile centre. */
   ox = 0; oy = 0;
-  private trip: { t: number; dur: number; x: number; y: number; w: number } | null = null;
+  private trip: { t: number; dur: number; x: number; y: number; w: number; flat: boolean } | null = null;
   /** targets */
   private cx = 0; private cy = 0;
   private shakes = new Set<{ time: number; amp: number }>();
@@ -55,9 +55,9 @@ export class Camera {
   reset() { this.snap = true; this.trip = null; }
 
   /** Glide from the current view to the next target over `dur` seconds instead of snapping. */
-  travel(dur: number) {
+  travel(dur: number, flat = false) {
     this.snap = false;
-    this.trip = { t: 0, dur, x: this.x, y: this.y, w: 0 };
+    this.trip = { t: 0, dur, x: this.x, y: this.y, w: 0, flat };
     this.attract.t = 0;
   }
 
@@ -136,7 +136,10 @@ export class Camera {
       tr.t += dt;
       const k = Math.min(1, tr.t / tr.dur);
       const e = k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2;
-      const [px, py, pw] = zoomPath(tr.x, tr.y, tr.w, this.cx, this.cy, S / needScale, e);
+      // flat: a quick eased pan at the same zoom (teleport), otherwise the zoom-out trip between maps
+      const [px, py, pw] = tr.flat
+        ? [tr.x + (this.cx - tr.x) * e, tr.y + (this.cy - tr.y) * e, tr.w + (S / needScale - tr.w) * e]
+        : zoomPath(tr.x, tr.y, tr.w, this.cx, this.cy, S / needScale, e);
       this.x = px; this.y = py; this.zoom = S / pw;
       if (k >= 1) { this.trip = null; this.x = this.cx; this.y = this.cy; this.zoom = needScale; }
     } else if (this.snap) {

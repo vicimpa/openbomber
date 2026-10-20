@@ -95,6 +95,8 @@ export class Ground {
   private clearings: Rect[] = [];
   private covers: Rect[] = [];
   private img: ImageData | null = null;
+  /** Chunks to make ahead of time (full resolution), e.g. around a travel's destination. */
+  private wanted: [number, number][] = [];
   /** Last generation cost (ms), for the perf readout. */
   genMs = 0;
   generated = 0;
@@ -216,6 +218,14 @@ export class Ground {
     }
   }
 
+  /** Queue the chunks covering a world rect (px) for generation in spare frame time. */
+  want(x0: number, y0: number, x1: number, y1: number) {
+    const cx0 = Math.floor((x0 + T / 2) / CP), cx1 = Math.floor((x1 + T / 2) / CP);
+    const cy0 = Math.floor((y0 + T / 2) / CP), cy1 = Math.floor((y1 + T / 2) / CP);
+    this.wanted = [];
+    for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) this.wanted.push([cx, cy]);
+  }
+
   /** Rects that fully hide the ground (arena floors): chunks under them are not drawn at all. */
   setCovers(list: Rect[]) { this.covers = list.slice(); }
 
@@ -229,7 +239,7 @@ export class Ground {
 
   // ---------------------------------------------------------------- per frame
   /** Cover the visible world rect (world px) at `zoom` device px per world px. */
-  cover(x0: number, y0: number, x1: number, y1: number, zoom: number) {
+  cover(x0: number, y0: number, x1: number, y1: number, zoom: number, budgetMs = 2) {
     this.frame++;
     this.base.position.set(x0 - 2, y0 - 2);
     this.base.width = x1 - x0 + 4; this.base.height = y1 - y0 + 4;
@@ -257,7 +267,7 @@ export class Ground {
     }
     // generate under a time budget; everything at once when nothing at all is on screen yet
     const t0 = performance.now();
-    const budget = this.shown.length === 0 ? 1e9 : 2;
+    const budget = this.shown.length === 0 ? 1e9 : budgetMs;
     missing.sort((a, b) => a[2] - b[2]);
     let made = 0;
     for (const [cx, cy] of missing) {
@@ -265,8 +275,14 @@ export class Ground {
       this.show(this.make(cx, cy, li));
       made++;
     }
-    // idle frame: prefetch one ring around the view
-    if (!missing.length) {
+    // spare time: chunks queued ahead (travel destination), then one ring around the view
+    while (this.wanted.length && performance.now() - t0 < budget) {
+      const [cx, cy] = this.wanted.shift()!;
+      if (this.hidden(cx, cy) || this.cache[0].has(cx + ',' + cy)) continue;
+      this.make(cx, cy, 0).used = this.frame;
+      made++;
+    }
+    if (!missing.length && !this.wanted.length) {
       outer: for (let cy = cy0 - 1; cy <= cy1 + 1; cy++) for (let cx = cx0 - 1; cx <= cx1 + 1; cx++) {
         if (cy >= cy0 && cy <= cy1 && cx >= cx0 && cx <= cx1) continue;
         if (this.hidden(cx, cy) || this.cache[li].has(cx + ',' + cy)) continue;

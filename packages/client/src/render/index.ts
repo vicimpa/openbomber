@@ -1,6 +1,6 @@
 // Pixi.js v8 renderer for WorldState. See contracts.ts (GameRenderer / CreateRenderer).
 import { Application, Container, Rectangle, Sprite, Texture } from 'pixi.js';
-import { BombMotion, DropKind, Phase, PickupType, type BombState, type GameEvent, type WorldState } from '@ob/game';
+import { BombMotion, COUNTDOWN_TIME, DropKind, Phase, PickupType, TICK_RATE, type BombState, type GameEvent, type WorldState } from '@ob/game';
 
 import type { CreateRenderer, GameRenderer, RendererOptions } from '../contracts';
 import { Arena } from './arena';
@@ -11,7 +11,7 @@ import { Explosions } from './explosions';
 import { Drops } from './drops';
 import { Ground, type Rect } from './ground';
 import { BombView, PickupView } from './items';
-import { PlayerView } from './players';
+import { PlayerView, type Frozen } from './players';
 import { installFonts } from './text';
 import { makeTextures, type ProcTextures } from './textures';
 
@@ -20,7 +20,7 @@ const MAX_DPR = 2;
 /** Camera trip between two maps (s); the round-start freeze is 1.5 s, heroes land as it ends. */
 const TRAVEL = 1.2;
 /** Heroes start dropping in this long before the camera arrives. */
-const SPAWN_LEAD = 0.3;
+const SPAWN_LEAD = 0.75;
 
 const PICKUP_LABEL: Record<PickupType, [string, number]> = {
   [PickupType.BombUp]: ['+1 BOMB', 0x8fe3ff], [PickupType.FireUp]: ['+1 FIRE', 0xffb35c],
@@ -29,7 +29,7 @@ const PICKUP_LABEL: Record<PickupType, [string, number]> = {
   [PickupType.Remote]: ['REMOTE', 0xffffff], [PickupType.Pierce]: ['PIERCE', 0xffb35c], [PickupType.LineBomb]: ['LINE BOMB', 0xffffff],
   [PickupType.BombPass]: ['BOMB PASS', 0xffffff], [PickupType.Shield]: ['SHIELD', 0x9fe6ff], [PickupType.Ghost]: ['GHOST', 0xd8e4ff],
   [PickupType.Crazy]: ['CRAZY BOMBS', 0xff7ad0], [PickupType.Fire]: ['ON FIRE!', 0xff8a4a], [PickupType.Heart]: ['+1 LIFE', 0xff7a8a],
-  [PickupType.Skull]: ['CURSED!', 0xc58cff], [PickupType.Random]: ['???', 0xffffff],
+  [PickupType.Skull]: ['CURSED!', 0xc58cff], [PickupType.Random]: ['???', 0xffffff], [PickupType.Teleport]: ['TELEPORT', 0xa8f0ff],
 };
 
 interface Known { x: number; y: number; t: number }
@@ -81,6 +81,8 @@ class PixiRenderer implements GameRenderer {
   private lastWorld: WorldState | null = null;
   private nextMap: 'travel' | 'snap' | null = null;
   private spawnDelay = -1;
+  /** Frozen heroes of the old arena that keep running the way they went until it dissolves. */
+  private runners: Frozen[] = [];
   /** Optional hook: a camera travel to a new map starts (not on the first map's snap). */
   onTravel?: (durationMs: number, dx: number, dy: number) => void;
   /** Optional hook: teleport moments (frozen hero beams out / hero drops in on a new map). */
@@ -145,7 +147,7 @@ class PixiRenderer implements GameRenderer {
     const covers: Rect[] = [this.floorRect(this.map)];
     if (this.ghost) covers.push(this.floorRect(this.ghost));
     this.ground.setCovers(covers);
-    this.ground.cover(x0, y0, x1, y1, this.camera.zoom);
+    this.ground.cover(x0, y0, x1, y1, this.camera.zoom, this.camera.travelling ? 4 : 2);
     const mx = this.map.ox * T, my = this.map.oy * T;
     this.arena.cull(x0 - mx - T, y0 - my - T, x1 - mx + T, y1 - my + T, this.camera.zoom);
     return { x0, y0, x1, y1 };
@@ -307,6 +309,9 @@ class PixiRenderer implements GameRenderer {
       m.ox = nx; m.oy = ny;
       this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
       this.camera.travel(TRAVEL);
+      // get the countryside around the destination ready while the camera is on its way
+      const pad = 14 * T;
+      this.ground.want((m.ox - 1.5) * T - pad, (m.oy - 1.5) * T - pad, (m.ox + world.width + 0.5) * T + pad, (m.oy + world.height + 0.5) * T + pad);
       this.spawnDelay = TRAVEL - SPAWN_LEAD;
     } else {
       this.arena.clearGhost();
@@ -336,8 +341,8 @@ class PixiRenderer implements GameRenderer {
       tex.source.scaleMode = 'nearest';
     } catch (e) { console.warn('[render] snapshot failed', e); }
     hide.forEach((c, i) => { c.visible = was[i]; });
-    const heroes: Container[] = [];
-    for (const v of this.players.values()) { const f = v.freeze(); if (f) heroes.push(f); }
+    const heroes: (Frozen & { local: boolean })[] = [];
+    for (const [id, v] of this.players) { const f = v.freeze(); if (f) heroes.push({ ...f, local: id === this.localId }); }
     return { tex, x0, y0, w, h, heroes };
   }
 
@@ -351,15 +356,25 @@ class PixiRenderer implements GameRenderer {
       s.label = 'snapshot';
       root.addChild(s);
     }
-    // frozen heroes beam away one after another while the camera pulls out
-    f.heroes.sort((a, b) => a.y - b.y).forEach((hc, i) => {
-      root.addChild(hc);
-      this.fx.teleportOut(root, hc, 0.22 + Math.min(i, 8) * 0.045, f.heroes.length);
-    });
+    // the others keep running the way they went; only our own hero beams over to the new map
+    this.runners = [];
+    for (const h of f.heroes.sort((a, b) => a.c.y - b.c.y)) {
+      root.addChild(h.c);
+      if (h.local) this.fx.teleportOut(root, h.c, 0.18);
+      else this.runners.push(h);
+    }
   }
 
   /** Drop the previous arena once the camera has left it behind (or after a while). */
   private updateGhost(dt: number, v: Rect) {
+    for (const r of this.runners) {
+      if (r.c.destroyed) continue;
+      r.t += dt;
+      r.c.x += r.vx * dt; r.c.y += r.vy * dt;
+      r.c.zIndex = r.c.y;
+      const n = r.frames.length;
+      if (n) r.body.texture = r.frames[Math.floor(r.t * r.fps) % n];
+    }
     const g = this.ghost;
     if (!g || this.camera.travelling) return;
     g.t += dt;
@@ -372,6 +387,7 @@ class PixiRenderer implements GameRenderer {
     root.alpha = Math.ceil(g.fade * 3) / 3;
     if (root.alpha > 0) return;
     this.arena.clearGhost();
+    this.runners = [];
     root.alpha = 1;
     this.ghost = null;
     this.syncClearings();
@@ -385,18 +401,19 @@ class PixiRenderer implements GameRenderer {
   }
 
   /** A hero leaving the arena: the pixel teleport-out (and its sound) at their last spot and pose. */
-  private beamAway(hero: Container) {
+  private beamAway(hero: Frozen) {
     const box = new Container();
     this.fx.hold(box, this.fx.over, 0.5);
-    box.addChild(hero);
-    this.fx.teleportOut(box, hero, 0);
+    box.addChild(hero.c);
+    this.fx.teleportOut(box, hero.c, 0);
   }
 
   private syncPlayers(world: WorldState, dt: number, fresh: boolean) {
     for (const v of this.players.values()) v.seen = false;
-    // round start: heroes drop in as the camera arrives, a little staggered
+    // round start: heroes drop in one by one at random moments (our own early), everyone landed
+    // before the countdown ends
     const delay = fresh ? this.spawnDelay : -1;
-    let n = 0;
+    const win = Math.max(0, Math.min(0.9, COUNTDOWN_TIME / TICK_RATE - 0.55 - Math.max(0, delay)));
     const carried = new Set<number>();
     for (const b of world.bombs.values()) if (b.motion === 3) carried.add(b.id);
     for (const p of world.players.values()) {
@@ -411,8 +428,8 @@ class PixiRenderer implements GameRenderer {
       v.seen = true;
       // left the round alive (stopped playing): beam out from the last pose
       const leaving = !fresh && !p.inRound && v.shown ? v.freeze() : null;
-      const stagger = delay < 0 ? -1 : p.id === this.localId ? delay : delay + (n++ % 6) * 0.05 - 0.1;
-      v.update(p, dt, p.id === this.localId, fresh, p.carrying >= 0 && carried.has(p.carrying), stagger < 0 ? (delay < 0 ? -1 : 0) : stagger);
+      const stagger = delay < 0 ? -1 : delay + Math.random() * (p.id === this.localId ? Math.min(0.15, win * 0.3) : win);
+      v.update(p, dt, p.id === this.localId, fresh, p.carrying >= 0 && carried.has(p.carrying), stagger);
       if (leaving) this.beamAway(leaving);
     }
     for (const [id, v] of this.players) if (!v.seen) {
@@ -535,6 +552,16 @@ class PixiRenderer implements GameRenderer {
           break;
         }
         case 'bombFizzled': this.fx.fizzle(e.x, e.y); break;
+        case 'playerTeleported': {
+          // our teleport: beam out from the old spot (a frozen copy), drop in at the new one
+          const v = this.players.get(e.player);
+          if (!v) break;
+          const f = v.freeze();
+          if (f) this.beamAway(f);
+          v.teleportIn(e.x, e.y);
+          if (e.player === localId) this.camera.travel(0.35, true); // a quick eased pan, not a long trip
+          break;
+        }
         case 'dropLanded': {
           const bomb = e.kind === DropKind.Bomb;
           this.fx.dropLand(e.x, e.y, bomb);
@@ -568,13 +595,13 @@ class PixiRenderer implements GameRenderer {
           const kind = e.kind;
           const [text, color] = PICKUP_LABEL[kind] ?? ['', 0xffffff];
           const mine = e.by === localId;
-          const icon = this.a.pickupIcon[(k?.type ?? kind) as PickupType];
+          const icon = this.a.pickupIcon[(k?.type ?? kind) as PickupType] ?? Texture.EMPTY;
           this.fx.collect(pos.x, pos.y, icon, mine ? text : '', color, kind !== PickupType.Skull);
           break;
         }
         case 'pickupBurned': {
           const k = this.lastPickup.get(e.pickup);
-          this.fx.burn(e.x, e.y, this.a.pickupIcon[k?.type ?? PickupType.Random]);
+          this.fx.burn(e.x, e.y, this.a.pickupIcon[k?.type ?? PickupType.Random] ?? Texture.EMPTY);
           break;
         }
         case 'shieldBlocked': {
@@ -644,9 +671,9 @@ function nextOrigin(m: { ox: number; oy: number; w: number; h: number }, w: numb
   const cx = m.ox + (m.w - 1) / 2, cy = m.oy + (m.h - 1) / 2;
   let ang = Math.random() * Math.PI * 2;
   // don't wander off forever: far from the start, head back roughly towards it
-  if (Math.hypot(cx, cy) > 240) ang = Math.atan2(-cy, -cx) + (Math.random() - 0.5) * 1.6;
+  if (Math.hypot(cx, cy) > 400) ang = Math.atan2(-cy, -cx) + (Math.random() - 0.5) * 1.6;
   const dx = Math.cos(ang), dy = Math.sin(ang);
-  const gap = 11 + Math.random() * 8;
+  const gap = 28 + Math.random() * 14;
   const hw = (m.w + w) / 2 + 2 + gap, hh = (m.h + h) / 2 + 2 + gap;
   const t = Math.min(Math.abs(dx) > 1e-3 ? hw / Math.abs(dx) : Infinity, Math.abs(dy) > 1e-3 ? hh / Math.abs(dy) : Infinity);
   return [Math.round(cx + dx * t - (w - 1) / 2), Math.round(cy + dy * t - (h - 1) / 2)];

@@ -25,6 +25,9 @@ function runLoop(frames: Texture[]): Texture[] {
   return loop;
 }
 
+/** A still copy of a hero (frozen old arena / leaving): its own sprites plus how it was moving. */
+export interface Frozen { c: Container; body: Sprite; frames: Texture[]; fps: number; t: number; vx: number; vy: number }
+
 export class PlayerView {
   readonly root = new Container();
   private shadow: Sprite;
@@ -55,6 +58,10 @@ export class PlayerView {
   /** Spawn animation clock (s): < 0 waiting (hidden), 0..SPAWN_LEN playing, NaN idle. */
   private spawnT = NaN;
   private spawnSound = false;
+  /** Teleport: stay hidden until the (possibly interpolated) position has really arrived here. */
+  private arrive: { x: number; y: number; t: number } | null = null;
+  /** Smoothed on-screen velocity (px/s) and the last position, for frozen copies that keep running. */
+  private vx = 0; private vy = 0; private lx = NaN; private ly = NaN;
   private dustT = 0;
   seen = true;
 
@@ -83,7 +90,7 @@ export class PlayerView {
   get shown() { return this.root.visible && this.alive; }
 
   /** A still copy of the hero as it looks right now (shadow + body), for the frozen old arena. */
-  freeze(): Container | null {
+  freeze(): Frozen | null {
     if (!this.root.visible || !this.alive) return null;
     const c = new Container({ x: this.root.x, y: this.root.y });
     c.addChild(new Sprite({ texture: this.shadow.texture, anchor: 0.5, y: this.shadow.y, scale: this.shadow.scale, alpha: this.shadow.alpha }));
@@ -93,7 +100,7 @@ export class PlayerView {
     });
     body.label = 'body';
     c.addChild(body);
-    return c;
+    return { c, body, frames: this.hero.frames, fps: this.hero.fps, t: this.hero.time, vx: this.vx, vy: this.vy };
   }
 
   /** Death event: drop the body at once and leave only the ghost of this player's own skin. */
@@ -123,6 +130,12 @@ export class PlayerView {
     this.pop = 0;
   }
 
+  /** Teleported to tile (x, y): drop in there (no sliding across the map). */
+  teleportIn(x: number, y: number) {
+    this.spawn(0.08, true);
+    this.arrive = { x: x * T, y: y * T, t: 0.6 };
+  }
+
   /** `spawnDelay` >= 0: on a fresh map, drop in after that many seconds (negative: just appear). */
   update(p: PlayerState, dt: number, local: boolean, fresh: boolean, carriedBomb: boolean, spawnDelay = -1) {
     this.time += dt;
@@ -146,11 +159,27 @@ export class PlayerView {
     this.tag.visible = visible;
     if (!visible) { this.spawnT = NaN; this.tag.alpha = 1; return; }
 
+    // smoothed velocity (online positions are interpolated per frame, offline per tick)
+    if (dt > 0 && this.lx === this.lx) {
+      const k = 1 - Math.exp(-dt * 10);
+      const mv = p.moving && p.effects.stun <= 0;
+      this.vx += ((mv ? (x - this.lx) / dt : 0) - this.vx) * k;
+      this.vy += ((mv ? (y - this.ly) / dt : 0) - this.vy) * k;
+      if (Math.hypot(x - this.lx, y - this.ly) > T * 2) { this.vx = 0; this.vy = 0; } // teleported / respawned
+    }
+    this.lx = x; this.ly = y;
     this.root.position.set(x, y);
     this.root.zIndex = y;
 
     // ---- spawn: wait (hidden) → beam + drop → landing squash
     let dropY = 0, sx = 1, sy = 1, shadowK = 1;
+    if (this.arrive) {
+      this.arrive.t -= dt;
+      if (this.arrive.t > 0 && Math.hypot(x - this.arrive.x, y - this.arrive.y) > T * 0.6) {
+        this.root.visible = false; this.tag.visible = false; return;
+      }
+      this.arrive = null;
+    }
     if (this.spawnT === this.spawnT) {
       const t0 = this.spawnT;
       this.spawnT += dt;
