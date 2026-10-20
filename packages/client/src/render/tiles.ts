@@ -198,7 +198,7 @@ export function makeTileVariants(world: Record<'grass' | 'box' | 'wall', Texture
   c.width = cols * T; c.height = sets.length * T;
   const g = c.getContext('2d')!;
   sets.forEach((set, row) => set.forEach((t, col) => {
-    const id = new ImageData(new Uint8ClampedArray(t.p.buffer.slice(0)), T, T);
+    const id = new ImageData(new Uint8ClampedArray(t.p.buffer.slice(0) as ArrayBuffer), T, T);
     g.putImageData(id, col * T, row * T);
   }));
   const source = new CanvasSource({ resource: c, scaleMode: 'nearest', resolution: 1 });
