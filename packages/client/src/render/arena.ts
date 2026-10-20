@@ -8,6 +8,7 @@ import { Tile, type FallingBlock, type WorldState } from '@ob/game';
 import type { GameAssets } from './assets';
 import type { Effects } from './fx';
 import type { ProcTextures } from './textures';
+import { cellHash, makeTileVariants, type TileVariants } from './tiles';
 
 const T = 32;
 const CH = 16; // chunk size in tiles
@@ -59,7 +60,26 @@ export class Arena {
 
   onImpact?: (x: number, y: number) => void;
 
-  constructor(private a: GameAssets, private tx: ProcTextures, private fx: Effects) {}
+  private vars: TileVariants;
+  /** Per-map seed for the tile variants. */
+  private seed = 1;
+
+  constructor(private a: GameAssets, private tx: ProcTextures, private fx: Effects) {
+    this.vars = makeTileVariants(a.world);
+  }
+
+  /** Stone block shown for cell (x, y) of the current map (falling / impact blocks match it). */
+  private wallTex(x: number, y: number) { return this.vars.wallAt(x, y, this.seed); }
+
+  /** Calm per-tile shading of the grass: big soft, barely visible patches. */
+  private floorTint(x: number, y: number) {
+    const S = 5, gx = x / S, gy = y / S, ix = Math.floor(gx), iy = Math.floor(gy), fx = gx - ix, fy = gy - iy;
+    const h = (a: number, b: number) => cellHash(a, b, this.seed + 9);
+    const n = h(ix, iy) * (1 - fx) * (1 - fy) + h(ix + 1, iy) * fx * (1 - fy) + h(ix, iy + 1) * (1 - fx) * fy + h(ix + 1, iy + 1) * fx * fy;
+    const v = 0.955 + 0.045 * n + (cellHash(x, y, this.seed + 10) - 0.5) * 0.012;
+    const c = Math.min(255, Math.round(255 * v));
+    return (c << 16) | (c << 8) | Math.round(c * 0.99);
+  }
 
   get width() { return this.w; }
   get height() { return this.h; }
@@ -85,7 +105,7 @@ export class Arena {
         const was = this.tiles[i], now = tiles[i];
         if (was === now) continue;
         const x = i % w, y = (i / w) | 0;
-        if (was === Tile.Brick && now === Tile.Floor) this.fx.brickBreak(x, y);
+        if (was === Tile.Brick && now === Tile.Floor) this.fx.brickBreak(x, y, 0, 0, this.blocks[(y + 1) * this.gw + x + 1]?.texture);
         if (now === Tile.Wall) this.impact(x, y, wi++ % every === 0, walls < 4);
         this.tiles[i] = now;
         this.setBlock(x, y, now);
@@ -117,6 +137,7 @@ export class Arena {
   private build(world: WorldState) {
     const { width: w, height: h, tiles } = world;
     this.w = w; this.h = h; this.round = world.round;
+    this.seed = (Math.random() * 0x7fffffff) | 0;
     this.gw = w + 2; this.gh = h + 2;
     this.tiles = new Uint8Array(tiles);
     if (this.keepGhost && this.chunks.length) {
@@ -144,7 +165,6 @@ export class Arena {
     this.blocks = new Array(n).fill(null);
     this.scorched = new Uint8Array(n);
     this.ruins = new Array(n).fill(null);
-    const { grass, wall } = this.a.world;
     // floor layer first in every chunk, then scorch trails, blocks above
     const floorLayers = this.chunks.map(ch => ch.c.addChild(new Container()));
     this.ruinLayers = this.chunks.map(ch => ch.c.addChild(new Container()));
@@ -156,12 +176,12 @@ export class Arena {
       const x = gx - 1, y = gy - 1;
       const border = gx === 0 || gy === 0 || gx === this.gw - 1 || gy === this.gh - 1;
       if (border) {
-        const s = new Sprite({ texture: wall, anchor: 0.5, x: x * T, y: y * T });
+        const s = new Sprite({ texture: this.wallTex(x, y), anchor: 0.5, x: x * T, y: y * T });
         blockLayers[k].addChild(s);
         this.blocks[gi] = s;
         continue;
       }
-      const f = new Sprite({ texture: grass, anchor: 0.5, x: x * T, y: y * T });
+      const f = new Sprite({ texture: this.vars.floorAt(x, y, this.seed), anchor: 0.5, x: x * T, y: y * T, tint: this.floorTint(x, y) });
       floorLayers[k].addChild(f);
       this.floor[gi] = f;
       this.setBlock(x, y, tiles[y * w + x]);
@@ -185,7 +205,7 @@ export class Arena {
     if (tile === Tile.Floor) {
       if (s) { s.destroy(); this.blocks[gi] = null; }
     } else {
-      const tex = tile === Tile.Wall ? this.a.world.wall : this.a.world.box;
+      const tex = tile === Tile.Wall ? this.wallTex(x, y) : this.vars.boxAt(x, y, this.seed);
       if (!s) {
         s = new Sprite({ texture: tex, anchor: 0.5, x: x * T, y: y * T });
         this.blockLayers[this.chunkIndex(gx, gy)].addChild(s);
@@ -288,7 +308,7 @@ export class Arena {
       if (!f) {
         const shadow = new Sprite({ texture: this.tx.blockShadow, anchor: 0.5, x: b.x * T, y: b.y * T });
         const warn = new Sprite({ texture: this.tx.ring, anchor: 0.5, x: b.x * T, y: b.y * T, tint: 0xff3040 });
-        const block = new Sprite({ texture: this.a.world.wall, anchor: 0.5, x: b.x * T, y: b.y * T });
+        const block = new Sprite({ texture: this.wallTex(b.x, b.y), anchor: 0.5, x: b.x * T, y: b.y * T });
         this.fallingShadows.addChild(shadow, warn);
         this.fallingRoot.addChild(block);
         f = { block, shadow, warn, ttl0: Math.max(b.ttl, 1), seen: true };
@@ -325,7 +345,7 @@ export class Arena {
 
   private impact(x: number, y: number, fx: boolean, shake: boolean) {
     if (fx) this.fx.blockImpact(x, y);
-    const s = new Sprite({ texture: this.a.world.wall, anchor: { x: 0.5, y: 1 }, x: x * T, y: y * T + T / 2 });
+    const s = new Sprite({ texture: this.wallTex(x, y), anchor: { x: 0.5, y: 1 }, x: x * T, y: y * T + T / 2 });
     s.zIndex = y * T;
     this.fallingRoot.addChild(s);
     this.impacts.push({ s, t: 0 });

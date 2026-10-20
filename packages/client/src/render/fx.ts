@@ -122,8 +122,8 @@ export class Effects {
   readonly over = new Container();      // above entities (labels, ghosts, beams)
   readonly light = new Container();     // additive glows
   private shots: OneShot[] = [];
-  /** The brick texture cut into n x n fragments (4x4 on high, 2x2 on low quality). */
-  private brickBits = new Map<number, { tex: Texture; ox: number; oy: number }[]>();
+  /** Brick textures (each crate variant) cut into n x n fragments (4x4 on high, 2x2 on low quality). */
+  private brickBits = new Map<Texture, Map<number, { tex: Texture; ox: number; oy: number }[]>>();
   private labelPool: BitmapText[] = [];
   lowQuality = false;
 
@@ -229,25 +229,27 @@ export class Effects {
     }
   }
 
-  private bits(n: number) {
-    let bits = this.brickBits.get(n);
+  /** `tex` cut into n x n fragments (cached per texture). */
+  private bits(tex: Texture, n: number) {
+    let per = this.brickBits.get(tex);
+    if (!per) this.brickBits.set(tex, per = new Map());
+    let bits = per.get(n);
     if (bits) return bits;
-    const box = this.a.world.box;
-    const fw = box.frame.width / n, fh = box.frame.height / n;
+    const fw = tex.frame.width / n, fh = tex.frame.height / n;
     bits = [];
     for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
-      const tex = new Texture({ source: box.source, frame: new Rectangle(box.frame.x + x * fw, box.frame.y + y * fh, fw, fh) });
-      bits.push({ tex, ox: (x + 0.5) * fw - box.frame.width / 2, oy: (y + 0.5) * fh - box.frame.height / 2 });
+      const t = new Texture({ source: tex.source, frame: new Rectangle(tex.frame.x + x * fw, tex.frame.y + y * fh, fw, fh) });
+      bits.push({ tex: t, ox: (x + 0.5) * fw - tex.frame.width / 2, oy: (y + 0.5) * fh - tex.frame.height / 2 });
     }
-    this.brickBits.set(n, bits);
+    per.set(n, bits);
     return bits;
   }
 
   /** Brick crumble: the brick sprite breaks into its own pixel fragments that pop out, fall, bounce once and fade. */
-  brickBreak(x: number, y: number, dirX = 0, dirY = 0) {
+  brickBreak(x: number, y: number, dirX = 0, dirY = 0, tex: Texture = this.a.world.box) {
     const px = x * T, py = y * T;
     const floor = py + 11; // where the fragments land
-    const bits = this.bits(this.lowQuality ? 2 : 4);
+    const bits = this.bits(tex, this.lowQuality ? 2 : 4);
     for (const b of bits) {
       // start exactly where the piece was on the brick: ground position + height above it
       const sx = px + b.ox, sy = py + b.oy;
