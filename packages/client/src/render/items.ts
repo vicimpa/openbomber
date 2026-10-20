@@ -47,6 +47,10 @@ export class BombView {
     this.squash = 1; // placement pop
   }
 
+  /** Landed from the sky: a heavier squash than a placed bomb. */
+  land() { this.squash = 0; this.thud = 1; }
+  private thud = 0;
+
   update(b: BombState, dt: number, holder: { x: number; y: number } | null) {
     this.time += dt;
     let gx = b.x, gy = b.y, z = 0;
@@ -102,6 +106,12 @@ export class BombView {
       sx += s; sy -= s;
       this.squash = Math.max(0, this.squash - dt * 4.5);
     }
+    if (this.thud > 0) {
+      // flattened on impact, then a couple of wobbles
+      const s = Math.cos((1 - this.thud) * Math.PI * 2.5) * this.thud * 0.42;
+      sx += s; sy -= s;
+      this.thud = Math.max(0, this.thud - dt * 3.2);
+    }
     this.body.scale.set(sx, sy);
     this.sprite.tick(dt);
 
@@ -143,6 +153,10 @@ export class PickupView {
 
   get texture() { return this.icon.texture; }
 
+  private squash = 0;
+  /** Landed from the sky: skip the pop-out, squash on the spot instead. */
+  land() { this.t = 1; this.squash = 1; }
+
   update(p: PickupState, dt: number) {
     this.x = p.x; this.y = p.y;
     this.root.position.set(p.x * T, p.y * T);
@@ -152,6 +166,11 @@ export class PickupView {
     const bt = ft * 0.03, st = ft * 0.12;
     const bo = bt < 1 ? bounce(bt) : 1;
     this.body.scale.set(st < 1 ? st : 1);
+    if (this.squash > 0) {
+      const s = Math.cos((1 - this.squash) * Math.PI * 2.5) * this.squash * 0.32;
+      this.body.scale.set(1 + s, 1 - s);
+      this.squash = Math.max(0, this.squash - dt * 4);
+    }
     this.body.y = Math.round(Math.sin(this.t * this.speed * 0.25) * bo - (1 - bo) * 24) - 1;
     this.shadow.alpha = 0.5 + 0.5 * bo;
     this.blink.tick(dt);

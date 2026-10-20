@@ -533,6 +533,36 @@ export class Effects {
     }
   }
 
+  /** Overtime drop hits the ground: pixel dust ring; bombs thud harder, pickups sparkle. */
+  dropLand(x: number, y: number, bomb: boolean) {
+    const px = Math.round(x * T), py = Math.round(y * T);
+    this.frames(this.tx.ringOut, [0.04, 0.09, 0.15, 0.22], this.under, px, py + 8);
+    const n = this.q(bomb ? 10 : 7);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + rand(-0.2, 0.2), v = bomb ? rand(55, 85) : rand(40, 60);
+      this.particles.spawn({
+        tex: this.tx.puff, x: px + Math.cos(a) * 7, y: py + 9 + Math.sin(a) * 3, z: 1,
+        vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.45, vz: rand(4, 14), drag: 5,
+        life: rand(0.25, 0.4), scale: 1, alpha: 0.67, alphaEnd: 0.2, tint: 0xd8cdb8, pix: true,
+      });
+    }
+    if (bomb) {
+      for (let i = 0; i < this.q(6); i++) this.particles.spawn({
+        tex: this.tx.white, x: px + Math.round(rand(-8, 8)), y: py + 8, vx: rand(-60, 60), vy: rand(-20, 20), vz: rand(60, 120), gravity: 500,
+        bounce: 0.3, bounces: 1, life: rand(0.35, 0.55), scale: Math.random() < 0.4 ? 2 : 1, tint: Math.random() < 0.5 ? 0x85818c : 0xb9b3a8, alpha: 1, alphaEnd: 0.4, pix: true,
+      });
+    } else {
+      this.frames(this.tx.burst, [0.04, 0.09, 0.14, 0.19], this.over, px, py - 2).tint = 0xfff0a0;
+      for (let i = 0; i < this.q(8); i++) {
+        const a = (i / 8) * Math.PI * 2;
+        this.particles.spawn({
+          tex: this.tx.white, x: px, y: py - 2, vx: Math.cos(a) * rand(50, 80), vy: Math.sin(a) * rand(30, 50), drag: 3, vz: rand(10, 40),
+          life: rand(0.3, 0.5), scale: i % 3 ? 1 : 2, tint: i % 2 ? 0xfff6c0 : 0xffffff, alpha: 1, alphaEnd: 0.3, pix: true,
+        });
+      }
+    }
+  }
+
   curse(x: number, y: number) {
     const px = x * T, py = y * T - 8;
     for (let i = 0; i < this.q(10); i++) this.particles.spawn({

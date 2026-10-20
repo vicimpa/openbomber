@@ -1,6 +1,6 @@
 // Pixi.js v8 renderer for WorldState. See contracts.ts (GameRenderer / CreateRenderer).
 import { Application, Container, Sprite, Texture } from 'pixi.js';
-import { BombMotion, Phase, PickupType, type BombState, type GameEvent, type WorldState } from '@ob/game';
+import { BombMotion, DropKind, Phase, PickupType, type BombState, type GameEvent, type WorldState } from '@ob/game';
 
 import type { CreateRenderer, GameRenderer, RendererOptions } from '../contracts';
 import { Arena } from './arena';
@@ -8,6 +8,7 @@ import { loadAssets, type GameAssets } from './assets';
 import { Camera, type CameraMode, type CameraView } from './camera';
 import { Effects } from './fx';
 import { Explosions } from './explosions';
+import { Drops } from './drops';
 import { Ground, type Rect } from './ground';
 import { BombView, PickupView } from './items';
 import { PlayerView } from './players';
@@ -42,6 +43,9 @@ class PixiRenderer implements GameRenderer {
   private arena: Arena;
   private ground: Ground;
   private fx: Effects;
+  private drops: Drops;
+  /** Tiles where a sky drop just landed: the bomb / pickup appearing there gets a landing squash. */
+  private landed = new Map<number, number>();
   private pickupLayer = new Container();
   private bombLayer = new Container({ sortableChildren: true });
   private airBombs = new Container({ sortableChildren: true });
@@ -86,11 +90,12 @@ class PixiRenderer implements GameRenderer {
     this.arena = new Arena(a, tx, this.fx);
     this.arena.onImpact = (x, y) => this.shakeAt(x, y, 0.8);
     this.explosions = new Explosions(a, tx);
+    this.drops = new Drops(a);
     // grounded bombs and pickups always sit under the characters (no y-sorting with players);
     // carried and flying bombs go above them
     this.mapRoot.addChild(
-      this.arena.root, this.arena.zoneLayer, this.fx.under, this.arena.fallingShadows, this.pickupLayer, this.bombLayer,
-      this.explosions.root, this.explosions.glow, this.entities, this.airBombs, this.fx.particles.normal, this.arena.fallingRoot, this.fx.over,
+      this.arena.root, this.arena.zoneLayer, this.fx.under, this.arena.fallingShadows, this.drops.shadows, this.pickupLayer, this.bombLayer,
+      this.explosions.root, this.explosions.glow, this.entities, this.airBombs, this.fx.particles.normal, this.arena.fallingRoot, this.drops.air, this.fx.over,
       this.fx.particles.additive, this.fx.light, this.tags,
     );
     this.worldRoot.addChild(this.ground.root, this.arena.ghostRoot, this.mapRoot);
@@ -217,6 +222,7 @@ class PixiRenderer implements GameRenderer {
     this.syncPlayers(world, dt, fresh);
     this.syncBombs(world, dt);
     this.syncPickups(world, dt);
+    this.drops.sync(world.drops ?? [], dt);
     this.explosions.update(dt);
     this.fx.update(dt);
     this.gc();
@@ -274,6 +280,8 @@ class PixiRenderer implements GameRenderer {
     this.explosions.clear();
     this.bombs.clear(); this.pickups.clear();
     this.fx.clear();
+    this.drops.clear();
+    this.landed.clear();
     this.nextMap = null;
     this.recentBooms.length = 0; this.recentDeaths.length = 0;
     const m = this.map;
@@ -364,6 +372,7 @@ class PixiRenderer implements GameRenderer {
       if (!v) {
         v = new BombView(this.a, this.tx, this.fx, b);
         this.bombs.set(b.id, v);
+        if (this.takeLanded(b.x, b.y)) v.land();
       }
       v.seen = true;
       let holder: { x: number; y: number } | null = null;
@@ -401,6 +410,7 @@ class PixiRenderer implements GameRenderer {
       if (!v) {
         v = new PickupView(this.a, this.tx, p);
         this.pickups.set(p.id, v);
+        if (this.takeLanded(p.x, p.y)) v.land();
         this.pickupLayer.addChild(v.root);
       }
       v.seen = true;
@@ -410,10 +420,19 @@ class PixiRenderer implements GameRenderer {
     for (const [id, v] of this.pickups) if (!v.seen) { v.destroy(); this.pickups.delete(id); }
   }
 
+  private takeLanded(x: number, y: number) {
+    const k = Math.round(y) * 4096 + Math.round(x);
+    const t = this.landed.get(k);
+    if (t === undefined) return false;
+    this.landed.delete(k);
+    return this.time - t < 0.6;
+  }
+
   private gc() {
     const old = this.time - 3;
     for (const [k, v] of this.lastPickup) if (v.t < old) this.lastPickup.delete(k);
     for (const [k, v] of this.lastBomb) if (v.t < old) this.lastBomb.delete(k);
+    for (const [k, t] of this.landed) if (this.time - t > 1) this.landed.delete(k);
   }
 
   private updateOverlay(dt: number, world: WorldState | null) {
@@ -454,6 +473,13 @@ class PixiRenderer implements GameRenderer {
           break;
         }
         case 'bombFizzled': this.fx.fizzle(e.x, e.y); break;
+        case 'dropLanded': {
+          const bomb = e.kind === DropKind.Bomb;
+          this.fx.dropLand(e.x, e.y, bomb);
+          this.landed.set(e.y * 4096 + e.x, this.time);
+          if (bomb) this.shakeAt(e.x, e.y, 0.5);
+          break;
+        }
         case 'bombVanished': this.fx.vanish(e.x, e.y); break;
         case 'bombKicked': {
           const b = this.lastBomb.get(e.bomb);
