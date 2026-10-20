@@ -1,6 +1,6 @@
 // Pixi.js v8 renderer for WorldState. See contracts.ts (GameRenderer / CreateRenderer).
 import { Application, Container, Sprite, Texture } from 'pixi.js';
-import { Phase, PickupType, type GameEvent, type WorldState } from '@ob/game';
+import { Phase, PickupType, type BombState, type GameEvent, type WorldState } from '@ob/game';
 
 import type { CreateRenderer, GameRenderer, RendererOptions } from '../contracts';
 import { Arena } from './arena';
@@ -204,6 +204,7 @@ class PixiRenderer implements GameRenderer {
     let holders: Map<number, { x: number; y: number }> | null = null;
     for (const b of world.bombs.values()) {
       let v = this.bombs.get(b.id);
+      if (!v && b.id >= 0) v = this.adoptPredicted(b);
       if (!v) {
         v = new BombView(this.a, this.tx, this.fx, b);
         this.bombs.set(b.id, v);
@@ -222,6 +223,18 @@ class PixiRenderer implements GameRenderer {
       this.lastBomb.set(b.id, { x: v.x, y: v.y, t: this.time });
     }
     for (const [id, v] of this.bombs) if (!v.seen) { v.destroy(); this.bombs.delete(id); }
+  }
+
+  /** A predicted local bomb (negative id) turned into the server's one: keep its view (no second pop). */
+  private adoptPredicted(b: BombState): BombView | undefined {
+    const x = Math.round(b.x), y = Math.round(b.y);
+    for (const [id, v] of this.bombs) {
+      if (id >= 0 || Math.round(v.x) !== x || Math.round(v.y) !== y) continue;
+      this.bombs.delete(id);
+      this.bombs.set(b.id, v);
+      return v;
+    }
+    return undefined;
   }
 
   private syncPickups(world: WorldState, dt: number) {

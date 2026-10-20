@@ -5,7 +5,7 @@
 
 import type { Room } from '@colyseus/sdk';
 import {
-  BombMotion, Button, Curse, MSG, Phase, TICK_MS, Tile, packAxis, predictMovement, unpackAxis,
+  Ability, BOMB_FUSE, BombKind, BombMotion, Button, Curse, MSG, Phase, TICK_MS, Tile, packAxis, predictMovement, unpackAxis,
   type BombState, type ChatMessage, type GameEvent, type InputFrame, type PlayerState, type PredictMovement,
   type WorldState,
 } from '@ob/game';
@@ -36,6 +36,8 @@ const CHAT_LOG = 100;
 const PLAY_TIMEOUT_MS = 3000;
 /** A server bombPlaced matching a predicted one within this window is swallowed. */
 const PREDICTED_BOMB_MS = 1000;
+/** Local player moved farther than this in one tick (respawn, push-out): don't interpolate. */
+const TICK_TELEPORT = 0.5;
 
 type Listener<T> = (v: T) => void;
 
@@ -89,7 +91,13 @@ export class NetSource implements GameSource {
   private errY = 0;
   private visX = NaN;
   private visY = NaN;
+  /** Predicted position one tick earlier: the local player is drawn between it and `pred`. */
+  private prevX = NaN;
+  private prevY = NaN;
   private predictedBombs: { x: number; y: number; at: number }[] = [];
+  /** Own bombs shown right away (negative ids in the view) until the server's bomb arrives. */
+  private ghosts: { id: number; x: number; y: number; seq: number; at: number }[] = [];
+  private ghostSeq = 0;
 
   private pingTimer: ReturnType<typeof setInterval> | undefined;
   private disposed = false;
@@ -288,32 +296,71 @@ export class NetSource implements GameSource {
     this.pending.push(f);
     if (this.pending.length > MAX_PENDING) this.pending.shift();
     this.unsent.push(f);
+    if (this.pred) { this.prevX = this.pred.x; this.prevY = this.pred.y; }
     if (this.pred && this.predict) this.predict(this.model.world, this.pred, f);
-    if (f.buttons & Button.Bomb && !(this.prevButtons & Button.Bomb)) this.predictBomb();
+    if (f.buttons & Button.Bomb && !(this.prevButtons & Button.Bomb)) this.predictBomb(f.seq);
     this.prevButtons = f.buttons;
     if (++this.sinceSend >= SEND_EVERY_TICKS) this.flush();
   }
 
   /** Cosmetic: emit the local bombPlaced right away when it will almost surely succeed. */
-  private predictBomb() {
+  private predictBomb(seq: number) {
     const p = this.pred;
     const w = this.model.world;
-    if (!this.predictBombs || !p || !p.alive || !p.inRound || p.curse === Curse.Constipation) return;
-    if (w.phase !== Phase.Playing && w.phase !== Phase.SuddenDeath && w.phase !== Phase.Waiting) return;
+    if (!this.predictBombs || !p || !p.alive || !p.inRound || p.carrying >= 0 || p.curse === Curse.Constipation) return;
+    if (w.phase !== Phase.Playing && w.phase !== Phase.SuddenDeath) return;
+    // sim: bombs are off while a lone survivor waits for the round to end
+    if (w.players.size > 1) {
+      let alive = 0;
+      for (const q of w.players.values()) if (q.alive && q.inRound) alive++;
+      if (alive < 2) return;
+    }
     // float32 positions: too close to a tile edge, the server may round the other way
     const fx = p.x - Math.floor(p.x), fy = p.y - Math.floor(p.y);
     if (Math.abs(fx - 0.5) < 0.02 || Math.abs(fy - 0.5) < 0.02) return;
     const x = Math.round(p.x), y = Math.round(p.y);
     if (w.tiles[y * w.width + x] !== Tile.Floor) return;
+    for (const k of w.pickups.values()) if (k.x === x && k.y === y) return;
     let own = 0;
     for (const b of w.bombs.values()) {
       if (b.owner === p.id) own++;
       if (b.motion !== BombMotion.Flying && Math.round(b.x) === x && Math.round(b.y) === y) return;
     }
+    for (const g of this.ghosts) {
+      if (g.x === x && g.y === y) return;
+      own++;
+    }
     if (own >= p.bombs) return;
     const now = performance.now();
     this.predictedBombs.push({ x, y, at: now });
     this.events.push({ type: 'bombPlaced', bomb: -1, x, y, owner: p.id });
+    const id = -(++this.ghostSeq);
+    const g = newBomb(id);
+    g.owner = p.id; g.x = g.fromX = g.toX = x; g.y = g.fromY = g.toY = y;
+    g.radius = p.curse === Curse.TinyFlame ? 1 : p.radius;
+    g.fuse = BOMB_FUSE;
+    g.kind = p.effects.crazy > 0 ? BombKind.Crazy : p.abilities & Ability.Remote ? BombKind.Remote
+      : p.abilities & Ability.Pierce ? BombKind.Pierce : BombKind.Normal;
+    if (g.kind === BombKind.Remote) g.fuse = -1;
+    g.passers.push(p.id);
+    this.view.bombs.set(id, g);
+    this.ghosts.push({ id, x, y, seq, at: now });
+  }
+
+  /** Drop predicted bombs once the server placed the real one (or clearly did not). */
+  private settleGhosts(ackSeq: number, now: number) {
+    if (this.ghosts.length === 0) return;
+    const w = this.model.world;
+    this.ghosts = this.ghosts.filter((g) => {
+      let real = false;
+      for (const b of w.bombs.values()) {
+        if (b.owner === this.sessionId && Math.round(b.x) === g.x && Math.round(b.y) === g.y) { real = true; break; }
+      }
+      // acked without a bomb there: the server refused it (or it already went off)
+      const keep = !real && g.seq > ackSeq - 2 && now - g.at < PREDICTED_BOMB_MS;
+      if (!keep) this.view.bombs.delete(g.id);
+      return keep;
+    });
   }
 
   private swallowPredicted(e: GameEvent): boolean {
@@ -352,6 +399,7 @@ export class NetSource implements GameSource {
       this.unsent = [];
       this.pred = null;
       this.visX = this.visY = NaN;
+      this.prevX = this.prevY = NaN;
       this.errX = this.errY = 0;
     }
     const localId = this.localId;
@@ -391,10 +439,11 @@ export class NetSource implements GameSource {
       t.push(w.tick, b.x, b.y, b.progress);
     }
     if (vb.size !== w.bombs.size) {
-      for (const id of vb.keys()) if (!w.bombs.has(id)) { vb.delete(id); this.bombTracks.delete(id); }
+      for (const id of vb.keys()) if (id >= 0 && !w.bombs.has(id)) { vb.delete(id); this.bombTracks.delete(id); }
     }
 
     this.rebase();
+    this.settleGhosts(this.playing ? (w.players.get(this.sessionId)?.ackSeq ?? 0) : Infinity, now);
   }
 
   /** Reconcile the local predicted player with the newest authoritative state. */
@@ -408,14 +457,19 @@ export class NetSource implements GameSource {
 
     const pred = this.pred ?? (this.pred = newPlayer(auth.id));
     copyPlayer(auth, pred);
+    this.prevX = pred.x; this.prevY = pred.y;
     if (this.predict) {
       // predictMovement freezes dead / spectating / countdown players itself
       const w = this.model.world;
-      for (let i = 0; i < pending.length; i++) this.predict(w, pred, pending[i]!);
+      for (let i = 0; i < pending.length; i++) {
+        if (i === pending.length - 1) { this.prevX = pred.x; this.prevY = pred.y; }
+        this.predict(w, pred, pending[i]!);
+      }
     }
 
     if (!Number.isNaN(this.visX)) {
-      const ex = this.visX - pred.x, ey = this.visY - pred.y;
+      this.tickLerp(pred);
+      const ex = this.visX - this.lerpX, ey = this.visY - this.lerpY;
       if (Math.hypot(ex, ey) > SNAP_DIST || !auth.alive) { this.errX = 0; this.errY = 0; }
       else { this.errX = ex; this.errY = ey; }
     }
@@ -442,14 +496,30 @@ export class NetSource implements GameSource {
       if (id === localId) {
         const src = this.pred ?? w.players.get(id);
         if (!src) continue;
-        p.x = src.x + this.errX; p.y = src.y + this.errY; p.dir = src.dir; p.moving = src.moving;
+        this.tickLerp(src);
+        p.x = this.lerpX + this.errX; p.y = this.lerpY + this.errY; p.dir = src.dir; p.moving = src.moving;
         this.visX = p.x; this.visY = p.y;
       } else {
         this.tracks.get(id)?.sample(renderTick, p);
       }
     }
 
-    for (const [id, b] of v.bombs) this.placeBomb(id, b, renderTick);
+    for (const [id, b] of v.bombs) if (id >= 0) this.placeBomb(id, b, renderTick);
+  }
+
+  private lerpX = 0;
+  private lerpY = 0;
+  /** Fixed-step interpolation: draw the local player between the last two predicted ticks, so
+   *  movement stays even on 90/120/144 Hz screens (where frames and 60 Hz ticks don't line up). */
+  private tickLerp(src: PlayerState) {
+    const px = this.prevX, py = this.prevY;
+    if (src !== this.pred || Number.isNaN(px) || Math.abs(src.x - px) + Math.abs(src.y - py) > TICK_TELEPORT) {
+      this.lerpX = src.x; this.lerpY = src.y;
+      return;
+    }
+    const a = Math.min(1, Math.max(0, this.acc / TICK_MS));
+    this.lerpX = px + (src.x - px) * a;
+    this.lerpY = py + (src.y - py) * a;
   }
 
   private placeBomb(id: number, b: BombState, renderTick: number) {

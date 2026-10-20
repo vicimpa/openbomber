@@ -175,6 +175,19 @@ export function startSession() {
   };
   requestAnimationFrame(frame);
 
+  // Dev / QA hook (stripped from production builds): inspect the live session from the console.
+  if (import.meta.env.DEV) {
+    let music: MusicMode = 'off';
+    const setMusic = audio.setMusic.bind(audio);
+    audio.setMusic = (m) => { music = m; setMusic(m); };
+    (window as unknown as { __ob: unknown }).__ob = {
+      get source() { return source; },
+      get renderer() { return renderer; },
+      get music() { return music; },
+      audio, input,
+    };
+  }
+
   function react(events: GameEvent[], world: WorldState | null, localId: string) {
     renderer?.handleEvents(events, localId);
     audio.handleEvents(events, world, localId);
