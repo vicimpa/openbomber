@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import { BOMB_FUSE, CHAIN_DELAY, TICK_RATE } from '../contract/constants';
-import { Button } from '../contract/protocol';
-import { Phase, type WorldState } from '../contract/types';
+import { BOMB_FUSE, CHAIN_DELAY, CRAZY_FUSE_MAX, CRAZY_FUSE_MIN, TICK_RATE, sec } from '../contract/constants';
+import { Button, type GameEvent } from '../contract/protocol';
+import { Curse, Phase, PickupType, Tile, type WorldState } from '../contract/types';
 import { Simulation } from '../sim/Simulation';
 import { Harness, ev } from '../sim/testkit';
 import { Bot, type BotDifficulty } from './Bot';
@@ -149,5 +149,214 @@ describe('bots', () => {
     const avg = think / ticks;
     console.log(`[bot perf] 32 bots: ${(avg * 1000).toFixed(1)}us per tick (all bots), phase=${Phase[sim.state.phase]}`);
     expect(avg).toBeLessThan(1);
+  });
+});
+
+// ---------------------------------------------------------------- abilities
+
+/** Run `bot` for n ticks; everybody else stands still. Returns the events. */
+function drive(h: Harness, bots: Bot[], n: number, each?: () => boolean | void) {
+  const out: GameEvent[] = [];
+  for (let i = 0; i < n; i++) {
+    for (const b of bots) {
+      const f = b.think(h.state);
+      h.set(b.id, f.dx, f.dy, f.buttons);
+    }
+    out.push(...h.step());
+    if (each?.()) break;
+  }
+  return out;
+}
+
+describe('bots use what they hold', () => {
+  const sealed = ['.....', 'BBBBB', 'BBBBB', 'BBBBB', '.....'];
+
+  test('ghost: walks through bricks to a pickup it could not reach otherwise', () => {
+    for (const ghost of [true, false]) {
+      const h = new Harness(sealed, [['bot', 2, 0]]);
+      if (ghost) h.give('bot', ['ghost'], sec(20));
+      h.sim.spawnPickup(2, 4, PickupType.BombUp);
+      const bot = new Bot('bot', 'hard');
+      drive(h, [bot], 200, () => h.p('bot').bombs > 1);
+      expect(h.p('bot').bombs).toBe(ghost ? 2 : 1);
+      expect(h.p('bot').alive).toBe(true);
+    }
+  });
+
+  test('ghost: never still inside a brick when the timer runs out', () => {
+    const rows = ['.........', 'BBBBBBBBB', 'BBBBBBBBB', 'BBBBBBBBB', 'BBBBBBBBB', 'BBBBBBBBB', '.........'];
+    const W = rows[0]!.length;
+    let checked = 0;
+    for (const diff of DIFFS) {
+      for (const [x, y, ticks] of [[4, 0, 90], [4, 0, 200], [3, 2, 110], [5, 3, 140], [2, 4, 75], [6, 1, 300]] as const) {
+        const h = new Harness(rows, [['bot', x, y]]);
+        h.give('bot', ['ghost'], ticks);
+        h.p('bot').effects.invulnerable = 0;
+        h.sim.spawnPickup(4, 6, PickupType.Heart); // a lure deep behind the bricks
+        h.sim.spawnPickup(0, 6, PickupType.BombUp);
+        const bot = new Bot('bot', diff);
+        drive(h, [bot], ticks + 5, () => {
+          const p = h.p('bot');
+          if (p.effects.ghost !== 1) return false;
+          checked++;
+          expect(h.state.tiles[Math.round(p.y) * W + Math.round(p.x)]).toBe(Tile.Floor);
+          return true;
+        });
+      }
+    }
+    expect(checked).toBe(18);
+  });
+
+  test('bombPass: walks through a row of bombs', () => {
+    const rows = ['#########', '.........', '#########', '.........'];
+    for (const pass of [true, false]) {
+      const h = new Harness(rows, [['bot', 0, 1], ['z', 2, 1]]);
+      const z = h.p('z');
+      z.bombs = 2;
+      h.give('z', ['remote']); // they wait for z, who never presses
+      h.tap('z', Button.Bomb);
+      z.x = 3;
+      h.step(2);
+      h.tap('z', Button.Bomb);
+      z.x = 0;
+      z.y = 3;
+      h.step(2);
+      expect(h.state.bombs.size).toBe(2);
+      if (pass) h.give('bot', ['bombPass']);
+      h.sim.spawnPickup(8, 1, PickupType.BombUp);
+      const bot = new Bot('bot', 'hard');
+      drive(h, [bot], 240, () => h.p('bot').bombs > 1);
+      expect(h.p('bot').bombs).toBe(pass ? 2 : 1);
+    }
+  });
+
+  test('remote: sets the bomb off once an enemy stands in the blast, never on itself', () => {
+    const h = new Harness(['.........', '.........', '.........', '.........', '.........'], [['bot', 4, 2], ['z', 8, 4]]);
+    const bot = new Bot('bot', 'hard');
+    h.give('bot', ['remote']);
+    h.p('bot').radius = 2;
+    h.tap('bot', Button.Bomb);
+    h.p('bot').x = 0;
+    h.p('bot').y = 0;
+    drive(h, [bot], 30);
+    expect(h.state.bombs.size).toBe(1); // nobody in reach: it waits
+    h.p('z').x = 4; // walks into the blast
+    const events = drive(h, [bot], 30, () => !h.p('z').alive);
+    expect(ev(events, 'explosion').length).toBe(1);
+    expect(h.p('z').alive).toBe(false);
+    expect(h.p('bot').alive).toBe(true);
+  });
+
+  test('remote: a bomb with nobody to catch does not lie around forever', () => {
+    const h = new Harness(['.........', '.........', '.........'], [['bot', 4, 1], ['z', 8, 2]]);
+    const bot = new Bot('bot', 'normal');
+    h.give('bot', ['remote']);
+    h.tap('bot', Button.Bomb);
+    const events = drive(h, [bot], sec(6), () => h.state.bombs.size === 0);
+    expect(ev(events, 'explosion').length).toBe(1);
+    expect(h.p('bot').alive).toBe(true);
+  });
+
+  test('glove: throws a bomb over a wall at an enemy', () => {
+    const h = new Harness(['..#....', '..#....', '..#....'], [['bot', 1, 1], ['z', 4, 1]]);
+    const bot = new Bot('bot', 'hard');
+    h.give('bot', ['glove']);
+    h.tap('bot', Button.Bomb);
+    const events = drive(h, [bot], BOMB_FUSE + 60, () => !h.p('z').alive);
+    expect(ev(events, 'bombThrown').length).toBe(1);
+    expect(ev(events, 'playerStunned').length).toBe(1);
+    expect(h.p('z').alive).toBe(false);
+    expect(h.p('bot').alive).toBe(true);
+  });
+
+  test('kick: kicks a bomb down the lane at an enemy', () => {
+    const h = new Harness(['#########', '.........', '#########'], [['bot', 2, 1], ['z', 7, 1]]);
+    const bot = new Bot('bot', 'hard');
+    h.give('bot', ['kick']);
+    h.tap('bot', Button.Bomb);
+    h.p('bot').x = 1;
+    h.step();
+    const events = drive(h, [bot], BOMB_FUSE + 30, () => !h.p('z').alive);
+    expect(ev(events, 'bombKicked').length).toBe(1);
+    expect(h.p('z').alive).toBe(false);
+    expect(h.p('bot').alive).toBe(true);
+  });
+
+  test('punch: punches an adjacent bomb at an enemy', () => {
+    const h = new Harness(['#########', '.........', '#########'], [['bot', 2, 1], ['z', 5, 1]]);
+    const bot = new Bot('bot', 'hard');
+    h.give('bot', ['punch']);
+    h.tap('bot', Button.Bomb);
+    h.p('bot').x = 1;
+    h.step();
+    const events = drive(h, [bot], BOMB_FUSE + 30, () => !h.p('z').alive);
+    expect(ev(events, 'bombPunched').length).toBe(1);
+    expect(h.p('z').alive).toBe(false);
+    expect(h.p('bot').alive).toBe(true);
+  });
+
+  test('fire: chases an enemy down and touches them', () => {
+    const h = new Harness(['.........', '.#.#.#.#.', '.........', '.#.#.#.#.', '.........'], [['bot', 0, 0], ['z', 8, 4]]);
+    const bot = new Bot('bot', 'normal');
+    h.give('bot', ['fire']);
+    h.p('bot').effects.invulnerable = 0;
+    const events = drive(h, [bot], sec(10), () => !h.p('z').alive);
+    const died = ev(events, 'playerDied');
+    expect(died.length).toBe(1);
+    expect(died[0]!.killer).toBe('bot');
+    expect(ev(events, 'explosion').length).toBe(0); // by touch, not by bomb
+  });
+
+  test('line bomb: lays a line down a corridor at an enemy and gets away', () => {
+    const h = new Harness(['#########', '.........', '###.#####', '###.#####'], [['bot', 3, 1], ['z', 8, 1]]);
+    const bot = new Bot('bot', 'hard');
+    h.give('bot', ['lineBomb']);
+    h.p('bot').bombs = 4;
+    h.p('bot').radius = 2;
+    const events = drive(h, [bot], sec(5), () => !h.p('z').alive);
+    expect(ev(events, 'bombPlaced').length).toBeGreaterThanOrEqual(3);
+    expect(h.p('z').alive).toBe(false);
+    expect(h.p('bot').alive).toBe(true);
+  });
+
+  test('reverse curse: still flees its own bomb', () => {
+    const h = new Harness(['.........', '.#.#.#.#.', '.........'], [['bot', 0, 0], ['z', 8, 2]]);
+    const bot = new Bot('bot', 'normal');
+    h.p('bot').curse = Curse.Reverse;
+    h.p('bot').effects.curse = 100000;
+    h.tap('bot', Button.Bomb);
+    drive(h, [bot], BOMB_FUSE + 40);
+    expect(ev(h.events, 'explosion').length).toBe(1);
+    expect(h.p('bot').alive).toBe(true);
+  });
+
+  test('pierce: danger is predicted through bricks, whatever the bomb kind', () => {
+    const W = 9;
+    for (const remote of [false, true]) {
+      const h = new Harness(['.BBB.....', '.........'], [['a', 0, 0]]);
+      h.p('a').radius = 5;
+      h.give('a', remote ? ['pierce', 'remote'] : ['pierce']);
+      h.tap('a', Button.Bomb);
+      h.p('a').y = 1;
+      h.p('a').x = 8;
+      const d = analyze(h.state as WorldState);
+      for (const x of [1, 2, 3, 4, 5]) {
+        if (remote) expect(d.soft[x]).toBe(1);
+        else expect(d.dStart[x]).toBeLessThan(INF);
+      }
+      expect(remote ? d.soft[6] : d.dStart[6] < INF ? 1 : 0).toBe(0);
+      expect(d.dStart[1 * W + 8]).toBe(INF);
+    }
+  });
+
+  test('crazy bombs count with the shortest fuse and the biggest blast', () => {
+    const h = new Harness(['...........', '...........'], [['a', 0, 0]]);
+    h.give('a', ['crazy']);
+    h.tap('a', Button.Bomb);
+    h.p('a').y = 1;
+    const d = analyze(h.state as WorldState);
+    expect(d.dStart[5]).toBeLessThanOrEqual(CRAZY_FUSE_MIN); // radius 1 x CRAZY_RADIUS_MULT
+    expect(d.dStart[6]).toBe(INF);
+    expect(d.dEnd[5]).toBeGreaterThan(CRAZY_FUSE_MAX - 10);
   });
 });
