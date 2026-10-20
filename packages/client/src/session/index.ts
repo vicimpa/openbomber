@@ -45,7 +45,11 @@ export function startSession() {
   registerLoadTask(
     stageReady
       .then((el) => createRenderer({ parent: el, quality: settings.peek().quality }))
-      .then((r) => { renderer = r; }),
+      .then((r) => {
+        renderer = r;
+        // the first menu backdrop was warmed up before the renderer existed
+        if (source instanceof LocalSource) r.prime(source.takePrimeEvents());
+      }),
   );
   effect(() => renderer?.setQuality(settings.value.quality));
   effect(() => audio.setVolume(settings.value.volume));
