@@ -53,6 +53,7 @@ export const T = {
   zoneWarning: (sec: number) => `Уменьшение размера карты через ${sec} сек`,
   zoneCancel: 'Уменьшение размера карты отменено',
   full: 'Нет свободных мест',
+  chatSlow: 'Не так быстро: не больше одного сообщения в 2 секунды',
   newHost: (n: string) => `${n} теперь управляет комнатой`,
   settings: (s: RoomSettings) =>
     `Настройки комнаты: ботов ${s.bots} (${DIFFICULTY_RU[s.botDifficulty]}), игроков до ${s.maxPlayers}, зона ${s.zone ? 'вкл' : 'выкл'}`,
@@ -74,6 +75,8 @@ interface Human {
   lastSeq: number;
   connected: boolean;
   lastChat: number;
+  /** Last «too fast» whisper (so the hint itself can't be spammed). */
+  lastSlowHint: number;
   inputs: TokenBucket;
   profile: TokenBucket;
   pings: TokenBucket;
@@ -212,6 +215,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
       lastSeq: 0,
       connected: true,
       lastChat: 0,
+      lastSlowHint: 0,
       inputs: new TokenBucket(TICK_RATE / 2, TICK_RATE * 1.25),
       profile: new TokenBucket(3, 0.5),
       pings: new TokenBucket(5, 2),
@@ -517,7 +521,13 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     const h = this.humans.get(client.sessionId);
     if (!h) return;
     const now = Date.now();
-    if (now - h.lastChat < CHAT_COOLDOWN_MS) return;
+    if (now - h.lastChat < CHAT_COOLDOWN_MS) {
+      if (now - h.lastSlowHint >= CHAT_COOLDOWN_MS) {
+        h.lastSlowHint = now;
+        this.whisper(client, T.chatSlow);
+      }
+      return;
+    }
     const text = cleanText(msg, CHAT_MAX);
     if (!text) return;
     h.lastChat = now;

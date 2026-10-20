@@ -5,7 +5,7 @@ export const KEY_BINDINGS = {
   down: ['KeyS', 'ArrowDown'],
   left: ['KeyA', 'ArrowLeft'],
   right: ['KeyD', 'ArrowRight'],
-  bomb: ['Space', 'Enter', 'NumpadEnter'],
+  bomb: ['Space'],
   action: ['KeyE', 'ShiftLeft', 'ShiftRight', 'KeyJ'],
 } as const;
 

@@ -16,7 +16,7 @@ import { lastDevice } from '$/input/device';
 import { installPlayGuards } from '$/input/guards';
 import { isTextTarget } from '$/input/keyboard';
 import { TouchControls } from '$/input/TouchControls';
-import { ChatDrawer, ChatTicker } from './hud/Chat';
+import { Chat } from './hud/Chat';
 import { Banners, BottomPill, Countdown, DebugInfo, KillFeed, RoundResult, Scoreboard, StatsStrip, TopPill } from './hud/Hud';
 import { t } from './i18n';
 import { Icon } from './icons';
@@ -46,7 +46,7 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
 
   useEffect(() => (inWorld ? installPlayGuards(rootRef.current!) : undefined), [inWorld]);
 
-  // Desktop shortcuts: T / Enter chat, hold Tab scoreboard, Esc menu.
+  // Desktop shortcuts: Enter / T chat (Minecraft style), hold Tab scoreboard, Esc menu.
   useEffect(() => {
     if (!inWorld) return;
     const down = (e: KeyboardEvent) => {
@@ -58,10 +58,7 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
         else menuOpen.value = true;
         return;
       }
-      const me = hud.peek()?.me;
-      // Enter is also a Bomb key, so it only opens the chat when you are not playing.
-      const canEnter = !me || me.spectating;
-      if (e.code === 'KeyT' || (canEnter && (e.code === 'Enter' || e.code === 'NumpadEnter'))) {
+      if (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'KeyT') {
         e.preventDefault();
         chatOpen.value = true;
       }
@@ -107,11 +104,10 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
             <Countdown h={h} />
             {scoreboardOpen.value && <Scoreboard h={h} onClose={() => { scoreboardOpen.value = false; }} />}
           </>}
-          <ChatTicker />
           <BottomPill h={h} />
         </div>
       )}
-      {inWorld && <ChatDrawer />}
+      {inWorld && <Chat />}
       {inWorld && <MenuDrawer />}
     </div>
   );

@@ -1,99 +1,120 @@
-// Canon chat: a right-side drawer («Чат:», «Скрыть», «Сообщения» + «Send (Enter)») and a
-// ticker of recent messages that fade over the game while the drawer is closed.
+// Minecraft-style chat over the game, bottom-left.
+// Closed: the newest lines show up on dark strips and fade out after a few seconds.
+// Open (Enter / T, or the chat button): the whole history scrolls above an input line;
+// Enter sends (an empty line closes), Esc closes, ↑ / ↓ walk through what you sent before.
 // Messages with `from === ''` or a name starting with '@' (e.g. @server) are system messages.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { isTouchDevice } from '$/input/device';
 import { t } from '../i18n';
 import { Icon } from '../icons';
-import { actions, chat, chatOpen } from '../store';
+import { actions, chat, chatOpen, hud } from '../store';
+
+const SHOW_MS = 10_000;   // a closed chat keeps a line this long (fades out over the end)
+const CLOSED_LINES = 10;
+const MAX_LEN = 100;
 
 const isSystem = (m: { from: string; name: string }) => !m.from || m.name.startsWith('@');
-const time = (at: number) => new Date(at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-export function ChatTicker() {
-  if (chatOpen.value) return null;
-  const msgs = chat.value.slice(-5);
+/** What you sent this session, newest last (↑ / ↓ in the input). */
+const sent: string[] = [];
+
+function Line({ m, meId }: { m: (typeof chat.value)[number]; meId: string }) {
+  const sys = isSystem(m);
   return (
-    <div class="ticker" aria-hidden="true">
-      {msgs.map((m) => (
-        <div key={m.id} class={`ticker__msg ${isSystem(m) ? 'is-sys' : ''}`}>
-          <b>{isSystem(m) ? (m.name || t('hud.server')) : m.name}:</b> {m.text}
-        </div>
-      ))}
+    <div class={`mc-chat__line ${sys ? 'is-sys' : ''} ${!sys && m.from === meId ? 'is-me' : ''}`}>
+      {sys ? <span class="mc-chat__text">{m.text}</span> : <><b>&lt;{m.name}&gt;</b> <span class="mc-chat__text">{m.text}</span></>}
     </div>
   );
 }
 
-export function ChatDrawer() {
+export function Chat() {
   const open = chatOpen.value;
   const msgs = chat.value;
+  const meId = hud.value?.me?.id ?? '';
+  const [now, setNow] = useState(() => Date.now());
   const [text, setText] = useState('');
-  const [blur, setBlur] = useState(false);
+  const histPos = useRef(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
+  // a closed chat lets lines expire; tick only while there is something to expire
+  const recent = open ? [] : msgs.slice(-CLOSED_LINES).filter((m) => now - m.at < SHOW_MS);
   useEffect(() => {
-    // On phones don't pop the keyboard just because the drawer opened.
-    if (open && !isTouchDevice) inputRef.current?.focus({ preventScroll: true });
-    if (!open) inputRef.current?.blur();
+    if (open || !recent.length) return;
+    const id = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [open, recent.length]);
+  useEffect(() => setNow(Date.now()), [msgs.length]);
+
+  useEffect(() => {
+    if (!open) { inputRef.current?.blur(); setText(''); histPos.current = -1; return; }
+    inputRef.current?.focus({ preventScroll: true });
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [open]);
 
   useEffect(() => {
     const el = listRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [msgs.length, open]);
+    if (open && el) el.scrollTop = el.scrollHeight;
+  }, [msgs.length]);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('[data-modal-open]')) { e.preventDefault(); chatOpen.value = false; } };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
+  const close = () => { chatOpen.value = false; };
 
-  const send = (e: Event) => {
+  const submit = (e: Event) => {
     e.preventDefault();
-    const v = text.trim();
-    if (v) { actions.sendChat(v.slice(0, 120)); actions.uiSound('chat'); }
-    setText('');
-    if (!isTouchDevice && !v) chatOpen.value = false;
+    const v = text.trim().slice(0, MAX_LEN);
+    if (v) {
+      actions.sendChat(v);
+      actions.uiSound('chat');
+      if (sent[sent.length - 1] !== v) sent.push(v);
+      if (sent.length > 50) sent.shift();
+    }
+    close();
+  };
+
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); return; }
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && sent.length) {
+      e.preventDefault();
+      const pos = histPos.current < 0 ? sent.length : histPos.current;
+      const next = e.key === 'ArrowUp' ? Math.max(0, pos - 1) : pos + 1;
+      if (next >= sent.length) { histPos.current = -1; setText(''); return; }
+      histPos.current = next;
+      setText(sent[next]!);
+    }
   };
 
   return (
-    <>
-      {open && <div class="drawer-scrim drawer-scrim--light" onPointerDown={() => { chatOpen.value = false; }} />}
-      <aside class={`drawer drawer--right chat ${open ? 'is-open' : ''}`} aria-hidden={!open} inert={!open ? true : undefined} aria-label={t('hud.chat')}>
-        <header class="chat__head">
-          <span>{t('chat.title')}</span>
-          <span class="chat__head-btns">
-            <button class="btn btn--flat btn--sm" onClick={() => setBlur(!blur)}>{blur ? t('chat.show') : t('chat.hide')}</button>
-            <button class="icon-btn icon-btn--sm" onClick={() => { chatOpen.value = false; }} aria-label={t('common.close')}><Icon name="close" /></button>
-          </span>
-        </header>
-        <div class={`chat__list ${blur ? 'is-blur' : ''}`} ref={listRef} data-scrollable aria-live="polite">
-          {!msgs.length && <p class="muted chat__empty">{t('chat.empty')}</p>}
-          {msgs.map((m) => (
-            <div key={m.id} class={`chat__item ${isSystem(m) ? 'is-sys' : ''}`} data-isme={m.from === 'me' ? '' : undefined}>
-              <div class="chat__meta"><b>{isSystem(m) ? (m.name || t('hud.server')) : m.name}</b><small>{time(m.at)}</small></div>
-              <div class="chat__text">{m.text}</div>
-            </div>
+    <div class={`mc-chat ${open ? 'is-open' : ''}`} aria-label={t('hud.chat')}>
+      {open ? (
+        <div class="mc-chat__list" ref={listRef} data-scrollable aria-live="polite">
+          {msgs.length ? msgs.map((m) => <Line key={m.id} m={m} meId={meId} />) : <div class="mc-chat__line is-sys">{t('chat.empty')}</div>}
+        </div>
+      ) : (
+        <div class="mc-chat__list" aria-hidden="true">
+          {recent.map((m) => (
+            <div key={m.id} style={{ opacity: Math.min(1, (SHOW_MS - (now - m.at)) / 1500) }}><Line m={m} meId={meId} /></div>
           ))}
         </div>
-        <form class="chat__form" onSubmit={send}>
+      )}
+      {open && (
+        <form class="mc-chat__form" onSubmit={submit}>
           <input
             ref={inputRef}
-            class="input chat__input"
+            class="mc-chat__input"
             value={text}
-            maxLength={120}
+            maxLength={MAX_LEN}
             enterKeyHint="send"
             autoComplete="off"
-            placeholder={t('chat.placeholder')}
+            spellcheck={false}
             aria-label={t('chat.placeholder')}
-            onInput={(e) => setText((e.target as HTMLInputElement).value)}
-            onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setText(''); chatOpen.value = false; } }}
+            placeholder={isTouchDevice ? t('chat.placeholder') : t('hud.chatPlaceholder')}
+            onInput={(e) => { histPos.current = -1; setText((e.target as HTMLInputElement).value); }}
+            onKeyDown={onKey}
           />
-          <button class="btn btn--flat btn--sm" type="submit">{isTouchDevice ? t('chat.sendShort') : t('chat.send')}</button>
+          <button class="icon-btn mc-chat__send" type="submit" aria-label={t('chat.sendShort')} title={t('chat.sendShort')}><Icon name="chat" /></button>
         </form>
-      </aside>
-    </>
+      )}
+    </div>
   );
 }
