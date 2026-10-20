@@ -73,7 +73,7 @@ class PixiRenderer implements GameRenderer {
   private ro: ResizeObserver;
   /** Map placement in the endless world: origin (tiles) and size of the current map. */
   private map = { ox: 0, oy: 0, w: 0, h: 0, shown: false, age: 0 };
-  private ghost: { ox: number; oy: number; w: number; h: number; t: number } | null = null;
+  private ghost: { ox: number; oy: number; w: number; h: number; t: number; fade?: number } | null = null;
   private lastWorld: WorldState | null = null;
   private nextMap: 'travel' | 'snap' | null = null;
   private spawnDelay = -1;
@@ -312,7 +312,9 @@ class PixiRenderer implements GameRenderer {
     const seen = r.x1 > v.x0 && r.x0 < v.x1 && r.y1 > v.y0 && r.y0 < v.y1;
     const root = this.arena.ghostRoot;
     if (seen && g.t < 4) return;
-    root.alpha = seen ? Math.max(0, root.alpha - dt * 2) : 0;
+    // dissolve in hard steps (no smooth fade over pixel art)
+    g.fade = seen ? Math.max(0, (g.fade ?? 1) - dt * 2) : 0;
+    root.alpha = Math.ceil(g.fade * 3) / 3;
     if (root.alpha > 0) return;
     this.arena.clearGhost();
     root.alpha = 1;

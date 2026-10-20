@@ -37,6 +37,7 @@ export interface ParticleOpts {
   scaleY?: number;           // y/x ratio
   bounces?: number;          // how many times it may bounce before it stays on the ground (default: unlimited)
   hold?: number;             // alpha stays at `alpha` until this share of the life, then fades to alphaEnd
+  pix?: boolean;             // pixel mode: integer position and scale, alpha in 3 hard steps
 }
 
 interface P extends Required<Omit<ParticleOpts, 'tex' | 'tint' | 'add'>> { s: Sprite; age: number; add: boolean }
@@ -68,7 +69,7 @@ export class Particles {
       scale: o.scale ?? 1, scaleEnd: o.scaleEnd ?? o.scale ?? 1,
       alpha: o.alpha ?? 1, alphaEnd: o.alphaEnd ?? 0,
       rot: o.rot ?? 0, spin: o.spin ?? 0, bounce: o.bounce ?? -1, delay: o.delay ?? 0,
-      scaleY: o.scaleY ?? 1, bounces: o.bounces ?? 1e9, hold: o.hold ?? 0,
+      scaleY: o.scaleY ?? 1, bounces: o.bounces ?? 1e9, hold: o.hold ?? 0, pix: o.pix ?? false,
     });
   }
 
@@ -104,6 +105,13 @@ export class Particles {
       s.rotation = p.rot;
       const ka = p.hold > 0 ? Math.max(0, (k - p.hold) / (1 - p.hold)) : k;
       s.alpha = p.alpha + (p.alphaEnd - p.alpha) * ka;
+      if (p.pix) {
+        s.x = Math.round(s.x); s.y = Math.round(s.y);
+        const si = Math.max(1, Math.round(sc));
+        s.scale.set(si, si);
+        s.alpha = Math.ceil(s.alpha * 3 - 0.01) / 3;
+        s.visible = s.alpha > 0;
+      }
     }
   }
 
@@ -137,6 +145,20 @@ export class Effects {
     parent.addChild(obj);
     this.shots.push({ obj, t: 0, dur, step });
     step(0, 0);
+  }
+
+  /** Pixel-art flipbook: frame i is shown until ends[i] (s); then the sprite is gone. */
+  private frames(frames: Texture[], ends: number[], parent: Container, x: number, y: number, anchor: { x: number; y: number } | number = 0.5, delay = 0) {
+    const s = new Sprite({ texture: frames[0], anchor, x: Math.round(x), y: Math.round(y), visible: false });
+    const total = delay + ends[ends.length - 1];
+    this.shot(s, parent, total, k => {
+      const t = k * total - delay;
+      let i = 0;
+      while (i < ends.length - 1 && t >= ends[i]) i++;
+      s.visible = t >= 0 && k < 1;
+      s.texture = frames[i];
+    });
+    return s;
   }
 
   update(dt: number) {
@@ -359,21 +381,58 @@ export class Effects {
     this.label(px, py - 14, text, color);
   }
 
-  /** Pickup burned: tinted icon rises and fades with a small flame (new-openbomber Fire). */
+  private whites = new Map<Texture, Texture>();
+  /** White silhouette of a texture (made once). */
+  private whiteOf(tex: Texture) {
+    let w = this.whites.get(tex);
+    if (w) return w;
+    const f = tex.frame;
+    const c = document.createElement('canvas');
+    c.width = f.width; c.height = f.height;
+    const g = c.getContext('2d')!;
+    g.drawImage(tex.source.resource as CanvasImageSource, f.x, f.y, f.width, f.height, 0, 0, f.width, f.height);
+    g.globalCompositeOperation = 'source-in';
+    g.fillStyle = '#ffffff'; g.fillRect(0, 0, f.width, f.height);
+    w = Texture.from(c);
+    w.source.scaleMode = 'nearest';
+    this.whites.set(tex, w);
+    return w;
+  }
+
+  /** Pickup burned by a flame: flashes white, chars dark under licking pixel fire, pops into embers and smoke. */
   burn(x: number, y: number, icon: Texture) {
-    const px = x * T, py = y * T;
-    const s = new Sprite({ texture: icon, anchor: 0.5, x: px, y: py, tint: 0x991111 });
-    this.shot(s, this.over, 0.8, k => {
-      const t = k * 5;
-      s.y = py - t * t;
-      s.alpha = 1 - k;
+    const px = Math.round(x * T), py = Math.round(y * T);
+    const white = this.whiteOf(icon);
+    const s = new Sprite({ texture: white, anchor: 0.5, x: px, y: py });
+    const POP = 0.32;
+    this.shot(s, this.over, POP, (k, dt) => {
+      const t = k * POP;
+      void dt;
+      if (t < 0.07) { s.texture = white; s.tint = 0xffffff; }
+      else { s.texture = icon; s.tint = t < 0.17 ? 0x8a4a40 : t < 0.25 ? 0x4a3038 : 0x2a1e28; }
+      s.x = px + (t > 0.07 ? (Math.floor(t * 50) % 2 ? 1 : -1) : 0);
+      s.y = py - (t > 0.2 ? 1 : 0);
+      s.visible = k < 1;
     });
-    const f = new Sprite({ anchor: 0.5, x: px, y: py - 4, scale: 1.25 });
-    const frames = this.a.fire.base;
-    this.shot(f, this.over, frames.length / 12, k => { f.texture = frames[Math.min(frames.length - 1, Math.floor(k * frames.length))]; });
-    for (let i = 0; i < this.q(5); i++) this.particles.spawn({
-      tex: this.tx.puff, x: px + rand(-6, 6), y: py, vz: rand(20, 40), life: rand(0.6, 1), scale: 0.6, scaleEnd: 1.6, alpha: 0.6, tint: 0x605860,
+    // flames licking it (the fire tile's own frames, at 1:1)
+    const fr = this.a.fire.base;
+    const n = Math.min(fr.length, 4);
+    this.frames(fr.slice(0, n), Array.from({ length: n }, (_, i) => 0.06 + (i + 1) * ((POP - 0.02) / n)), this.over, px, py + 10, { x: 0.5, y: 1 });
+    // pop: embers, a puff of smoke, a quiet 'пф'
+    for (let i = 0; i < this.q(10); i++) {
+      const a = rand(-Math.PI, 0), v = rand(25, 70);
+      this.particles.spawn({
+        tex: this.tx.white, x: px + Math.round(rand(-4, 4)), y: py + Math.round(rand(-3, 3)), vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.4,
+        vz: rand(50, 120), gravity: 260, drag: 1.5, delay: POP, life: rand(0.3, 0.55),
+        scale: Math.random() < 0.3 ? 2 : 1, tint: [0xffd060, 0xff8a3a, 0xd04a2a][i % 3], alpha: 1, alphaEnd: 0.3, pix: true,
+      });
+    }
+    for (let i = 0; i < this.q(3); i++) this.particles.spawn({
+      tex: this.tx.puff, x: px + Math.round(rand(-4, 4)), y: py + Math.round(rand(-2, 2)), vz: rand(18, 30), vx: rand(-8, 8), delay: POP + i * 0.04,
+      life: rand(0.4, 0.6), scale: 1, alpha: 0.8, alphaEnd: 0.2, tint: 0x6a6070, pix: true,
     });
+    const lbl = () => this.label(px, py - 10, 'пф', 0xb8b0c4, 0.6);
+    this.shot(new Container(), this.over, POP, k => { if (k >= 1) lbl(); });
   }
 
   shieldBreak(x: number, y: number) {
@@ -438,45 +497,40 @@ export class Effects {
     });
   }
 
-  /** Spawn, part 1: a column of light comes down onto the spot (the hero drops in through it). */
+  /** Spawn, part 1: a pixel column of light comes down onto the spot, a ring closes in on it. */
   spawnBeam(x: number, y: number) {
-    const px = Math.round(x * T), py = Math.round(y * T) + 8;
-    const glow = new Sprite({ texture: this.tx.glow, anchor: { x: 0.5, y: 0.92 }, x: px, y: py, tint: 0x9fe8ff });
-    this.shot(glow, this.light, 0.55, k => {
-      const grow = Math.min(1, k / 0.15);
-      glow.scale.set(0.75 * (1 - k * 0.6), 3.4 * grow);
-      glow.alpha = 0.9 * (1 - k) ** 1.4;
-    });
-    const core = new Sprite({ texture: this.tx.white, anchor: { x: 0.5, y: 1 }, x: px, y: py - 2, tint: 0xe8fbff });
-    this.shot(core, this.light, 0.4, k => {
-      const grow = Math.min(1, k / 0.12);
-      core.width = Math.max(1, Math.round(6 * (1 - k)));
-      core.height = Math.round(110 * grow);
-      core.alpha = 0.85 * (1 - k);
-    });
-    // ground marker: a ring closing in on the landing spot
-    const ring = new Sprite({ texture: this.tx.ring, anchor: 0.5, x: px, y: py - 2, tint: 0xbff4ff });
-    this.shot(ring, this.under, 0.22, k => {
-      const s = 0.95 - 0.6 * k;
-      ring.scale.set(s, s * 0.6);
-      ring.alpha = 0.3 + 0.6 * k;
-    });
-    for (let i = 0; i < this.q(8); i++) this.particles.spawn({
-      tex: this.tx.sparkle, x: px + rand(-7, 7), y: py - 2, z: rand(40, 100), vz: rand(-160, -90),
-      life: rand(0.25, 0.45), scale: rand(0.4, 0.7), scaleEnd: 0.1, tint: 0xd8f8ff, add: true, alphaEnd: 0.3,
+    const px = Math.round(x * T), py = Math.round(y * T) + 9;
+    const b = this.tx.beam;
+    this.frames([b[0], b[1], b[2], b[1], b[3], b[4]], [0.05, 0.13, 0.2, 0.27, 0.34, 0.42], this.under, px, py, { x: 0.5, y: 1 });
+    const r = this.tx.ringIn;
+    this.frames(r, [0.05, 0.1, 0.15, 0.2], this.under, px, py - 2);
+    for (let i = 0; i < this.q(6); i++) this.particles.spawn({
+      tex: this.tx.white, x: px + Math.round(rand(-6, 6)), y: py - 2, z: rand(30, 90), vz: rand(-200, -120),
+      life: rand(0.2, 0.35), scale: Math.random() < 0.4 ? 2 : 1, tint: Math.random() < 0.5 ? 0xffffff : 0x9fe8ff, alpha: 1, alphaEnd: 0.4, pix: true,
     });
   }
 
-  /** Spawn, part 2: touchdown: flash, a light ring and a dust ring around the feet. */
+  /** Spawn, part 2: touchdown: a pixel starburst, a ring rolling out and a puff of dust. */
   spawnLand(x: number, y: number) {
-    const px = x * T, py = y * T;
-    this.flash(px, py, 1.6, 0xc8f4ff, 0.25, 0.85);
-    this.shockwave(px, py + 6, 1.4, 0xbff4ff, 0.32, 0.85);
-    this.dustRing(px, py + 8, 10, 75, 0xd8cdb8, 0.9);
-    for (let i = 0; i < this.q(10); i++) this.particles.spawn({
-      tex: this.tx.sparkle, x: px + rand(-10, 10), y: py + rand(-2, 8), vz: rand(30, 80), vx: rand(-25, 25),
-      life: rand(0.35, 0.6), scale: rand(0.4, 0.75), scaleEnd: 0, tint: 0xc8f4ff, add: true, delay: rand(0, 0.08),
-    });
+    const px = Math.round(x * T), py = Math.round(y * T);
+    this.frames(this.tx.burst, [0.04, 0.09, 0.14, 0.19], this.over, px, py - 4);
+    this.frames(this.tx.ringOut, [0.05, 0.1, 0.16, 0.24], this.under, px, py + 7);
+    const n = this.q(6);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + rand(-0.2, 0.2);
+      this.particles.spawn({
+        tex: this.tx.puff, x: px + Math.cos(a) * 8, y: py + 8 + Math.sin(a) * 4, z: 1,
+        vx: Math.cos(a) * rand(45, 70), vy: Math.sin(a) * rand(22, 35), vz: rand(4, 14), drag: 5,
+        life: rand(0.25, 0.4), scale: 1, alpha: 0.67, alphaEnd: 0.2, tint: 0xd8cdb8, pix: true,
+      });
+    }
+    for (let i = 0; i < this.q(8); i++) {
+      const a = rand(0, Math.PI * 2), v = rand(30, 70);
+      this.particles.spawn({
+        tex: this.tx.white, x: px, y: py + 4, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.5, vz: rand(40, 110), gravity: 320,
+        life: rand(0.25, 0.45), scale: Math.random() < 0.3 ? 2 : 1, tint: Math.random() < 0.5 ? 0xffffff : 0xbff4ff, alpha: 1, alphaEnd: 0.3, pix: true,
+      });
+    }
   }
 
   curse(x: number, y: number) {

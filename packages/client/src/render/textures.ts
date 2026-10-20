@@ -156,9 +156,79 @@ export function makeTextures() {
   ], { K: '#2a2140', W: '#e4e0ee', L: '#9c95b0', D: '#3b2a24', d: '#6b4a3a', e: '#8a6450' });
 
   const chip = pixels(['bb', 'bk'], { b: '#c86a48', k: '#8a3f34' });
+
+  // ---- pixel-art spawn FX (hard edges, dithered instead of soft alpha)
+  /** Column of light, `h` px tall, bottom = the hero's feet. [core, mid, outer] half widths; dither 0..2. */
+  const beamFrame = (h: number, top: number, core: number, mid: number, outer: number, dither: number, phase: number) => {
+    const W = 16, H = 112;
+    const [c, g] = canvas(W, H);
+    const cx = W / 2;
+    for (let y = H - h; y < H; y++) {
+      const fromTop = y - (H - h);
+      for (let x = 0; x < W; x++) {
+        const d = x < cx ? cx - 1 - x : x - cx; // 0 at the two centre columns
+        let col = '';
+        if (d < core) col = '#ffffff';
+        else if (d < core + mid) col = '#c8f4ff';
+        else if (d < core + mid + outer) col = (x + y + phase) % 2 === 0 ? '#6fd0f0' : '';
+        if (!col) continue;
+        if (dither === 1 && d >= core && (x + y + phase) % 2) continue;
+        if (dither === 2 && (x + y * 3 + phase) % 4) continue;
+        // ragged leading edge at the top
+        if (fromTop < top && ((x * 7 + y * 3 + phase) % 5) < 5 - fromTop) continue;
+        g.fillStyle = col;
+        g.fillRect(x, y, 1, 1);
+      }
+    }
+    // bright foot where it hits the ground
+    if (h >= H - 8) { g.fillStyle = '#ffffff'; g.fillRect(cx - core - 1, H - 2, (core + 1) * 2, 2); }
+    return fromCanvas(c);
+  };
+  const beam = [
+    beamFrame(56, 6, 1, 0, 1, 0, 0),
+    beamFrame(112, 6, 2, 2, 2, 0, 0),
+    beamFrame(112, 6, 2, 2, 2, 0, 1),
+    beamFrame(112, 6, 1, 1, 1, 1, 0),
+    beamFrame(112, 6, 1, 1, 0, 2, 1),
+  ];
+
+  /** Pixel ellipse outline (1 px), optionally dithered. */
+  const pixelRing = (rx: number, ry: number, color: string, dither: boolean) => {
+    const W = rx * 2 + 1, H = ry * 2 + 1;
+    const [c, g] = canvas(W, H);
+    const inside = (x: number, y: number) => ((x - rx) / (rx + 0.5)) ** 2 + ((y - ry) / (ry + 0.5)) ** 2 <= 1;
+    g.fillStyle = color;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (!inside(x, y)) continue;
+      if (inside(x - 1, y) && inside(x + 1, y) && inside(x, y - 1) && inside(x, y + 1)) continue;
+      if (dither && (x + y) % 2) continue;
+      g.fillRect(x, y, 1, 1);
+    }
+    return fromCanvas(c);
+  };
+  const ringIn = [pixelRing(15, 6, '#bff4ff', true), pixelRing(12, 5, '#bff4ff', false), pixelRing(9, 4, '#ffffff', false), pixelRing(6, 2, '#ffffff', false)];
+  const ringOut = [pixelRing(8, 3, '#ffffff', false), pixelRing(12, 5, '#c8f4ff', false), pixelRing(16, 7, '#9fe8ff', false), pixelRing(20, 8, '#9fe8ff', true)];
+
+  /** Pixel starburst flash: frames shrink and dissolve. */
+  const starburst = (L: number, diag: number, dither: boolean) => {
+    const N = L * 2 + 1;
+    const [c, g] = canvas(N, N);
+    const put = (x: number, y: number, col: string) => {
+      if (dither && (x + y) % 2) return;
+      g.fillStyle = col; g.fillRect(x, y, 1, 1);
+    };
+    for (let i = -L; i <= L; i++) {
+      const a = Math.abs(i), col = a < 2 ? '#ffffff' : a < L * 0.6 ? '#e8fbff' : '#9fe8ff';
+      put(L + i, L, col); put(L, L + i, col);
+      if (a <= 1) { put(L + i, L - 1, '#ffffff'); put(L + i, L + 1, '#ffffff'); }
+    }
+    for (let i = 1; i <= diag; i++) for (const [sx, sy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) put(L + sx * i, L + sy * i, i < 2 ? '#ffffff' : '#c8f4ff');
+    return fromCanvas(c);
+  };
+  const burst = [starburst(5, 2, false), starburst(9, 4, false), starburst(11, 5, true), starburst(6, 0, true)];
   const pebble = pixels(['.g.', 'ggG', '.G.'], { g: '#b9b3a8', G: '#7d776e' });
 
-  return { puff, glow, shadow, blockShadow, ring, vignette, star, sparkle, marker, skull, grave, chip, pebble, white: Texture.WHITE };
+  return { puff, glow, shadow, blockShadow, ring, vignette, star, sparkle, marker, skull, grave, chip, pebble, beam, ringIn, ringOut, burst, white: Texture.WHITE };
 }
 
 export type ProcTextures = ReturnType<typeof makeTextures>;
