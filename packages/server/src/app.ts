@@ -6,6 +6,7 @@ import { createEndpoint, createRouter, defineRoom, defineServer, matchMaker } fr
 import { Encoder } from '@colyseus/schema';
 import { ROOM_NAME } from '@ob/game';
 import { BattleRoom, MAIN_TOKEN } from './BattleRoom.ts';
+import { discordRoom, discordToken } from './discord.ts';
 import type { RoomListing, RoomMeta } from './schema.ts';
 
 export interface GameServerOptions {
@@ -54,7 +55,7 @@ export async function startGameServer(opts: GameServerOptions = {}): Promise<Gam
   // "seat reservation expired". Letting core import it keeps a single core instance.
   const server = defineServer({
     rooms: { [ROOM_NAME]: defineRoom(BattleRoom) },
-    routes: createRouter({ health, listRooms }),
+    routes: createRouter({ health, listRooms, discordToken, discordRoom }),
     greet: false,
   });
   await server.listen(opts.port ?? 2567, opts.host);

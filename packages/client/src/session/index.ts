@@ -10,13 +10,14 @@ import { sec, type GameEvent, type WorldState } from '@ob/game';
 import type { AudioEngine, GameSource, InputManager } from '../contracts';
 import { createAudio } from '../audio';
 import { createInput, installPlayGuards } from '../input';
-import { connectQuickPlay, createPrivateRoom, joinRoomByCode, listRooms, MAIN_ROOM_ID, NetSource } from '../net';
+import { connectQuickPlay, createPrivateRoom, joinDiscordRoom, joinRoomByCode, listRooms, MAIN_ROOM_ID, NetSource, resolveServerUrl, toHttpUrl } from '../net';
+import { discord, discordLogin, inDiscord } from '../discord';
 import { createRenderer, type RendererExt } from '../render';
 import { setStageHandler } from '../ui/App';
 import { buildHud } from '../ui/hud';
 import { t } from '../ui/i18n';
 import {
-  bindActions, connectStatus, fps, handleGameEvents, hud, onlineCount, pushChat, registerLoadTask, resetGameState,
+  avatars, bindActions, connectStatus, fps, handleGameEvents, hud, onlineCount, pushChat, registerLoadTask, resetGameState,
   room, roomSettings, screen, settings, spectators, toast, uiCapturesInput,
 } from '../ui/store';
 import { LocalSource } from './LocalSource';
@@ -33,6 +34,7 @@ export function startSession() {
   let source: Source | null = null;
   let unsub: (() => void)[] = [];
   let started = false;      // loader's «Играть» pressed (audio unlocked)
+  let avatarsVersion = -1;  // NetSource.avatarsVersion last copied into the `avatars` signal
 
   // ---------------------------------------------------------------- renderer on #stage
   let resolveStage!: (el: HTMLElement) => void;
@@ -53,6 +55,8 @@ export function startSession() {
         if (source instanceof LocalSource) r.prime(source.takePrimeEvents());
       }),
   );
+  // Discord activity: sign in while the loader runs (the name and the room come from it)
+  if (inDiscord) registerLoadTask(discordLogin(toHttpUrl(resolveServerUrl())));
   effect(() => renderer?.setQuality(settings.value.quality));
   effect(() => audio.setVolume(settings.value.volume));
   effect(() => input.setEnabled(!uiCapturesInput.value));
@@ -69,13 +73,18 @@ export function startSession() {
   addEventListener('resize', menuInset);
 
   // ---------------------------------------------------------------- sources
-  const profile = () => ({ name: settings.peek().name, skin: settings.peek().skin });
+  const profile = () => {
+    const d = discord.peek();
+    return { name: d?.name ?? settings.peek().name, skin: settings.peek().skin, discord: d?.token };
+  };
 
   function setSource(next: Source, info: { code: string; isPrivate: boolean; offline: boolean } | null, to: 'menu' | 'game') {
     if (source && source !== next) source.dispose();
     unsub.forEach((u) => u());
     unsub = [];
     resetGameState();
+    avatarsVersion = -1;
+    avatars.value = new Map();
     source = next;
     room.value = info;
     renderer?.setCameraMode(to === 'menu' ? 'overview' : 'follow');
@@ -102,7 +111,7 @@ export function startSession() {
     if (renderer) renderer.prime(src.takePrimeEvents());
   }
 
-  async function connect(kind: 'quick' | 'private' | 'join', job: () => Promise<NetSource>, code?: string) {
+  async function connect(kind: 'quick' | 'private' | 'join' | 'discord', job: () => Promise<NetSource>, code?: string) {
     connectStatus.value = { kind, code };
     screen.value = 'connecting';
     try {
@@ -136,6 +145,8 @@ export function startSession() {
     start() {
       started = true;
       audio.unlock();
+      // started without a gesture (Discord activity): the first input wakes the audio up
+      for (const type of ['pointerdown', 'keydown'] as const) addEventListener(type, () => audio.unlock(), { once: true, capture: true });
       audio.setMusic('off');
       screen.value = 'menu';
     },
@@ -148,6 +159,10 @@ export function startSession() {
     quickPlay: () => connect('quick', () => connectQuickPlay({ ...profile(), play: true })),
     createPrivate: () => connect('private', () => createPrivateRoom({ ...profile(), bots: 0 })),
     joinByCode: (code) => connect('join', () => joinRoomByCode(code, { ...profile(), play: true }), code),
+    joinDiscord() {
+      const d = discord.peek();
+      if (d) return connect('discord', () => joinDiscordRoom(d.instanceId, { ...profile(), discord: d.token }));
+    },
     playOffline({ bots, difficulty }) {
       setSource(new LocalSource({ bots, difficulty, play: true, ...profile() }), { code: 'OFFLINE', isPrivate: false, offline: true }, 'game');
     },
@@ -187,6 +202,7 @@ export function startSession() {
         hudAcc = 0;
         hud.value = buildHud(world, localId, src.ping);
         if (src instanceof NetSource) {
+          if (src.avatarsVersion !== avatarsVersion) { avatarsVersion = src.avatarsVersion; avatars.value = new Map(src.avatars); }
           if (spectators.peek().length !== src.spectators)
             spectators.value = Array.from({ length: src.spectators }, (_, i) => ({ id: `s${i}`, name: '' }));
           // own rooms: settings panel (re-render only when something changed)
@@ -196,6 +212,7 @@ export function startSession() {
             || rs.maxPlayers !== cur.maxPlayers || rs.zone !== cur.zone || rs.events !== cur.events
             || rs.isHost !== cur.isHost))) roomSettings.value = rs;
         } else {
+          if (avatars.peek().size) { avatarsVersion = -1; avatars.value = new Map(); }
           if (spectators.peek().length) spectators.value = [];
           if (roomSettings.peek()) roomSettings.value = null;
         }

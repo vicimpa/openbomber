@@ -72,6 +72,9 @@ export class NetSource implements GameSource {
   ownerId = '';
   roomSettings: RoomSettings = { bots: 0, botDifficulty: 'normal', maxPlayers: 0, zone: true, events: true };
   readonly chatLog: ChatMessage[] = [];
+  /** Session id → avatar url (players from the Discord activity); `avatarsVersion` bumps on change. */
+  readonly avatars = new Map<string, string>();
+  avatarsVersion = 0;
 
   private readonly room: Room<any, BattleState>;
   private readonly predict: PredictMovement | null;
@@ -410,6 +413,16 @@ export class NetSource implements GameSource {
     this.room.send(MSG.input, wire);
   }
 
+  private readAvatars(s: BattleState) {
+    const src = s.avatars;
+    let changed = (src?.size ?? 0) !== this.avatars.size;
+    src?.forEach((url, id) => { if (this.avatars.get(id) !== url) changed = true; });
+    if (!changed) return;
+    this.avatars.clear();
+    src?.forEach((url, id) => this.avatars.set(id, url));
+    this.avatarsVersion++;
+  }
+
   private onPatch(s: BattleState) {
     const model = this.model;
     model.apply(s);
@@ -422,6 +435,7 @@ export class NetSource implements GameSource {
     rs.maxPlayers = this.maxPlayers;
     rs.zone = s.zone ?? true;
     rs.events = s.events ?? true;
+    this.readAvatars(s);
     if (!model.ready) return;
     const w = model.world;
     const now = performance.now();

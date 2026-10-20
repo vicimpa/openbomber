@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@colyseus/sdk": "^0.18.5",
+    "@discord/embedded-app-sdk": "2.5.0",
     "@ob/game": "workspace:*",
     "@preact/signals": "^2",
     "pixi.js": "^8.22.0",

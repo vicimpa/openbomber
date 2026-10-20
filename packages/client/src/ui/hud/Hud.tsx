@@ -7,6 +7,7 @@ import type { HudEffect, HudMe, HudPlayer, HudSnapshot } from '../hud';
 import { t, tr } from '../i18n';
 import { ABILITY_PICKUP, CURSE_BY_ID, PICKUP_BY_TYPE } from '../pickups';
 import { Icon, type IconName } from '../icons';
+import { Avatar } from '../Avatar';
 import { HeroSprite, PickupIcon } from '../sprites';
 import { actions, chat, chatOpen, fps, killFeed, menuOpen, room, settings } from '../store';
 import { RoomCode } from './RoomCode';
@@ -269,6 +270,7 @@ function ScoreRow({ p, ping, offline }: { p: HudPlayer; ping: number; offline: b
       <td class="l">
         <span class="who">
           <HeroSprite skin={p.skin} scale={0.7} still />
+          <Avatar id={p.id} />
           <span class="who__name">{p.name}</span>
           {p.isBot && <span class="tag">{t('hud.bot')}</span>}
         </span>

@@ -11,11 +11,12 @@ import * as Game from '@ob/game';
 import { BOMB_FUSE, Button, MSG, ROOM_NAME, TICK_MS, type ChatMessage, type GameEvent, type PredictMovement } from '@ob/game';
 import { limits, resetLimits } from '../src/limits.ts';
 import { startGameServer, type GameServer } from '../src/app.ts';
-import { BattleRoom, MAIN_SPARRING } from '../src/BattleRoom.ts';
+import { BattleRoom, BOTS_LINGER_MS, MAIN_SPARRING } from '../src/BattleRoom.ts';
 import { setGameImpl } from '../src/game.ts';
 import { CODE_ALPHABET } from '../src/util.ts';
 import { BattleState, type RoomListing } from '../src/schema.ts';
 import { syncWorld } from '../src/sync.ts';
+import { discordApi, resetDiscord } from '../src/discord.ts';
 import { stubGame, stubMove } from './stubSim.ts';
 import { connectQuickPlay, createPrivateRoom, joinRoomByCode, listRooms, type NetSource } from '../../client/src/net/index.ts';
 
@@ -216,6 +217,23 @@ describe('matchmaking', () => {
     await Promise.all([s1.leave(), p1.leave(), p2.leave()]);
     await sleep(100);
     expect(matchMaker.getLocalRoomById('MAIN')).toBeTruthy(); // autoDispose = false
+  });
+
+  test('main room: the lone player leaves mid-round, the sparring bot freezes, then leaves too', async () => {
+    const sr = serverRoom('MAIN');
+    await waitFor(() => sr.botCount === 0, 15000, 'empty arena');
+    const p1 = await join('joinById', 'MAIN', { name: 'Solo', skin: 0, play: true });
+    await waitFor(() => sr.botCount === MAIN_SPARRING, 1000, 'a sparring bot');
+    const bot = () => [...sr.sim.state.players.values()].find((p) => p.isBot);
+    await waitFor(() => sr.sim.state.phase === Game.Phase.Playing && !!bot()?.alive && !!bot()?.inRound, 15000, 'a live round');
+    await p1.leave();
+    await sleep(300);
+    const b0 = bot();
+    const at = b0 && { x: b0.x, y: b0.y };
+    await sleep(1000);
+    const b1 = bot();
+    if (at && b1?.alive) expect({ x: b1.x, y: b1.y }).toEqual(at); // stands still while the hero's grace runs
+    await waitFor(() => sr.botCount === 0, BOTS_LINGER_MS + 1000, 'the bot leaves after the player');
   });
 
   test('arena capacity: extra clients stay spectators ("Нет свободных мест")', async () => {
@@ -561,5 +579,101 @@ describe('anti-cheat', () => {
     expect(name(b.sessionId)).toBe('Twin');
     expect(name(c.sessionId)).toBe('twin 2');
     await Promise.all([a.leave(), b.leave(), c.leave()]);
+  });
+});
+
+describe('discord activity', () => {
+  // fake Discord API: codes "code-<user>" trade for tokens "tok-<user>"; user ids are numeric
+  const USERS: Record<string, { id: string; username: string; global_name: string | null; avatar: string | null }> = {
+    alice: { id: '80351110224678912', username: 'alice', global_name: 'Алиса', avatar: 'abc123' },
+    bob: { id: '80351110224678913', username: 'bob_b', global_name: null, avatar: null },
+  };
+  const real = discordApi.fetch;
+  const env = { ...process.env };
+  beforeAll(() => {
+    process.env.DISCORD_CLIENT_ID = 'app';
+    process.env.DISCORD_CLIENT_SECRET = 'secret';
+    resetDiscord();
+    discordApi.fetch = async (input, init) => {
+      if (input.endsWith('/oauth2/token')) {
+        const code = new URLSearchParams(String(init?.body)).get('code') ?? '';
+        const who = code.replace(/^code-/, '');
+        return USERS[who] ? Response.json({ access_token: `tok-${who}` }) : new Response('{}', { status: 400 });
+      }
+      const who = String((init?.headers as Record<string, string>)?.authorization ?? '').replace(/^Bearer tok-/, '');
+      return USERS[who] ? Response.json({ ...USERS[who], discriminator: '0' }) : new Response('{}', { status: 401 });
+    };
+  });
+  afterAll(() => {
+    discordApi.fetch = real;
+    process.env.DISCORD_CLIENT_ID = env.DISCORD_CLIENT_ID;
+    process.env.DISCORD_CLIENT_SECRET = env.DISCORD_CLIENT_SECRET;
+    if (!env.DISCORD_CLIENT_ID) delete process.env.DISCORD_CLIENT_ID;
+    if (!env.DISCORD_CLIENT_SECRET) delete process.env.DISCORD_CLIENT_SECRET;
+  });
+
+  const post = (path: string, body: object) => fetch(`http://localhost:${server.port}/api${path}`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  });
+
+  test('code → token; one room per activity instance; name locked, avatar shared', async () => {
+    const tok = await post('/discord/token', { code: 'code-alice' });
+    expect(tok.status).toBe(200);
+    expect(((await tok.json()) as { access_token: string }).access_token).toBe('tok-alice');
+    expect((await post('/discord/token', { code: 'nope' })).status).toBe(401);
+    expect((await post('/discord/room', { token: 'tok-nobody', instance: 'i-1' })).status).toBe(401);
+
+    // both ask at once: still one room
+    const [r1, r2] = await Promise.all([
+      post('/discord/room', { token: 'tok-alice', instance: 'i-1' }),
+      post('/discord/room', { token: 'tok-bob', instance: 'i-1' }),
+    ]);
+    const id1 = ((await r1.json()) as { roomId: string }).roomId;
+    const id2 = ((await r2.json()) as { roomId: string }).roomId;
+    expect(id1).toBe(id2);
+    expect(id1).not.toBe('MAIN');
+    const other = ((await (await post('/discord/room', { token: 'tok-bob', instance: 'i-2' })).json()) as { roomId: string }).roomId;
+    expect(other).not.toBe(id1);
+    expect((await listRooms(url)).some((r) => r.roomId === id1)).toBe(false); // private
+
+    const a = await join('joinById', id1, { name: 'Hacker', skin: 1, play: true, discord: 'tok-alice' });
+    const b = await join('joinById', id1, { name: 'whatever', skin: 2, play: true, discord: 'tok-bob' });
+    const guest = await join('joinById', id1, { name: 'Guest', skin: 3, play: true }); // invited by code
+    const sr = serverRoom(id1);
+    await waitFor(() => sr.sim.state.players.size === 3, 2000, 'players');
+    const name = (id: string) => sr.sim.state.players.get(id)!.name;
+    expect(name(a.sessionId)).toBe('Алиса');
+    expect(name(b.sessionId)).toBe('bob_b');
+    expect(name(guest.sessionId)).toBe('Guest');
+    await waitFor(() => a.state.avatars?.size === 2, 2000, 'avatars');
+    expect(a.state.avatars.get(a.sessionId)).toBe(`https://cdn.discordapp.com/avatars/${USERS.alice!.id}/abc123.png?size=64`);
+    expect(a.state.avatars.get(b.sessionId)).toMatch(/^https:\/\/cdn\.discordapp\.com\/embed\/avatars\/\d\.png$/);
+    expect(a.state.avatars.has(guest.sessionId)).toBe(false);
+
+    // Discord players can't rename; guests can
+    a.send(MSG.profile, { name: 'Renamed' });
+    guest.send(MSG.profile, { name: 'Guest2' });
+    await waitFor(() => name(guest.sessionId) === 'Guest2', 2000, 'guest rename');
+    expect(name(a.sessionId)).toBe('Алиса');
+
+    // a bad token is refused
+    await expect(join('joinById', id1, { name: 'x', skin: 0, discord: 'tok-forged' })).rejects.toThrow();
+
+    // everyone leaves: the room closes, the instance gets a new one
+    await Promise.all([a.leave(), b.leave(), guest.leave()]);
+    await waitFor(() => !matchMaker.getLocalRoomById(id1), 3000, 'disposed');
+    const again = ((await (await post('/discord/room', { token: 'tok-alice', instance: 'i-1' })).json()) as { roomId: string }).roomId;
+    expect(again).not.toBe(id1);
+  });
+
+  test('not configured: routes and discord joins are refused', async () => {
+    const id = process.env.DISCORD_CLIENT_ID;
+    delete process.env.DISCORD_CLIENT_ID;
+    try {
+      expect((await post('/discord/token', { code: 'code-alice' })).status).toBe(503);
+      await expect(join('joinById', 'MAIN', { name: 'x', skin: 0, discord: 'tok-alice' })).rejects.toThrow();
+    } finally {
+      process.env.DISCORD_CLIENT_ID = id;
+    }
   });
 });

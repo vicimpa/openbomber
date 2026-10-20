@@ -1,6 +1,7 @@
 // Loader: logo + progress bar while sprites / fonts (and any registered session tasks) load,
 // then a big "Играть" button. That click is the user gesture that unlocks audio (actions.start).
 import { useEffect, useState } from 'preact/hooks';
+import { discord } from '$/discord';
 import { Button, Logo } from './components';
 import { t } from './i18n';
 import { heroImageUrls } from './sprites';
@@ -35,12 +36,17 @@ export function Loader() {
   }, []);
 
   useEffect(() => {
-    if (ready) document.querySelector<HTMLElement>('.loader__play')?.focus({ preventScroll: true });
+    if (!ready) return;
+    // Discord activity: launching it was the click, go straight into the channel's room
+    if (discord.peek()) go();
+    else document.querySelector<HTMLElement>('.loader__play')?.focus({ preventScroll: true });
   }, [ready]);
 
   const go = () => {
     actions.start();
-    if (invite) { pendingInvite.value = null; actions.joinByCode(invite); }
+    // Discord activity: straight into the channel's room
+    if (discord.peek()) actions.joinDiscord();
+    else if (invite) { pendingInvite.value = null; actions.joinByCode(invite); }
     else screen.value = 'menu';
   };
 
@@ -50,7 +56,7 @@ export function Loader() {
       <div class="loader__bottom">
         {ready ? (
           <Button variant="white" size="xl" onClick={go} data-autofocus class="loader__play">
-            {invite ? t('loader.joinRoom', { code: invite }) : t('loader.play')}
+            {discord.value ? t('loader.discord') : invite ? t('loader.joinRoom', { code: invite }) : t('loader.play')}
           </Button>
         ) : (
           <>

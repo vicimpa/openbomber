@@ -10,12 +10,14 @@ export function ConnectingScreen() {
   const st = connectStatus.value;
   const msg = st.kind === 'private' ? t('connect.creating')
     : st.kind === 'join' ? t('connect.joining', { code: st.code ?? '' })
-    : st.kind === 'quick' ? t('connect.searching') : t('connect.connecting');
+    : st.kind === 'quick' ? t('connect.searching')
+    : st.kind === 'discord' ? t('connect.discord') : t('connect.connecting');
 
   const back = () => { actions.uiSound('back'); actions.leave(); };
   const retry = () => {
     if (st.kind === 'private') actions.createPrivate();
     else if (st.kind === 'join' && st.code) actions.joinByCode(st.code);
+    else if (st.kind === 'discord') actions.joinDiscord();
     else actions.quickPlay();
   };
 

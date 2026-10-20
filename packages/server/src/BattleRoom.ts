@@ -14,6 +14,7 @@ import {
 import { getGameImpl, type GameImpl } from './game.ts';
 import { BattleState, type PlayReply, type RoomMeta } from './schema.ts';
 import { admit, clientJoined, clientLeft, roomCreated, roomDisposed, sweepIps } from './limits.ts';
+import { discordEnabled, discordUser, forgetDiscordRoom, type DiscordUser } from './discord.ts';
 import { syncWorld } from './sync.ts';
 import {
   CHAT_COOLDOWN_MS, CHAT_MAX, MAIN_ROOM_ID, NAME_MAX, SKIN_COUNT, TokenBucket, allocateRoomCode, clampInt,
@@ -32,6 +33,8 @@ export const MAX_CLIENTS = Number(process.env.MAX_CLIENTS) || 200;
 export const MAIN_SPARRING = clampInt(Number(process.env.MAIN_SPARRING), 0, MAX_PLAYERS - 1, 1);
 /** «Отключиться» mid-round: the hero stays in the arena this long (can't dodge a blast by leaving). */
 export const LEAVE_GRACE_MS = 2000;
+/** Nobody plays any more: the bots stand still this long (past the last hero's grace), then leave too. */
+export const BOTS_LINGER_MS = LEAVE_GRACE_MS + 1000;
 /** While playing, a rename is accepted (and announced) at most this often. */
 export const RENAME_COOLDOWN_MS = 30_000;
 /** Max fixed steps per timer callback before dropping the backlog (e.g. after a GC pause). */
@@ -70,8 +73,11 @@ const DIFFICULTY_RU: Record<BotDifficultyName, string> = { easy: 'легко', n
 export const MAIN_TOKEN = crypto.randomUUID();
 
 interface Human {
+  /** Per-IP limits key: the IP, or `discord:<user id>` (Discord's proxy hides the IPs). */
   ip: string;
   name: string;
+  /** Joined from the Discord activity: the name is theirs from Discord and can't be changed. */
+  discord: DiscordUser | null;
   skin: number;
   playing: boolean;
   /** Pending removal from the arena after «Отключиться» (LEAVE_GRACE_MS). */
@@ -95,7 +101,7 @@ interface BotSlot {
   seq: number;
 }
 
-export type BattleCreateOptions = RoomOptions & Partial<JoinOptions> & { __main?: string; play?: boolean };
+export type BattleCreateOptions = RoomOptions & Partial<JoinOptions> & { __main?: string; play?: boolean; discordInstance?: string };
 
 function parseFrame(raw: unknown): InputFrame | null {
   let seq: unknown, dx: number, dy: number, buttons: unknown;
@@ -129,16 +135,23 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
   /**
    * Matchmaking gate (runs before a room is created or a seat reserved): per-IP request rate,
    * concurrent connections and room creations, plus a global room cap. See ./limits.ts.
+   * `discord` (an access token, see ./discord.ts) is resolved to the Discord user here.
    */
   static async onAuth(_token: string, options: BattleCreateOptions, context: AuthContext) {
-    const ip = context.ip ?? 'unknown';
+    let discord: DiscordUser | null = null;
+    if (options?.discord !== undefined) {
+      if (!discordEnabled()) throw new ServerError(503, 'Вход через Discord сейчас недоступен');
+      discord = await discordUser(options.discord);
+      if (!discord) throw new ServerError(401, 'Discord не подтвердил вход, перезапустите активность');
+    }
+    const ip = discord ? `discord:${discord.id}` : context.ip ?? 'unknown';
     const url = String((context.req as { url?: string } | undefined)?.url ?? '');
     const creating = /\/create\//.test(url) && options?.__main !== MAIN_TOKEN;
     const denied = admit(ip, creating);
     if (denied === 'rate') throw new ServerError(429, 'Слишком много запросов, попробуйте позже');
     if (denied === 'clients') throw new ServerError(429, 'Слишком много подключений с вашего адреса');
     if (denied === 'rooms') throw new ServerError(503, 'Сервер переполнен, попробуйте позже');
-    return { ip };
+    return { ip, discord };
   }
 
   state = new BattleState();
@@ -151,8 +164,12 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
   isMain = false;
   private game!: GameImpl;
   private code = '';
+  /** Room of a Discord activity instance (see ./discord.ts). */
+  private discordInstance = '';
   /** Own rooms: what the creator set (the shared arena ignores bots / maxPlayers here). */
   private rosterTimer: { clear(): void } | null = null;
+  /** Set while the bots stand still with no human playing, until they leave (BOTS_LINGER_MS). */
+  private botsLeaving: { clear(): void } | null = null;
   private rosterBefore: Set<string> | null = null;
   private settings: RoomSettings = { bots: DEFAULT_BOTS, botDifficulty: 'normal', maxPlayers: MAX_PLAYERS, zone: true, events: true };
   private simConfig!: MatchConfig;
@@ -185,6 +202,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
       if (BOT_DIFFICULTIES.includes(options.botDifficulty as BotDifficultyName)) this.settings.botDifficulty = options.botDifficulty!;
       this.code = allocateRoomCode();
       this.roomId = this.code;
+      if (typeof options.discordInstance === 'string') this.discordInstance = options.discordInstance;
       if (options.private) await this.setPrivate(true);
     }
 
@@ -209,12 +227,14 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     this.updateMeta();
   }
 
-  onJoin(client: Client, options?: Partial<JoinOptions> & { play?: boolean }, auth?: { ip?: string }) {
+  onJoin(client: Client, options?: Partial<JoinOptions> & { play?: boolean }, auth?: { ip?: string; discord?: DiscordUser | null }) {
     const ip = auth?.ip ?? 'unknown';
+    const discord = auth?.discord ?? null;
     clientJoined(ip);
     this.humans.set(client.sessionId, {
       ip,
-      name: uniqueName(playerName(options?.name), this.names()),
+      discord,
+      name: uniqueName(playerName(discord ? discord.name : options?.name), this.names()),
       skin: clampSkin(options?.skin),
       playing: false,
       leaving: null,
@@ -230,6 +250,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
       settings: new TokenBucket(10, 4),
       droppedFrames: 0,
     });
+    if (discord) this.state.avatars.set(client.sessionId, discord.avatar);
     // own rooms: the first person in becomes the host (room settings)
     if (!this.isMain && !this.ownerId) this.ownerId = client.sessionId;
     if (options?.play === true) this.setPlaying(client, true);
@@ -267,6 +288,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     if (!h) return;
     if (h.playing || h.leaving) this.leaveArena(id, h, true);
     this.humans.delete(id);
+    this.state.avatars.delete(id);
     clientLeft(h.ip);
     this.handOver(id);
     this.reconcileBots();
@@ -287,6 +309,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
 
   onDispose() {
     if (this.code) releaseRoomCode(this.code);
+    if (this.discordInstance) forgetDiscordRoom(this.discordInstance, this.roomId);
     roomDisposed();
     sweepIps();
   }
@@ -416,7 +439,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     const t0 = performance.now();
     const sim = this.sim;
     const world = sim.state;
-    if (this.bots.size > 0) {
+    if (this.bots.size > 0 && !this.botsLeaving) {
       let i = 0;
       for (const [id, slot] of this.bots) {
         if ((world.tick + i++) % BOT_THINK_EVERY !== 0) continue;
@@ -491,11 +514,33 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
   private reconcileBots(force = false) {
     const want = this.desiredBots();
     while (this.bots.size < want && this.sim.state.players.size < this.maxPlayers) this.addBot();
-    if (this.bots.size <= want) return;
-    const phase = this.sim.state.phase;
-    const between = phase === Phase.Waiting || phase === Phase.RoundOver || phase === Phase.Countdown;
-    this.removeBots(this.bots.size - want, force || between || this.sim.state.players.size > this.maxPlayers);
-    this.updateMeta();
+    if (this.bots.size > want) {
+      const phase = this.sim.state.phase;
+      const between = phase === Phase.Waiting || phase === Phase.RoundOver || phase === Phase.Countdown;
+      this.removeBots(this.bots.size - want, force || between || this.sim.state.players.size > this.maxPlayers);
+      this.updateMeta();
+    }
+    this.idleBots(this.bots.size > 0 && this.playingCount() === 0);
+  }
+
+  /**
+   * The last human stopped playing mid-round (e.g. a 1-on-1 with the sparring bot): the bots
+   * freeze, still killable, and leave the arena a moment after that hero is gone.
+   */
+  private idleBots(idle: boolean) {
+    if (!idle) {
+      this.botsLeaving?.clear();
+      this.botsLeaving = null;
+      return;
+    }
+    if (this.botsLeaving) return;
+    for (const [id, slot] of this.bots) this.sim.pushInput(id, { seq: ++slot.seq, dx: 0, dy: 0, buttons: 0 });
+    this.botsLeaving = this.clock.setTimeout(() => {
+      this.botsLeaving = null;
+      if (this.playingCount() > 0) return;
+      this.removeBots(this.bots.size, true);
+      this.updateMeta();
+    }, BOTS_LINGER_MS);
   }
 
   /**
@@ -584,7 +629,8 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     if (!h || !msg || typeof msg !== 'object' || !h.profile.take()) return;
     const o = msg as Record<string, unknown>;
     const p: { name?: string; skin?: number } = {};
-    if (typeof o.name === 'string' && cleanText(o.name, NAME_MAX)) {
+    // Discord players keep their Discord name
+    if (typeof o.name === 'string' && !h.discord && cleanText(o.name, NAME_MAX)) {
       const name = uniqueName(playerName(o.name), this.names(id));
       const now = Date.now();
       // a player in the arena may rename (and be announced) at most every RENAME_COOLDOWN_MS

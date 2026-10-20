@@ -126,6 +126,8 @@ export const BattleState = schema({
   botDifficulty: t.uint8().default(1),
   zone: t.boolean().default(true),
   events: t.boolean().default(true),
+  /** Session id → avatar url, for players who joined from the Discord activity (spectators too). */
+  avatars: t.map('string'),
   /** width * height Tile values, index = y * width + x; patched per index. */
   tiles: t.array('uint8'),
   players: t.map(PlayerSchema),

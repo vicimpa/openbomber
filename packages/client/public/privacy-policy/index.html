@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Политика конфиденциальности · OpenBomber</title>
+  <meta name="description" content="Какие данные обрабатывает OpenBomber и зачем." />
+  <meta name="color-scheme" content="dark" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <style>
+    :root { --bg: #0d0b1a; --panel: #17142b; --text: #e9e6f5; --muted: #a39dbd; --accent: #ff5a4a; --line: #2c2747; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+    main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    header img { width: 48px; height: 48px; image-rendering: pixelated; }
+    header a { color: var(--text); text-decoration: none; font-weight: 700; font-size: 20px; }
+    h1 { font-size: 28px; line-height: 1.25; margin: 0 0 4px; }
+    h2 { font-size: 19px; margin: 28px 0 8px; }
+    p, li { color: var(--text); }
+    .muted { color: var(--muted); }
+    a { color: var(--accent); }
+    section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px 20px 16px; margin-top: 24px; }
+    nav { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 16px; }
+  </style>
+</head>
+<body>
+<main>
+  <header><img src="/logo/logo_96.png" alt="" /><a href="/">OpenBomber</a></header>
+
+  <section lang="ru">
+    <h1>Политика конфиденциальности</h1>
+    <p class="muted">Действует с 21 октября 2026 года</p>
+
+    <p>OpenBomber — бесплатная браузерная игра с открытым исходным кодом. Она доступна на сайте openbomber.ru и как активность в Discord. Здесь описано, какие данные игра получает, зачем они нужны и как долго хранятся.</p>
+
+    <h2>Что мы не собираем</h2>
+    <p>Регистрации нет. Мы не используем куки, рекламу, аналитику и сторонние трекеры. Мы не продаём и не передаём данные третьим лицам.</p>
+
+    <h2>Данные на вашем устройстве</h2>
+    <p>Ник, выбранный герой и настройки (громкость, управление, язык) сохраняются в <code>localStorage</code> вашего браузера. На сервер они не попадают, пока вы не зашли в игру. Удалить их можно, очистив данные сайта.</p>
+
+    <h2>Данные во время игры</h2>
+    <ul>
+      <li><b>Ник, герой, действия в игре и сообщения чата.</b> Их видят другие игроки в той же комнате. Сервер держит эти данные только в памяти, пока идёт игра, и нигде их не записывает.</li>
+      <li><b>IP-адрес.</b> Используется только в памяти сервера, чтобы ограничивать число подключений и защищаться от злоупотреблений. Мы его не храним. Сервер может кратко записывать технические журналы, нужные для его работы.</li>
+    </ul>
+
+    <h2>Вход через Discord</h2>
+    <p>Если вы запускаете OpenBomber как активность Discord, игра просит доступ <code>identify</code>. Так она получает ваш ID пользователя Discord, отображаемое имя и аватар. Эти данные нужны, чтобы:</p>
+    <ul>
+      <li>показывать ваше имя из Discord над героем (в активности его нельзя сменить);</li>
+      <li>показывать ваш аватар другим игрокам комнаты;</li>
+      <li>собирать всех, кто запустил активность в одном канале, в общую комнату.</li>
+    </ul>
+    <p>Токен доступа Discord и данные профиля хранятся только в памяти сервера: токен до 15 минут, профиль — пока вы в комнате. В базу данных они не сохраняются. Мы не читаем ваши сообщения, серверы и список друзей и ничего не публикуем от вашего имени. Отозвать доступ можно в Discord: Настройки → Авторизованные приложения.</p>
+
+    <h2>Дети</h2>
+    <p>Игра не собирает персональные данные сверх описанного выше. Использование Discord подчиняется возрастным ограничениям Discord.</p>
+
+    <h2>Изменения и связь</h2>
+    <p>Если политика изменится, на этой странице появится новая дата. Вопросы можно задать на <a href="https://discord.gg/JzapKXFqzt" target="_blank" rel="noopener">Discord-сервере проекта</a> или в <a href="https://github.com/vicimpa/openbomber/issues" target="_blank" rel="noopener">GitHub</a>.</p>
+  </section>
+
+  <section lang="en">
+    <h1>Privacy Policy</h1>
+    <p class="muted">Effective October 21, 2026</p>
+
+    <p>OpenBomber is a free, open-source browser game. You can play it at openbomber.ru or as a Discord Activity. This page explains what data the game receives, why it needs it and how long it is kept.</p>
+
+    <h2>What we don't collect</h2>
+    <p>There are no accounts. We use no cookies, ads, analytics or third-party trackers. We don't sell or share data with third parties.</p>
+
+    <h2>Data on your device</h2>
+    <p>Your nickname, chosen hero and settings (volume, controls, language) are saved in your browser's <code>localStorage</code>. They are not sent to the server until you join a game. You can remove them by clearing the site's data.</p>
+
+    <h2>Data while you play</h2>
+    <ul>
+      <li><b>Nickname, hero, in-game actions and chat messages.</b> Other players in the same room can see them. The server keeps them in memory only while the game runs and does not store them.</li>
+      <li><b>IP address.</b> Used only in server memory to limit connections and prevent abuse. We don't store it. The server may keep short technical logs it needs to operate.</li>
+    </ul>
+
+    <h2>Signing in with Discord</h2>
+    <p>When you launch OpenBomber as a Discord Activity, the game asks for the <code>identify</code> scope. This gives it your Discord user ID, display name and avatar. They are used to:</p>
+    <ul>
+      <li>show your Discord name above your hero (it can't be changed inside the Activity);</li>
+      <li>show your avatar to the other players in your room;</li>
+      <li>put everyone who launched the Activity in the same channel into one shared room.</li>
+    </ul>
+    <p>The Discord access token and your profile are kept in server memory only: the token for up to 15 minutes, the profile while you are in a room. They are not saved to a database. We don't read your messages, servers or friends, and we never post on your behalf. You can revoke access in Discord under Settings → Authorized Apps.</p>
+
+    <h2>Children</h2>
+    <p>The game collects no personal data beyond what is described above. Discord use is subject to Discord's own age requirements.</p>
+
+    <h2>Changes and contact</h2>
+    <p>If this policy changes, this page will show a new date. You can ask questions on the <a href="https://discord.gg/JzapKXFqzt" target="_blank" rel="noopener">project's Discord server</a> or on <a href="https://github.com/vicimpa/openbomber/issues" target="_blank" rel="noopener">GitHub</a>.</p>
+  </section>
+
+  <nav><a href="/terms-of-service/">Условия использования · Terms of Service</a><a href="/">Играть · Play</a></nav>
+</main>
+</body>
+</html>

@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { isTouchDevice } from '$/input/device';
 import { t } from '../i18n';
+import { Avatar } from '../Avatar';
 import { Icon } from '../icons';
 import { actions, chat, chatOpen, hud } from '../store';
 
@@ -22,7 +23,7 @@ function Line({ m, meId }: { m: (typeof chat.value)[number]; meId: string }) {
   const sys = isSystem(m);
   return (
     <div class={`mc-chat__line ${sys ? 'is-sys' : ''} ${!sys && m.from === meId ? 'is-me' : ''}`}>
-      {sys ? <span class="mc-chat__text">{m.text}</span> : <><b>&lt;{m.name}&gt;</b> <span class="mc-chat__text">{m.text}</span></>}
+      {sys ? <span class="mc-chat__text">{m.text}</span> : <><Avatar id={m.from} size={14} /><b>&lt;{m.name}&gt;</b> <span class="mc-chat__text">{m.text}</span></>}
     </div>
   );
 }

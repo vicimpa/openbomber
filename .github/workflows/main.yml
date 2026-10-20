@@ -34,6 +34,8 @@ jobs:
         run: bun run --filter '@ob/client' build
         env:
           VITE_SERVER_PATH: /socket.io
+          # Discord activity (packages/client/src/discord.ts); empty = the activity login is off
+          VITE_DISCORD_CLIENT_ID: ${{ vars.DISCORD_CLIENT_ID }}
 
       - name: Build server
         run: |
@@ -59,7 +61,11 @@ jobs:
       # process is only switched when that answers, and v1 is restored if v2 then fails.
       - name: Switch server
         uses: appleboy/ssh-action@v1.1.0
+        env:
+          DISCORD_CLIENT_ID: ${{ vars.DISCORD_CLIENT_ID }}
+          DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
         with:
+          envs: DISCORD_CLIENT_ID,DISCORD_CLIENT_SECRET
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           port: ${{ secrets.SSH_PORT }}

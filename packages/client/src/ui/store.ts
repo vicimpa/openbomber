@@ -17,6 +17,7 @@ import type { IconName } from './icons';
 import { CURSE_BY_ID } from './pickups';
 import { tr } from './i18n';
 import { settings, updateSettings, type Settings } from './settings';
+import { discord, inDiscord } from '$/discord';
 
 export { settings, updateSettings, type Settings };
 
@@ -54,7 +55,7 @@ export function closeModal(id?: ModalId) {
 export function closeAllModals() { modals.value = []; }
 
 export interface ConnectStatus {
-  kind: 'quick' | 'private' | 'join' | 'offline';
+  kind: 'quick' | 'private' | 'join' | 'offline' | 'discord';
   code?: string;
   /** Set when connecting failed; the screen then shows retry / back / play offline. */
   error?: string;
@@ -90,6 +91,8 @@ export const players = computed(() => hud.value?.players ?? []);
 /** People watching the room without a PlayerState (canon «Наблюдателей: N»). Session sets it. */
 export interface SpectatorInfo { id: string; name: string }
 export const spectators = signal<SpectatorInfo[]>([]);
+/** Session id → avatar url of the players who came from the Discord activity. Session sets it. */
+export const avatars = signal<ReadonlyMap<string, string>>(new Map());
 
 export const chat = signal<(ChatMessage & { id: number })[]>([]);
 let chatSeq = 0;
@@ -164,6 +167,8 @@ export interface Actions {
   quickPlay(): void | Promise<void>;
   createPrivate(): void | Promise<void>;
   joinByCode(code: string): void | Promise<void>;
+  /** Discord activity: the room shared by everyone in this activity instance. */
+  joinDiscord(): void | Promise<void>;
   playOffline(opts: OfflineOptions): void | Promise<void>;
   /** Leave the current game and return to the menu. */
   leave(): void | Promise<void>;
@@ -184,6 +189,7 @@ const stubActions: Actions = {
   quickPlay: log('quickPlay'),
   createPrivate: log('createPrivate'),
   joinByCode: log('joinByCode'),
+  joinDiscord: log('joinDiscord'),
   playOffline: log('playOffline'),
   leave: log('leave'),
   sendChat: log('sendChat'),
@@ -208,6 +214,7 @@ export const actions: Actions = {
   quickPlay: () => impl.quickPlay(),
   createPrivate: () => impl.createPrivate(),
   joinByCode: (code) => impl.joinByCode(code),
+  joinDiscord: () => impl.joinDiscord(),
   playOffline: (o) => impl.playOffline(o),
   leave: () => impl.leave(),
   sendChat: (text) => impl.sendChat(text),
@@ -218,6 +225,7 @@ export const actions: Actions = {
 
 // ---------------------------------------------------------------- helpers for UI code
 export function setName(name: string) {
+  if (discord.peek()) return; // the Discord name is fixed
   updateSettings({ name });
   actions.setProfile({ name });
 }
@@ -238,9 +246,12 @@ export function resetGameState() {
   closeAllModals();
 }
 
-/** Link to a room: current page + #room=CODE */
+/** The site, for links shared from inside Discord (the activity's own url is useless outside). */
+const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined) || 'https://openbomber.ru/';
+
+/** Link to a room: current page (the site inside Discord) + #room=CODE */
 export function roomLink(code: string) {
-  const u = new URL(location.href);
+  const u = new URL(inDiscord ? SITE_URL : location.href);
   u.hash = `room=${code}`;
   return u.toString();
 }

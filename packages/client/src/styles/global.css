@@ -756,6 +756,13 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
 }
 .mm__name-input:focus-visible { outline: none; border-bottom-color: #fff; }
 .mm__name .icon-btn { width: 44px; height: 44px; }
+.mm__name--discord { align-items: center; }
+.mm__name--discord .mm__name-input { display: flex; align-items: center; justify-content: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Discord avatars (players from the Discord activity) */
+.avatar { flex: none; border-radius: 50%; object-fit: cover; background: rgba(0, 0, 0, 0.35); vertical-align: middle; }
+.mc-chat__line .avatar { margin-right: 4px; vertical-align: -2px; }
+.nametag .avatar { margin-right: 6px; }
 
 .mm__actions { display: flex; flex-direction: column; gap: 10px; }
 .mm__actions .btn--xl { min-height: 64px; justify-content: center; }

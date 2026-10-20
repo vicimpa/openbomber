@@ -115,6 +115,8 @@ export interface ChatMessage {
 export interface JoinOptions {
   name: string;
   skin: number;
+  /** Discord activity: the player's Discord access token. The server takes the name from Discord. */
+  discord?: string;
 }
 
 export const ROOM_NAME = 'battle';

@@ -3,6 +3,8 @@
 // frame, the pixel logo, chunky white bevelled buttons.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { canFullscreen, isFullscreen, toggleFullscreen } from '$/input/fullscreen';
+import { discord } from '$/discord';
+import { Avatar } from './Avatar';
 import { Button, Logo } from './components';
 import { t } from './i18n';
 import { Icon } from './icons';
@@ -13,7 +15,9 @@ import { HeroSprite } from './sprites';
 import { actions, onlineCount, openModal, setName, setSkin, settings } from './store';
 
 function ProfileCard() {
-  const { name, skin, language } = settings.value;
+  const { skin, language } = settings.value;
+  const d = discord.value;
+  const name = d?.name ?? settings.value.name;
   const [draft, setDraft] = useState(name);
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => setDraft(name), [name]);
@@ -36,7 +40,12 @@ function ProfileCard() {
         <HeroSprite skin={skin} anim="RunDown" scale={2} />
       </button>
       <button class="mm__arrow" onClick={() => step(1)} aria-label={t('menu.nextSkin')} title={t('menu.nextSkin')}><Icon name="arrowRight" /></button>
-      <div class="mm__name">
+      {d ? (
+        <div class="mm__name mm__name--discord" title={t('discord.nameHint')}>
+          <Avatar url={d.avatar} size={32} />
+          <span class="mm__name-input">{name}</span>
+        </div>
+      ) : <div class="mm__name">
         <input
           ref={input}
           class="mm__name-input"
@@ -51,13 +60,14 @@ function ProfileCard() {
           onKeyDown={(e) => { if (e.key === 'Enter') input.current?.blur(); }}
         />
         <button class="icon-btn" onClick={() => { actions.uiSound('click'); setName(randomName(language)); }} aria-label={t('menu.randomName')} title={t('menu.randomName')}><Icon name="dice" /></button>
-      </div>
+      </div>}
     </section>
   );
 }
 
 export function MainMenu() {
   const online = onlineCount.value;
+  const d = discord.value;
   return (
     <div class="mm" data-nav-root>
       <div class="mm__panel">
@@ -65,11 +75,16 @@ export function MainMenu() {
         <ProfileCard />
 
         <div class="mm__actions">
+          {d && (
+            <Button variant="white" size="xl" block data-autofocus onClick={() => actions.joinDiscord()} sub={t('discord.roomHint')}>
+              {t('discord.room')}
+            </Button>
+          )}
           <Button
             variant="white"
             size="xl"
             block
-            data-autofocus
+            data-autofocus={d ? undefined : true}
             onClick={() => actions.quickPlay()}
             sub={online === null ? t('mm.onlineHint') : t('mm.onlineCount', { n: online })}
           >

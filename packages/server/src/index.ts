@@ -14,11 +14,13 @@
 //   MAX_CLIENTS  connected clients per room, players + spectators (default 200)
 //   MAX_CLIENTS_PER_IP  connections from one IP across all rooms (default 6)
 //   MAX_ROOMS  rooms alive at once (default 300)
+//   DISCORD_CLIENT_ID / DISCORD_CLIENT_SECRET  Discord activity login (see discord.ts); unset = off
 //
 // At boot the persistent shared world is created: room id 'MAIN' (autoDispose off).
 // Clients join as spectators and send MSG.play true/false to enter / leave the arena.
 //
-// HTTP routes: GET /health, GET /rooms (public room list), POST /matchmake/* (Colyseus),
+// HTTP routes: GET /health, GET /rooms (public room list), POST /discord/token + /discord/room
+// (Discord activity, see discord.ts), POST /matchmake/* (Colyseus),
 // websocket /<processId>/<roomId>. CORS echoes the request Origin (dev client on :8080).
 
 import { startGameServer } from './app.ts';

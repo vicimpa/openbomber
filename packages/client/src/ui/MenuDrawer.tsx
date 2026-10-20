@@ -3,6 +3,8 @@
 // (player list, spectators) and «Настройки» (volume + device settings).
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { canFullscreen, isFullscreen, toggleFullscreen } from '$/input/fullscreen';
+import { discord, discordInvite } from '$/discord';
+import { Avatar } from './Avatar';
 import { BOT_DIFFICULTIES, MAX_PLAYERS } from '@ob/game';
 import { Button, Logo, Segmented, Toggle } from './components';
 import { copyRoom, shareRoom } from './hud/RoomCode';
@@ -18,7 +20,9 @@ type Tab = 'game' | 'players' | 'settings';
 let lastTab: Tab = 'game';
 
 function Profile() {
-  const { name, skin, language } = settings.value;
+  const { skin, language } = settings.value;
+  const d = discord.value;
+  const name = d?.name ?? settings.value.name;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
   const input = useRef<HTMLInputElement>(null);
@@ -52,12 +56,13 @@ function Profile() {
             <Button type="submit" size="sm">OK</Button>
           </form>
         ) : (
-          <span class="nametag nametag--lg">{name}</span>
+          <span class="nametag nametag--lg">{d && <Avatar url={d.avatar} size={22} />}{name}</span>
         )}
+        {d && <small class="muted"><Icon name="discord" size={12} /> {t('discord.nameHint')}</small>}
         <div class="profile__btns">
-          {!editing && <Button size="sm" onClick={() => { setDraft(name); setEditing(true); }}>{t('menu.edit')}</Button>}
+          {!editing && !d && <Button size="sm" onClick={() => { setDraft(name); setEditing(true); }}>{t('menu.edit')}</Button>}
           <Button size="sm" onClick={() => openModal('skin')}>{t('menu.avatar')}</Button>
-          <Button size="sm" onClick={() => setName(randomName(language))} title={t('menu.randomName')} aria-label={t('menu.randomName')}><Icon name="dice" /></Button>
+          {!d && <Button size="sm" onClick={() => setName(randomName(language))} title={t('menu.randomName')} aria-label={t('menu.randomName')}><Icon name="dice" /></Button>}
         </div>
       </div>
     </section>
@@ -81,6 +86,7 @@ function GameTab() {
             <span class="room-line__code">{r.code}</span>
             <Button size="sm" icon={<Icon name="link" />} onClick={() => copyRoom(r.code)}>{t('hud.copyLink')}</Button>
             {typeof navigator.share === 'function' && <Button size="sm" icon={<Icon name="share" />} onClick={() => shareRoom(r.code)}>{t('hud.share')}</Button>}
+            {discord.value && <Button size="sm" icon={<Icon name="discord" />} onClick={() => { actions.uiSound('click'); discordInvite(); }}>{t('discord.invite')}</Button>}
           </div>
         </section>
       )}
@@ -154,6 +160,7 @@ export function PlayerList() {
             {list.map((p) => (
               <li key={p.id} class={`${p.isLocal ? 'is-me' : ''}`} data-state={!p.inRound ? 'wait' : p.alive || p.respawning ? 'alive' : 'dead'}>
                 <HeroSprite skin={p.skin} scale={0.9} still={!p.alive} />
+                <Avatar id={p.id} size={20} />
                 <span class="plist__name">{p.name}{p.isBot && <small> · {t('hud.bot')}</small>}</span>
                 <span class="plist__stats"><span><Icon name="crown" /> {p.wins}</span><span><Icon name="gun" /> {p.kills}</span><span><Icon name="skull" /> {p.deaths}</span></span>
               </li>
