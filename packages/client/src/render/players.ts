@@ -12,6 +12,15 @@ const T = 32;
 const DIR_NAME: Record<Dir, string> = { [Dir.Up]: 'Up', [Dir.Left]: 'Right', [Dir.Right]: 'Right', [Dir.Down]: 'Down' };
 const BLINK_WARN = TICK_RATE * 2; // timed effects blink during their last 2 s
 
+/** Run tags open on a frame that looks like the idle pose: the run loop skips it. */
+const RUN_SKIP = 1;
+const runLoops = new Map<Texture[], Texture[]>();
+function runLoop(frames: Texture[]): Texture[] {
+  let loop = runLoops.get(frames);
+  if (!loop) { loop = frames.length > RUN_SKIP ? frames.slice(RUN_SKIP) : frames; runLoops.set(frames, loop); }
+  return loop;
+}
+
 export class PlayerView {
   readonly root = new Container();
   private shadow: Sprite;
@@ -105,14 +114,15 @@ export class PlayerView {
     const src = this.a.heroes[skin];
     const moving = p.moving && p.effects.stun <= 0;
     const tagName = `${moving ? 'Run' : 'Idle'}${DIR_NAME[p.dir]}${carriedBomb ? 'Bomb' : ''}`;
-    if (tagName !== this.tagName || skin !== this.skin) {
-      const sameKind = this.tagName.startsWith(moving ? 'Run' : 'Idle');
-      this.hero.setFrames(src[tagName] ?? src.IdleDown, sameKind ? -1 : moving ? 1 : 0);
-      this.tagName = tagName; this.skin = skin;
-    }
     const speed = (BASE_SPEED + SPEED_STEP * p.speedLevel) / BASE_SPEED * (p.effects.fire > 0 ? 0.6 : 1)
       * (p.curse === Curse.Slow ? 0.6 : p.curse === Curse.Fast ? 1.5 : 1);
-    this.hero.fps = moving ? 12 * speed : 4;
+    this.hero.fps = moving ? 12 * speed : 4; // before setFrames: a restart is timed in the new rate
+    if (tagName !== this.tagName || skin !== this.skin) {
+      const sameKind = this.tagName.startsWith(moving ? 'Run' : 'Idle');
+      const frames = src[tagName] ?? src.IdleDown;
+      this.hero.setFrames(moving ? runLoop(frames) : frames, sameKind ? -1 : 0);
+      this.tagName = tagName; this.skin = skin;
+    }
     this.hero.tick(dt);
     const flip = p.dir === Dir.Left ? -1 : 1;
     this.hero.scale.x = flip;
@@ -123,8 +133,9 @@ export class PlayerView {
     const fast = p.speedLevel > 0 || p.curse === Curse.Fast;
     this.dustBack.visible = this.dustFront.visible = fast;
     if (fast) {
-      this.dustBack.texture = this.a.dust['back' + this.tagName]?.[this.hero.frame] ?? Texture.EMPTY;
-      this.dustFront.texture = this.a.dust['front' + this.tagName]?.[this.hero.frame] ?? Texture.EMPTY;
+      const f = this.hero.frame + (moving ? RUN_SKIP : 0); // dust frames follow the full Run tag
+      this.dustBack.texture = this.a.dust['back' + this.tagName]?.[f] ?? Texture.EMPTY;
+      this.dustFront.texture = this.a.dust['front' + this.tagName]?.[f] ?? Texture.EMPTY;
       if (moving && p.speedLevel >= 2 && !this.fx.lowQuality) {
         this.dustT -= dt;
         if (this.dustT <= 0) { this.dustT = 0.12 - p.speedLevel * 0.012; this.fx.footDust(x, y + 7); }
