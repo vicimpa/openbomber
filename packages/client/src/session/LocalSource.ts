@@ -135,7 +135,7 @@ export class LocalSource implements GameSource {
     const v = this.view;
     v.tick = w.tick; v.seed = w.seed; v.phase = w.phase; v.phaseTicks = w.phaseTicks; v.round = w.round;
     v.width = w.width; v.height = w.height; v.tiles = w.tiles; v.winner = w.winner; v.nextId = w.nextId;
-    v.flames = w.flames; v.pickups = w.pickups; v.falling = w.falling;
+    v.flames = w.flames; v.pickups = w.pickups; v.falling = w.falling; v.drops = w.drops;
     v.zoneRing = w.zoneRing; v.zoneIn = w.zoneIn;
     const last = w.tick - 1; // prev entries written right before the newest tick
 

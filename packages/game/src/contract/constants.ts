@@ -69,6 +69,16 @@ export const SOLO_RESTART_TIME = sec(1);      // practice mode (1 player) restar
 export const WAIT_FOR_LIMIT = sec(15);        // zone: quiet time after round start / last shrink
 export const ZONE_LIMIT_TIMEOUT = sec(15);    // zone: warning -> the outer ring closes
 export const FALL_TIME = sec(1);              // falling-block shadow before a closing ring lands
+// --- overtime: when a round drags on, things start falling from the sky
+/** The rain starts once this share of the round's bricks is destroyed... */
+export const OVERTIME_DESTROYED = 0.75;
+/** ...but not before this far into the round, and at the latest this far in (few bricks broken). */
+export const OVERTIME_MIN_TIME = sec(60);
+export const OVERTIME_MAX_TIME = sec(150);
+export const OVERTIME_EVERY = sec(18);        // then another one this often (pickups and bombs alternate)
+export const DROP_FALL_TIME = sec(1.2);       // the shadow grows this long before a drop lands
+export const SKY_BOMB_FUSE = sec(1.6);        // a landed sky bomb goes off after this
+export const SKY_BOMB_RADIUS = 2;
 /** Endgame: once the open middle is this narrow, rings close quickly until nothing is left. */
 export const ZONE_FINAL_WIDTH = 5;
 export const ZONE_FINAL_QUIET = sec(3);

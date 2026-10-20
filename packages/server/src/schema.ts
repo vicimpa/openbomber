@@ -91,6 +91,17 @@ export const FallingSchema = schema({
 }, 'Falling');
 export type FallingSchema = SchemaType<typeof FallingSchema>;
 
+/** Overtime sky drop (bomb or pickup falling from the sky). */
+export const DropSchema = schema({
+  id: t.uint32().default(0),
+  x: t.uint8().default(0),
+  y: t.uint8().default(0),
+  kind: t.uint8().default(0),
+  pickup: t.uint8().default(0),
+  ttlAt: t.uint32().default(0),
+}, 'Drop');
+export type DropSchema = SchemaType<typeof DropSchema>;
+
 export const BattleState = schema({
   tick: t.uint32().default(0),
   phase: t.uint8().default(0),
@@ -113,6 +124,7 @@ export const BattleState = schema({
   bots: t.uint8().default(0),
   botDifficulty: t.uint8().default(1),
   zone: t.boolean().default(true),
+  events: t.boolean().default(true),
   /** width * height Tile values, index = y * width + x; patched per index. */
   tiles: t.array('uint8'),
   players: t.map(PlayerSchema),
@@ -120,6 +132,7 @@ export const BattleState = schema({
   flames: t.map(FlameSchema),
   pickups: t.map(PickupSchema),
   falling: t.array(FallingSchema),
+  drops: t.array(DropSchema),
 }, 'BattleState');
 export type BattleState = SchemaType<typeof BattleState>;
 

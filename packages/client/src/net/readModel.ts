@@ -14,7 +14,7 @@ export function emptyWorld(): WorldState {
     tick: 0, seed: 0, phase: 0, phaseTicks: 0, round: 0, width: 0, height: 0,
     tiles: new Uint8Array(0),
     players: new Map(), bombs: new Map(), flames: new Map(), pickups: new Map(),
-    falling: [], winner: '', nextId: 0, zoneRing: 0, zoneIn: 0,
+    falling: [], drops: [], winner: '', nextId: 0, zoneRing: 0, zoneIn: 0,
   };
 }
 
@@ -172,6 +172,17 @@ export class ReadModel {
       }
     }
     fall.length = i;
+
+    const drops = w.drops;
+    let j = 0;
+    if (s.drops) {
+      for (const d of s.drops) {
+        const t = drops[j] ?? (drops[j] = { id: 0, x: 0, y: 0, kind: 0, pickup: 0, ttl: 0 });
+        t.id = d.id; t.x = d.x; t.y = d.y; t.kind = d.kind; t.pickup = d.pickup; t.ttl = left(d.ttlAt, tick);
+        j++;
+      }
+    }
+    drops.length = j;
 
     this.ready = w.width > 0 && w.height > 0 && w.tiles.length === w.width * w.height;
   }

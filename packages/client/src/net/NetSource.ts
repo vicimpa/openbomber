@@ -70,7 +70,7 @@ export class NetSource implements GameSource {
   maxPlayers = 0;
   /** Own rooms: the host's session id ('' in the shared arena) and the room settings. */
   ownerId = '';
-  roomSettings: RoomSettings = { bots: 0, botDifficulty: 'normal', maxPlayers: 0, zone: true };
+  roomSettings: RoomSettings = { bots: 0, botDifficulty: 'normal', maxPlayers: 0, zone: true, events: true };
   readonly chatLog: ChatMessage[] = [];
 
   private readonly room: Room<any, BattleState>;
@@ -421,6 +421,7 @@ export class NetSource implements GameSource {
     rs.botDifficulty = BOT_DIFFICULTIES[s.botDifficulty ?? 1] ?? 'normal';
     rs.maxPlayers = this.maxPlayers;
     rs.zone = s.zone ?? true;
+    rs.events = s.events ?? true;
     if (!model.ready) return;
     const w = model.world;
     const now = performance.now();
@@ -537,7 +538,7 @@ export class NetSource implements GameSource {
     const v = this.view;
     v.tick = w.tick; v.seed = 0; v.phase = w.phase; v.phaseTicks = w.phaseTicks; v.round = w.round;
     v.width = w.width; v.height = w.height; v.tiles = w.tiles; v.winner = w.winner;
-    v.flames = w.flames; v.pickups = w.pickups; v.falling = w.falling;
+    v.flames = w.flames; v.pickups = w.pickups; v.falling = w.falling; v.drops = w.drops;
     v.zoneRing = w.zoneRing; v.zoneIn = w.zoneIn;
 
     const renderTick = this.clock.now(nowMs) - INTERP_DELAY_TICKS;

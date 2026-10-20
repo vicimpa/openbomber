@@ -175,6 +175,19 @@ export interface PickupState {
   protect: number;
 }
 
+/** What a sky drop turns into when it lands (overtime rain). */
+export enum DropKind { Bomb = 0, Pickup = 1 }
+
+/** Something falling from the sky onto (x, y): a shadow grows while `ttl` counts down. */
+export interface SkyDrop {
+  id: number;
+  x: number;
+  y: number;
+  kind: DropKind;
+  pickup: PickupType;    // DropKind.Pickup only
+  ttl: number;           // ticks until it lands
+}
+
 export interface FallingBlock {
   x: number;
   y: number;
@@ -195,6 +208,8 @@ export interface WorldState {
   flames: Map<number, FlameState>;
   pickups: Map<number, PickupState>;
   falling: FallingBlock[];
+  /** Overtime rain in the air (bombs and pickups falling from the sky). */
+  drops: SkyDrop[];
   winner: string;        // '' = none / draw (valid in RoundOver)
   nextId: number;
   /** Zone shrink: rings already closed (0 = full map). */

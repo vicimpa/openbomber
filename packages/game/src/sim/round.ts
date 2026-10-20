@@ -19,6 +19,7 @@ import { Phase, Tile, type PlayerState } from '../contract/types';
 import { emit, type SimCtx } from './context';
 import { calcMap, generateMap, ringTiles, type Point } from './map';
 import { killPlayer, resetStats, spawnPlayerAt } from './players';
+import { resetOvertime, updateDrops, updateOvertime } from './overtime';
 import { shuffle } from './rng';
 import { bombIsGrounded } from './world';
 
@@ -103,6 +104,7 @@ export function startRound(ctx: SimCtx) {
   ctx.hasWin = w.players.size > 1;
   ctx.roundDeaths = 0;
   ctx.zoneQuiet = WAIT_FOR_LIMIT;
+  resetOvertime(ctx);
   emit(ctx, { type: 'countdown', seconds: Math.ceil(COUNTDOWN_TIME / TICK_RATE) });
 }
 
@@ -113,6 +115,7 @@ export function goIdle(ctx: SimCtx) {
   w.phaseTicks = 0;
   w.zoneIn = 0;
   w.falling.length = 0;
+  w.drops.length = 0;
 }
 
 function endRound(ctx: SimCtx, winner: PlayerState | undefined, delay: number) {
@@ -125,6 +128,7 @@ function endRound(ctx: SimCtx, winner: PlayerState | undefined, delay: number) {
     emit(ctx, { type: 'zoneCancel' });
   }
   w.falling.length = 0;
+  w.drops.length = 0;
   if (winner) winner.wins++;
   emit(ctx, { type: 'roundOver', winner: w.winner });
 }
@@ -271,8 +275,10 @@ export function updatePhase(ctx: SimCtx) {
     case Phase.SuddenDeath:
       w.phaseTicks++;
       updateFalling(ctx);
+      updateDrops(ctx);
       if (ctx.hold) break;
       updateZone(ctx);
+      updateOvertime(ctx);
       checkRoundEnd(ctx);
       break;
     case Phase.RoundOver:

@@ -187,7 +187,8 @@ export function startSession() {
           const rs = src.roomId !== MAIN_ROOM_ID ? { ...src.roomSettings, isHost: src.isHost } : null;
           const cur = roomSettings.peek();
           if (!rs !== !cur || (rs && cur && (rs.bots !== cur.bots || rs.botDifficulty !== cur.botDifficulty
-            || rs.maxPlayers !== cur.maxPlayers || rs.zone !== cur.zone || rs.isHost !== cur.isHost))) roomSettings.value = rs;
+            || rs.maxPlayers !== cur.maxPlayers || rs.zone !== cur.zone || rs.events !== cur.events
+            || rs.isHost !== cur.isHost))) roomSettings.value = rs;
         } else {
           if (spectators.peek().length) spectators.value = [];
           if (roomSettings.peek()) roomSettings.value = null;

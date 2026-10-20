@@ -136,6 +136,7 @@ function RoomSettingsCard() {
       />
       <Stepper label={t('room.maxPlayers')} value={rs.maxPlayers} min={2} max={MAX_PLAYERS} disabled={off} onChange={(maxPlayers) => set({ maxPlayers })} />
       <Toggle label={t('room.zone')} hint={t('room.zoneHint')} checked={rs.zone} onChange={(zone) => { if (!off) set({ zone }); }} />
+      <Toggle label={t('room.events')} hint={t('room.eventsHint')} checked={rs.events} onChange={(events) => { if (!off) set({ events }); }} />
       {off && <p class="muted">{t('room.hostOnly')}</p>}
     </section>
   );

@@ -3,7 +3,7 @@
 
 import { BombKind, type BombState, type FlameState, type PickupState, type PlayerState, type TimedEffects, type WorldState } from '@ob/game';
 import {
-  type BattleState, BombSchema, FallingSchema, FlameSchema, PickupSchema, PlayerSchema,
+  type BattleState, BombSchema, DropSchema, FallingSchema, FlameSchema, PickupSchema, PlayerSchema,
 } from './schema.ts';
 
 const at = (remaining: number, tick: number) => (remaining > 0 ? tick + remaining : 0);
@@ -176,5 +176,21 @@ export function syncWorld(state: BattleState, w: WorldState) {
       set(s, 'y', f.y);
       set(s, 'ttlAt', at(f.ttl, tick));
     }
+  }
+
+  // sky drops: few and short-lived, matched by position in the list like falling blocks
+  const drops = state.drops;
+  const wd = w.drops;
+  while (drops.length > wd.length) drops.pop();
+  for (let i = 0; i < wd.length; i++) {
+    const d = wd[i]!;
+    let s = drops[i];
+    if (!s) { s = new DropSchema(); drops.push(s); }
+    set(s, 'id', d.id);
+    set(s, 'x', d.x);
+    set(s, 'y', d.y);
+    set(s, 'kind', d.kind);
+    set(s, 'pickup', d.pickup);
+    set(s, 'ttlAt', at(d.ttl, tick));
   }
 }

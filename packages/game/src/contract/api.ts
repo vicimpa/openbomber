@@ -20,6 +20,8 @@ export interface MatchConfig {
   entropy?: () => number;
   /** Zone shrink on (default). Read live, so a host can toggle it between or during rounds. */
   zone?: boolean;
+  /** Overtime rain of pickups / bombs in long rounds (default on). Read live like `zone`. */
+  overtime?: boolean;
 }
 
 export interface NewPlayer {

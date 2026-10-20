@@ -1,4 +1,4 @@
-import type { Curse, Dir, FlameShape, PickupType } from './types';
+import type { Curse, Dir, DropKind, FlameShape, PickupType } from './types';
 
 // ---------------------------------------------------------------- input
 
@@ -57,6 +57,8 @@ export type GameEvent =
   | { type: 'zoneCancel' }                         // fewer than 2 players: shrink cancelled
   | { type: 'zoneShrink'; ring: number }           // ring closes now (its blocks fall over FALL_TIME)
   | { type: 'blockFell'; x: number; y: number }
+  | { type: 'skyRain'; kind: 'pickups' | 'bombs'; count: number }   // overtime: things start falling
+  | { type: 'dropLanded'; drop: number; x: number; y: number; kind: DropKind }
   | { type: 'roundOver'; winner: string };
 
 /** Timed effects that announce their end. */
@@ -95,6 +97,7 @@ export interface RoomSettings {
   botDifficulty: BotDifficultyName;
   maxPlayers: number;               // arena capacity, humans + bots
   zone: boolean;                    // the arena shrinks during long rounds
+  events: boolean;                  // overtime rain of pickups and bombs in long rounds
 }
 
 export interface ChatMessage {

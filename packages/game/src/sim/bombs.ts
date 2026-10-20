@@ -58,6 +58,19 @@ function addOverlappingPassers(ctx: SimCtx, b: BombState) {
   }
 }
 
+/** A bomb nobody owns (overtime sky rain): plain, fixed radius and fuse, no kill credit. */
+export function createSkyBomb(ctx: SimCtx, x: number, y: number, radius: number, fuse: number): BombState {
+  const w = ctx.world;
+  const b: BombState = {
+    id: w.nextId++, owner: '', kind: BombKind.Normal, x, y, radius, fuse, motion: BombMotion.Idle,
+    vx: 0, vy: 0, fromX: x, fromY: y, toX: x, toY: y, progress: 0, passers: [], dud: false,
+  };
+  addOverlappingPassers(ctx, b);
+  w.bombs.set(b.id, b);
+  ctx.bombs.set(b.id, { pierce: false, credit: '', flightTotal: 0, flightElapsed: 0, flightDx: 0, flightDy: 0, hops: 0 });
+  return b;
+}
+
 export function createBomb(ctx: SimCtx, p: PlayerState, x: number, y: number): BombState {
   const w = ctx.world;
   const crazy = p.effects.crazy > 0;

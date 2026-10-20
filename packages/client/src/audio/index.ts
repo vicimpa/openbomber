@@ -1,7 +1,7 @@
 // Procedural audio engine: every SFX is synthesised (pre-rendered offline at unlock) and
 // the music is generated live. No sample files. See contracts.ts for the interface.
 
-import { PickupType, type GameEvent, type WorldState } from '@ob/game';
+import { DropKind, PickupType, type GameEvent, type WorldState } from '@ob/game';
 import type { AudioEngine, CreateAudio, MusicMode, UiSound } from '../contracts';
 import { buildGraph, duckMusic, type Graph } from './graph';
 import { Music } from './music';
@@ -268,6 +268,8 @@ class Engine implements AudioEngine {
           case 'zoneWarning': fire('ui_error', { gain: 0.9 }); break;
           case 'zoneCancel': fire('effectEnd', {}); break;
           case 'zoneShrink': fire('siren', {}); break;
+          case 'skyRain': fire(e.kind === 'bombs' ? 'ui_error' : 'go', { gain: 0.8 }); break;
+          case 'dropLanded': fire(e.kind === DropKind.Bomb ? 'land' : 'spawn', W(e.x, e.y)); break;
           case 'blockFell': {
             const o = W(e.x, e.y);
             fire('blockFall', o);

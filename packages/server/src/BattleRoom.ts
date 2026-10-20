@@ -56,7 +56,9 @@ export const T = {
   chatSlow: 'Не так быстро: не больше одного сообщения в 2 секунды',
   newHost: (n: string) => `${n} теперь управляет комнатой`,
   settings: (s: RoomSettings) =>
-    `Настройки комнаты: ботов ${s.bots} (${DIFFICULTY_RU[s.botDifficulty]}), игроков до ${s.maxPlayers}, зона ${s.zone ? 'вкл' : 'выкл'}`,
+    `Настройки комнаты: ботов ${s.bots} (${DIFFICULTY_RU[s.botDifficulty]}), игроков до ${s.maxPlayers}, зона ${s.zone ? 'вкл' : 'выкл'}, дождь ${s.events ? 'вкл' : 'выкл'}`,
+  rainPickups: 'С неба сыплются бонусы!',
+  rainBombs: 'Бомбопад! Берегитесь теней',
 };
 
 const DIFFICULTY_RU: Record<BotDifficultyName, string> = { easy: 'легко', normal: 'нормально', hard: 'жёстко' };
@@ -147,7 +149,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
   private game!: GameImpl;
   private code = '';
   /** Own rooms: what the creator set (the shared arena ignores bots / maxPlayers here). */
-  private settings: RoomSettings = { bots: DEFAULT_BOTS, botDifficulty: 'normal', maxPlayers: MAX_PLAYERS, zone: true };
+  private settings: RoomSettings = { bots: DEFAULT_BOTS, botDifficulty: 'normal', maxPlayers: MAX_PLAYERS, zone: true, events: true };
   private simConfig!: MatchConfig;
   private ownerId = '';
   private readonly humans = new Map<string, Human>();
@@ -184,7 +186,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     roomCreated();
     // Crypto seed + entropy: hidden information (pickups in bricks, crazy bombs, Random rolls)
     // can't be reconstructed from the visible map by a client that runs the same simulation.
-    this.simConfig = { minPlayers: 2, seed: cryptoU32(), entropy: cryptoU32, zone: true };
+    this.simConfig = { minPlayers: 2, seed: cryptoU32(), entropy: cryptoU32, zone: true, overtime: true };
     this.sim = this.game.createSimulation(this.simConfig);
     this.setPatchRate(1000 / PATCH_RATE);
     this.setSimulationInterval((dt) => this.update(dt), TICK_MS);
@@ -291,6 +293,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     const diff = BOT_DIFFICULTIES.indexOf(st.botDifficulty);
     if (s.botDifficulty !== diff) s.botDifficulty = diff;
     if (s.zone !== st.zone) s.zone = st.zone;
+    if (s.events !== st.events) s.events = st.events;
     if (this.events.length > 0) {
       (this as Room).broadcast(MSG.events, this.events, { afterNextPatch: true });
       this.events = [];
@@ -413,6 +416,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
         case 'roundOver': this.announceWinner((e as { winner: string }).winner); break;
         case 'zoneWarning': this.systemChat(T.zoneWarning((e as { seconds?: number }).seconds ?? 15)); break;
         case 'zoneCancel': this.systemChat(T.zoneCancel); break;
+        case 'skyRain': this.systemChat((e as { kind: string }).kind === 'bombs' ? T.rainBombs : T.rainPickups); break;
       }
     }
     const w = sim.state;
@@ -569,10 +573,13 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     s.bots = Math.min(s.bots, s.maxPlayers - 1);
     if (BOT_DIFFICULTIES.includes(o.botDifficulty as BotDifficultyName)) s.botDifficulty = o.botDifficulty as BotDifficultyName;
     if (typeof o.zone === 'boolean') s.zone = o.zone;
-    if (prev.bots === s.bots && prev.botDifficulty === s.botDifficulty && prev.maxPlayers === s.maxPlayers && prev.zone === s.zone) return;
+    if (typeof o.events === 'boolean') s.events = o.events;
+    if (prev.bots === s.bots && prev.botDifficulty === s.botDifficulty && prev.maxPlayers === s.maxPlayers
+      && prev.zone === s.zone && prev.events === s.events) return;
 
     this.maxPlayers = s.maxPlayers;
     this.simConfig.zone = s.zone;
+    this.simConfig.overtime = s.events;
     if (prev.botDifficulty !== s.botDifficulty) {
       for (const [id, slot] of this.bots) slot.bot = this.game.createBot(id, this.sim, s.botDifficulty);
     }

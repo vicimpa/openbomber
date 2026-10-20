@@ -135,6 +135,9 @@ export function handleGameEvents(events: GameEvent[], world: WorldState | null, 
       if (!e.killer) pushKill({ kind: 'world', victim });
       else if (e.killer === e.player) pushKill({ kind: 'self', victim });
       else pushKill({ kind: 'kill', killer: who(e.killer), victim });
+    } else if (e.type === 'skyRain') {
+      toast(t(e.kind === 'bombs' ? 'toast.rainBombs' : 'toast.rainPickups'), e.kind === 'bombs' ? 'bad' : 'good', 3500,
+        e.kind === 'bombs' ? 'bomb' : 'warning');
     } else if (e.type === 'curseApplied' && e.player === localId) {
       const c = CURSE_BY_ID.get(e.curse);
       if (c) toast(t('toast.curse', { c: tr(c.name) }), 'bad', undefined, c.icon);

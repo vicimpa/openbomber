@@ -53,7 +53,7 @@ function makeWorld(bots: number): WorldState {
   }
   return {
     tick: 0, seed: 1, phase: Phase.Playing, phaseTicks: 0, round: 1, width, height, tiles,
-    players, bombs: new Map(), flames: new Map(), pickups: new Map(), falling: [], winner: '', nextId: 1,
+    players, bombs: new Map(), flames: new Map(), pickups: new Map(), falling: [], drops: [], winner: '', nextId: 1,
     zoneRing: 0, zoneIn: 0,
   };
 }

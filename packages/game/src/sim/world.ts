@@ -36,6 +36,7 @@ export function createWorld(width: number, height: number, seed: number): WorldS
     flames: new Map(),
     pickups: new Map(),
     falling: [],
+    drops: [],
     winner: '',
     nextId: 1,
     zoneRing: 0,
@@ -65,5 +66,6 @@ export function cloneWorld(w: WorldState): WorldState {
     flames,
     pickups,
     falling: w.falling.map((f) => ({ ...f })),
+    drops: w.drops.map((d) => ({ ...d })),
   };
 }

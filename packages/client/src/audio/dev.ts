@@ -26,7 +26,7 @@ const world: WorldState = {
     ['right', mkPlayer('right', 12, 6)],
     ['far', mkPlayer('far', 14, 12)],
   ]),
-  bombs: new Map(), flames: new Map(), pickups: new Map(), falling: [], winner: '', nextId: 1, zoneRing: 0, zoneIn: 0,
+  bombs: new Map(), flames: new Map(), pickups: new Map(), falling: [], drops: [], winner: '', nextId: 1, zoneRing: 0, zoneIn: 0,
 };
 const LOCAL = 'me';
 

@@ -1,4 +1,4 @@
-import { PLAYER_RADIUS } from '../contract/constants';
+import { DROP_FALL_TIME, OVERTIME_EVERY, OVERTIME_MAX_TIME, OVERTIME_MIN_TIME, PLAYER_RADIUS, TICK_RATE } from '../contract/constants';
 import { describe, expect, test } from 'bun:test';
 import {
   BOMB_FUSE,
@@ -22,7 +22,7 @@ import {
 } from '../contract/constants';
 import { Button, type GameEvent } from '../contract/protocol';
 import { generateMap, mapSizeFor, ringTiles, spawnPoints } from './map';
-import { Ability, BombKind, BombMotion, Curse, Dir, FlameShape, Phase, PickupType, Tile } from '../contract/types';
+import { Ability, BombKind, BombMotion, Curse, Dir, DropKind, FlameShape, Phase, PickupType, Tile } from '../contract/types';
 import { Simulation } from './Simulation';
 import { Harness, ev } from './testkit';
 import { tileAt } from './world';
@@ -645,6 +645,36 @@ describe('round flow (canon: continuous, no lobby)', () => {
     const over = until(sim, (e) => e.some((x) => x.type === 'roundOver'), 60 * 60 * 10);
     expect(over.some((x) => x.type === 'roundOver')).toBe(true);
     expect(w.zoneRing).toBe(rings);
+  });
+
+  test('overtime: once most bricks are gone, pickups then bombs rain from the sky', () => {
+    const sim = new Simulation({ seed: 21 });
+    for (const id of ['a', 'b']) sim.addPlayer({ id, name: id, skin: 0 });
+    sim.holdRound = false;
+    until(sim, (e) => e.some((x) => x.type === 'roundStart'));
+    const w = sim.state;
+    // nobody broke anything: no rain before OVERTIME_MAX_TIME
+    for (let i = 0; i < OVERTIME_MIN_TIME + 5; i++) expect(sim.step().some((x) => x.type === 'skyRain')).toBe(false);
+    // wreck the map: past OVERTIME_DESTROYED the first rain (pickups) comes within a second
+    for (let i = 0; i < w.tiles.length; i++) if (w.tiles[i] === Tile.Brick) w.tiles[i] = Tile.Floor;
+    const first = until(sim, (e) => e.some((x) => x.type === 'skyRain'), TICK_RATE + 2);
+    expect(first.find((x) => x.type === 'skyRain')).toMatchObject({ kind: 'pickups' });
+    expect(w.drops.length).toBeGreaterThan(0);
+    const landed = until(sim, (e) => e.some((x) => x.type === 'dropLanded'), DROP_FALL_TIME + TICK_RATE);
+    expect(landed.some((x) => x.type === 'pickupSpawned')).toBe(true);
+    const second = until(sim, (e) => e.some((x) => x.type === 'skyRain'), OVERTIME_EVERY + 2);
+    expect(second.find((x) => x.type === 'skyRain')).toMatchObject({ kind: 'bombs' });
+    until(sim, (e) => e.some((x) => x.type === 'dropLanded' && x.kind === DropKind.Bomb), DROP_FALL_TIME + TICK_RATE);
+    expect([...w.bombs.values()].some((b) => b.owner === '')).toBe(true);
+  });
+
+  test('overtime: off in the room settings means no rain', () => {
+    const sim = new Simulation({ seed: 21, overtime: false });
+    for (const id of ['a', 'b']) sim.addPlayer({ id, name: id, skin: 0 });
+    until(sim, (e) => e.some((x) => x.type === 'roundStart'));
+    const w = sim.state;
+    for (let i = 0; i < w.tiles.length; i++) if (w.tiles[i] === Tile.Brick) w.tiles[i] = Tile.Floor;
+    for (let i = 0; i < OVERTIME_MAX_TIME + 5; i++) expect(sim.step().some((x) => x.type === 'skyRain')).toBe(false);
   });
 
   test('zone: pending shrink is cancelled when fewer than 2 players remain', () => {

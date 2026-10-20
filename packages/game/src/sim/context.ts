@@ -54,6 +54,11 @@ export interface SimCtx {
   spawns: { x: number; y: number }[];
   /** Ticks before the next zone warning may be issued (WAIT_FOR_LIMIT after start / a shrink). */
   zoneQuiet: number;
+  /** Ticks until the next overtime rain, and how many rains this round had. */
+  overtimeIn: number;      // 0 = not started yet (waiting for OVERTIME_DESTROYED / MAX_TIME)
+  overtimeWave: number;
+  /** Bricks on the map when the round started (for the destroyed share). */
+  bricksAtStart: number;
   /** The round can produce a winner (started with >= 2 players; legacy isHaveWin). */
   hasWin: boolean;
   /** Deaths so far this round (a leaver can't cancel a win once someone died). */
