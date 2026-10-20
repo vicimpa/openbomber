@@ -161,6 +161,9 @@ class PixiRenderer implements GameRenderer {
   }
 
   /** Optional extra beyond GameRenderer: 'follow' (default), 'overview' or 'attract' (menu backdrop). */
+  /** Optional extra: css px covered by UI on the left (main menu panel), framing uses the rest. */
+  setViewInset(left: number) { this.camera.insetLeft = Math.max(0, left); }
+
   setCameraMode(mode: CameraMode) {
     if (this.camMode === mode) return;
     this.camMode = mode;
@@ -413,6 +416,7 @@ export type { CameraMode } from './camera';
 /** GameRenderer plus the optional camera control used by the menu backdrop. */
 export interface RendererExt extends GameRenderer {
   setCameraMode(mode: CameraMode): void;
+  setViewInset(left: number): void;
 }
 
 export const createRenderer = async (opts: RendererOptions): Promise<RendererExt> => {

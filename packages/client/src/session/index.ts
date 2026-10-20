@@ -50,6 +50,14 @@ export function startSession() {
   effect(() => renderer?.setQuality(settings.value.quality));
   effect(() => audio.setVolume(settings.value.volume));
   effect(() => input.setEnabled(!uiCapturesInput.value));
+  // Desktop main menu: the panel covers the left side, so the spectator camera frames the rest.
+  const menuInset = () => {
+    const el = document.querySelector<HTMLElement>('.mm__panel');
+    const r = el?.getBoundingClientRect();
+    renderer?.setViewInset(screen.peek() === 'menu' && r && r.height < innerHeight * 0.9 ? r.right : 0);
+  };
+  effect(() => { screen.value; requestAnimationFrame(menuInset); });
+  addEventListener('resize', menuInset);
 
   // ---------------------------------------------------------------- sources
   const profile = () => ({ name: settings.peek().name, skin: settings.peek().skin });
@@ -61,7 +69,7 @@ export function startSession() {
     resetGameState();
     source = next;
     room.value = info;
-    renderer?.setCameraMode(to === 'menu' ? 'attract' : 'follow');
+    renderer?.setCameraMode(to === 'menu' ? 'overview' : 'follow');
     if (started) screen.value = to;
     if (next instanceof NetSource) {
       next.chatLog.forEach(pushChat);
@@ -76,7 +84,7 @@ export function startSession() {
     }
   }
 
-  /** Main menu: a live bot match drifts behind it (attract mode). */
+  /** Main menu: a live bot match behind it, watched with the spectator camera. */
   function toMenu() {
     setSource(new LocalSource({ bots: ATTRACT_BOTS, difficulty: 'normal' }), null, 'menu');
   }
@@ -94,7 +102,7 @@ export function startSession() {
   }
 
   toMenu();
-  registerLoadTask(stageReady.then(() => renderer?.setCameraMode('attract')).catch(() => {}));
+  
 
   // Shared arena head count for the menu («общая арена · игроков: N»).
   const pollOnline = async () => {

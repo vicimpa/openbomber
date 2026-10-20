@@ -41,6 +41,11 @@ export class Camera {
   sx = 0; sy = 0; // shake offset, device px
   private attract = { x: 0, y: 0, t: 0, phase: Math.random() * 10 };
 
+  /** Screen space (css px) covered by UI on the left, e.g. the main menu panel: framing
+   *  happens in the free part of the screen. */
+  insetLeft = 0;
+  private inset = 0; // smoothed, device px
+
   reset() { this.snap = true; }
 
   /** Tiles visible on the short side while following (new-openbomber: radius 256 px = 8 tiles). */
@@ -49,7 +54,10 @@ export class Camera {
   }
 
   update(dt: number, v: CameraView, inp: CameraInput) {
-    const W = v.cssW * v.res, H = v.cssH * v.res;
+    const H = v.cssH * v.res;
+    const targetInset = this.mode === 'follow' && inp.focus ? 0 : Math.min(this.insetLeft, v.cssW * 0.6) * v.res;
+    this.inset += (targetInset - this.inset) * lerpK(0.08, dt);
+    const W = v.cssW * v.res - this.inset;
     if (W <= 0 || H <= 0) return;
     const { aw, ah } = inp;
     const arenaX = ((aw - 1) / 2) * T, arenaY = ((ah - 1) / 2) * T;
@@ -146,7 +154,7 @@ export class Camera {
     const W = v.cssW * v.res, H = v.cssH * v.res;
     const z = this.zoom;
     // integer device-pixel translation keeps the pixel grid stable (roundPixels does the rest)
-    const px = Math.round(W / 2 - this.x * z + this.sx);
+    const px = Math.round(this.inset + (W - this.inset) / 2 - this.x * z + this.sx);
     const py = Math.round(H / 2 - this.y * z + this.sy);
     c.scale.set(z / v.res);
     c.position.set(px / v.res, py / v.res);
