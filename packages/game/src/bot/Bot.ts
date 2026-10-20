@@ -238,6 +238,9 @@ interface Mobility {
   ghost: number;
   /** Bombs are passable while (arrival + 1 tile) * tpt <= pass. */
   pass: number;
+  /** Tiles of bombs we may still walk through (we're on their passer list), -1 = none. */
+  passer1: number;
+  passer2: number;
 }
 
 interface SearchOpts extends Mobility {
@@ -277,7 +280,7 @@ function passable(a: Analysis, m: Mobility, j: number, k: number): boolean {
   if (t !== Tile.Floor && (t !== Tile.Brick || (k + 1) * m.tpt > m.ghost)) return false;
   // a sky bomb lands here: walking in after that means walking into a bomb
   const bombed = a.bomb[j] !== 0 || (a.land[j] !== 0 && (k - 0.7) * m.tpt >= a.land[j]! - 2);
-  return !bombed || (k + 1) * m.tpt <= m.pass;
+  return !bombed || (k + 1) * m.tpt <= m.pass || (k <= 2 && (j === m.passer1 || j === m.passer2));
 }
 
 /** A tile to stop on after `k` steps: floor, or a brick while Ghost lasts long after. */
@@ -406,7 +409,7 @@ export class Bot implements IBot {
   private readonly since = new Int32Array(NOTICE.length).fill(-1);
   private now = 0;
   private reverse = false;
-  private mob: Mobility = { tpt: 20, ghost: 0, pass: 0 };
+  private mob: Mobility = { tpt: 20, ghost: 0, pass: 0, passer1: -1, passer2: -1 };
   private carryStart = -1;
   /** Hold still until this tick before following the (delayed) escape path. */
   private waitUntil = 0;
@@ -452,6 +455,14 @@ export class Bot implements IBot {
     this.mob.tpt = tpt;
     this.mob.ghost = k & K_GHOST ? p.effects.ghost - GHOST_MARGIN : 0;
     this.mob.pass = k & K_PASS ? p.effects.bombPass - PASS_MARGIN : 0;
+    this.mob.passer1 = this.mob.passer2 = -1;
+    for (const b of world.bombs.values()) {
+      // a bomb we're still overlapping (just placed, or dropped onto us) can be walked off / through
+      if (Math.abs(b.x - p.x) > 1 || Math.abs(b.y - p.y) > 1 || !b.passers.includes(p.id)) continue;
+      const i = Math.round(b.y) * W + Math.round(b.x);
+      if (this.mob.passer1 < 0) this.mob.passer1 = i;
+      else this.mob.passer2 = i;
+    }
 
     // scripted tricks (grab / punch / kick / line) run uninterrupted unless fire is imminent
     if (this.script.length && imminent) this.script.length = 0;
@@ -538,6 +549,8 @@ export class Bot implements IBot {
       tpt: this.mob.tpt,
       ghost: this.mob.ghost,
       pass: this.mob.pass,
+      passer1: this.mob.passer1,
+      passer2: this.mob.passer2,
       margin: this.tune.margin,
       ds: a.dStart,
       de: a.dEnd,
