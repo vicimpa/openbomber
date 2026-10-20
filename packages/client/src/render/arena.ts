@@ -1,4 +1,5 @@
-// Static arena: floor grass, cracked-ground decals where bricks were destroyed, walls and bricks,
+// Static arena: floor grass, scorch trails left by explosions (autotiled like new-openbomber's
+// Ruines), walls and bricks,
 // the grey border wall ring. Split into 16x16-tile chunks, each cached as a texture and redrawn
 // only when one of its tiles changes; chunks outside the view are culled. Handles 75x75 maps.
 import { Container, Sprite } from 'pixi.js';
@@ -10,6 +11,16 @@ import type { ProcTextures } from './textures';
 
 const T = 32;
 const CH = 16; // chunk size in tiles
+
+// Scorch autotile (new-openbomber library/terrain.ts + terrains/ruines): neighbour bits of a
+// scorched cell → frames of the 5x4 ruines sheet. Several frames for one mask are variants.
+const C = 1, U = 2, L = 4, R = 8, D = 16;
+const RUINE_MASKS = [
+  0, C | D, U | C | D, C | R, L | C | R,
+  L | C | R, L | C, U | C | D, U | C, C,
+  U | L | R | D | C, U | L | D | C, U | R | D | C, U | L | C, U | R | C,
+  L | D | C, R | D | C, U | L | R | C, L | R | D | C,
+];
 
 interface Chunk { c: Container; x0: number; y0: number; x1: number; y1: number; dirty: boolean }
 
@@ -26,7 +37,10 @@ export class Arena {
   private round = -1;
   private floor: Sprite[] = [];
   private blocks: (Sprite | null)[] = [];
-  private cracked = new Uint8Array(0);
+  private scorched = new Uint8Array(0);
+  private ruins: (Sprite | null)[] = [];
+  private ruinLayers: Container[] = [];
+  private ruinFrames = new Map<number, number[]>(); // mask → frame indices
   private chunks: Chunk[] = [];
   private chunkCols = 0;
   private smooth = false;
@@ -67,7 +81,7 @@ export class Arena {
         const was = this.tiles[i], now = tiles[i];
         if (was === now) continue;
         const x = i % w, y = (i / w) | 0;
-        if (was === Tile.Brick && now === Tile.Floor) { this.fx.brickBreak(x, y); this.setCracked(x, y); }
+        if (was === Tile.Brick && now === Tile.Floor) this.fx.brickBreak(x, y);
         if (now === Tile.Wall) this.impact(x, y, wi++ % every === 0, walls < 4);
         this.tiles[i] = now;
         this.setBlock(x, y, now);
@@ -120,10 +134,12 @@ export class Arena {
     const n = this.gw * this.gh;
     this.floor = new Array(n);
     this.blocks = new Array(n).fill(null);
-    this.cracked = new Uint8Array(n);
+    this.scorched = new Uint8Array(n);
+    this.ruins = new Array(n).fill(null);
     const { grass, wall } = this.a.world;
-    // floor layer first in every chunk, blocks above
+    // floor layer first in every chunk, then scorch trails, blocks above
     const floorLayers = this.chunks.map(ch => ch.c.addChild(new Container()));
+    this.ruinLayers = this.chunks.map(ch => ch.c.addChild(new Container()));
     const blockLayers = this.chunks.map(ch => ch.c.addChild(new Container()));
     this.blockLayers = blockLayers;
     for (let gy = 0; gy < this.gh; gy++) for (let gx = 0; gx < this.gw; gx++) {
@@ -168,13 +184,53 @@ export class Arena {
     this.touch(gx, gy);
   }
 
-  private setCracked(x: number, y: number) {
-    const gi = (y + 1) * this.gw + x + 1;
-    if (this.cracked[gi]) return;
-    this.cracked[gi] = 1;
-    const f = this.floor[gi];
-    if (f) { f.texture = this.a.world.grass2; f.scale.x = (x * 7 + y * 3) & 1 ? -1 : 1; }
-    this.touch(x + 1, y + 1);
+  // ---------------------------------------------------------------- scorch trails
+  /** Burn the cells an explosion went through; trails join up with their neighbours. */
+  scorch(cells: readonly { x: number; y: number }[]) {
+    for (const { x, y } of cells) {
+      if (x < 0 || y < 0 || x >= this.w || y >= this.h) continue;
+      const gi = (y + 1) * this.gw + x + 1;
+      if (this.scorched[gi]) continue;
+      this.scorched[gi] = 1;
+      this.refreshRuin(x, y);
+      this.refreshRuin(x, y - 1);
+      this.refreshRuin(x - 1, y);
+      this.refreshRuin(x + 1, y);
+      this.refreshRuin(x, y + 1);
+    }
+  }
+
+  private isScorched(x: number, y: number) {
+    return x >= 0 && y >= 0 && x < this.w && y < this.h && this.scorched[(y + 1) * this.gw + x + 1] === 1;
+  }
+
+  private refreshRuin(x: number, y: number) {
+    if (!this.isScorched(x, y)) return;
+    const mask = C
+      | (this.isScorched(x, y - 1) ? U : 0) | (this.isScorched(x - 1, y) ? L : 0)
+      | (this.isScorched(x + 1, y) ? R : 0) | (this.isScorched(x, y + 1) ? D : 0);
+    const frames = this.framesFor(mask);
+    if (!frames.length) return;
+    const tex = this.a.ruines[frames[(x * 7 + y * 13) % frames.length]];
+    const gx = x + 1, gy = y + 1, gi = gy * this.gw + gx;
+    let s = this.ruins[gi];
+    if (!s) {
+      s = new Sprite({ texture: tex, anchor: 0.5, x: x * T, y: y * T });
+      this.ruinLayers[this.chunkIndex(gx, gy)].addChild(s);
+      this.ruins[gi] = s;
+    } else if (s.texture === tex) return;
+    s.texture = tex;
+    this.touch(gx, gy);
+  }
+
+  private framesFor(mask: number) {
+    let f = this.ruinFrames.get(mask);
+    if (!f) {
+      f = [];
+      for (let i = 0; i < RUINE_MASKS.length && i < this.a.ruines.length; i++) if (RUINE_MASKS[i] === mask) f.push(i);
+      this.ruinFrames.set(mask, f);
+    }
+    return f;
   }
 
   // ---------------------------------------------------------------- zone shrink warning

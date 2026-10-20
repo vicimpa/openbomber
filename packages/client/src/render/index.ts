@@ -322,6 +322,7 @@ class PixiRenderer implements GameRenderer {
       switch (e.type) {
         case 'explosion': {
           this.explosions.add(e);
+          this.arena.scorch(e.cells);
           this.fx.explosion(e.x, e.y, e.cells, e.power);
           this.shakeAt(e.x, e.y, 0.6 + 0.1 * e.power);
           this.recentBooms.push({ x: e.x, y: e.y, t: this.time });

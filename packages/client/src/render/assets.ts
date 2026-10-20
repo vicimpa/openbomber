@@ -12,6 +12,8 @@ import explodePng from '../assets/explode/explode.png';
 import fireJson from '../assets/fire/fire.json';
 import firePng from '../assets/fire/fire.png';
 import terrainPng from '../assets/world/terrain.png';
+import ruinesJson from '../assets/ruines/ruines.json';
+import ruinesPng from '../assets/ruines/ruines.png';
 import dustJson from '../assets/dust/dust.json';
 import dustPng from '../assets/dust/dust.png';
 import shieldJson from '../assets/effects/shield.json';
@@ -38,6 +40,13 @@ async function sheet(data: unknown, url: string): Promise<Record<string, Texture
   tex.source.scaleMode = 'nearest';
   const s = new Spritesheet(tex, data as SpritesheetData);
   return await s.parse();
+}
+
+/** The prototype's scorch tileset: frames are a plain array (5x4 grid, 32 px). */
+async function frameList(data: { frames: { frame: { x: number; y: number; w: number; h: number } }[] }, url: string): Promise<Texture[]> {
+  const tex = await Assets.load<Texture>(url);
+  tex.source.scaleMode = 'nearest';
+  return data.frames.map(({ frame: f }) => new Texture({ source: tex.source, frame: new Rectangle(f.x, f.y, f.w, f.h) }));
 }
 
 /** Groups `tag:index` frame names into ordered arrays. */
@@ -89,7 +98,7 @@ export const PICKUP_FRAME: Record<PickupType, string> = Object.fromEntries(
 export const FONT = 'Monocraft';
 
 export async function loadAssets() {
-  const [world, bombs, pickups, explodeTex, fire, terrain, dust, shield, fxFire, crazy, kicking] = await Promise.all([
+  const [world, bombs, pickups, explodeTex, fire, terrain, dust, shield, fxFire, crazy, kicking, ruines] = await Promise.all([
     sheet(worldJson, worldPng),
     sheet(bombsJson, bombsPng).then(tags),
     sheet(pickupsJson, pickupsPng),
@@ -101,6 +110,7 @@ export async function loadAssets() {
     sheet(fxFireJson, fxFirePng).then(tags),
     sheet(crazyJson, crazyPng).then(f => tags(f)['']),
     sheet(kickingJson, kickingPng).then(f => tags(f)['']),
+    frameList(ruinesJson, ruinesPng),
   ]);
   const heroes: Tags[] = [];
   for (let i = 1; i <= 11; i++) {
@@ -133,6 +143,7 @@ export async function loadAssets() {
     fxFire,
     crazy,
     kicking,
+    ruines,
     heroes,
   };
 }
