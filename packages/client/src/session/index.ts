@@ -54,7 +54,10 @@ export function startSession() {
   const menuInset = () => {
     const el = document.querySelector<HTMLElement>('.mm__panel');
     const r = el?.getBoundingClientRect();
-    renderer?.setViewInset(screen.peek() === 'menu' && r && r.height < innerHeight * 0.9 ? r.right : 0);
+    // only a left-hand panel that leaves real room beside it; on phones the panel sits in the
+    // middle, and framing "beside" it pushed the arena off-screen
+    const side = !!r && r.left < innerWidth * 0.25 && r.right < innerWidth * 0.55;
+    renderer?.setViewInset(screen.peek() === 'menu' && side ? r!.right : 0);
   };
   effect(() => { screen.value; requestAnimationFrame(menuInset); });
   addEventListener('resize', menuInset);
