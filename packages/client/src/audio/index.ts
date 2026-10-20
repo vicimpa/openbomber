@@ -245,7 +245,15 @@ class Engine implements AudioEngine {
           }
           case 'shieldBlocked': fire('shieldBreak', W(undefined, undefined, e.player)); break;
           case 'playerStunned': fire('stun', W(undefined, undefined, e.player)); break;
-          case 'playerDied': fire('death', e.player === localId ? W(e.x, e.y, e.player) : W(e.x, e.y)); break;
+          case 'playerDied': {
+            const o = e.player === localId ? W(e.x, e.y, e.player) : W(e.x, e.y);
+            if (e.cause === 'fire') {
+              // burned alive: ignition + crackle first, the death jingle once the ghost rises (~1 s)
+              fire('ignite', o);
+              this.play('death', { ...o, when: now + 0.95, gain: (o.gain ?? 1) * 0.8 });
+            } else fire('death', o);
+            break;
+          }
           case 'playerRespawned': fire('respawn', e.player === localId ? W(e.x, e.y, e.player) : W(e.x, e.y)); break;
           case 'curseApplied': fire('curse', W(undefined, undefined, e.player)); break;
           case 'effectEnded': {

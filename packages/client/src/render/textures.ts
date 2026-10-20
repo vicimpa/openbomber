@@ -225,10 +225,39 @@ export function makeTextures() {
     for (let i = 1; i <= diag; i++) for (const [sx, sy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) put(L + sx * i, L + sy * i, i < 2 ? '#ffffff' : '#c8f4ff');
     return fromCanvas(c);
   };
+  // ---- pixel flames (tongues licking upward), bottom = the ground line
+  const flame = (w: number, h: number, grow: number, seed: number, opts: { dither?: boolean; wide?: number } = {}) => {
+    const [c, g] = canvas(w, h);
+    let st = seed * 9973 + 7;
+    const rnd = () => ((st = (Math.imul(st ^ (st >>> 15), 2246822519) + 0x9e3779b9) >>> 0) / 4294967296);
+    const knots = Array.from({ length: Math.ceil(w / 3) + 2 }, () => rnd());
+    const cx = (w - 1) / 2;
+    for (let x = 0; x < w; x++) {
+      const kf = x / 3, k0 = Math.floor(kf), t = kf - k0;
+      const n = knots[k0] * (1 - t) + knots[k0 + 1] * t;
+      const e = Math.max(0, 1 - Math.abs((x - cx) / (w / 2)) ** (opts.wide ?? 2));
+      const hc = Math.round(h * grow * (0.35 + 0.65 * e) * (0.45 + 0.55 * n));
+      for (let i = 0; i < hc; i++) {
+        const y = h - 1 - i, u = i / Math.max(1, hc);
+        if ((opts.dither || u > 0.78) && (x + y) % 2) continue;
+        g.fillStyle = u < 0.3 ? '#fff4b0' : u < 0.55 ? '#ffc23a' : u < 0.8 ? '#ff7a1e' : '#d0401e';
+        g.fillRect(x, y, 1, 1);
+      }
+      // a loose spark above a tongue now and then
+      if (hc > 4 && rnd() < 0.12) { g.fillStyle = '#ffc23a'; g.fillRect(x, Math.max(0, h - 1 - hc - 2 - Math.floor(rnd() * 3)), 1, 1); }
+    }
+    return fromCanvas(c);
+  };
+  const flames = {
+    aura: [0, 1, 2, 3].map(i => flame(36, 40, 1, 11 + i, { wide: 1.2 })),
+    front: [0, 1, 2, 3].map(i => flame(22, 9, 1, 31 + i, { wide: 2 })),
+    climb: [0.2, 0.4, 0.62, 0.82, 1, 1, 0.9].map((gr, i) => flame(28, 38, gr, 51 + i, { wide: 1.6 })),
+  };
+
   const burst = [starburst(5, 2, false), starburst(9, 4, false), starburst(11, 5, true), starburst(6, 0, true)];
   const pebble = pixels(['.g.', 'ggG', '.G.'], { g: '#b9b3a8', G: '#7d776e' });
 
-  return { puff, glow, shadow, blockShadow, ring, vignette, star, sparkle, marker, skull, grave, chip, pebble, beam, ringIn, ringOut, burst, white: Texture.WHITE };
+  return { puff, glow, shadow, blockShadow, ring, vignette, star, sparkle, marker, skull, grave, chip, pebble, beam, ringIn, ringOut, burst, flames, white: Texture.WHITE };
 }
 
 export type ProcTextures = ReturnType<typeof makeTextures>;

@@ -386,13 +386,14 @@ export class Effects {
   private whiteOf(tex: Texture) {
     let w = this.whites.get(tex);
     if (w) return w;
-    const f = tex.frame;
+    // full (untrimmed) size, so it lines up with the original under the same anchor
+    const f = tex.frame, W = tex.orig.width, H = tex.orig.height, ox = tex.trim?.x ?? 0, oy = tex.trim?.y ?? 0;
     const c = document.createElement('canvas');
-    c.width = f.width; c.height = f.height;
+    c.width = W; c.height = H;
     const g = c.getContext('2d')!;
-    g.drawImage(tex.source.resource as CanvasImageSource, f.x, f.y, f.width, f.height, 0, 0, f.width, f.height);
+    g.drawImage(tex.source.resource as CanvasImageSource, f.x, f.y, f.width, f.height, ox, oy, f.width, f.height);
     g.globalCompositeOperation = 'source-in';
-    g.fillStyle = '#ffffff'; g.fillRect(0, 0, f.width, f.height);
+    g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
     w = Texture.from(c);
     w.source.scaleMode = 'nearest';
     this.whites.set(tex, w);
@@ -477,6 +478,146 @@ export class Effects {
     this.flash(px, py, 1.2, 0xffffff, 0.15, 0.9);
     for (let i = 0; i < this.q(6); i++) this.particles.spawn({
       tex: this.tx.star, x: px, y: py, vx: rand(-90, 90), vy: rand(-90, 40), drag: 3, life: 0.35, scale: 1, scaleEnd: 0.3, add: true,
+    });
+  }
+
+  /** Charred silhouette of a hero frame with glowing pixel cracks, plus its crumbling frames and pixel spots. */
+  private chars = new Map<Texture, { char: Texture[]; crumble: Texture[]; pts: [number, number][]; w: number; h: number }>();
+  private charOf(tex: Texture) {
+    let c = this.chars.get(tex);
+    if (c) return c;
+    const f = tex.frame, w = tex.orig.width, h = tex.orig.height;
+    const base = document.createElement('canvas');
+    base.width = w; base.height = h;
+    const bg = base.getContext('2d')!;
+    bg.drawImage(tex.source.resource as CanvasImageSource, f.x, f.y, f.width, f.height, tex.trim?.x ?? 0, tex.trim?.y ?? 0, f.width, f.height);
+    const src = bg.getImageData(0, 0, w, h).data;
+    const solid = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && src[(y * w + x) * 4 + 3] > 0;
+    const pts: [number, number][] = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (solid(x, y)) pts.push([x, y]);
+    let st = 1234;
+    const rnd = () => ((st = (Math.imul(st ^ (st >>> 15), 2246822519) + 0x9e3779b9) >>> 0) / 4294967296);
+    // crack lines: short random walks over the body
+    const cracks: [number, number][] = [];
+    for (let n = 0; n < 7 && pts.length; n++) {
+      let [x, y] = pts[Math.floor(rnd() * pts.length)];
+      for (let i = 0; i < 5; i++) {
+        if (solid(x, y)) cracks.push([x, y]);
+        y += 1; x += rnd() < 0.5 ? (rnd() < 0.5 ? -1 : 1) : 0;
+      }
+    }
+    const make = (glow: string, cut: number) => {
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      const g = cv.getContext('2d')!;
+      for (const [x, y] of pts) {
+        if (y < cut) continue;
+        if (y < cut + 2 && (x + y) % 2) continue; // ragged crumbling edge
+        const edge = !solid(x - 1, y) || !solid(x + 1, y) || !solid(x, y - 1) || !solid(x, y + 1);
+        g.fillStyle = edge ? '#16101a' : '#2c2230';
+        g.fillRect(x, y, 1, 1);
+      }
+      g.fillStyle = glow;
+      for (const [x, y] of cracks) if (y >= cut + 2) g.fillRect(x, y, 1, 1);
+      const t = Texture.from(cv);
+      t.source.scaleMode = 'nearest';
+      return t;
+    };
+    const top = pts.length ? pts[0][1] : 0;
+    const span = h - top;
+    c = {
+      char: [make('#ff8a3a', -1), make('#ffd060', -1)],
+      crumble: [0.25, 0.5, 0.75].map(k => make('#ff8a3a', Math.round(top + span * k))),
+      pts, w, h,
+    };
+    this.chars.set(tex, c);
+    return c;
+  }
+
+  /** Little ash heap with a few dying embers, left beside the grave. */
+  private ashTex: Texture | null = null;
+  private ash() {
+    if (this.ashTex) return this.ashTex;
+    const rows = [
+      '....aAAa....',
+      '..aAAbAAAa..',
+      '.aAbAAeAAbA.',
+      'aAAAAbAAAAAa',
+    ];
+    const pal: Record<string, string> = { a: '#4a4450', A: '#3a3440', b: '#6a6470', e: '#ff8a3a' };
+    const cv = document.createElement('canvas');
+    cv.width = 12; cv.height = 4;
+    const g = cv.getContext('2d')!;
+    rows.forEach((r, y) => [...r].forEach((ch, x) => { if (pal[ch]) { g.fillStyle = pal[ch]; g.fillRect(x, y, 1, 1); } }));
+    this.ashTex = Texture.from(cv);
+    this.ashTex.source.scaleMode = 'nearest';
+    return this.ashTex;
+  }
+
+  /**
+   * Burned alive by a burning player's touch: a white flash, pixel flames climb from the feet,
+   * the body chars black with glowing cracks, crumbles into ash and embers; then the usual ghost
+   * and grave. `body` is the frame the hero was showing, `flip` its facing (-1 = mirrored).
+   */
+  burnDeath(x: number, y: number, body: Texture, flip: number, ghostTex: Texture) {
+    const px = Math.round(x * T), py = Math.round(y * T);
+    const white = this.whiteOf(body);
+    const ch = this.charOf(body);
+    const s = new Sprite({ texture: white, anchor: 0.5, x: px, y: py - 8 });
+    s.scale.x = flip < 0 ? -1 : 1;
+    const FLASH = 0.07, CLIMB = 0.5, CHAR = 0.78, GONE = 1.0;
+    this.shot(s, this.over, GONE, k => {
+      const t = k * GONE;
+      if (t < FLASH) { s.texture = white; s.tint = 0xffffff; }
+      else if (t < CLIMB) { s.texture = body; s.tint = t < 0.2 ? 0xffc8a0 : t < 0.32 ? 0xd07a5a : t < 0.42 ? 0x8a4a40 : 0x5a3038; }
+      else if (t < CHAR) { s.texture = ch.char[Math.floor(t * 16) % 2]; s.tint = 0xffffff; }
+      else { s.texture = ch.crumble[Math.min(2, Math.floor((t - CHAR) / (GONE - CHAR) * 3))]; }
+      s.x = px + (t > FLASH && t < CHAR ? (Math.floor(t * 40) % 2 ? 1 : 0) : 0);
+      s.visible = k < 1;
+    });
+    // flames climbing up the body, then licking on until it chars
+    const fl = this.tx.flames.climb;
+    this.frames([fl[0], fl[1], fl[2], fl[3], fl[4], fl[5], fl[4], fl[6], fl[3], fl[1]],
+      [0.11, 0.16, 0.22, 0.29, 0.37, 0.45, 0.53, 0.62, 0.7, 0.78], this.over, px, py + 9, { x: 0.5, y: 1 }, 0.04);
+    // embers flying off while it burns
+    for (let i = 0; i < this.q(10); i++) this.particles.spawn({
+      tex: this.tx.white, x: px + Math.round(rand(-8, 8)), y: py + Math.round(rand(-4, 6)), z: rand(4, 26), vx: rand(-20, 20), vz: rand(30, 70),
+      delay: rand(0.1, 0.7), life: rand(0.3, 0.5), scale: Math.random() < 0.3 ? 2 : 1, tint: [0xffd060, 0xff8a3a, 0xd04a2a][i % 3], alpha: 1, alphaEnd: 0.3, pix: true,
+    });
+    // crumble: the silhouette's own pixels fall away as ash and embers
+    const pts = ch.pts;
+    const n = Math.min(pts.length, this.q(34));
+    const x0 = px - ch.w / 2, y0 = py - 8 - ch.h / 2;
+    for (let i = 0; i < n; i++) {
+      const [sx, sy] = pts[Math.floor((i / n) * pts.length)];
+      const lx = flip < 0 ? ch.w - 1 - sx : sx;
+      const ember = i % 5 === 0;
+      this.particles.spawn({
+        tex: this.tx.white, x: x0 + lx, y: py + 8 + rand(-1, 2), z: py + 8 - (y0 + sy),
+        vx: rand(-25, 25), vy: rand(-6, 6), vz: ember ? rand(30, 70) : rand(-10, 20), gravity: ember ? 60 : 300, bounce: 0, drag: 2,
+        delay: CHAR + ((sy / ch.h) * 0.6 + rand(0, 0.25)) * (GONE - CHAR), life: rand(0.35, 0.6),
+        scale: Math.random() < 0.25 ? 2 : 1, tint: ember ? 0xff8a3a : Math.random() < 0.5 ? 0x3a3440 : 0x6a6470, alpha: 1, alphaEnd: 0.3, pix: true,
+      });
+    }
+    for (let i = 0; i < this.q(4); i++) this.particles.spawn({
+      tex: this.tx.puff, x: px + Math.round(rand(-6, 6)), y: py + Math.round(rand(-4, 4)), vz: rand(18, 34), vx: rand(-8, 8),
+      delay: CHAR + i * 0.05, life: rand(0.5, 0.7), scale: 1, alpha: 0.8, alphaEnd: 0.2, tint: 0x5a5262, pix: true,
+    });
+    // the ash heap stays a while, then the canon ghost + grave
+    const ash = new Sprite({ texture: this.ash(), anchor: { x: 0.5, y: 1 }, x: px + 9, y: py + 11, visible: false });
+    this.shot(ash, this.under, 5 + GONE, k => {
+      const t = k * (5 + GONE);
+      ash.visible = t > CHAR + 0.1;
+      ash.alpha = t < 4 + GONE ? 1 : Math.ceil((5 + GONE - t) * 3) / 3;
+    });
+    this.shot(new Container(), this.over, GONE, k => { if (k >= 1) this.death(x, y, ghostTex); });
+  }
+
+  /** A burning hero sheds an ember. */
+  ember(x: number, y: number) {
+    this.particles.spawn({
+      tex: this.tx.white, x: Math.round(x + rand(-7, 7)), y: Math.round(y + rand(-2, 4)), z: rand(2, 18), vx: rand(-8, 8), vz: rand(25, 55), drag: 1,
+      life: rand(0.3, 0.5), scale: Math.random() < 0.3 ? 2 : 1, tint: [0xffd060, 0xff8a3a, 0xd04a2a][Math.floor(Math.random() * 3)], alpha: 1, alphaEnd: 0.3, pix: true,
     });
   }
 

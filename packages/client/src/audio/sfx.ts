@@ -130,6 +130,17 @@ export const RECIPES = {
     k.tone({ type: 'sine', f: 320, to: 980, glide: 0.06, a: 0.002, d: 0.12, peak: 0.9 });
     k.tone({ type: 'triangle', f: 1400, to: 1800, glide: 0.04, a: 0.001, d: 0.06, peak: 0.25, at: 0.05 });
   } },
+  /** A hero set alight by a burning player's touch: whoosh of ignition, then crackling. */
+  ignite: { dur: 0.95, level: 0.5, vary: 0.8, reverb: 0.15, build(k) {
+    const r = k.r;
+    // whoosh: band-passed noise sweeping up as the flames catch
+    k.noise({ color: 'pink', type: 'bandpass', f: 400, to: 2600, sweep: 0.22, q: 1.2, a: 0.06, hold: 0.06, d: 0.35, peak: 0.75 });
+    k.noise({ color: 'brown', type: 'lowpass', f: 900, to: 300, sweep: 0.5, a: 0.03, hold: 0.1, d: 0.45, peak: 0.45 });
+    // crackle: short bright pops scattered over the burn
+    for (let i = 0; i < 14; i++) {
+      k.noise({ type: 'bandpass', f: 1800 + r() * 3200, q: 6, a: 0.001, d: 0.012 + r() * 0.02, peak: 0.25 + r() * 0.35, at: 0.08 + r() * 0.75 });
+    }
+  } },
   burn: { dur: 0.4, level: 0.32, vary: 1.5, reverb: 0.1, build(k) {
     k.noise({ type: 'highpass', f: 3000, to: 6000, sweep: 0.25, a: 0.005, d: 0.25, peak: 0.5 });
     k.tone({ type: 'square', f: 700, to: 200, glide: 0.12, a: 0.002, d: 0.12, peak: 0.2, lp: 2000 });
