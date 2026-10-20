@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { BOMB_FUSE, TICK_RATE } from '../contract/constants';
+import { BOMB_FUSE, CHAIN_DELAY, TICK_RATE } from '../contract/constants';
 import { Button } from '../contract/protocol';
 import { Phase, type WorldState } from '../contract/types';
 import { Simulation } from '../sim/Simulation';
@@ -127,7 +127,7 @@ describe('bots', () => {
     const W = h.state.width;
     const first = d.dStart[1 * W + 1]!;
     // the second bomb (placed ~60 ticks later) goes off CHAIN_DELAY after the first
-    expect(d.dStart[1 * W + 5]).toBe(first + 3);
+    expect(d.dStart[1 * W + 5]).toBe(first + CHAIN_DELAY);
     expect(d.dStart[0 * W + 8]).toBe(INF);
   });
 
