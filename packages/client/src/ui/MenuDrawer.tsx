@@ -93,7 +93,7 @@ function GameTab() {
 
       {r && r.isPrivate && !r.offline && <RoomSettingsCard />}
 
-      <Button block variant="white" icon={<Icon name="home" />} onClick={() => { menuOpen.value = false; actions.leave(); }}>{t('menu.toMainMenu')}</Button>
+      {!discord.value && <Button block variant="white" icon={<Icon name="home" />} onClick={() => { menuOpen.value = false; actions.leave(); }}>{t('menu.toMainMenu')}</Button>}
 
       <section class="card">
         <h3>{t('menu.links')}:</h3>

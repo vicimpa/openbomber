@@ -73,6 +73,13 @@ export function startSession() {
   addEventListener('resize', menuInset);
 
   // ---------------------------------------------------------------- sources
+  // Discord activity: the channel's room is the whole game (no main menu, other rooms or bots)
+  const locked = () => !!discord.peek();
+  const joinDiscord = () => {
+    const d = discord.peek();
+    if (d) return connect('discord', () => joinDiscordRoom(d.instanceId, { ...profile(), discord: d.token }));
+  };
+
   const profile = () => {
     const d = discord.peek();
     return { name: d?.name ?? settings.peek().name, skin: settings.peek().skin, discord: d?.token };
@@ -96,7 +103,8 @@ export function startSession() {
         if (s === 'reconnecting') toast(t('net.reconnecting'), 'info');
         if (s === 'disconnected' && source === next) {
           toast(t('net.disconnected'), 'bad', undefined, undefined, true);
-          toMenu();
+          if (locked()) void joinDiscord();
+          else toMenu();
         }
       }));
     }
@@ -156,17 +164,15 @@ export function startSession() {
       if (enabled && !ok) toast(t('net.full'), 'bad');
     },
     // «Играть онлайн»: the shared arena, straight into the round (spectate via «Отключиться»)
-    quickPlay: () => connect('quick', () => connectQuickPlay({ ...profile(), play: true })),
-    createPrivate: () => connect('private', () => createPrivateRoom({ ...profile(), bots: 0 })),
-    joinByCode: (code) => connect('join', () => joinRoomByCode(code, { ...profile(), play: true }), code),
-    joinDiscord() {
-      const d = discord.peek();
-      if (d) return connect('discord', () => joinDiscordRoom(d.instanceId, { ...profile(), discord: d.token }));
-    },
+    quickPlay: () => { if (!locked()) return connect('quick', () => connectQuickPlay({ ...profile(), play: true })); },
+    createPrivate: () => { if (!locked()) return connect('private', () => createPrivateRoom({ ...profile(), bots: 0 })); },
+    joinByCode: (code) => { if (!locked()) return connect('join', () => joinRoomByCode(code, { ...profile(), play: true }), code); },
+    joinDiscord,
     playOffline({ bots, difficulty }) {
+      if (locked()) return;
       setSource(new LocalSource({ bots, difficulty, play: true, ...profile() }), { code: 'OFFLINE', isPrivate: false, offline: true }, 'game');
     },
-    leave: () => toMenu(),
+    leave: () => { if (!locked()) toMenu(); },
     sendChat(text) {
       if (source instanceof NetSource) source.sendChat(text);
       else pushChat({ from: source?.localId ?? '', name: settings.peek().name, text, at: Date.now() });
