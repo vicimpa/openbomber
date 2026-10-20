@@ -11,7 +11,7 @@ import * as Game from '@ob/game';
 import { BOMB_FUSE, Button, MSG, ROOM_NAME, TICK_MS, type ChatMessage, type GameEvent, type PredictMovement } from '@ob/game';
 import { limits, resetLimits } from '../src/limits.ts';
 import { startGameServer, type GameServer } from '../src/app.ts';
-import { BattleRoom, MAIN_FILL } from '../src/BattleRoom.ts';
+import { BattleRoom, MAIN_SPARRING } from '../src/BattleRoom.ts';
 import { setGameImpl } from '../src/game.ts';
 import { CODE_ALPHABET } from '../src/util.ts';
 import { BattleState, type RoomListing } from '../src/schema.ts';
@@ -193,7 +193,7 @@ describe('room', () => {
 });
 
 describe('matchmaking', () => {
-  test('main room: persistent, listed, spectators by default, bots keep it alive', async () => {
+  test('main room: persistent, listed; empty without players, a sparring bot for a lone one', async () => {
     const list = (await (await fetch(`http://localhost:${server.port}/api/rooms`)).json()) as RoomListing[];
     const main = list.find((r) => r.roomId === 'MAIN');
     expect(main?.metadata?.main).toBe(true);
@@ -202,12 +202,18 @@ describe('matchmaking', () => {
     await waitFor(() => sr.botCount === 0, 15000, 'empty arena without bots');
     const s1 = await join('joinById', 'MAIN', { name: 'Watcher', skin: 0 });
     await waitFor(() => s1.state.width > 0, 1000, 'state');
-    // somebody is watching: bots top the arena up to MAIN_FILL players
-    await waitFor(() => sr.botCount === MAIN_FILL, 1000, 'bots for the watcher');
+    await sleep(1200);
+    expect(sr.botCount).toBe(0); // only watching: the arena stays empty
     const p1 = await join('joinById', 'MAIN', { name: 'Lone', skin: 0, play: true });
     await waitFor(() => sr.sim.state.players.has(p1.sessionId), 1000, 'lone player');
-    expect(sr.sim.state.players.size).toBeLessThanOrEqual(MAIN_FILL + 1); // a spare bot leaves between rounds
-    await Promise.all([s1.leave(), p1.leave()]);
+    await waitFor(() => sr.botCount === MAIN_SPARRING, 1000, 'a sparring bot for the lone player');
+    const p2 = await join('joinById', 'MAIN', { name: 'Second', skin: 0, play: true });
+    await waitFor(() => sr.sim.state.players.has(p2.sessionId), 1000, 'second player');
+    // the bot finishes the round it is in, then leaves
+    const live = [...sr.sim.state.players.values()].some((p) => p.isBot && p.alive && p.inRound);
+    if (live && sr.sim.state.phase !== Game.Phase.RoundOver) expect(sr.botCount).toBe(MAIN_SPARRING);
+    await waitFor(() => sr.botCount === 0, 60_000, 'the bot leaves after the round');
+    await Promise.all([s1.leave(), p1.leave(), p2.leave()]);
     await sleep(100);
     expect(matchMaker.getLocalRoomById('MAIN')).toBeTruthy(); // autoDispose = false
   });

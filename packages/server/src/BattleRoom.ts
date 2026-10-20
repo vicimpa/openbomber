@@ -29,7 +29,7 @@ export const BOT_THINK_EVERY = 1;
 /** Connected clients per room (players + spectators). */
 export const MAX_CLIENTS = Number(process.env.MAX_CLIENTS) || 200;
 /** Shared arena: while anyone is watching or playing, bots top the arena up to this many players. */
-export const MAIN_FILL = clampInt(Number(process.env.MAIN_FILL), 0, MAX_PLAYERS, 4);
+export const MAIN_SPARRING = clampInt(Number(process.env.MAIN_SPARRING), 0, MAX_PLAYERS - 1, 1);
 /** «Отключиться» mid-round: the hero stays in the arena this long (can't dodge a blast by leaving). */
 export const LEAVE_GRACE_MS = 2000;
 /** While playing, a rename is accepted (and announced) at most this often. */
@@ -475,13 +475,14 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
   // ------------------------------------------------------------------ bots
 
   /**
-   * Shared arena: while anyone is connected, bots top it up to MAIN_FILL players (none when empty).
+   * Shared arena: empty without players; a lone player gets MAIN_SPARRING sparring bots, which
+   * leave once a second player is in (at the end of the round: live bots go between rounds).
    * Own rooms: exactly the creator's `bots`, as far as free slots allow.
    * Other rooms: fill up to `bots` while human players are few, never below 2 players total.
    */
   private desiredBots(): number {
     const n = this.playingCount();
-    if (this.isMain) return this.humans.size === 0 ? 0 : Math.max(0, Math.min(MAIN_FILL, this.maxPlayers) - n);
+    if (this.isMain) return n === 1 ? Math.min(MAIN_SPARRING, this.maxPlayers - 1) : 0;
     if (n === 0) return 0;
     return Math.max(0, Math.min(this.settings.bots, this.maxPlayers - n));
   }
