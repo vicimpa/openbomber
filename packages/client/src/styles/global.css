@@ -500,6 +500,8 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
   background: rgba(0, 0, 0, 0.3);
   animation: fade-in 0.15s;
   grid-template-columns: minmax(0, 1fr);
+  /* a viewport-sized row, so the modal's max-height: 100% caps it and its body scrolls */
+  grid-template-rows: minmax(0, 1fr);
   justify-items: center;
 }
 .modal {
@@ -519,7 +521,7 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
 .modal__head { display: flex; align-items: center; justify-content: center; padding: 18px 52px 8px; }
 .modal__head h2 { font-size: clamp(22px, 5vw, 32px); font-weight: 400; text-align: center; }
 .modal__x { position: absolute; top: 8px; right: 8px; }
-.modal__body { padding: 10px 24px 16px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.modal__body { min-height: 0; padding: 10px 24px 16px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .modal__foot { display: flex; justify-content: center; gap: 10px; padding: 4px 24px 20px; }
 @keyframes fade-in { from { opacity: 0; } }
 @keyframes pop-in { from { opacity: 0; transform: scale(0.95); } }
