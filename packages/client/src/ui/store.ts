@@ -23,7 +23,7 @@ export { settings, updateSettings, type Settings };
 /**
  * 'loader' (asset preload + "Играть" gesture) → 'game' (the shared world, spectating first; the
  * menu is a drawer over it). 'connecting' overlays the world while switching rooms.
- * 'menu' is kept for compatibility and renders like 'game'.
+ * 'menu' is the main menu (over the attract-mode bot match), 'game' the in-game HUD.
  */
 export type Screen = 'loader' | 'menu' | 'connecting' | 'game';
 export const screen = signal<Screen>('loader');
@@ -70,6 +70,8 @@ export const pendingInvite = signal<string | null>(null);
 // ---------------------------------------------------------------- game HUD
 export const hud = signal<HudSnapshot | null>(null);
 export const fps = signal(0);
+/** Players in the shared online arena (main menu hint); null = unknown / server down. */
+export const onlineCount = signal<number | null>(null);
 export const stage = signal<HTMLElement | null>(null);
 
 /** Chat drawer open (T / 💬); its input gets focus. */

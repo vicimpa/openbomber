@@ -11,7 +11,7 @@ export function ConnectingScreen() {
     : st.kind === 'join' ? t('connect.joining', { code: st.code ?? '' })
     : st.kind === 'quick' ? t('connect.searching') : t('connect.connecting');
 
-  const back = () => { actions.uiSound('back'); actions.leave(); screen.value = 'game'; };
+  const back = () => { actions.uiSound('back'); actions.leave(); };
   const retry = () => {
     if (st.kind === 'private') actions.createPrivate();
     else if (st.kind === 'join' && st.code) actions.joinByCode(st.code);
@@ -34,7 +34,7 @@ export function ConnectingScreen() {
           <p class="muted">{st.error}</p>
           <div class="connect__row">
             <Button variant="white" onClick={retry} data-autofocus>{t('connect.retry')}</Button>
-            <Button onClick={() => { screen.value = 'game'; openModal('bots'); }}>🤖 {t('connect.offline')}</Button>
+            <Button onClick={() => { screen.value = 'menu'; openModal('bots'); }}>🤖 {t('connect.offline')}</Button>
             <Button onClick={back}>{t('connect.back')}</Button>
           </div>
         </> : <>

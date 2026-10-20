@@ -662,3 +662,133 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   .kill, .ticker__msg { animation: none !important; }
 }
+
+/* ------------------------------------------------------------ main menu
+   new-openbomber look: noise panel with a white frame, pixel logo, white bevelled buttons.
+   The live bot match (attract camera) stays visible to the right / around it. */
+.mm {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: calc(24px + var(--safe-t)) calc(24px + var(--safe-r)) calc(24px + var(--safe-b)) calc(clamp(24px, 6vw, 96px) + var(--safe-l));
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.15) 55%, transparent 100%);
+  animation: fade-in 0.3s;
+  overflow-y: auto;
+}
+.mm__panel {
+  width: min(440px, 100%);
+  margin-block: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 22px 16px;
+  border: 2px solid #fff;
+  background: rgba(0, 0, 0, 0.8) url('../assets/ui/noise.png') center / 400px repeat;
+  image-rendering: pixelated;
+}
+.mm__logo { width: 100%; margin: -6px auto -14px; }
+
+.mm__profile {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  grid-template-rows: auto auto;
+  align-items: center;
+  justify-items: center;
+  gap: 6px 8px;
+}
+.mm__arrow {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: var(--btn);
+  color: #fff;
+  font: inherit;
+  font-size: 18px;
+  cursor: pointer;
+}
+.mm__arrow:hover { background: var(--btn-hover); }
+.mm__arrow:active { background: var(--btn-active); }
+.mm__hero {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.mm__spot {
+  position: absolute;
+  inset: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.08) 60%, transparent 70%);
+}
+.mm__hero canvas { position: relative; width: 100% !important; height: 100% !important; image-rendering: pixelated; }
+.mm__name {
+  grid-column: 1 / -1;
+  width: 100%;
+  display: flex;
+  gap: 6px;
+}
+.mm__name-input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 3px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--red);
+  font: inherit;
+  font-size: 22px;
+  text-align: center;
+}
+.mm__name-input:focus-visible { outline: none; border-bottom-color: #fff; }
+.mm__name .icon-btn { width: 44px; height: 44px; }
+
+.mm__actions { display: flex; flex-direction: column; gap: 10px; }
+.mm__actions .btn--xl { min-height: 64px; justify-content: center; }
+.mm__actions .btn--xl .btn__text { align-items: center; }
+.mm__actions .btn--xl .btn__sub { color: #444; opacity: 1; font-size: 13px; }
+.row3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 6px; }
+.row3 .btn { padding-inline: 6px; font-size: 14px; }
+
+.mm__links { display: flex; justify-content: center; gap: 8px; padding-top: 2px; }
+.mm__links a { display: block; padding: 4px; opacity: 0.8; }
+.mm__links a:hover { opacity: 1; }
+.mm__links .links__icon { width: 30px; height: 22px; font-size: 11px; }
+
+@media (max-width: 720px) {
+  .mm {
+    justify-content: center;
+    padding: calc(12px + var(--safe-t)) calc(12px + var(--safe-r)) calc(12px + var(--safe-b)) calc(12px + var(--safe-l));
+    background: rgba(0, 0, 0, 0.25);
+  }
+  .mm__panel { padding: 16px 14px 12px; gap: 12px; }
+  .mm__hero { width: 96px; height: 96px; }
+}
+@media (max-width: 480px) {
+  .row3 .btn__icon { display: none; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  /* phone landscape: logo + profile on the left, buttons on the right */
+  .mm { justify-content: center; padding-block: calc(8px + var(--safe-t)) calc(8px + var(--safe-b)); }
+  .mm__panel {
+    width: min(760px, 100%);
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    grid-template-areas: "logo actions" "profile actions" "links actions";
+    gap: 8px 16px;
+    padding: 12px 14px;
+  }
+  .mm__logo { grid-area: logo; margin: 0; }
+  .mm__profile { grid-area: profile; }
+  .mm__actions { grid-area: actions; align-self: center; }
+  .mm__links { grid-area: links; }
+  .mm__hero { width: 80px; height: 80px; }
+  .mm__actions .btn--xl { min-height: 54px; font-size: 20px; }
+}

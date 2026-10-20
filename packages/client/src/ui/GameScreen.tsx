@@ -31,7 +31,7 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const sc = screen.value;
-  const inWorld = sc === 'game' || sc === 'menu';
+  const inWorld = sc === 'game';
 
   useEffect(() => {
     const el = stageRef.current!;

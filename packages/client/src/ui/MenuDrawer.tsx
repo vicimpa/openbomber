@@ -1,5 +1,5 @@
 // The menu: a drawer over the live world (☰ in the bottom pill, Esc, gamepad Start).
-// Tabs: «Игра» (profile, how to play, fullscreen, private room, bots, links), «Игроки»
+// Tabs: «Игра» (profile, how to play, fullscreen, room code, back to the main menu, links), «Игроки»
 // (player list, spectators) and «Настройки» (volume + device settings).
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { canFullscreen, isFullscreen, toggleFullscreen } from '$/input/fullscreen';
@@ -64,7 +64,6 @@ function Profile() {
 
 function GameTab() {
   const r = room.value;
-  const inExtra = !!r && (r.offline || r.isPrivate);
   return (
     <>
       <Profile />
@@ -73,32 +72,18 @@ function GameTab() {
         {canFullscreen && <Button block icon="⛶" onClick={() => toggleFullscreen()} aria-pressed={isFullscreen.value}>{t('menu.fullscreen')}</Button>}
       </div>
 
-      <section class="card">
-        <h3>🔒 {t('menu.privateRoom')}</h3>
-        {r && r.isPrivate && !r.offline ? (
+      {r && r.isPrivate && !r.offline && (
+        <section class="card">
+          <h3>🔒 {t('menu.privateRoom')}</h3>
           <div class="room-line">
             <span class="room-line__code">{r.code}</span>
             <Button size="sm" icon="🔗" onClick={() => copyRoom(r.code)}>{t('hud.copyLink')}</Button>
             {typeof navigator.share === 'function' && <Button size="sm" icon="📤" onClick={() => shareRoom(r.code)}>{t('hud.share')}</Button>}
           </div>
-        ) : (
-          <p class="muted">{t('menu.privateHint')}</p>
-        )}
-        <div class="row2">
-          <Button block onClick={() => { menuOpen.value = false; actions.createPrivate(); }}>{t('menu.create')}</Button>
-          <Button block onClick={() => openModal('join')}>{t('menu.joinByCode')}</Button>
-        </div>
-      </section>
-
-      <section class="card">
-        <h3>🤖 {t('menu.vsBots')}</h3>
-        <p class="muted">{t('bots.offlineHint')}</p>
-        <Button block onClick={() => openModal('bots')}>{t('bots.start')}</Button>
-      </section>
-
-      {inExtra && (
-        <Button block variant="white" icon="🌍" onClick={() => { menuOpen.value = false; actions.quickPlay(); }}>{t('menu.backToWorld')}</Button>
+        </section>
       )}
+
+      <Button block variant="white" icon="🏠" onClick={() => { menuOpen.value = false; actions.leave(); }}>{t('menu.toMainMenu')}</Button>
 
       <section class="card">
         <h3>{t('menu.links')}:</h3>

@@ -73,11 +73,12 @@ function blockedAxis(w: WorldState, p: PlayerState, alongX: boolean, a: number, 
 
 /**
  * Corner assist for movement along one axis. Returns the correction on the
- * perpendicular axis (at most `step`).
- *  - Lane ahead is open: drift back to the lane centre, so corridors are entered
- *    cleanly and the next turn lines up.
- *  - Lane ahead is blocked but the neighbouring lane (that we lean into) is open both
- *    ahead and beside us: slide into it, which makes early turns "just work".
+ * perpendicular axis (at most `step`). No full alignment: a free lane never pulls the hero
+ * to its centre, like the new-openbomber prototype.
+ *  - Lane ahead is open, but our circle pokes past its edge into a blocked tile: nudge
+ *    only until it clears that corner (offset 0.5 - PLAYER_RADIUS), never further.
+ *  - Lane ahead is blocked but the neighbouring lane we lean into is open both ahead and
+ *    beside us: slide into it, so early turns "just work".
  */
 function cornerAssist(w: WorldState, p: PlayerState, alongX: boolean, s: number, step: number): number {
   const along = alongX ? p.x : p.y;
@@ -90,7 +91,11 @@ function cornerAssist(w: WorldState, p: PlayerState, alongX: boolean, s: number,
   const sign = off > 0 ? 1 : -1;
   const n = cp + sign;
   const fa = ca + s;
-  if (!blockedAxis(w, p, alongX, fa, cp)) return -sign * Math.min(aoff, step);
+  if (!blockedAxis(w, p, alongX, fa, cp)) {
+    const clear = 0.5 - PLAYER_RADIUS;
+    if (aoff > clear && blockedAxis(w, p, alongX, fa, n)) return -sign * Math.min(aoff - clear, step);
+    return 0;
+  }
   if (aoff >= CORNER_ASSIST_MIN && !blockedAxis(w, p, alongX, fa, n) && !blockedAxis(w, p, alongX, ca, n)) {
     return sign * Math.min(1 - aoff, step);
   }

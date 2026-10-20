@@ -7,6 +7,7 @@ import { GameScreen, type GameScreenProps } from './GameScreen';
 import { HowToPlayModal } from './HowToPlay';
 import { t } from './i18n';
 import { Loader } from './Loader';
+import { MainMenu } from './MainMenu';
 import { SettingsModal } from './SettingsModal';
 import { modals, room, screen, toast } from './store';
 import { Toasts } from './Toasts';
@@ -57,6 +58,7 @@ export function App() {
         return () => { if (typeof stageCleanup === 'function') stageCleanup(); mountedStage = null; };
       }} />
       {sc === 'loader' && <Loader />}
+      {sc === 'menu' && <MainMenu />}
       {sc === 'connecting' && <ConnectingScreen />}
       {stack.map((id, i) => {
         const M = MODALS[id];

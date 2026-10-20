@@ -57,17 +57,28 @@ describe('movement & collision', () => {
     h.set('a', 1, 0);
     h.step(45);
     const p = h.p('a');
-    expect(Math.abs(p.y - 2)).toBeLessThan(0.02);
+    // slid into lane y=2 just enough to clear the pillar, but not snapped to its centre
     expect(p.x).toBeGreaterThan(1.5);
+    expect(p.y).toBeGreaterThanOrEqual(1.75 - 1e-6);
+    expect(p.y).toBeLessThan(1.9);
   });
 
-  test('corner assist centres in an open lane instead of snagging on a pillar corner', () => {
+  test('an open lane never pulls the hero to its centre', () => {
+    const h = new Harness(PILLARS, [['a', 0, 1.8]]);
+    h.set('a', 1, 0);
+    h.step(40);
+    const p = h.p('a');
+    expect(p.x).toBeGreaterThan(1.8);
+    expect(Math.abs(p.y - 1.8)).toBeLessThan(1e-6);
+  });
+
+  test('rounding a pillar corner does not snag', () => {
     const h = new Harness(PILLARS, [['a', 0, 1.72]]);
     h.set('a', 1, 0);
     h.step(40);
     const p = h.p('a');
     expect(p.x).toBeGreaterThan(1.8);
-    expect(Math.abs(p.y - 2)).toBeLessThan(0.03);
+    expect(p.y).toBeGreaterThanOrEqual(1.75 - 1e-6);
   });
 
   test('predictMovement matches the authoritative sim exactly', () => {

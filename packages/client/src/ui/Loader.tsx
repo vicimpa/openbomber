@@ -41,7 +41,7 @@ export function Loader() {
   const go = () => {
     actions.start();
     if (invite) { pendingInvite.value = null; actions.joinByCode(invite); }
-    else screen.value = 'game';
+    else screen.value = 'menu';
   };
 
   return (

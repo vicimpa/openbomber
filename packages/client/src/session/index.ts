@@ -1,22 +1,22 @@
 // Session layer: owns the current GameSource (shared online world, private room or offline
 // bots) and wires it to the renderer, audio, input, haptics and the UI store.
 //
-// Canon flow: while the loader is up we already join the shared world as a spectator, so the
-// live arena is behind the UI from the first second. If the server is unreachable we fall back
-// to an offline bot match so the page is never empty.
+// Flow: loader → main menu over a live offline bot match (attract camera) → «Играть онлайн»
+// (shared arena), «Одиночная игра» (bots), own room / join by code → the in-game HUD.
+// Leaving any game returns to the menu. Music is off by design; sound effects stay.
 
 import { effect } from '@preact/signals';
-import { Phase, type GameEvent, type WorldState } from '@ob/game';
-import type { AudioEngine, GameSource, InputManager, MusicMode } from '../contracts';
+import type { GameEvent, WorldState } from '@ob/game';
+import type { AudioEngine, GameSource, InputManager } from '../contracts';
 import { createAudio } from '../audio';
 import { createInput, installPlayGuards } from '../input';
-import { connectQuickPlay, createPrivateRoom, joinRoomByCode, MAIN_ROOM_ID, NetSource } from '../net';
+import { connectQuickPlay, createPrivateRoom, joinRoomByCode, listRooms, MAIN_ROOM_ID, NetSource } from '../net';
 import { createRenderer, type RendererExt } from '../render';
 import { setStageHandler } from '../ui/App';
 import { buildHud } from '../ui/hud';
 import { t } from '../ui/i18n';
 import {
-  bindActions, connectStatus, fps, handleGameEvents, hud, pushChat, registerLoadTask, resetGameState,
+  bindActions, connectStatus, fps, handleGameEvents, hud, onlineCount, pushChat, registerLoadTask, resetGameState,
   room, screen, settings, spectators, toast, uiCapturesInput,
 } from '../ui/store';
 import { LocalSource } from './LocalSource';
@@ -33,7 +33,6 @@ export function startSession() {
   let source: Source | null = null;
   let unsub: (() => void)[] = [];
   let started = false;      // loader's «Играть» pressed (audio unlocked)
-  let wasPlaying = false;
 
   // ---------------------------------------------------------------- renderer on #stage
   let resolveStage!: (el: HTMLElement) => void;
@@ -55,15 +54,15 @@ export function startSession() {
   // ---------------------------------------------------------------- sources
   const profile = () => ({ name: settings.peek().name, skin: settings.peek().skin });
 
-  function setSource(next: Source, info: { code: string; isPrivate: boolean; offline: boolean }) {
+  function setSource(next: Source, info: { code: string; isPrivate: boolean; offline: boolean } | null, to: 'menu' | 'game') {
     if (source && source !== next) source.dispose();
     unsub.forEach((u) => u());
     unsub = [];
     resetGameState();
     source = next;
-    wasPlaying = false;
     room.value = info;
-    screen.value = started ? 'game' : screen.peek();
+    renderer?.setCameraMode(to === 'menu' ? 'attract' : 'follow');
+    if (started) screen.value = to;
     if (next instanceof NetSource) {
       next.chatLog.forEach(pushChat);
       unsub.push(next.onChat(pushChat));
@@ -71,57 +70,67 @@ export function startSession() {
         if (s === 'reconnecting') toast(t('net.reconnecting'), 'info');
         if (s === 'disconnected' && source === next) {
           toast(t('net.disconnected'), 'bad');
-          goOfflineAttract();
+          toMenu();
         }
       }));
     }
   }
 
-  function goOfflineAttract() {
-    setSource(new LocalSource({ bots: ATTRACT_BOTS, ...profile() }), { code: 'OFFLINE', isPrivate: false, offline: true });
+  /** Main menu: a live bot match drifts behind it (attract mode). */
+  function toMenu() {
+    setSource(new LocalSource({ bots: ATTRACT_BOTS, difficulty: 'normal' }), null, 'menu');
   }
 
   async function connect(kind: 'quick' | 'private' | 'join', job: () => Promise<NetSource>, code?: string) {
     connectStatus.value = { kind, code };
-    if (started) screen.value = 'connecting';
+    screen.value = 'connecting';
     try {
       const net = await job();
-      setSource(net, { code: net.roomId, isPrivate: net.roomId !== MAIN_ROOM_ID, offline: false });
+      setSource(net, { code: net.roomId, isPrivate: net.roomId !== MAIN_ROOM_ID, offline: false }, 'game');
     } catch (e) {
       console.warn('[session] connect failed', e);
-      if (kind === 'quick' && !source) {
-        goOfflineAttract();
-        toast(t('net.offlineFallback'), 'bad');
-      } else {
-        connectStatus.value = { kind, code, error: e instanceof Error ? e.message : String(e) };
-        if (!started) goOfflineAttract();
-      }
+      connectStatus.value = { kind, code, error: e instanceof Error ? e.message : String(e) };
     }
   }
 
-  const quickPlay = () => connect('quick', () => connectQuickPlay(profile()));
+  toMenu();
+  registerLoadTask(stageReady.then(() => renderer?.setCameraMode('attract')).catch(() => {}));
 
-  // Join the shared world (or the invite room) while the loader is still showing.
-  registerLoadTask(quickPlay());
+  // Shared arena head count for the menu («общая арена · игроков: N»).
+  const pollOnline = async () => {
+    if (screen.peek() === 'menu' || screen.peek() === 'loader') {
+      try {
+        const rooms = await listRooms();
+        const main = rooms.find((r) => r.roomId === MAIN_ROOM_ID);
+        onlineCount.value = main ? (main.metadata?.humans ?? 0) : null;
+      } catch {
+        onlineCount.value = null;
+      }
+    }
+    setTimeout(pollOnline, 5000);
+  };
+  pollOnline();
 
   bindActions({
     start() {
       started = true;
       audio.unlock();
-      screen.value = 'game';
+      audio.setMusic('off');
+      screen.value = 'menu';
     },
     async play(enabled) {
       if (!source) return;
       const ok = await source.play(enabled);
       if (enabled && !ok) toast(t('net.full'), 'bad');
     },
-    quickPlay,
+    // «Играть онлайн»: the shared arena, straight into the round (spectate via «Отключиться»)
+    quickPlay: () => connect('quick', () => connectQuickPlay({ ...profile(), play: true })),
     createPrivate: () => connect('private', () => createPrivateRoom({ ...profile(), bots: 0 })),
-    joinByCode: (code) => connect('join', () => joinRoomByCode(code, profile()), code),
+    joinByCode: (code) => connect('join', () => joinRoomByCode(code, { ...profile(), play: true }), code),
     playOffline({ bots, difficulty }) {
-      setSource(new LocalSource({ bots, difficulty, play: true, ...profile() }), { code: 'OFFLINE', isPrivate: false, offline: true });
+      setSource(new LocalSource({ bots, difficulty, play: true, ...profile() }), { code: 'OFFLINE', isPrivate: false, offline: true }, 'game');
     },
-    leave: () => quickPlay(),
+    leave: () => toMenu(),
     sendChat(text) {
       if (source instanceof NetSource) source.sendChat(text);
       else pushChat({ from: source?.localId ?? '', name: settings.peek().name, text, at: Date.now() });
@@ -159,7 +168,6 @@ export function startSession() {
           if (spectators.peek().length !== src.spectators)
             spectators.value = Array.from({ length: src.spectators }, (_, i) => ({ id: `s${i}`, name: '' }));
         } else if (spectators.peek().length) spectators.value = [];
-        if (started) audio.setMusic(musicFor(world, localId));
       }
     } else {
       renderer?.render(null, '', dt);
@@ -177,13 +185,9 @@ export function startSession() {
 
   // Dev / QA hook (stripped from production builds): inspect the live session from the console.
   if (import.meta.env.DEV) {
-    let music: MusicMode = 'off';
-    const setMusic = audio.setMusic.bind(audio);
-    audio.setMusic = (m) => { music = m; setMusic(m); };
     (window as unknown as { __ob: unknown }).__ob = {
       get source() { return source; },
       get renderer() { return renderer; },
-      get music() { return music; },
       audio, input,
     };
   }
@@ -205,18 +209,5 @@ export function startSession() {
           break;
       }
     }
-  }
-
-  function musicFor(world: WorldState, localId: string): MusicMode {
-    const me = localId ? world.players.get(localId) : undefined;
-    const playing = !!me && me.inRound;
-    if (world.phase === Phase.RoundOver && wasPlaying) {
-      return world.winner === localId ? 'victory' : 'defeat';
-    }
-    wasPlaying = playing;
-    if (!playing) return 'menu';
-    if (world.zoneRing > 0) return 'sudden';
-    if (world.phase === Phase.Waiting) return 'waiting';
-    return 'battle';
   }
 }

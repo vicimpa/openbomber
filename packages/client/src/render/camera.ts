@@ -37,9 +37,9 @@ export class Camera {
 
   reset() { this.snap = true; }
 
-  /** Tiles visible on the short side while following: ~11.5-12 on phones, up to 17 on desktop. */
+  /** Tiles visible on the short side while following (new-openbomber: radius 256 px = 8 tiles). */
   static tilesFor(shortCss: number) {
-    return Math.max(11.5, Math.min(17, 11.5 + (shortCss - 420) / 110));
+    return Math.max(8, Math.min(10, 8 + (shortCss - 420) / 250));
   }
 
   update(dt: number, v: CameraView, inp: CameraInput) {
@@ -69,20 +69,25 @@ export class Camera {
       needScale = Math.max(fitScale, close + (fitScale - close) * k * 0.7);
       posK = 0.012; zoomK = 0.01;
     } else if (this.mode === 'follow' && inp.focus) {
+      // like the prototype: a tight view around the hero, the world outside the arena included
       this.cx = inp.focus.x * T; this.cy = inp.focus.y * T;
-      needScale = Math.max(fitScale, Math.min(W, H) / followRadius);
+      needScale = Math.min(W, H) / followRadius;
     } else {
       this.cx = arenaX; this.cy = arenaY;
       needScale = fitScale;
     }
     needScale = quantize(needScale, needScale === fitScale ? Math.floor : Math.round);
 
-    // clamp the centre target so the view never wanders far beyond the arena
+    // clamp the centre target so the view never wanders far beyond the arena (overview / attract;
+    // following keeps the hero centred like the prototype did)
+    const follow = this.mode === 'follow' && !!inp.focus;
     const halfW = W / needScale / 2, halfH = H / needScale / 2;
     const minX = -1.8 * T + halfW, maxX = (aw + 0.8) * T - halfW;
     const minY = -1.8 * T + halfH, maxY = (ah + 0.8) * T - halfH;
-    this.cx = minX > maxX ? arenaX : Math.min(maxX, Math.max(minX, this.cx));
-    this.cy = minY > maxY ? arenaY : Math.min(maxY, Math.max(minY, this.cy));
+    if (!follow) {
+      this.cx = minX > maxX ? arenaX : Math.min(maxX, Math.max(minX, this.cx));
+      this.cy = minY > maxY ? arenaY : Math.min(maxY, Math.max(minY, this.cy));
+    }
 
     if (this.snap) {
       // first frame of a map: start zoomed out over the arena, then ease into the target
