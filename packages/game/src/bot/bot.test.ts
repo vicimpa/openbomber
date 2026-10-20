@@ -378,4 +378,53 @@ describe('bots use what they hold', () => {
     drive(h, [bot], DROP_FALL_TIME + 120, () => h.p('bot').bombs > 1);
     expect(h.p('bot').bombs).toBe(2);
   });
+
+  test('teleport: trapped between two bombs, a bot with charges jumps out; without charges it never presses', () => {
+    const rows = ['#########', '##...####', '#########', '.........', '.........'];
+    for (const charges of [2, 0]) {
+      const h = new Harness(rows, [['bot', 3, 1], ['z', 0, 4]]);
+      const z = h.p('z');
+      z.bombs = 2;
+      z.x = 2;
+      z.y = 1;
+      h.tap('z', Button.Bomb);
+      z.x = 4;
+      h.step(2);
+      h.tap('z', Button.Bomb);
+      z.x = 0;
+      z.y = 4;
+      h.step(2);
+      expect(h.state.bombs.size).toBe(2);
+      h.p('bot').teleports = charges;
+      const bot = new Bot('bot', 'hard');
+      let pressed = 0;
+      const events: GameEvent[] = [];
+      for (let i = 0; i < BOMB_FUSE + 30; i++) {
+        const f = bot.think(h.state);
+        if (f.buttons & Button.Teleport) pressed++;
+        h.set('bot', f.dx, f.dy, f.buttons);
+        h.set('z', 0, 0, 0);
+        events.push(...h.step());
+      }
+      expect(ev(events, 'explosion').length).toBe(2);
+      if (charges) {
+        expect(ev(events, 'playerTeleported').length).toBe(1);
+        expect(h.p('bot').teleports).toBe(charges - 1);
+        expect(h.p('bot').alive).toBe(true);
+      } else {
+        expect(pressed).toBe(0);
+        expect(h.p('bot').alive).toBe(false);
+      }
+    }
+  });
+
+  test('teleport: not wasted when there is a way out', () => {
+    const h = new Harness(['.........', '.#.#.#.#.', '.........'], [['bot', 0, 0], ['z', 8, 2]]);
+    const bot = new Bot('bot', 'hard');
+    h.p('bot').teleports = 3;
+    h.tap('bot', Button.Bomb);
+    const events = drive(h, [bot], BOMB_FUSE + 40);
+    expect(ev(events, 'playerTeleported').length).toBe(0);
+    expect(h.p('bot').alive).toBe(true);
+  });
 });

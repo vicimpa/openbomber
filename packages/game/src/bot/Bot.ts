@@ -16,6 +16,7 @@ import {
   KICK_SPEED,
   MAX_BOMBS,
   MAX_RADIUS,
+  MAX_TELEPORTS,
   PLAYER_RADIUS,
   PUNCH_DISTANCE,
   SPEED_MULT,
@@ -71,6 +72,8 @@ interface Tuning {
   aggression: number;
   /** Chance to take a trick (kick / throw / punch / line) when one is on. */
   skill: number;
+  /** Chance to remember the Teleport charges when doomed (per danger). */
+  teleport: number;
   /** Ticks an ability / effect must be held before the bot starts using it. */
   notice: number;
   /** Ticks a remote bomb must age before it's set off for bricks. */
@@ -87,15 +90,15 @@ interface Tuning {
 
 const TUNING: Record<BotDifficulty, Tuning> = {
   easy: {
-    replan: 14, margin: 4, sloppy: 0.45, aggression: 0.4, skill: 0.35, notice: sec(2),
+    replan: 14, margin: 4, sloppy: 0.45, aggression: 0.4, skill: 0.35, teleport: 0.5, notice: sec(2),
     remoteDelay: sec(2.5), remoteTrap: sec(5), remoteReact: 18, carry: sec(1), minSafe: 1,
   },
   normal: {
-    replan: 7, margin: 7, sloppy: 0.15, aggression: 1, skill: 0.7, notice: sec(0.8),
+    replan: 7, margin: 7, sloppy: 0.15, aggression: 1, skill: 0.7, teleport: 0.85, notice: sec(0.8),
     remoteDelay: sec(1.2), remoteTrap: sec(4), remoteReact: 6, carry: sec(2), minSafe: 3,
   },
   hard: {
-    replan: 3, margin: 9, sloppy: 0, aggression: 1.6, skill: 1, notice: 0,
+    replan: 3, margin: 9, sloppy: 0, aggression: 1.6, skill: 1, teleport: 1, notice: 0,
     remoteDelay: sec(0.5), remoteTrap: sec(3.5), remoteReact: 0, carry: sec(3), minSafe: 4,
   },
 };
@@ -143,6 +146,10 @@ const TRICK_RANGE = 12;
 const TRICK_PAUSE = 30;
 /** Fire / cursed bots ram an enemy this close (tiles) straight on. */
 const RAM_DIST = 1.6;
+/** Doomed (no escape in time): teleport once the fire is this close (ticks). */
+const TELEPORT_LATE = 15;
+/** A burning enemy this close (tiles) is about to touch us. */
+const FIRE_TOUCH = 1.0;
 /** Never carry a bomb longer than this. */
 const CARRY_MAX = sec(6);
 
@@ -197,6 +204,8 @@ function pickupValue(p: PlayerState, t: PickupType): number {
       return -100;
     case PickupType.Random:
       return 20;
+    case PickupType.Teleport: // an emergency exit: strong, until we hold a few
+      return p.teleports >= MAX_TELEPORTS ? 0 : p.teleports >= 3 ? 12 : 40;
   }
   const tv = TIMED_VALUE[t];
   if (!tv) return 0;
@@ -413,6 +422,11 @@ export class Bot implements IBot {
   private carryStart = -1;
   /** Hold still until this tick before following the (delayed) escape path. */
   private waitUntil = 0;
+  /** Tick the last flee plan found no way out in time (-1 = it did), and whether we'll teleport then. */
+  private doomedAt = -1;
+  private teleRoll = false;
+  /** Since when we hold Teleport charges (-1 = none). */
+  private teleSince = -1;
   /** Enemies hit by the flight / slide scored last. */
   private hits = 0;
   private rx = 0;
@@ -463,6 +477,8 @@ export class Bot implements IBot {
       if (this.mob.passer1 < 0) this.mob.passer1 = i;
       else this.mob.passer2 = i;
     }
+
+    if (this.shouldTeleport(a, p, cur)) return this.out(0, 0, Button.Teleport);
 
     // scripted tricks (grab / punch / kick / line) run uninterrupted unless fire is imminent
     if (this.script.length && imminent) this.script.length = 0;
@@ -526,6 +542,29 @@ export class Bot implements IBot {
     return this.out(dx, dy, buttons);
   }
 
+  /**
+   * Teleport (a random free tile, a gamble): only when the planner sees no way out in time
+   * and the fire is about to arrive, or a burning enemy is about to touch us.
+   */
+  private shouldTeleport(a: Analysis, p: PlayerState, cur: number): boolean {
+    if (p.teleports <= 0) {
+      this.teleSince = -1;
+      return false;
+    }
+    if (this.teleSince < 0) this.teleSince = this.now;
+    if (this.now - this.teleSince < this.tune.notice || this.held & Button.Teleport || p.effects.stun > 0) return false;
+    if (p.effects.invulnerable > 0) return false;
+    const doomed = this.doomedAt >= 0 && this.now - this.doomedAt <= 20 && this.fleeing && this.teleRoll;
+    if (doomed && a.dStart[cur]! <= TELEPORT_LATE) return true;
+    if (p.effects.fire > 0 || p.effects.shield > 0 || !a.fire.length || this.tune.teleport < 1) return false;
+    for (const f of a.fire) {
+      if (f.id === p.id) continue;
+      const q = a.world.players.get(f.id);
+      if (q && Math.abs(q.x - p.x) + Math.abs(q.y - p.y) <= FIRE_TOUCH) return true;
+    }
+    return false;
+  }
+
   /** Track how long each ability has been held; it counts once held for `notice` ticks. */
   private notice(p: PlayerState) {
     let k = 0;
@@ -571,6 +610,7 @@ export class Bot implements IBot {
     if (inDanger) {
       // keep a planned escape (e.g. chosen when dropping the bomb) while it still works
       if (this.fleeing && this.pathStillSafe(a)) return;
+      if (!this.fleeing) this.teleRoll = this.rng.chance(this.tune.teleport); // once per danger
       this.fleeing = true;
       const flee: SearchOpts = { ...base, margin: 2, allowSkull: true, curse: false };
       const near = this.nearEnemies(a, p, cur);
@@ -578,9 +618,13 @@ export class Bot implements IBot {
       if (this.path.length === 0) this.path = this.flee(a, flee);
       if (this.path.length === 0 && this.safeFound === 0) this.waitOut(a, flee, cur);
       if (this.path.length === 0 && this.safeFound === 0) this.rescue(a, p, cur);
+      const last = this.path[this.path.length - 1];
+      const out = last !== undefined && restful(a, a.dStart, last) && (this.waitUntil > 0 || this.safeFound > 0);
+      this.doomedAt = out ? -1 : this.now;
       return;
     }
     this.fleeing = false;
+    this.doomedAt = -1;
 
     const w = a.world;
     const W = a.width;
