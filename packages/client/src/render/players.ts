@@ -54,6 +54,7 @@ export class PlayerView {
   private pop = 0;
   /** Spawn animation clock (s): < 0 waiting (hidden), 0..SPAWN_LEN playing, NaN idle. */
   private spawnT = NaN;
+  private spawnSound = false;
   private dustT = 0;
   seen = true;
 
@@ -113,8 +114,9 @@ export class PlayerView {
   }
 
   /** Play the spawn animation after `delay` seconds (hidden until then). */
-  spawn(delay = 0) {
+  spawn(delay = 0, sound = false) {
     this.spawnT = -Math.max(0, delay);
+    this.spawnSound = sound;
     this.pop = 0;
   }
 
@@ -134,7 +136,7 @@ export class PlayerView {
       this.hold = 0;
     }
     if (fresh && p.alive && p.inRound) {
-      if (spawnDelay >= 0) this.spawn(spawnDelay); else { this.spawnT = NaN; this.tag.alpha = 1; }
+      if (spawnDelay >= 0) this.spawn(spawnDelay, true); else { this.spawnT = NaN; this.tag.alpha = 1; }
     }
     const visible = p.inRound && this.alive;
     this.root.visible = visible;
@@ -151,7 +153,10 @@ export class PlayerView {
       this.spawnT += dt;
       const t = this.spawnT;
       if (t < 0) { this.root.visible = false; this.tag.visible = false; return; }
-      if (t0 <= 0 && t > 0) this.fx.spawnBeam(p.x, p.y);
+      if (t0 <= 0 && t > 0) {
+        this.fx.spawnBeam(p.x, p.y);
+        if (this.spawnSound) this.fx.sound?.('dropIn', p.x, p.y, p.id);
+      }
       if (t0 < SPAWN_DROP && t >= SPAWN_DROP) this.fx.spawnLand(p.x, p.y);
       if (t < SPAWN_DROP) {
         const k = t / SPAWN_DROP;

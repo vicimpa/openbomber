@@ -44,6 +44,10 @@ export interface AudioEngine {
   handleEvents(events: GameEvent[], world: WorldState | null, localId: string): void;
   setMusic(mode: MusicMode): void;
   ui(sound: UiSound): void;
+  /** Optional: the renderer's camera travels to a new map for `durationMs`; pan = travel direction (-1..1). */
+  travel?(durationMs: number, pan: number): void;
+  /** Optional: teleport sounds (frozen hero beams out / hero drops in on a new map); x, y in tiles. */
+  teleport?(kind: 'beamOut' | 'dropIn', x: number, y: number, who: string, crowd?: number): void;
   setVolume(v: { master?: number; sfx?: number; music?: number }): void; // 0..1
   dispose(): void;
 }

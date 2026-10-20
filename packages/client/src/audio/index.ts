@@ -173,6 +173,28 @@ class Engine implements AudioEngine {
     try { this.player?.play(key, o); } catch (e) { console.warn('[audio] play', key, e); }
   }
 
+  private last: { world: WorldState | null; localId: string } = { world: null, localId: '' };
+
+  /**
+   * Teleport sounds from the renderer. beamOut: a frozen old-arena hero beams away (not
+   * positional; `crowd` = how many beam out together, to keep the stack quiet). dropIn: a hero
+   * drops in on a new map (positional, the local hero louder).
+   */
+  teleport(kind: 'beamOut' | 'dropIn', x: number, y: number, who: string, crowd = 1): void {
+    if (!this.live) return;
+    if (kind === 'beamOut') { this.play('beamOut', { gain: 0.8 / Math.sqrt(Math.max(1, crowd)) }); return; }
+    const { world, localId } = this.last;
+    const o = who && who === localId ? this.where(world, localId, x, y, who) : this.where(world, localId, x, y);
+    if (who !== localId) o.gain = (o.gain ?? 1) * 0.6;
+    this.play('dropIn', o);
+  }
+
+  /** Camera travel to a new map: a soft whoosh, panned towards where the camera heads. */
+  travel(durationMs: number, pan: number): void {
+    if (!this.live) return;
+    this.play('travel', { pan: clamp(pan, -1, 1) * 0.45, rate: clamp(1200 / Math.max(300, durationMs), 0.7, 1.4) });
+  }
+
   ui(sound: UiSound): void {
     if (!this.live) return;
     this.play(`ui_${sound}` as SfxKey);
@@ -197,6 +219,7 @@ class Engine implements AudioEngine {
   }
 
   handleEvents(events: GameEvent[], world: WorldState | null, localId: string): void {
+    this.last = { world, localId };
     if (!this.live || !events || !events.length) return;
     const ctx = this.ctx!;
     const now = ctx.currentTime;

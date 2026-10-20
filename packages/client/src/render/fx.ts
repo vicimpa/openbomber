@@ -134,6 +134,8 @@ export class Effects {
   private brickBits = new Map<Texture, Map<number, { tex: Texture; ox: number; oy: number }[]>>();
   private labelPool: BitmapText[] = [];
   lowQuality = false;
+  /** Sound hook for render-timed moments (teleports); set by the renderer. */
+  sound?: (kind: 'beamOut' | 'dropIn', x: number, y: number, who: string, crowd?: number) => void;
 
   constructor(private a: GameAssets, private tx: ProcTextures) {
     this.light.blendMode = 'add';
@@ -630,7 +632,7 @@ export class Effects {
    * A frozen hero of the old arena beams away: a pixel column of light, a white flash, the body
    * stretches up out of sight, a few pixel sparks. Runs inside `parent` (the frozen arena).
    */
-  teleportOut(parent: Container, hero: Container, delay: number) {
+  teleportOut(parent: Container, hero: Container, delay: number, crowd = 1) {
     const body = hero.children.find(c => c.label === 'body') as Sprite | undefined;
     if (!body) return;
     const x = hero.x, y = hero.y;
@@ -648,9 +650,11 @@ export class Effects {
     });
     const by = body.y, sx = body.scale.x, sy = body.scale.y;
     const D = 0.4;
+    let zapped = false;
     this.shot(new Container(), parent, delay + D, k => {
       const t = k * (delay + D) - delay;
       if (t < 0) return;
+      if (!zapped) { zapped = true; this.sound?.('beamOut', 0, 0, '', crowd); }
       const f = [1, 2, 1, 3, 4];
       const fi = Math.min(f.length - 1, Math.floor(t / 0.08));
       beam.visible = t < D;

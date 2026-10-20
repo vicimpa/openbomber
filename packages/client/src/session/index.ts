@@ -47,6 +47,8 @@ export function startSession() {
       .then((el) => createRenderer({ parent: el, quality: settings.peek().quality }))
       .then((r) => {
         renderer = r;
+        r.onTravel = (ms, dx) => audio.travel?.(ms, dx); // whoosh while the camera travels between maps
+        r.onTeleport = (kind, x, y, who, crowd) => audio.teleport?.(kind, x, y, who, crowd);
         // the first menu backdrop was warmed up before the renderer existed
         if (source instanceof LocalSource) r.prime(source.takePrimeEvents());
       }),

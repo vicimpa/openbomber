@@ -81,6 +81,10 @@ class PixiRenderer implements GameRenderer {
   private lastWorld: WorldState | null = null;
   private nextMap: 'travel' | 'snap' | null = null;
   private spawnDelay = -1;
+  /** Optional hook: a camera travel to a new map starts (not on the first map's snap). */
+  onTravel?: (durationMs: number, dx: number, dy: number) => void;
+  /** Optional hook: teleport moments (frozen hero beams out / hero drops in on a new map). */
+  set onTeleport(f: ((kind: 'beamOut' | 'dropIn', x: number, y: number, who: string, crowd?: number) => void) | undefined) { this.fx.sound = f; }
   /** prime(): the next new map is already running (no spawn wave); scorch these cells into it. */
   private primed: { x: number; y: number }[][] | null = null;
 
@@ -298,6 +302,8 @@ class PixiRenderer implements GameRenderer {
       this.ghost = { ox: m.ox, oy: m.oy, w: m.w, h: m.h, t: 0 };
       this.arena.ghostRoot.position.set(m.ox * T, m.oy * T);
       const [nx, ny] = nextOrigin(m, world.width, world.height);
+      const ddx = nx + world.width / 2 - (m.ox + m.w / 2), ddy = ny + world.height / 2 - (m.oy + m.h / 2), dl = Math.hypot(ddx, ddy) || 1;
+      try { this.onTravel?.(TRAVEL * 1000, ddx / dl, ddy / dl); } catch (e) { console.warn('[render] onTravel', e); }
       m.ox = nx; m.oy = ny;
       this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
       this.camera.travel(TRAVEL);
@@ -348,7 +354,7 @@ class PixiRenderer implements GameRenderer {
     // frozen heroes beam away one after another while the camera pulls out
     f.heroes.sort((a, b) => a.y - b.y).forEach((hc, i) => {
       root.addChild(hc);
-      this.fx.teleportOut(root, hc, 0.22 + Math.min(i, 8) * 0.045);
+      this.fx.teleportOut(root, hc, 0.22 + Math.min(i, 8) * 0.045, f.heroes.length);
     });
   }
 
@@ -612,6 +618,10 @@ export interface RendererExt extends GameRenderer {
   setViewInset(left: number): void;
   transition(kind?: 'travel' | 'snap'): void;
   prime(events: GameEvent[]): void;
+  /** Called when a camera travel to a new map starts: duration and unit direction (world). */
+  onTravel?: (durationMs: number, dx: number, dy: number) => void;
+  /** Teleport moments for sound: a frozen hero beams out, a hero drops in on a new map (tiles). */
+  onTeleport?: (kind: 'beamOut' | 'dropIn', x: number, y: number, who: string, crowd?: number) => void;
 }
 
 /** Where the next map goes: a random direction, clear of the old arena by a stretch of countryside. */
