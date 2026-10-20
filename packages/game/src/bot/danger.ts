@@ -62,6 +62,8 @@ interface PendingBomb {
   time: number;
   /** How long after `time` the tiles may still burn (a Crazy fuse is a window). */
   dur: number;
+  /** Can't go off before this (a bomb still in the air). */
+  earliest: number;
   done: boolean;
 }
 
@@ -216,6 +218,7 @@ export function analyze(w: WorldState): Analysis {
     let y = Math.round(b.y);
     let time = b.fuse > 0 ? b.fuse : b.fuse < 0 ? (-b.fuse <= REMOTE_TIMED ? -b.fuse : INF) : 0;
     let dur = FLAME_TIME;
+    let earliest = 0;
     const owner = w.players.get(b.owner);
     let radius = b.radius;
     if (b.kind === BombKind.Crazy) {
@@ -235,14 +238,16 @@ export function analyze(w: WorldState): Analysis {
       if (at < 0) continue;
       x = at % W;
       y = (at / W) | 0;
-      time = Math.max(time, Math.ceil((1 - b.progress) * THROW_TIME) + landHops * BOUNCE_TIME);
+      earliest = Math.ceil((1 - b.progress) * THROW_TIME) + landHops * BOUNCE_TIME;
+      time = Math.max(time, earliest);
+      if (!bomb[at]) bomb[at] = b.id; // where it comes down: blasts there will chain it
     } else if (b.motion === BombMotion.Sliding) {
       const at = slideStop(a, x, y, Math.sign(b.vx), Math.sign(b.vy), b.id);
       x = at % W;
       y = (at / W) | 0;
     }
     if (x < 0 || y < 0 || x >= W || y >= w.height) continue;
-    pending.push({ id: b.id, x, y, radius, pierce: bombPierces(w, b), time, dur, done: false });
+    pending.push({ id: b.id, x, y, radius, pierce: bombPierces(w, b), time, dur, earliest, done: false });
   }
   // overtime rain: a sky bomb lands on its shadow and goes off SKY_BOMB_FUSE later
   if (w.drops) {
@@ -254,7 +259,7 @@ export function analyze(w: WorldState): Analysis {
         continue;
       }
       a.land[i] = d.ttl + 1;
-      pending.push({ id: -d.id, x: d.x, y: d.y, radius: SKY_BOMB_RADIUS, pierce: false, time: d.ttl - 1 + SKY_BOMB_FUSE, dur: FLAME_TIME, done: false });
+      pending.push({ id: -d.id, x: d.x, y: d.y, radius: SKY_BOMB_RADIUS, pierce: false, time: d.ttl - 1 + SKY_BOMB_FUSE, dur: FLAME_TIME, earliest: d.ttl, done: false });
     }
   }
   resolveChains(w, bomb, pickup, gone, dStart, dEnd, soft);
@@ -272,7 +277,9 @@ function resolveChains(
   soft: Uint8Array,
 ) {
   const onBomb = (id: number, t: number) => {
-    for (const q of pending) if (q.id === id && !q.done && q.time > t + CHAIN_DELAY) q.time = t + CHAIN_DELAY;
+    for (const q of pending) {
+      if (q.id === id && !q.done && q.time > t + CHAIN_DELAY) q.time = Math.max(q.earliest, t + CHAIN_DELAY);
+    }
   };
   for (;;) {
     let best: PendingBomb | null = null;

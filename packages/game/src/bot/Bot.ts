@@ -252,6 +252,8 @@ interface SearchOpts extends Mobility {
   fire: boolean;
   /** Keep off cursed players (their touch passes the curse). */
   curse: boolean;
+  /** Ticks we wait on the start tile before setting off (fire in the way dies down first). */
+  delay?: number;
   /** Ignore danger (emergency exit from a brick). */
   blind?: boolean;
   /** Treat tiles next to these players as blocked (they could drop a bomb there). */
@@ -263,9 +265,9 @@ interface SearchOpts extends Mobility {
  * window. The flame hitbox reaches ~0.65 tile beyond a tile's edge, so we count from
  * (k - 0.7) to (k + 0.7) tile-crossings.
  */
-const safeAt = (ds: Int32Array, de: Int32Array, i: number, k: number, tpt: number, margin: number) => {
-  const enter = Math.max(0, (k - 0.7) * tpt);
-  const exit = (k + 0.7) * tpt;
+const safeAt = (ds: Int32Array, de: Int32Array, i: number, k: number, tpt: number, margin: number, delay = 0) => {
+  const enter = Math.max(0, (k - 0.7) * tpt) + delay;
+  const exit = (k + 0.7) * tpt + delay;
   return !(enter - margin <= de[i]! && exit + margin >= ds[i]!);
 };
 
@@ -313,7 +315,7 @@ function search(a: Analysis, o: SearchOpts): number {
       if (!passable(a, o, j, k)) continue;
       if (!o.allowSkull && isSkull(a, j)) continue;
       if (!o.blind) {
-        if (!safeAt(o.ds, o.de, j, k, o.tpt, o.margin)) continue;
+        if (!safeAt(o.ds, o.de, j, k, o.tpt, o.margin, o.delay)) continue;
         if (o.fire && a.fire.length && nearFire(a, nx, ny, o.selfId)) continue;
       }
       if (o.curse && a.cursed.length && nearCursed(a, nx, ny, k <= 2 ? 1 : 0, o.selfId)) continue;
@@ -406,6 +408,8 @@ export class Bot implements IBot {
   private reverse = false;
   private mob: Mobility = { tpt: 20, ghost: 0, pass: 0 };
   private carryStart = -1;
+  /** Hold still until this tick before following the (delayed) escape path. */
+  private waitUntil = 0;
   /** Enemies hit by the flight / slide scored last. */
   private hits = 0;
   private rx = 0;
@@ -497,6 +501,10 @@ export class Bot implements IBot {
       this.wantBomb = false;
       return this.out(0, 0, Button.Bomb);
     }
+    if (this.waitUntil > world.tick) {
+      const [sx, sy] = this.settle(p);
+      return this.out(sx, sy, hold);
+    }
     let buttons = hold;
     if (!hold && !this.wantBomb && !(this.held & Button.Action) && this.shouldDetonate(a, p)) buttons |= Button.Action;
     let [dx, dy] = this.steer(p, W);
@@ -543,6 +551,7 @@ export class Bot implements IBot {
 
   private plan(a: Analysis, p: PlayerState, cur: number, inDanger: boolean, tpt: number) {
     this.wantBomb = false;
+    this.waitUntil = 0;
     const base = this.opts(a, p, cur);
     const enemies = this.enemies(a, p, NEAREST_ENEMIES);
     if (p.carrying < 0 && a.dStart[cur]! > IMMINENT && this.tryTricks(a, p, cur, enemies)) return;
@@ -554,6 +563,7 @@ export class Bot implements IBot {
       const near = this.nearEnemies(a, p, cur);
       this.path = near.length ? this.flee(a, { ...flee, avoid: near }) : [];
       if (this.path.length === 0) this.path = this.flee(a, flee);
+      if (this.path.length === 0 && this.safeFound === 0) this.waitOut(a, flee, cur);
       if (this.path.length === 0 && this.safeFound === 0) this.rescue(a, p, cur);
       return;
     }
@@ -635,6 +645,22 @@ export class Bot implements IBot {
       return;
     }
     this.path = pathTo(best);
+  }
+
+  /**
+   * No way out right now (e.g. fire still burning in the only corridor): wait on this tile
+   * while it stays safe, then go. The BFS itself never waits.
+   */
+  private waitOut(a: Analysis, o: SearchOpts, cur: number) {
+    const stay = a.dStart[cur]! - o.tpt; // must be off this tile before it burns
+    for (let delay = 8; delay + o.margin < stay; delay += 8) {
+      const path = this.flee(a, { ...o, delay, ghost: o.ghost - delay, pass: o.pass - delay });
+      if (path.length && this.safeFound > 0) {
+        this.path = path;
+        this.waitUntil = this.now + delay;
+        return;
+      }
+    }
   }
 
   /** Inside a brick with nowhere safe to go: get onto the nearest floor before Ghost runs out. */
@@ -1061,6 +1087,8 @@ export class Bot implements IBot {
       const s = this.blastScore(a, p, b, at, THROW_TIME + landHops * BOUNCE_TIME, x, y, foes);
       a.bomb[from] = saved;
       if (s === -INF || (aim && this.hits === 0)) continue;
+      // trapped (no aim): only worth it if the bomb's blast no longer reaches us
+      if (!aim && at >= 0 && inBlast(a, at % W, (at / W) | 0, b.radius, bombPierces(a.world, b), x, y)) continue;
       this.tried(b);
       return [[dx, dy, Button.Action], [0, 0, 0]];
     }
@@ -1101,6 +1129,7 @@ export class Bot implements IBot {
       a.bomb[from] = saved;
       if (s === -INF || (aim && this.hits === 0)) continue;
       if (b.fuse > 0 && b.fuse < slideTicks + 5) continue;
+      if (!aim && inBlast(a, stop % W, (stop / W) | 0, b.radius, bombPierces(a.world, b), x, y)) continue;
       this.tried(b);
       const along = Math.abs(dx !== 0 ? b.x - p.x : b.y - p.y);
       const n = Math.max(2, Math.ceil((along - 0.62) / speed) + 2);
@@ -1238,7 +1267,11 @@ export class Bot implements IBot {
       // mostly axis-aligned: correct the perpendicular offset gently
       return Math.abs(dx) > Math.abs(dy) ? [Math.sign(dx), clampAxis(dy * 2)] : [clampAxis(dx * 2), Math.sign(dy)];
     }
-    // idle: settle on the tile centre so bombs land where we expect
+    return this.settle(p);
+  }
+
+  /** Idle: settle on the tile centre so bombs land where we expect. */
+  private settle(p: PlayerState): [number, number] {
     const ox = Math.round(p.x) - p.x;
     const oy = Math.round(p.y) - p.y;
     if (Math.abs(ox) + Math.abs(oy) < 0.08) return [0, 0];
