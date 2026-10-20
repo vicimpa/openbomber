@@ -88,6 +88,7 @@ const INK: Record<string, string> = {
   Y: '#ffd24d', A: '#d98a1c', Z: '#fff2b8',  // gold
   k: '#e8925e', b: '#c86a48', B: '#8a3f34', M: '#5a3a3a', // brick
   s: '#8b93a7', S: '#565d73', e: '#2a2440', // grey device
+  C: '#8ff4ff', D: '#34b4e4', V: '#c79bff', X: '#6a44c4', // teleport swirl
 };
 /** Draws a string-art sprite with an automatic 1px outline (4-neighbourhood). */
 const stamp = (t: Tile, art: string[], x0: number, y0: number, outline = true) => {
@@ -313,9 +314,33 @@ for (const [k, v] of Object.entries(fromAtlas)) icons.set(k, cut(v));
   icons.set('Skull', t);
 }
 
+{ // Teleport: a cyan / violet portal swirl with sparkles, on the blue "stat" tile
+  const t = wipe(cut('append'), PAL.blue);
+  const rx = 8, ry = 10, rows: string[] = [];
+  for (let y = 0; y <= ry * 2; y++) {
+    let r = '';
+    for (let x = 0; x <= rx * 2; x++) {
+      const dx = (x - rx) / (rx + 0.5), dy = (y - ry) / (ry + 0.5), d = Math.hypot(dx, dy);
+      if (d > 1) { r += '.'; continue; }
+      if (d > 0.84) { r += dx + dy < 0 ? 'D' : 'X'; continue; }
+      if (d < 0.2) { r += 'W'; continue; }
+      // two spiral arms winding into the centre
+      const a = Math.atan2(dy, dx) / (Math.PI * 2) + 0.5;
+      const arm = (a * 2 + d * 1.6) % 1;
+      r += arm < 0.28 ? (d < 0.5 ? 'W' : 'C') : arm < 0.5 ? 'D' : arm < 0.78 ? 'V' : 'X';
+    }
+    rows.push(r);
+  }
+  stamp(t, rows, 15 - rx, 15 - ry);
+  for (const [x, y] of [[4, 5], [25, 8], [5, 23], [24, 24]]) {
+    t.set(x, y, hex('#f6f4ff')); t.set(x - 1, y, hex('#8ff4ff')); t.set(x + 1, y, hex('#8ff4ff')); t.set(x, y - 1, hex('#8ff4ff')); t.set(x, y + 1, hex('#8ff4ff'));
+  }
+  icons.set('Teleport', t);
+}
+
 // ---------------------------------------------------------------- pack
 const ORDER = ['BombUp', 'FireUp', 'SpeedUp', 'FullFire', 'Kick', 'Glove', 'Punch', 'Remote', 'Pierce',
-  'LineBomb', 'BombPass', 'Shield', 'Ghost', 'Crazy', 'Fire', 'Heart', 'Skull', 'Random'];
+  'LineBomb', 'BombPass', 'Shield', 'Ghost', 'Crazy', 'Fire', 'Heart', 'Skull', 'Random', 'Teleport'];
 const COLS = 6, CELL = S + 1;
 const rows = Math.ceil(ORDER.length / COLS) + 1; // + a row for the blink frames
 const out: Img = { w: COLS * CELL + 1, h: rows * CELL + 1, data: new Uint8Array((COLS * CELL + 1) * (rows * CELL + 1) * 4) };
