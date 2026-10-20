@@ -17,7 +17,7 @@ import { buildHud } from '../ui/hud';
 import { t } from '../ui/i18n';
 import {
   bindActions, connectStatus, fps, handleGameEvents, hud, onlineCount, pushChat, registerLoadTask, resetGameState,
-  room, screen, settings, spectators, toast, uiCapturesInput,
+  room, roomSettings, screen, settings, spectators, toast, uiCapturesInput,
 } from '../ui/store';
 import { LocalSource } from './LocalSource';
 
@@ -144,6 +144,7 @@ export function startSession() {
       else pushChat({ from: source?.localId ?? '', name: settings.peek().name, text, at: Date.now() });
     },
     setProfile(p) { source?.setProfile(p); },
+    setRoomSettings(p) { if (source instanceof NetSource) source.setRoomSettings(p); },
     uiSound(s) { audio.ui(s); },
   });
 
@@ -175,7 +176,15 @@ export function startSession() {
         if (src instanceof NetSource) {
           if (spectators.peek().length !== src.spectators)
             spectators.value = Array.from({ length: src.spectators }, (_, i) => ({ id: `s${i}`, name: '' }));
-        } else if (spectators.peek().length) spectators.value = [];
+          // own rooms: settings panel (re-render only when something changed)
+          const rs = src.roomId !== MAIN_ROOM_ID ? { ...src.roomSettings, isHost: src.isHost } : null;
+          const cur = roomSettings.peek();
+          if (!rs !== !cur || (rs && cur && (rs.bots !== cur.bots || rs.botDifficulty !== cur.botDifficulty
+            || rs.maxPlayers !== cur.maxPlayers || rs.zone !== cur.zone || rs.isHost !== cur.isHost))) roomSettings.value = rs;
+        } else {
+          if (spectators.peek().length) spectators.value = [];
+          if (roomSettings.peek()) roomSettings.value = null;
+        }
       }
     } else {
       renderer?.render(null, '', dt);

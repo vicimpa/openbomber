@@ -3,7 +3,8 @@
 // (player list, spectators) and «Настройки» (volume + device settings).
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { canFullscreen, isFullscreen, toggleFullscreen } from '$/input/fullscreen';
-import { Button, Logo } from './components';
+import { BOT_DIFFICULTIES, MAX_PLAYERS } from '@ob/game';
+import { Button, Logo, Segmented, Toggle } from './components';
 import { copyRoom, shareRoom } from './hud/RoomCode';
 import { t } from './i18n';
 import { Icon } from './icons';
@@ -11,7 +12,7 @@ import { LINKS } from './links';
 import { NAME_MAX, randomName } from './names';
 import { SettingsSections } from './SettingsModal';
 import { HeroSprite } from './sprites';
-import { actions, hud, menuOpen, openModal, players, room, setName, settings, spectators } from './store';
+import { actions, hud, menuOpen, openModal, players, room, roomSettings, setName, settings, spectators } from './store';
 
 type Tab = 'game' | 'players' | 'settings';
 let lastTab: Tab = 'game';
@@ -84,6 +85,8 @@ function GameTab() {
         </section>
       )}
 
+      {r && r.isPrivate && !r.offline && <RoomSettingsCard />}
+
       <Button block variant="white" icon={<Icon name="home" />} onClick={() => { menuOpen.value = false; actions.leave(); }}>{t('menu.toMainMenu')}</Button>
 
       <section class="card">
@@ -95,6 +98,46 @@ function GameTab() {
         </ul>
       </section>
     </>
+  );
+}
+
+/** − value + row for small counts. */
+function Stepper({ label, value, min, max, disabled, onChange }: {
+  label: string; value: number; min: number; max: number; disabled: boolean; onChange: (v: number) => void;
+}) {
+  const set = (v: number) => { if (!disabled) onChange(Math.min(max, Math.max(min, v))); };
+  return (
+    <div class="field rstep">
+      <span class="field__label">{label}</span>
+      <div class="rstep__ctl">
+        <button type="button" class="icon-btn" disabled={disabled || value <= min} onClick={() => { actions.uiSound('click'); set(value - 1); }} aria-label="−"><Icon name="minus" size={10} /></button>
+        <span class="rstep__value">{value}</span>
+        <button type="button" class="icon-btn" disabled={disabled || value >= max} onClick={() => { actions.uiSound('click'); set(value + 1); }} aria-label="+"><Icon name="plus" size={10} /></button>
+      </div>
+    </div>
+  );
+}
+
+/** Own online room: bots, their difficulty, capacity and the zone. Only the host can edit. */
+function RoomSettingsCard() {
+  const rs = roomSettings.value;
+  if (!rs) return null;
+  const off = !rs.isHost;
+  const set = actions.setRoomSettings;
+  return (
+    <section class={`card room-settings ${off ? 'is-readonly' : ''}`}>
+      <h3><Icon name="gear" /> {t('room.settings')}</h3>
+      <Stepper label={t('room.bots')} value={rs.bots} min={0} max={Math.max(0, rs.maxPlayers - 1)} disabled={off} onChange={(bots) => set({ bots })} />
+      <Segmented
+        label={t('bots.difficulty')}
+        value={rs.botDifficulty}
+        options={BOT_DIFFICULTIES.map((d) => ({ value: d, label: t(`bots.${d}`) }))}
+        onChange={(botDifficulty) => { if (!off) set({ botDifficulty }); }}
+      />
+      <Stepper label={t('room.maxPlayers')} value={rs.maxPlayers} min={2} max={MAX_PLAYERS} disabled={off} onChange={(maxPlayers) => set({ maxPlayers })} />
+      <Toggle label={t('room.zone')} hint={t('room.zoneHint')} checked={rs.zone} onChange={(zone) => { if (!off) set({ zone }); }} />
+      {off && <p class="muted">{t('room.hostOnly')}</p>}
+    </section>
   );
 }
 

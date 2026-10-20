@@ -6,7 +6,8 @@
 
 import { Room, ServerError, type AuthContext, type Client } from '@colyseus/core';
 import {
-  Button, MAX_PLAYERS, MSG, PATCH_RATE, Phase, TICK_MS, TICK_RATE, unpackAxis,
+  BOT_DIFFICULTIES, Button, MAX_PLAYERS, MSG, PATCH_RATE, Phase, TICK_MS, TICK_RATE, unpackAxis,
+  type BotDifficultyName, type MatchConfig, type RoomSettings,
   type ChatMessage, type GameEvent, type IBot, type ISimulation, type InputFrame, type JoinOptions,
   type RoomOptions,
 } from '@ob/game';
@@ -19,15 +20,16 @@ import {
   clampSkin, cleanText, cryptoU32, playerName, releaseRoomCode, uniqueName,
 } from './util.ts';
 
-export const DEFAULT_BOTS = 3;
+/** Own rooms start without bots; the creator adds them in the room settings. */
+export const DEFAULT_BOTS = 0;
 /** Max frames accepted per input message (client sends 2 per message normally). */
 export const MAX_INPUT_BATCH = 12;
 /** Bots think every N ticks (staggered). Bot's internal timers assume 1. */
 export const BOT_THINK_EVERY = 1;
 /** Connected clients per room (players + spectators). */
 export const MAX_CLIENTS = Number(process.env.MAX_CLIENTS) || 200;
-/** Main room: bots that keep a lone human company (only while exactly one human plays). */
-export const BOTS_MAIN = clampInt(Number(process.env.BOTS_MAIN), 0, 4, 0);
+/** Shared arena: while anyone is watching or playing, bots top the arena up to this many players. */
+export const MAIN_FILL = clampInt(Number(process.env.MAIN_FILL), 0, MAX_PLAYERS, 4);
 /** «Отключиться» mid-round: the hero stays in the arena this long (can't dodge a blast by leaving). */
 export const LEAVE_GRACE_MS = 2000;
 /** While playing, a rename is accepted (and announced) at most this often. */
@@ -51,7 +53,12 @@ export const T = {
   zoneWarning: (sec: number) => `Уменьшение размера карты через ${sec} сек`,
   zoneCancel: 'Уменьшение размера карты отменено',
   full: 'Нет свободных мест',
+  newHost: (n: string) => `${n} теперь управляет комнатой`,
+  settings: (s: RoomSettings) =>
+    `Настройки комнаты: ботов ${s.bots} (${DIFFICULTY_RU[s.botDifficulty]}), игроков до ${s.maxPlayers}, зона ${s.zone ? 'вкл' : 'выкл'}`,
 };
+
+const DIFFICULTY_RU: Record<BotDifficultyName, string> = { easy: 'легко', normal: 'нормально', hard: 'жёстко' };
 
 /** Server-only token: only startGameServer() may create the main room. */
 export const MAIN_TOKEN = crypto.randomUUID();
@@ -71,6 +78,7 @@ interface Human {
   profile: TokenBucket;
   pings: TokenBucket;
   plays: TokenBucket;
+  settings: TokenBucket;
   droppedFrames: number;
 }
 
@@ -135,7 +143,10 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
   isMain = false;
   private game!: GameImpl;
   private code = '';
-  private botTarget = DEFAULT_BOTS;
+  /** Own rooms: what the creator set (the shared arena ignores bots / maxPlayers here). */
+  private settings: RoomSettings = { bots: DEFAULT_BOTS, botDifficulty: 'normal', maxPlayers: MAX_PLAYERS, zone: true };
+  private simConfig!: MatchConfig;
+  private ownerId = '';
   private readonly humans = new Map<string, Human>();
   private readonly bots = new Map<string, BotSlot>();
   private botCounter = 0;
@@ -155,12 +166,13 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     this.game = getGameImpl();
     this.maxPlayers = clampInt(options.maxPlayers, 1, MAX_PLAYERS, MAX_PLAYERS);
     this.isMain = options.__main === MAIN_TOKEN;
+    this.settings.maxPlayers = this.maxPlayers;
     if (this.isMain) {
       this.roomId = MAIN_ROOM_ID;
       this.autoDispose = false;
-      this.botTarget = BOTS_MAIN;
     } else {
-      this.botTarget = clampInt(options.bots, 0, this.maxPlayers - 1, DEFAULT_BOTS);
+      this.settings.bots = clampInt(options.bots, 0, this.maxPlayers - 1, DEFAULT_BOTS);
+      if (BOT_DIFFICULTIES.includes(options.botDifficulty as BotDifficultyName)) this.settings.botDifficulty = options.botDifficulty!;
       this.code = allocateRoomCode();
       this.roomId = this.code;
       if (options.private) await this.setPrivate(true);
@@ -169,7 +181,8 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     roomCreated();
     // Crypto seed + entropy: hidden information (pickups in bricks, crazy bombs, Random rolls)
     // can't be reconstructed from the visible map by a client that runs the same simulation.
-    this.sim = this.game.createSimulation({ minPlayers: 2, seed: cryptoU32(), entropy: cryptoU32 });
+    this.simConfig = { minPlayers: 2, seed: cryptoU32(), entropy: cryptoU32, zone: true };
+    this.sim = this.game.createSimulation(this.simConfig);
     this.setPatchRate(1000 / PATCH_RATE);
     this.setSimulationInterval((dt) => this.update(dt), TICK_MS);
 
@@ -177,6 +190,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     this.onMessage(MSG.chat, (client, msg: unknown) => this.handleChat(client, msg));
     this.onMessage(MSG.profile, (client, msg: unknown) => this.handleProfile(client, msg));
     this.onMessage(MSG.play, (client, msg: unknown) => this.handlePlay(client, msg === true));
+    this.onMessage(MSG.settings, (client, msg: unknown) => this.handleSettings(client, msg));
     this.onMessage(MSG.ping, (client, msg: unknown) => {
       const h = this.humans.get(client.sessionId);
       if (!h || typeof msg !== 'number' || !Number.isFinite(msg) || !h.pings.take()) return;
@@ -202,9 +216,13 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
       profile: new TokenBucket(3, 0.5),
       pings: new TokenBucket(5, 2),
       plays: new TokenBucket(4, 1),
+      settings: new TokenBucket(10, 4),
       droppedFrames: 0,
     });
+    // own rooms: the first person in becomes the host (room settings)
+    if (!this.isMain && !this.ownerId) this.ownerId = client.sessionId;
     if (options?.play === true) this.setPlaying(client, true);
+    this.reconcileBots();
     this.updateMeta();
   }
 
@@ -235,6 +253,12 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     if (h.playing || h.leaving) this.leaveArena(id, h, true);
     this.humans.delete(id);
     clientLeft(h.ip);
+    if (this.ownerId === id) {
+      // hand the room over to the next person still here
+      this.ownerId = this.humans.keys().next().value ?? '';
+      const next = this.ownerId ? this.humans.get(this.ownerId) : undefined;
+      if (next) this.systemChat(T.newHost(next.name));
+    }
     this.reconcileBots();
     this.updateMeta();
   }
@@ -257,6 +281,12 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     const spectators = this.humans.size - this.playingCount();
     if (s.spectators !== spectators) s.spectators = spectators;
     if (s.maxPlayers !== this.maxPlayers) s.maxPlayers = this.maxPlayers;
+    if (s.ownerId !== this.ownerId) s.ownerId = this.ownerId;
+    const st = this.settings;
+    if (s.bots !== st.bots) s.bots = st.bots;
+    const diff = BOT_DIFFICULTIES.indexOf(st.botDifficulty);
+    if (s.botDifficulty !== diff) s.botDifficulty = diff;
+    if (s.zone !== st.zone) s.zone = st.zone;
     if (this.events.length > 0) {
       (this as Room).broadcast(MSG.events, this.events, { afterNextPatch: true });
       this.events = [];
@@ -421,15 +451,15 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
   // ------------------------------------------------------------------ bots
 
   /**
-   * Main room: BOTS_MAIN bots only while exactly one human plays (default 0, canon).
+   * Shared arena: while anyone is connected, bots top it up to MAIN_FILL players (none when empty).
+   * Own rooms: exactly the creator's `bots`, as far as free slots allow.
    * Other rooms: fill up to `bots` while human players are few, never below 2 players total.
    */
   private desiredBots(): number {
     const n = this.playingCount();
-    if (this.isMain) return n === 1 ? Math.min(this.botTarget, this.maxPlayers - 1) : 0;
-    if (n === 0 || this.botTarget === 0) return 0;
-    const want = Math.max(this.botTarget - (n - 1), 2 - n, 0);
-    return Math.min(want, this.maxPlayers - n);
+    if (this.isMain) return this.humans.size === 0 ? 0 : Math.max(0, Math.min(MAIN_FILL, this.maxPlayers) - n);
+    if (n === 0) return 0;
+    return Math.max(0, Math.min(this.settings.bots, this.maxPlayers - n));
   }
 
   private reconcileBots() {
@@ -464,7 +494,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     const id = `bot-${n}`;
     const name = BOT_NAMES[n % BOT_NAMES.length]!.slice(0, NAME_MAX);
     this.sim.addPlayer({ id, name, skin: (n * 7 + 3) % SKIN_COUNT, isBot: true });
-    this.bots.set(id, { bot: this.game.createBot(id, this.sim), seq: 0 });
+    this.bots.set(id, { bot: this.game.createBot(id, this.sim, this.settings.botDifficulty), seq: 0 });
   }
 
   // ------------------------------------------------------------------ messages
@@ -515,6 +545,30 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     }
     if (o.skin !== undefined) h.skin = p.skin = clampSkin(o.skin);
     if (h.playing && (p.name !== undefined || p.skin !== undefined)) this.sim.updateProfile(id, p);
+  }
+
+  /** Own rooms: the host changes the room settings (validated, rate limited, announced). */
+  private handleSettings(client: Client, msg: unknown) {
+    const h = this.humans.get(client.sessionId);
+    if (this.isMain || !h || client.sessionId !== this.ownerId || !msg || typeof msg !== 'object' || !h.settings.take()) return;
+    const o = msg as Partial<Record<keyof RoomSettings, unknown>>;
+    const s = this.settings;
+    const prev = { ...s };
+    if (o.maxPlayers !== undefined) s.maxPlayers = clampInt(o.maxPlayers, 2, MAX_PLAYERS, s.maxPlayers);
+    if (o.bots !== undefined) s.bots = clampInt(o.bots, 0, MAX_PLAYERS - 1, s.bots);
+    s.bots = Math.min(s.bots, s.maxPlayers - 1);
+    if (BOT_DIFFICULTIES.includes(o.botDifficulty as BotDifficultyName)) s.botDifficulty = o.botDifficulty as BotDifficultyName;
+    if (typeof o.zone === 'boolean') s.zone = o.zone;
+    if (prev.bots === s.bots && prev.botDifficulty === s.botDifficulty && prev.maxPlayers === s.maxPlayers && prev.zone === s.zone) return;
+
+    this.maxPlayers = s.maxPlayers;
+    this.simConfig.zone = s.zone;
+    if (prev.botDifficulty !== s.botDifficulty) {
+      for (const [id, slot] of this.bots) slot.bot = this.game.createBot(id, this.sim, s.botDifficulty);
+    }
+    this.reconcileBots();
+    this.systemChat(T.settings(s));
+    this.updateMeta();
   }
 
   private systemChat(text: string) {

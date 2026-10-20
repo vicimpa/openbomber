@@ -441,6 +441,11 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
 .profile__edit { display: flex; gap: 4px; }
 .profile__edit .input { min-width: 0; padding: 6px 8px; }
 
+.field.rstep { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; }
+.rstep__ctl { display: flex; align-items: center; gap: 6px; }
+.rstep__ctl .icon-btn { width: 32px; height: 32px; }
+.rstep__value { min-width: 2.2em; text-align: center; font-size: 18px; line-height: 1; }
+.room-settings.is-readonly .seg, .room-settings.is-readonly .field--toggle { opacity: 0.55; pointer-events: none; }
 .room-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .room-line__code { font-size: 22px; letter-spacing: 0.2em; margin-right: auto; }
 

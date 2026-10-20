@@ -82,7 +82,20 @@ export const MSG = {
   /** client -> server: boolean. true = «Подключиться» (enter the arena as a player),
    *  false = «Отключиться» (back to spectators). Room clients start as spectators. */
   play: 'play',
+  /** client -> server: Partial<RoomSettings> (own rooms, creator only). Settings live in the state. */
+  settings: 'settings',
 } as const;
+
+export type BotDifficultyName = 'easy' | 'normal' | 'hard';
+export const BOT_DIFFICULTIES: readonly BotDifficultyName[] = ['easy', 'normal', 'hard'];
+
+/** What the creator of an own room can tune. */
+export interface RoomSettings {
+  bots: number;                     // bots in the arena (exact count, capped by the free slots)
+  botDifficulty: BotDifficultyName;
+  maxPlayers: number;               // arena capacity, humans + bots
+  zone: boolean;                    // the arena shrinks during long rounds
+}
 
 export interface ChatMessage {
   from: string;      // player id, '' = system
@@ -101,6 +114,7 @@ export const ROOM_NAME = 'battle';
 /** Options for creating a room (private rooms are joined by code, i.e. roomId). */
 export interface RoomOptions {
   private?: boolean;
-  bots?: number;          // fill up to this many players with bots while waiting
+  bots?: number;          // own rooms: initial RoomSettings.bots
+  botDifficulty?: BotDifficultyName;
   maxPlayers?: number;
 }

@@ -18,6 +18,8 @@ export interface MatchConfig {
    * visible layout can't be used to recover what is hidden. Omit for deterministic play.
    */
   entropy?: () => number;
+  /** Zone shrink on (default). Read live, so a host can toggle it between or during rounds. */
+  zone?: boolean;
 }
 
 export interface NewPlayer {

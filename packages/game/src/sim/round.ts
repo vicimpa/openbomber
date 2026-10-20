@@ -172,7 +172,8 @@ function checkRoundEnd(ctx: SimCtx) {
  * the last ring's blocks fall in a sweep, so whoever is buried last wins.
  */
 const canShrink = (ctx: SimCtx) =>
-  ctx.world.players.size >= 2 && ctx.world.zoneRing * 2 < Math.min(ctx.world.width, ctx.world.height);
+  ctx.config.zone !== false
+  && ctx.world.players.size >= 2 && ctx.world.zoneRing * 2 < Math.min(ctx.world.width, ctx.world.height);
 
 /** The open middle is narrow: rings come quickly (ZONE_FINAL_*). */
 const endgame = (ctx: SimCtx) =>

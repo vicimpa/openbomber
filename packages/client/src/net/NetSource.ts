@@ -6,7 +6,7 @@
 import type { Room } from '@colyseus/sdk';
 import {
   Ability, BOMB_FUSE, BombKind, BombMotion, Button, Curse, MSG, Phase, PLAYER_RADIUS, TICK_MS, Tile, packAxis,
-  predictMovement, predictWithProxies, unpackAxis,
+  BOT_DIFFICULTIES, predictMovement, predictWithProxies, unpackAxis, type RoomSettings,
   type BombState, type ChatMessage, type GameEvent, type InputFrame, type PlayerState, type PredictMovement,
   type WorldState,
 } from '@ob/game';
@@ -68,6 +68,9 @@ export class NetSource implements GameSource {
   spectators = 0;
   /** Arena capacity (players incl. bots). */
   maxPlayers = 0;
+  /** Own rooms: the host's session id ('' in the shared arena) and the room settings. */
+  ownerId = '';
+  roomSettings: RoomSettings = { bots: 0, botDifficulty: 'normal', maxPlayers: 0, zone: true };
   readonly chatLog: ChatMessage[] = [];
 
   private readonly room: Room<any, BattleState>;
@@ -262,6 +265,16 @@ export class NetSource implements GameSource {
     if (this.status === 'connected') this.room.send(MSG.profile, p);
   }
 
+  /** This client created the room (or took it over) and may change its settings. */
+  get isHost(): boolean {
+    return !!this.ownerId && this.ownerId === this.sessionId;
+  }
+
+  /** Host only (the server ignores anyone else): change the room settings. */
+  setRoomSettings(p: Partial<RoomSettings>) {
+    if (this.status === 'connected' && this.isHost) this.room.send(MSG.settings, p);
+  }
+
   /** Subscribe to chat (incl. system messages from '@server', `from === ''`). Returns an unsubscribe fn. */
   onChat(cb: Listener<ChatMessage>): () => void {
     this.chatListeners.add(cb);
@@ -402,6 +415,12 @@ export class NetSource implements GameSource {
     model.apply(s);
     this.spectators = s.spectators ?? 0;
     this.maxPlayers = s.maxPlayers ?? 0;
+    this.ownerId = s.ownerId ?? '';
+    const rs = this.roomSettings;
+    rs.bots = s.bots ?? 0;
+    rs.botDifficulty = BOT_DIFFICULTIES[s.botDifficulty ?? 1] ?? 'normal';
+    rs.maxPlayers = this.maxPlayers;
+    rs.zone = s.zone ?? true;
     if (!model.ready) return;
     const w = model.world;
     const now = performance.now();

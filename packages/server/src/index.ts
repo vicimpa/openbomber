@@ -10,7 +10,7 @@
 //              (plus the usual websocket headers: Upgrade / Connection "upgrade").
 //              Always add `proxy_set_header X-Real-IP $remote_addr;`: the per-IP limits in
 //              limits.ts trust it.
-//   BOTS_MAIN  bots in the main room while exactly one human plays (default 0 = canon)
+//   MAIN_FILL  shared arena: bots top it up to this many players while anyone is there (default 4)
 //   MAX_CLIENTS  connected clients per room, players + spectators (default 200)
 //   MAX_CLIENTS_PER_IP  connections from one IP across all rooms (default 6)
 //   MAX_ROOMS  rooms alive at once (default 300)

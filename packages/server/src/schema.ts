@@ -107,6 +107,12 @@ export const BattleState = schema({
   spectators: t.uint16().default(0),
   /** Arena capacity (sim players incl. bots). */
   maxPlayers: t.uint8().default(0),
+  /** Own rooms: the session that may change the settings ('' in the shared arena). */
+  ownerId: t.string().default(''),
+  /** Room settings (RoomSettings): bot count, BOT_DIFFICULTIES index, zone shrink on/off. */
+  bots: t.uint8().default(0),
+  botDifficulty: t.uint8().default(1),
+  zone: t.boolean().default(true),
   /** width * height Tile values, index = y * width + x; patched per index. */
   tiles: t.array('uint8'),
   players: t.map(PlayerSchema),

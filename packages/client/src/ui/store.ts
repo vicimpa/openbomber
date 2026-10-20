@@ -9,7 +9,7 @@
 //   stage.value: the #stage element of the mounted GameScreen (or use <GameScreen onStageReady>)
 //   uiCapturesInput.value: true while chat / a modal is open → call input.setEnabled(!v)
 import { computed, signal } from '@preact/signals';
-import type { ChatMessage, GameEvent, WorldState } from '@ob/game';
+import type { ChatMessage, GameEvent, RoomSettings, WorldState } from '@ob/game';
 import type { UiSound } from '$/contracts';
 import type { HudSnapshot } from './hud';
 import { t, type I18nKey } from './i18n';
@@ -71,6 +71,8 @@ export const pendingInvite = signal<string | null>(null);
 // ---------------------------------------------------------------- game HUD
 export const hud = signal<HudSnapshot | null>(null);
 export const fps = signal(0);
+/** Own online room: its settings and whether this player is the host (null elsewhere). */
+export const roomSettings = signal<(RoomSettings & { isHost: boolean }) | null>(null);
 /** Players in the shared online arena (main menu hint); null = unknown / server down. */
 export const onlineCount = signal<number | null>(null);
 export const stage = signal<HTMLElement | null>(null);
@@ -158,6 +160,8 @@ export interface Actions {
   sendChat(text: string): void;
   /** Name / skin changed (also while in a room). */
   setProfile(p: { name?: string; skin?: number }): void;
+  /** Own room host: change bots / difficulty / capacity / zone. */
+  setRoomSettings(p: Partial<RoomSettings>): void;
   /** Menu click / hover sounds (AudioEngine.ui). */
   uiSound(sound: UiSound): void;
 }
@@ -174,6 +178,7 @@ const stubActions: Actions = {
   leave: log('leave'),
   sendChat: log('sendChat'),
   setProfile: log('setProfile'),
+  setRoomSettings: log('setRoomSettings'),
   uiSound: () => {},
 };
 
@@ -197,6 +202,7 @@ export const actions: Actions = {
   leave: () => impl.leave(),
   sendChat: (text) => impl.sendChat(text),
   setProfile: (p) => impl.setProfile(p),
+  setRoomSettings: (p) => impl.setRoomSettings(p),
   uiSound: (s) => impl.uiSound(s),
 };
 

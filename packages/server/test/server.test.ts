@@ -11,7 +11,7 @@ import * as Game from '@ob/game';
 import { BOMB_FUSE, Button, MSG, ROOM_NAME, TICK_MS, type ChatMessage, type GameEvent, type PredictMovement } from '@ob/game';
 import { limits, resetLimits } from '../src/limits.ts';
 import { startGameServer, type GameServer } from '../src/app.ts';
-import { BattleRoom } from '../src/BattleRoom.ts';
+import { BattleRoom, MAIN_FILL } from '../src/BattleRoom.ts';
 import { setGameImpl } from '../src/game.ts';
 import { CODE_ALPHABET } from '../src/util.ts';
 import { BattleState, type RoomListing } from '../src/schema.ts';
@@ -193,19 +193,20 @@ describe('room', () => {
 });
 
 describe('matchmaking', () => {
-  test('main room: persistent, listed, spectators by default, no bots', async () => {
+  test('main room: persistent, listed, spectators by default, bots keep it alive', async () => {
     const list = (await (await fetch(`http://localhost:${server.port}/api/rooms`)).json()) as RoomListing[];
     const main = list.find((r) => r.roomId === 'MAIN');
     expect(main?.metadata?.main).toBe(true);
     expect(main?.maxClients).toBe(200);
-    const s1 = await join('joinById', 'MAIN', { name: 'Watcher', skin: 0 });
     const sr = serverRoom('MAIN');
+    await waitFor(() => sr.botCount === 0, 15000, 'empty arena without bots');
+    const s1 = await join('joinById', 'MAIN', { name: 'Watcher', skin: 0 });
     await waitFor(() => s1.state.width > 0, 1000, 'state');
-    expect(sr.sim.state.players.size).toBe(0);
+    // somebody is watching: bots top the arena up to MAIN_FILL players
+    await waitFor(() => sr.botCount === MAIN_FILL, 1000, 'bots for the watcher');
     const p1 = await join('joinById', 'MAIN', { name: 'Lone', skin: 0, play: true });
     await waitFor(() => sr.sim.state.players.has(p1.sessionId), 1000, 'lone player');
-    await sleep(100);
-    expect(sr.botCount).toBe(0); // BOTS_MAIN defaults to 0 (canon)
+    expect(sr.sim.state.players.size).toBeLessThanOrEqual(MAIN_FILL + 1); // a spare bot leaves between rounds
     await Promise.all([s1.leave(), p1.leave()]);
     await sleep(100);
     expect(matchMaker.getLocalRoomById('MAIN')).toBeTruthy(); // autoDispose = false
@@ -239,24 +240,31 @@ describe('matchmaking', () => {
     await Promise.all([host.leave(), guest.leave(), quick.leave()]);
   });
 
-  test('vs-bots room: bots fill and leave as human players join', async () => {
-    const h1 = await join('create', ROOM_NAME, { private: true, name: 'Solo', skin: 0, bots: 3, play: true });
-    const sr = serverRoom(h1.roomId);
-    expect(sr.botCount).toBe(3);
-    await waitFor(() => h1.state.players?.size === 4, 1000, '4 players');
-    const spect = await join('joinById', h1.roomId, { name: 'Watch', skin: 0 });
-    await sleep(100);
-    expect(sr.botCount).toBe(3); // spectators do not count
-    const h2 = await join('joinById', h1.roomId, { name: 'Second', skin: 0, play: true });
-    const h3 = await join('joinById', h1.roomId, { name: 'Third', skin: 0, play: true });
-    // spare bots leave once they are out of the round or between rounds
-    await waitFor(() => sr.botCount === 1, 15000, 'bots left');
-    await Promise.all([h2.leave(), h3.leave(), spect.leave()]);
-    await waitFor(() => sr.humanCount === 1 && sr.botCount === 3, 3000, 'bots back');
-    const meta = (await matchMaker.query({ roomId: h1.roomId }))[0]!.metadata;
-    expect([meta.bots, meta.humans]).toEqual([3, 1]);
-    await h1.leave();
-  }, 25000);
+  test('own room: the host sets bots, difficulty, capacity and zone; others cannot', async () => {
+    const host = await join('create', ROOM_NAME, { private: true, name: 'Host', skin: 0, play: true });
+    const sr = serverRoom(host.roomId);
+    await waitFor(() => host.state.ownerId === host.sessionId, 1000, 'owner');
+    expect(sr.botCount).toBe(0); // own rooms start without bots
+    const said = chatsOf(host);
+    host.send(MSG.settings, { bots: 3, botDifficulty: 'hard', maxPlayers: 6, zone: false });
+    await waitFor(() => sr.botCount === 3, 1000, '3 bots');
+    await waitFor(() => host.state.bots === 3 && host.state.botDifficulty === 2 && host.state.maxPlayers === 6 && host.state.zone === false, 1000, 'settings in state');
+    await waitFor(() => said.find((m) => m.from === '' && m.text.startsWith('Настройки комнаты')), 1000, 'announced');
+
+    const guest = await join('joinById', host.roomId, { name: 'Guest', skin: 0, play: true });
+    guest.send(MSG.settings, { bots: 0 });
+    await sleep(200);
+    expect(sr.botCount).toBe(3); // not the host: ignored, and bots are an exact count
+    expect(sr.sim.state.players.size).toBe(5);
+
+    const gsaid = chatsOf(guest);
+    await host.leave();
+    await waitFor(() => guest.state.ownerId === guest.sessionId, 2000, 'host handed over');
+    await waitFor(() => gsaid.find((m) => m.from === '' && m.text === 'Guest теперь управляет комнатой'), 1000, 'handover chat');
+    guest.send(MSG.settings, { bots: 1 });
+    await waitFor(() => guest.state.bots === 1, 1000, 'new host can change settings');
+    await guest.leave();
+  });
 
   test('reconnection keeps the player in the arena; expiry removes them', async () => {
     const r = await join('create', ROOM_NAME, { private: true, name: 'Flaky', skin: 0, bots: 0, play: true });
@@ -399,11 +407,12 @@ describe('NetSource (client)', () => {
     expect([src.localId, src.isPlaying, src.spectators]).toEqual(['', false, 1]);
     expect(await src.play(true)).toBe(true);
     await pump(150);
-    expect([src.localId, src.isPlaying, src.spectators, src.playersCount]).toEqual([src.sessionId, true, 0, 1]);
+    const humans = () => src.players.filter((p) => !p.isBot).length; // MAIN also has bots now
+    expect([src.localId, src.isPlaying, src.spectators, humans()]).toEqual([src.sessionId, true, 0, 1]);
     expect(src.maxPlayers).toBe(32);
     expect(await src.play(false)).toBe(false);
     await pump(150);
-    expect([src.localId, src.isPlaying, src.playersCount]).toEqual(['', false, 0]);
+    expect([src.localId, src.isPlaying, humans()]).toEqual(['', false, 0]);
     const rooms = await listRooms(url + '/api');
     expect(rooms.some((r) => r.roomId === 'MAIN')).toBe(true);
   });
