@@ -5,7 +5,8 @@
 
 import type { Room } from '@colyseus/sdk';
 import {
-  Ability, BOMB_FUSE, BombKind, BombMotion, Button, Curse, MSG, Phase, TICK_MS, Tile, packAxis, predictMovement, unpackAxis,
+  Ability, BOMB_FUSE, BombKind, BombMotion, Button, Curse, MSG, Phase, PLAYER_RADIUS, TICK_MS, Tile, packAxis,
+  predictMovement, predictWithProxies, unpackAxis,
   type BombState, type ChatMessage, type GameEvent, type InputFrame, type PlayerState, type PredictMovement,
   type WorldState,
 } from '@ob/game';
@@ -36,6 +37,12 @@ const CHAT_LOG = 100;
 const PLAY_TIMEOUT_MS = 3000;
 /** A server bombPlaced matching a predicted one within this window is swallowed. */
 const PREDICTED_BOMB_MS = 1000;
+/** Remote heroes closer than this to the local one are pushed in prediction (proxies). */
+const PROXY_RANGE = 2.5;
+/** Within this distance a remote hero counts as "in contact" and is drawn at its proxy. */
+const CONTACT = 2 * PLAYER_RADIUS + 0.15;
+/** How fast a remote hero eases between its interpolated and its proxy position (1/ms). */
+const CONTACT_EASE_MS = 90;
 /** Local player moved farther than this in one tick (respawn, push-out): don't interpolate. */
 const TICK_TELEPORT = 0.5;
 
@@ -65,6 +72,13 @@ export class NetSource implements GameSource {
 
   private readonly room: Room<any, BattleState>;
   private readonly predict: PredictMovement | null;
+  /** The real predictor also pushes nearby heroes (proxies); a custom/test predictor doesn't. */
+  private readonly pushPredict: boolean;
+  /** Local copies of the remote heroes next to us, pushed along by prediction. */
+  private proxies: PlayerState[] = [];
+  private readonly proxyPool: PlayerState[] = [];
+  /** Per remote hero: 0 = drawn interpolated, 1 = drawn at its proxy (in contact). */
+  private readonly contact = new Map<string, number>();
   private readonly predictBombs: boolean;
   private readonly model = new ReadModel();
   private readonly view: WorldState = emptyWorld();
@@ -110,6 +124,7 @@ export class NetSource implements GameSource {
     this.roomId = room.roomId;
     this.sessionId = room.sessionId;
     this.predict = opts.predict === undefined ? predictMovement : opts.predict;
+    this.pushPredict = opts.predict === undefined;
     this.predictBombs = opts.predictBombSound ?? true;
     room.reconnection.minUptime = 1000;
 
@@ -297,7 +312,7 @@ export class NetSource implements GameSource {
     if (this.pending.length > MAX_PENDING) this.pending.shift();
     this.unsent.push(f);
     if (this.pred) { this.prevX = this.pred.x; this.prevY = this.pred.y; }
-    if (this.pred && this.predict) this.predict(this.model.world, this.pred, f);
+    if (this.pred && this.predict) this.step(this.pred, f);
     if (f.buttons & Button.Bomb && !(this.prevButtons & Button.Bomb)) this.predictBomb(f.seq);
     this.prevButtons = f.buttons;
     if (++this.sinceSend >= SEND_EVERY_TICKS) this.flush();
@@ -458,12 +473,12 @@ export class NetSource implements GameSource {
     const pred = this.pred ?? (this.pred = newPlayer(auth.id));
     copyPlayer(auth, pred);
     this.prevX = pred.x; this.prevY = pred.y;
+    this.takeProxies(auth);
     if (this.predict) {
       // predictMovement freezes dead / spectating / countdown players itself
-      const w = this.model.world;
       for (let i = 0; i < pending.length; i++) {
         if (i === pending.length - 1) { this.prevX = pred.x; this.prevY = pred.y; }
-        this.predict(w, pred, pending[i]!);
+        this.step(pred, pending[i]!);
       }
     }
 
@@ -473,6 +488,27 @@ export class NetSource implements GameSource {
       if (Math.hypot(ex, ey) > SNAP_DIST || !auth.alive) { this.errX = 0; this.errY = 0; }
       else { this.errX = ex; this.errY = ey; }
     }
+  }
+
+  /** One predicted tick of the local hero (pushing the proxies along, like the server would). */
+  private step(pred: PlayerState, f: InputFrame) {
+    if (this.pushPredict) predictWithProxies(this.model.world, pred, f, this.proxies);
+    else this.predict!(this.model.world, pred, f);
+  }
+
+  /** Fresh proxies from the authoritative state: remote heroes within PROXY_RANGE of us. */
+  private takeProxies(auth: PlayerState) {
+    let n = 0;
+    if (this.pushPredict) {
+      for (const p of this.model.world.players.values()) {
+        if (p.id === auth.id || !p.alive || !p.inRound) continue;
+        if (Math.abs(p.x - auth.x) > PROXY_RANGE || Math.abs(p.y - auth.y) > PROXY_RANGE) continue;
+        const q = this.proxyPool[n] ?? (this.proxyPool[n] = newPlayer(p.id));
+        copyPlayer(p, q);
+        n++;
+      }
+    }
+    this.proxies = this.proxyPool.slice(0, n);
   }
 
   /** Build the exposed world for this frame: interpolated remotes / bombs + smoothed local player. */
@@ -501,10 +537,28 @@ export class NetSource implements GameSource {
         this.visX = p.x; this.visY = p.y;
       } else {
         this.tracks.get(id)?.sample(renderTick, p);
+        this.drawContact(id, p, dtMs);
       }
     }
 
     for (const [id, b] of v.bombs) if (id >= 0) this.placeBomb(id, b, renderTick);
+  }
+
+  /**
+   * A remote hero we're pushing is drawn where prediction pushed it (no 100 ms interpolation
+   * lag, so heroes don't visually sink into each other); it eases in and out of that mode.
+   */
+  private drawContact(id: string, p: PlayerState, dtMs: number) {
+    let proxy: PlayerState | undefined;
+    for (const q of this.proxies) if (q.id === id) { proxy = q; break; }
+    const near = !!proxy && !!this.pred && Math.hypot(proxy.x - this.pred.x, proxy.y - this.pred.y) < CONTACT;
+    const prev = this.contact.get(id) ?? 0;
+    const step = Math.max(0, dtMs) / CONTACT_EASE_MS;
+    const k = near ? Math.min(1, prev + step) : Math.max(0, prev - step);
+    if (k > 0) this.contact.set(id, k); else this.contact.delete(id);
+    if (k <= 0 || !proxy) return;
+    p.x += (proxy.x - p.x) * k;
+    p.y += (proxy.y - p.y) * k;
   }
 
   private lerpX = 0;

@@ -424,6 +424,42 @@ describe('NetSource (client)', () => {
   });
 });
 
+describe('pushing over the network', () => {
+  test('the pushed hero moves on the server and the pusher predicts it without corrections', async () => {
+    const a = await createPrivateRoom({ name: 'Pusher', skin: 0, bots: 0, serverUrl: url });
+    const b = await joinRoomByCode(a.roomId, { name: 'Target', skin: 1, play: true, serverUrl: url });
+    sources.push(a, b);
+    const sim = serverRoom(a.roomId).sim as Game.Simulation;
+    sim.holdRound = true;
+    let t = performance.now();
+    const frame = (dx: number) => {
+      const n = performance.now();
+      a.update(n - t, { dx, dy: 0, buttons: 0 });
+      b.update(n - t, { dx: 0, dy: 0, buttons: 0 });
+      t = n;
+    };
+    const live = () => sim.state.phase === Game.Phase.Playing && [...sim.state.players.values()].every((p) => p.inRound && p.alive);
+    for (let i = 0; i < 300 && !(sim.state.players.size === 2 && live()); i++) { frame(0); await sleep(16); }
+    const w = sim.state;
+    for (let x = 0; x < w.width; x++) w.tiles[x] = Game.Tile.Floor;
+    const sa = w.players.get(a.localId)!, sb = w.players.get(b.localId)!;
+    sa.x = 0; sa.y = 0; sb.x = 0.6; sb.y = 0;
+    for (let i = 0; i < 30; i++) { frame(0); await sleep(16); }
+    let maxErr = 0;
+    const t0 = performance.now();
+    while (performance.now() - t0 < 1200) {
+      frame(1);
+      await sleep(16);
+      const s = a as unknown as { errX: number; errY: number };
+      maxErr = Math.max(maxErr, Math.hypot(s.errX, s.errY));
+    }
+    expect(sb.x).toBeGreaterThan(1.5);                        // B was shoved along
+    expect(sb.x - sa.x).toBeGreaterThanOrEqual(0.49);          // and they don't overlap
+    expect(maxErr).toBeLessThan(0.02);                         // prediction matched the server
+    a.dispose(); b.dispose();
+  });
+});
+
 describe('anti-cheat', () => {
   test('per-IP connection cap and room-creation rate', async () => {
     Object.assign(limits, { ...STRICT, clientsPerIp: 2, createBurst: 1, createsPerSecond: 1e-6 });

@@ -1,5 +1,5 @@
 export { Simulation } from './Simulation';
-export { applyMovement, predictMovement, playerSpeed, blockedFor, tileSolidFor, bombBlocksPlayer } from './movement';
+export { applyMovement, predictMovement, predictWithProxies, playerSpeed, blockedFor, tileSolidFor, bombBlocksPlayer } from './movement';
 export { cir2cir, cir2sqr, circleTouchesTile, type Vec } from './collision';
 export { calcMap, mapSizeFor, spawnPoints, generateMap, ringTiles, parseMap, isPillar } from './map';
 export { TIMED_ABILITIES, emptyEffects, syncAbilities } from './effects';

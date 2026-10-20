@@ -261,6 +261,22 @@ export function pushPlayers(w: WorldState) {
 }
 
 /**
+ * Client prediction with pushing: the same movement code path, then the authoritative push
+ * (both passes, even split) against `proxies`, local copies of the nearby heroes that this
+ * function moves too. That's what the server does, so pushing someone predicts cleanly.
+ * Never mutates the world.
+ */
+export function predictWithProxies(world: WorldState, player: PlayerState, input: InputFrame, proxies: readonly PlayerState[]) {
+  applyMovement(world, player, input);
+  if (!solidPlayer(player)) return;
+  for (let pass = 0; pass < 2; pass++) {
+    for (const q of proxies) {
+      if (q.id !== player.id && solidPlayer(q) && pushApart(world, player, q, 0.5)) pushApart(world, q, player, 1);
+    }
+  }
+}
+
+/**
  * Client prediction: the same movement code path, then the local hero's half of the push
  * against the (interpolated) others. Never mutates the world.
  */
