@@ -1,6 +1,5 @@
-// Interfaces between client modules. Each module is owned by one agent; the session
-// layer (src/session) wires them together. Do not change signatures without updating
-// docs/REWRITE_PLAN.md — other modules are written against these.
+// Interfaces between client modules; the session layer (src/session) wires them together.
+// Other modules are written against these signatures, so change them together.
 
 import type { GameEvent, InputFrame, WorldState } from '@ob/game';
 

@@ -140,7 +140,6 @@ bun run build        # packages/client/dist и Node-бандл сервера в
 
 </details>
 
-Архитектура, правила и решения описаны в [docs/REWRITE_PLAN.md](docs/REWRITE_PLAN.md).
 Первая версия игры сохранена в истории git под тегом `v1`.
 
 ## Поддержать
