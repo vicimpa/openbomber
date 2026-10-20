@@ -112,8 +112,11 @@ export function markBlast(
         onBomb?.(bombGrid[i]!, t);
         break;
       }
-      const blocker = (tile === Tile.Brick && !pierce) || pickups[i];
-      if (!blocker) continue;
+      // pickups burn but let the flame through; players stopping it is ignored (errs on the safe side)
+      if (tile !== Tile.Brick || pierce) {
+        if (gone && pickups[i] && t < gone[i]!) gone[i] = t;
+        continue;
+      }
       if (!gone) break;
       if (gone[i]! + FLAME_TIME < t) continue; // already burnt away by an earlier blast
       if (t < gone[i]!) gone[i] = t;
@@ -287,7 +290,7 @@ function resolveChains(
     if (!best) break;
     best.done = true;
     if (best.time >= INF) {
-      markSoft(w, bombGrid, pickups, best.x, best.y, best.radius, best.pierce, soft);
+      markSoft(w, bombGrid, best.x, best.y, best.radius, best.pierce, soft);
       continue;
     }
     markBlast(w, bombGrid, pickups, gone, best.x, best.y, best.radius, best.pierce, best.time, ds, de, onBomb, best.dur);
@@ -295,7 +298,7 @@ function resolveChains(
 }
 
 /** Blast cells of an untimed (remote) bomb. */
-function markSoft(w: WorldState, bombGrid: Int32Array, pickups: Int8Array, x: number, y: number, radius: number, pierce: boolean, soft: Uint8Array) {
+function markSoft(w: WorldState, bombGrid: Int32Array, x: number, y: number, radius: number, pierce: boolean, soft: Uint8Array) {
   const W = w.width;
   soft[y * W + x] = 1;
   for (let d = 0; d < 4; d++) {
@@ -309,7 +312,7 @@ function markSoft(w: WorldState, bombGrid: Int32Array, pickups: Int8Array, x: nu
       const tile = w.tiles[i];
       if (tile === Tile.Wall) break;
       soft[i] = 1;
-      if (bombGrid[i] || (tile === Tile.Brick && !pierce) || pickups[i]) break;
+      if (bombGrid[i] || (tile === Tile.Brick && !pierce)) break;
     }
   }
 }

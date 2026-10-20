@@ -248,6 +248,43 @@ describe('bombs', () => {
     expect(ev(h.events, 'pickupBurned').length).toBe(1);
   });
 
+  test('a burning pickup lets the flame through', () => {
+    const h = new Harness(OPEN, [['a', 1, 1]]);
+    h.sim.spawnPickup(3, 1, PickupType.BombUp);
+    h.p('a').radius = 4;
+    h.tap('a', Button.Bomb);
+    h.p('a').x = 8;
+    h.p('a').y = 0;
+    h.until((e) => ev(e, 'explosion').length > 0, BOMB_FUSE + 5);
+    const cells = new Map(ev(h.events, 'explosion')[0]!.cells.map((c) => [`${c.x},${c.y}`, c.shape]));
+    expect(ev(h.events, 'pickupBurned').length).toBe(1);
+    expect(cells.get('4,1')).toBe(FlameShape.Horizontal);
+    expect(cells.get('5,1')).toBe(FlameShape.EndRight);
+  });
+
+  test('a player takes the blast and shields whoever stands behind; pierce goes through', () => {
+    for (const pierce of [false, true]) {
+      const h = new Harness(OPEN, [['a', 1, 1], ['b', 3, 1], ['c', 5, 1]]);
+      h.p('a').radius = 5;
+      if (pierce) h.p('a').abilities |= Ability.Pierce;
+      h.tap('a', Button.Bomb);
+      h.p('a').x = 8;
+      h.p('a').y = 0;
+      h.until((e) => ev(e, 'explosion').length > 0, BOMB_FUSE + 5);
+      const cells = new Map(ev(h.events, 'explosion')[0]!.cells.map((c) => [`${c.x},${c.y}`, c.shape]));
+      h.step();
+      expect(h.p('b').alive).toBe(false);
+      if (pierce) {
+        expect(cells.get('6,1')).toBe(FlameShape.EndRight);
+        expect(h.p('c').alive).toBe(false);
+      } else {
+        expect(cells.get('3,1')).toBe(FlameShape.EndRight);
+        expect(cells.has('4,1')).toBe(false);
+        expect(h.p('c').alive).toBe(true);
+      }
+    }
+  });
+
   test('chain reaction with CHAIN_DELAY', () => {
     const h = new Harness(['.........', '.........', '.........'], [['a', 2, 1]]);
     h.p('a').radius = 2;

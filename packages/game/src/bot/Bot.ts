@@ -785,13 +785,14 @@ export class Bot implements IBot {
         if (cx < 0 || cy < 0 || cx >= W || cy >= H) break;
         const t = tiles[i];
         if (t === Tile.Wall) break;
-        if (players[i]) foes += players[i]! - (i === self ? 1 : 0);
+        const here = players[i] ? players[i]! - (i === self ? 1 : 0) : 0;
+        foes += here;
         if (t === Tile.Brick) {
           if (ds[i]! >= INF) bricks++; // not already being blown up
           if (!pierce) break;
           continue;
         }
-        if (a.bomb[i] || a.pickup[i]) break;
+        if (a.bomb[i] || (here && !pierce)) break; // the first body takes the blast
       }
     }
     return bricks * 12 + foes * 30 * this.tune.aggression;
@@ -923,7 +924,6 @@ export class Bot implements IBot {
           if (o && !seen && depth < 8) bricks += this.stampBlast(a, o, stamp, depth + 1);
           break;
         }
-        if (a.pickup[i]) break;
       }
     }
     return bricks;

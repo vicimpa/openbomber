@@ -79,15 +79,20 @@ export function tickFlames(ctx: SimCtx) {
   }
 }
 
-/** Burn a pickup on the tile if it is no longer protected. Returns true if a pickup stopped the flame. */
-function hitPickup(ctx: SimCtx, x: number, y: number): boolean {
+/** Burn a pickup on the tile if it is no longer protected (the flame goes on through it, as in legacy). */
+function hitPickup(ctx: SimCtx, x: number, y: number) {
   const k = pickupAt(ctx, x, y);
-  if (!k) return false;
-  if (k.protect <= 0) {
-    ctx.world.pickups.delete(k.id);
-    emit(ctx, { type: 'pickupBurned', pickup: k.id, x, y });
+  if (!k || k.protect > 0) return;
+  ctx.world.pickups.delete(k.id);
+  emit(ctx, { type: 'pickupBurned', pickup: k.id, x, y });
+}
+
+/** A live player stands on the tile: their body takes the blast and shields whoever is behind. */
+function playerOn(ctx: SimCtx, x: number, y: number): boolean {
+  for (const p of ctx.world.players.values()) {
+    if (p.alive && p.inRound && Math.round(p.x) === x && Math.round(p.y) === y) return true;
   }
-  return true;
+  return false;
 }
 
 /** Grounded bomb on a tile via ctx.bombGrid (exploded ones have left the map). */
@@ -131,7 +136,8 @@ export function explode(ctx: SimCtx, b: BombState, pierce: boolean, credit: stri
       } else if (ctx.brickBurn[idx]! > 0 && !pierce) {
         stop = true; // a brick destroyed a moment ago still soaks up the flame
       }
-      if (hitPickup(ctx, x, y)) stop = true;
+      hitPickup(ctx, x, y);
+      if (!pierce && playerOn(ctx, x, y)) stop = true;
       const other = gridBomb(ctx, x, y);
       if (other) {
         chainBomb(ctx, other, credit);

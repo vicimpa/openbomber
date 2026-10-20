@@ -91,7 +91,7 @@ const ru = {
 
   'howto.title': 'Как играть',
   'howto.goal': 'Цель',
-  'howto.goalText': 'Один общий мир: заходишь и сразу видишь живую арену. «Подключиться» вводит в игру, «Отключиться» возвращает в наблюдатели. Ставь бомбы, ломай кирпичи, собирай бусты. Последний выживший побеждает. Когда игроков больше одного, карта сужается: «Уменьшение размера карты через 15 сек». Внизу слева кнопка меню, справа — чат.',
+  'howto.goalText': 'Один общий мир: заходишь и сразу видишь живую арену. «Подключиться» вводит в игру, «Отключиться» возвращает в наблюдатели. Ставь бомбы, ломай кирпичи, собирай бусты. Огонь сжигает бусты и летит дальше, а игрок или бомба на пути принимают взрыв на себя. Последний выживший побеждает. Когда игроков больше одного, карта сужается: «Уменьшение размера карты через 15 сек». Внизу слева кнопка меню, справа — чат.',
   'howto.controls': 'Управление',
   'howto.action': 'Кнопка «Действие» зависит от бонусов: схватить и бросить бомбу (Перчатка), ударить бомбу (Кулак), взорвать свою бомбу (Пульт).',
   'howto.pickups': 'Бонусы',
@@ -324,7 +324,7 @@ const en: Record<I18nKey, string> = {
 
   'howto.title': 'How to play',
   'howto.goal': 'Goal',
-  'howto.goalText': 'One shared world: you land straight in a live arena. «Connect» puts you in the game, «Disconnect» makes you a spectator again. Drop bombs, blast bricks, grab boosts. The last one standing wins. With two or more players the map shrinks every so often. The bottom-left button opens the menu, the bottom-right one the chat.',
+  'howto.goalText': 'One shared world: you land straight in a live arena. «Connect» puts you in the game, «Disconnect» makes you a spectator again. Drop bombs, blast bricks, grab boosts. Fire burns boosts and keeps going, but a player or a bomb in its path takes the blast. The last one standing wins. With two or more players the map shrinks every so often. The bottom-left button opens the menu, the bottom-right one the chat.',
   'howto.controls': 'Controls',
   'howto.action': 'The Action button depends on your power-ups: grab and throw a bomb (Glove), punch a bomb (Punch), detonate your bomb (Remote).',
   'howto.pickups': 'Power-ups',
