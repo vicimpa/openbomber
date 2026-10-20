@@ -2,6 +2,7 @@
 import { useEffect } from 'preact/hooks';
 import { Button } from './components';
 import { t } from './i18n';
+import { Icon } from './icons';
 import { HeroSprite } from './sprites';
 import { actions, connectStatus, openModal, screen, settings } from './store';
 
@@ -30,11 +31,11 @@ export function ConnectingScreen() {
     <div class="overlay" data-nav-root>
       <div class={`box connect ${st.error ? 'is-error' : ''}`} role="status" aria-live="polite">
         {st.error ? <>
-          <h2>💥 {t('connect.error')}</h2>
+          <h2><Icon name="warning" /> {t('connect.error')}</h2>
           <p class="muted">{st.error}</p>
           <div class="connect__row">
             <Button variant="white" onClick={retry} data-autofocus>{t('connect.retry')}</Button>
-            <Button onClick={() => { screen.value = 'menu'; openModal('bots'); }}>🤖 {t('connect.offline')}</Button>
+            <Button onClick={() => { screen.value = 'menu'; openModal('bots'); }} icon={<Icon name="bot" />}>{t('connect.offline')}</Button>
             <Button onClick={back}>{t('connect.back')}</Button>
           </div>
         </> : <>

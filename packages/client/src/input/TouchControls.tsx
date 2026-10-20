@@ -4,6 +4,7 @@
 // Mounting: the game screen renders <TouchControls .../> above the canvas and BELOW the
 // interactive HUD layer when `lastDevice.value === 'touch'`. It writes into `touchState`
 // (./touch.ts), which every InputManager from createInput() reads.
+import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { vibrate } from './haptics';
 import { resetTouch, touchState } from './touch';
@@ -17,8 +18,8 @@ export interface TouchControlsProps {
   /** Mirror: joystick on the right, buttons on the left. */
   leftHanded?: boolean;
   /** Labels for the buttons (localised by the caller). */
-  bombLabel?: string;
-  actionLabel?: string;
+  bombLabel?: ComponentChildren;
+  actionLabel?: ComponentChildren;
   bombTitle?: string;
   actionTitle?: string;
 }
@@ -28,7 +29,7 @@ const STICK_DEADZONE = 0.16;  // fraction of radius
 
 type BtnName = 'bomb' | 'action';
 
-export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bombLabel = '💣', actionLabel = '✋', bombTitle = 'Bomb', actionTitle = 'Action' }: TouchControlsProps) {
+export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bombLabel = 'B', actionLabel = 'A', bombTitle = 'Bomb', actionTitle = 'Action' }: TouchControlsProps) {
   const stickZone = useRef<HTMLDivElement>(null);
   const btnZone = useRef<HTMLDivElement>(null);
   const base = useRef<HTMLDivElement>(null);

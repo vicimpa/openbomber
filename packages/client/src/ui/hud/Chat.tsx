@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { isTouchDevice } from '$/input/device';
 import { t } from '../i18n';
+import { Icon } from '../icons';
 import { actions, chat, chatOpen } from '../store';
 
 const isSystem = (m: { from: string; name: string }) => !m.from || m.name.startsWith('@');
@@ -65,7 +66,7 @@ export function ChatDrawer() {
           <span>{t('chat.title')}</span>
           <span class="chat__head-btns">
             <button class="btn btn--flat btn--sm" onClick={() => setBlur(!blur)}>{blur ? t('chat.show') : t('chat.hide')}</button>
-            <button class="icon-btn icon-btn--sm" onClick={() => { chatOpen.value = false; }} aria-label={t('common.close')}>✕</button>
+            <button class="icon-btn icon-btn--sm" onClick={() => { chatOpen.value = false; }} aria-label={t('common.close')}><Icon name="close" /></button>
           </span>
         </header>
         <div class={`chat__list ${blur ? 'is-blur' : ''}`} ref={listRef} data-scrollable aria-live="polite">

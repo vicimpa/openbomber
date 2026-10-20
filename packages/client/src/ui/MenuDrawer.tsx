@@ -1,4 +1,4 @@
-// The menu: a drawer over the live world (☰ in the bottom pill, Esc, gamepad Start).
+// The menu: a drawer over the live world (menu button in the bottom pill, Esc, gamepad Start).
 // Tabs: «Игра» (profile, how to play, fullscreen, room code, back to the main menu, links), «Игроки»
 // (player list, spectators) and «Настройки» (volume + device settings).
 import { useEffect, useRef, useState } from 'preact/hooks';
@@ -6,6 +6,7 @@ import { canFullscreen, isFullscreen, toggleFullscreen } from '$/input/fullscree
 import { Button, Logo } from './components';
 import { copyRoom, shareRoom } from './hud/RoomCode';
 import { t } from './i18n';
+import { Icon } from './icons';
 import { LINKS } from './links';
 import { NAME_MAX, randomName } from './names';
 import { SettingsSections } from './SettingsModal';
@@ -55,7 +56,7 @@ function Profile() {
         <div class="profile__btns">
           {!editing && <Button size="sm" onClick={() => { setDraft(name); setEditing(true); }}>{t('menu.edit')}</Button>}
           <Button size="sm" onClick={() => openModal('skin')}>{t('menu.avatar')}</Button>
-          <Button size="sm" onClick={() => setName(randomName(language))} title={t('menu.randomName')} aria-label={t('menu.randomName')}>🎲</Button>
+          <Button size="sm" onClick={() => setName(randomName(language))} title={t('menu.randomName')} aria-label={t('menu.randomName')}><Icon name="dice" /></Button>
         </div>
       </div>
     </section>
@@ -68,28 +69,28 @@ function GameTab() {
     <>
       <Profile />
       <div class="row2">
-        <Button block icon="❔" onClick={() => openModal('howto')}>{t('menu.howTo2')}</Button>
-        {canFullscreen && <Button block icon="⛶" onClick={() => toggleFullscreen()} aria-pressed={isFullscreen.value}>{t('menu.fullscreen')}</Button>}
+        <Button block icon={<Icon name="question" />} onClick={() => openModal('howto')}>{t('menu.howTo2')}</Button>
+        {canFullscreen && <Button block  icon={<Icon name="fullscreen" />} onClick={() => toggleFullscreen()} aria-pressed={isFullscreen.value}>{t('menu.fullscreen')}</Button>}
       </div>
 
       {r && r.isPrivate && !r.offline && (
         <section class="card">
-          <h3>🔒 {t('menu.privateRoom')}</h3>
+          <h3><Icon name="lock" /> {t('menu.privateRoom')}</h3>
           <div class="room-line">
             <span class="room-line__code">{r.code}</span>
-            <Button size="sm" icon="🔗" onClick={() => copyRoom(r.code)}>{t('hud.copyLink')}</Button>
-            {typeof navigator.share === 'function' && <Button size="sm" icon="📤" onClick={() => shareRoom(r.code)}>{t('hud.share')}</Button>}
+            <Button size="sm" icon={<Icon name="link" />} onClick={() => copyRoom(r.code)}>{t('hud.copyLink')}</Button>
+            {typeof navigator.share === 'function' && <Button size="sm" icon={<Icon name="share" />} onClick={() => shareRoom(r.code)}>{t('hud.share')}</Button>}
           </div>
         </section>
       )}
 
-      <Button block variant="white" icon="🏠" onClick={() => { menuOpen.value = false; actions.leave(); }}>{t('menu.toMainMenu')}</Button>
+      <Button block variant="white" icon={<Icon name="home" />} onClick={() => { menuOpen.value = false; actions.leave(); }}>{t('menu.toMainMenu')}</Button>
 
       <section class="card">
         <h3>{t('menu.links')}:</h3>
         <ul class="links">
           {LINKS.map((l) => (
-            <li><a href={l.href} target="_blank" rel="noopener"><span class="links__icon" style={{ background: l.color }} aria-hidden="true">{l.glyph}</span>{t(l.key)}</a></li>
+            <li><a href={l.href} target="_blank" rel="noopener"><Icon name={l.icon} class="links__icon" />{t(l.key)}</a></li>
           ))}
         </ul>
       </section>
@@ -110,7 +111,7 @@ export function PlayerList() {
               <li key={p.id} class={`${p.isLocal ? 'is-me' : ''}`} data-state={!p.inRound ? 'wait' : p.alive || p.respawning ? 'alive' : 'dead'}>
                 <HeroSprite skin={p.skin} scale={0.9} still={!p.alive} />
                 <span class="plist__name">{p.name}{p.isBot && <small> · {t('hud.bot')}</small>}</span>
-                <span class="plist__stats"><span>👑 {p.wins}</span><span>🔫 {p.kills}</span><span>💀 {p.deaths}</span></span>
+                <span class="plist__stats"><span><Icon name="crown" /> {p.wins}</span><span><Icon name="gun" /> {p.kills}</span><span><Icon name="skull" /> {p.deaths}</span></span>
               </li>
             ))}
           </ul>
@@ -154,12 +155,12 @@ export function MenuDrawer() {
       >
         <header class="drawer__head">
           <Logo class="drawer__logo" />
-          <button class="icon-btn" onClick={() => { actions.uiSound('back'); menuOpen.value = false; }} aria-label={t('common.close')} title={t('common.close')}>✕</button>
+          <button class="icon-btn" onClick={() => { actions.uiSound('back'); menuOpen.value = false; }} aria-label={t('common.close')} title={t('common.close')}><Icon name="close" /></button>
         </header>
         <div class="tabs" role="tablist">
           {(['game', 'players', 'settings'] as Tab[]).map((id) => (
             <button role="tab" aria-selected={tab === id} class={tab === id ? 'is-on' : ''} onClick={() => pick(id)}>
-              {id === 'game' ? `🕹️ ${t('menu.tabGame')}` : id === 'players' ? `👥 ${t('menu.tabPlayers')} ${h ? h.players.length : 0}` : `⚙️ ${t('settings.title')}`}
+              {id === 'game' ? <><Icon name="gamepad" /> {t('menu.tabGame')}</> : id === 'players' ? <><Icon name="users" /> {t('menu.tabPlayers')} {h ? h.players.length : 0}</> : <><Icon name="gear" /> {t('settings.title')}</>}
             </button>
           ))}
         </div>

@@ -1,8 +1,9 @@
 // Shared UI primitives in the OpenBomber style: Modal (dark blurred box), Button (white bevel
-// or flat grey), Slider (− [bar] +), Toggle, Segmented, Kbd, Logo.
+// or flat grey), Slider (minus [bar] plus), Toggle, Segmented, Kbd, Logo.
 import type { ComponentChildren, JSX } from 'preact';
 import { useEffect, useId, useRef } from 'preact/hooks';
 import { t } from './i18n';
+import { Icon } from './icons';
 import logoUrl from './logo.svg';
 import { focusables } from './nav';
 import { actions } from './store';
@@ -50,7 +51,7 @@ export function Modal({ title, onClose, children, footer, size = 'md' }: ModalPr
       <div ref={ref} class={`modal modal--${size}`} role="dialog" aria-modal="true" aria-labelledby={titleId} data-nav-root>
         <header class="modal__head">
           <h2 id={titleId}>{title}</h2>
-          <button class="icon-btn modal__x" onClick={() => { actions.uiSound('back'); onClose(); }} aria-label={t('common.close')} title={t('common.close')}>✕</button>
+          <button class="icon-btn modal__x" onClick={() => { actions.uiSound('back'); onClose(); }} aria-label={t('common.close')} title={t('common.close')}><Icon name="close" /></button>
         </header>
         <div class="modal__body" data-scrollable>{children}</div>
         {footer && <footer class="modal__foot">{footer}</footer>}
@@ -88,7 +89,7 @@ export function Button({ variant = 'flat', size = 'md', icon, sub, block, childr
   );
 }
 
-// ---------------------------------------------------------------- Slider: "− [ 42% ] +"
+// ---------------------------------------------------------------- Slider: "- [ 42% ] +"
 export interface SliderProps {
   label: string;
   value: number;
@@ -107,7 +108,7 @@ export function Slider({ label, value, min, max, step, onInput, format }: Slider
     <div class="field field--slider">
       <label for={id}>{label}</label>
       <div class="slider">
-        <button type="button" class="icon-btn icon-btn--sm" tabIndex={-1} aria-hidden="true" onClick={() => set(value - step * 2)}>−</button>
+        <button type="button" class="icon-btn icon-btn--sm" tabIndex={-1} aria-hidden="true" onClick={() => set(value - step * 2)}><Icon name="minus" size={10} /></button>
         <div class="slider__track" style={{ '--pct': `${pct}%` }}>
           <input
             id={id}
@@ -120,7 +121,7 @@ export function Slider({ label, value, min, max, step, onInput, format }: Slider
           />
           <output for={id}>{format ? format(value) : value}</output>
         </div>
-        <button type="button" class="icon-btn icon-btn--sm" tabIndex={-1} aria-hidden="true" onClick={() => set(value + step * 2)}>+</button>
+        <button type="button" class="icon-btn icon-btn--sm" tabIndex={-1} aria-hidden="true" onClick={() => set(value + step * 2)}><Icon name="plus" size={10} /></button>
       </div>
     </div>
   );

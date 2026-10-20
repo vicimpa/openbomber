@@ -4,6 +4,7 @@ import { PickupType } from '@ob/game';
 import { useEffect, useRef } from 'preact/hooks';
 import pickupsJson from '$/assets/pickups/pickups.json';
 import pickupsPng from '$/assets/pickups/pickups.png';
+import { Icon } from './icons';
 import { PICKUP_BY_TYPE } from './pickups';
 
 interface AseFrame {
@@ -151,13 +152,13 @@ export function PickupIcon({ type, size = 32, class: cls, title }: PickupIconPro
   // Fallback if a frame is missing from the atlas.
   return (
     <span
-      class={`pickup-icon pickup-icon--emoji ${cls ?? ''}`}
+      class={`pickup-icon pickup-icon--missing ${cls ?? ''}`}
       title={title}
       role="img"
       aria-label={title ?? info?.name.en}
-      style={{ width: `${size}px`, height: `${size}px`, fontSize: `${size * 0.55}px`, '--pc': info?.color ?? '#555' }}
+      style={{ width: `${size}px`, height: `${size}px`, background: info?.color ?? '#555' }}
     >
-      {info?.emoji ?? '?'}
+      <Icon name="question" size={size / 2} />
     </span>
   );
 }

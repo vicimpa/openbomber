@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { Button, Modal, Segmented } from './components';
 import { t } from './i18n';
+import { Icon } from './icons';
 import { SKIN_COUNT } from './settings';
 import { HeroSprite } from './sprites';
 import { actions, closeAllModals, closeModal, menuOpen, setSkin, settings, type Difficulty } from './store';
@@ -92,9 +93,9 @@ export function BotsModal() {
         <div class="field">
           <span class="field__label">{t('bots.count')}</span>
           <div class="stepper">
-            <button class="icon-btn icon-btn--lg" onClick={() => change(-1)} disabled={bots <= 1} aria-label="−">−</button>
+            <button class="icon-btn icon-btn--lg" onClick={() => change(-1)} disabled={bots <= 1} aria-label="-"><Icon name="minus" /></button>
             <output class="stepper__value" aria-live="polite">{bots}</output>
-            <button class="icon-btn icon-btn--lg" onClick={() => change(1)} disabled={bots >= 7} aria-label="+">+</button>
+            <button class="icon-btn icon-btn--lg" onClick={() => change(1)} disabled={bots >= 7} aria-label="+"><Icon name="plus" /></button>
           </div>
           <div class="bots__row" aria-hidden="true">
             {Array.from({ length: 7 }, (_, i) => (
@@ -112,7 +113,7 @@ export function BotsModal() {
           ]}
           onChange={setDiff}
         />
-        <p class="bots__hint">📴 {t('bots.offlineHint')}</p>
+        <p class="bots__hint"><Icon name="offline" /> {t('bots.offlineHint')}</p>
         <Button variant="white" size="lg" block onClick={start} data-autofocus>{t('bots.start')}</Button>
       </div>
     </Modal>

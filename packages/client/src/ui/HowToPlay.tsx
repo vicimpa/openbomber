@@ -1,5 +1,6 @@
 import { Button, Modal } from './components';
 import { t, tr } from './i18n';
+import { Icon } from './icons';
 import { CURSES, PICKUPS, type PickupGroup } from './pickups';
 import { KeyBindings } from './SettingsModal';
 import { PickupIcon } from './sprites';
@@ -21,18 +22,18 @@ export function HowToPlayModal() {
     >
       <div class="howto">
         <section class="howto__goal">
-          <h3>🎯 {t('howto.goal')}</h3>
+          <h3><Icon name="target" /> {t('howto.goal')}</h3>
           <p>{t('howto.goalText')}</p>
         </section>
 
         <section>
-          <h3>🎮 {t('howto.controls')}</h3>
+          <h3><Icon name="gamepad" /> {t('howto.controls')}</h3>
           <KeyBindings />
-          <p class="howto__note">💡 {t('howto.action')}</p>
+          <p class="howto__note"><Icon name="bulb" /> {t('howto.action')}</p>
         </section>
 
         <section>
-          <h3>✨ {t('howto.pickups')}</h3>
+          <h3><Icon name="sparkle" /> {t('howto.pickups')}</h3>
           {GROUPS.map(({ group, key }) => (
             <div class="pickup-group">
               <h4>{t(key)}</h4>
@@ -50,11 +51,11 @@ export function HowToPlayModal() {
             </div>
           ))}
           <div class="pickup-group">
-            <h4>💀 {t('howto.curses')}</h4>
+            <h4><Icon name="skull" /> {t('howto.curses')}</h4>
             <ul class="pickup-list pickup-list--curses">
               {CURSES.map((c) => (
                 <li class="pickup-card pickup-card--curse">
-                  <span class="curse-emoji" aria-hidden="true">{c.emoji}</span>
+                  <span class="curse-icon"><Icon name={c.icon} size={30} /></span>
                   <div>
                     <strong>{tr(c.name)}</strong>
                     <p>{tr(c.desc)}</p>

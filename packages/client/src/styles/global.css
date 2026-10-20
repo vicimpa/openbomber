@@ -1,5 +1,5 @@
 /* OpenBomber v2 UI. Canon identity: BetterVCR everywhere, flat dark-grey translucent blurred
-   pills and boxes, emoji counters, red name tags, pixel art, the live world behind everything.
+   pills and boxes, pixel-icon counters, red name tags, pixel art, the live world behind everything.
    From new-openbomber: the logo, the noise loader panel, chunky white bevelled buttons. */
 
 @font-face {
@@ -88,7 +88,10 @@ img, canvas { image-rendering: pixelated; }
 .logo { display: block; width: min(450px, calc(100% - 40px)); height: auto; }
 .hero-sprite { image-rendering: pixelated; display: block; flex: none; }
 .pickup-icon { display: inline-block; flex: none; image-rendering: pixelated; background-repeat: no-repeat; vertical-align: middle; }
-.pickup-icon--emoji { display: inline-grid; place-items: center; line-height: 1; background: #555; border-radius: 4px; }
+.pickup-icon--missing { display: inline-grid; place-items: center; border-radius: 4px; }
+/* Pixel icons (ui/icons.tsx). Inline: centred on the BetterVCR cap height (caps sit 2/16 em above
+   the CSS baseline and are 14/16 em tall). In flex/grid boxes the container centres them. */
+.icon { display: inline-block; flex: none; vertical-align: calc(0.5625em - var(--icon, 20px) / 2); }
 .nametag { color: var(--red); font-size: 12px; text-shadow: 0 1px 0 #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .nametag--lg { font-size: 18px; }
 
@@ -117,7 +120,7 @@ img, canvas { image-rendering: pixelated; }
 .btn--lg { min-height: 48px; font-size: 18px; }
 .btn--xl { min-height: 70px; padding: 0 28px; font-size: 24px; }
 .btn--block { width: 100%; }
-.btn__icon { line-height: 1; flex: none; }
+.btn__icon { display: inline-flex; flex: none; }
 .btn__text { display: flex; flex-direction: column; gap: 2px; }
 .btn__sub { font-size: 12px; opacity: 0.7; text-transform: none; }
 
@@ -263,7 +266,6 @@ img, canvas { image-rendering: pixelated; }
   color: var(--ink);
   font-size: 16px;
 }
-.pill-btn > span[aria-hidden] { font-size: 20px; line-height: 1; }
 .pill-btn:hover { background: var(--btn-hover); }
 .pill-btn:active { background: var(--btn-active); }
 .pill-btn[aria-pressed='true'] { background: #666; }
@@ -290,9 +292,6 @@ img, canvas { image-rendering: pixelated; }
   overflow: hidden;
 }
 .stat__val small { font-size: 11px; color: var(--muted); }
-.heart { fill: var(--red); filter: drop-shadow(0 1px 0 #000); }
-.heart.is-off { fill: #555; }
-.fx__emoji { font-size: 16px; line-height: 1; width: 20px; text-align: center; }
 .fx__name { font-size: 13px; color: #9dff8a; }
 .fx__time { font-size: 14px; font-variant-numeric: tabular-nums; min-width: 1.2em; }
 .fx__bar { position: absolute; left: 0; bottom: 0; height: 3px; width: calc(var(--frac) * 100%); background: #fff; opacity: 0.85; transition: width 0.1s linear; }
@@ -317,7 +316,7 @@ img, canvas { image-rendering: pixelated; }
 .kill--me { box-shadow: inset 2px 0 0 var(--red); }
 .kill__name { color: var(--red); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kill__name--victim { color: #ddd; }
-.kill__icon { font-size: 13px; }
+.kill__icon { margin-inline: 1px; }
 .kill .hero-sprite { margin: -5px -4px -3px; }
 @keyframes feed-in { from { opacity: 0; transform: translateX(16px); } }
 @keyframes fade-out { to { opacity: 0; } }
@@ -448,7 +447,7 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
 .links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .links a { display: flex; align-items: center; gap: 8px; padding: 6px 4px; text-decoration: none; font-size: 14px; }
 .links a:hover { background: rgba(255, 255, 255, 0.06); }
-.links__icon { width: 22px; height: 16px; display: grid; place-items: center; font-size: 9px; color: #fff; flex: none; }
+.links__icon { display: block; }
 
 .plist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .plist li { display: flex; align-items: center; gap: 8px; padding: 2px 10px 2px 2px; border-radius: 10px; background: rgba(0, 0, 0, 0.2); }
@@ -576,7 +575,7 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
 .pickup-card { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; background: rgba(0, 0, 0, 0.25); }
 .pickup-card strong { display: block; font-weight: 400; font-size: 15px; margin-bottom: 2px; }
 .pickup-card p { font-size: 12px; }
-.curse-emoji { font-size: 26px; width: 40px; text-align: center; flex: none; }
+.curse-icon { width: 40px; display: grid; place-items: center; flex: none; }
 
 /* dialogs */
 .join, .bots { display: flex; flex-direction: column; gap: 12px; }
@@ -760,7 +759,6 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
 .mm__links { display: flex; justify-content: center; gap: 8px; padding-top: 2px; }
 .mm__links a { display: block; padding: 4px; opacity: 0.8; }
 .mm__links a:hover { opacity: 1; }
-.mm__links .links__icon { width: 30px; height: 22px; font-size: 11px; }
 
 @media (max-width: 720px) {
   .mm {

@@ -19,6 +19,7 @@ import { TouchControls } from '$/input/TouchControls';
 import { ChatDrawer, ChatTicker } from './hud/Chat';
 import { Banners, BottomPill, Countdown, DebugInfo, KillFeed, RoundResult, Scoreboard, StatsStrip, TopPill } from './hud/Hud';
 import { t } from './i18n';
+import { Icon } from './icons';
 import { MenuDrawer } from './MenuDrawer';
 import { chatOpen, hud, menuOpen, modals, scoreboardOpen, screen, settings, stage } from './store';
 
@@ -88,8 +89,8 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
           size={s.touch.size}
           opacity={s.touch.opacity}
           leftHanded={s.touch.leftHanded}
-          bombLabel="💣"
-          actionLabel="✋"
+          bombLabel={<Icon name="bomb" size={50 * s.touch.size} />}
+          actionLabel={<Icon name="hand" size={34 * s.touch.size} />}
           bombTitle={t('bind.bomb')}
           actionTitle={t('bind.action')}
         />

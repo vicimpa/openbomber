@@ -13,6 +13,7 @@ import type { ChatMessage, GameEvent, WorldState } from '@ob/game';
 import type { UiSound } from '$/contracts';
 import type { HudSnapshot } from './hud';
 import { t, type I18nKey } from './i18n';
+import type { IconName } from './icons';
 import { CURSE_BY_ID } from './pickups';
 import { tr } from './i18n';
 import { settings, updateSettings, type Settings } from './settings';
@@ -74,9 +75,9 @@ export const fps = signal(0);
 export const onlineCount = signal<number | null>(null);
 export const stage = signal<HTMLElement | null>(null);
 
-/** Chat drawer open (T / 💬); its input gets focus. */
+/** Chat drawer open (T / chat button); its input gets focus. */
 export const chatOpen = signal(false);
-/** Menu drawer open (☰ / Esc / gamepad Start). */
+/** Menu drawer open (menu button / Esc / gamepad Start). */
 export const menuOpen = signal(false);
 export const scoreboardOpen = signal(false);
 /** True while the UI owns the keyboard (chat input, modal). Session: input.setEnabled(!value). */
@@ -108,12 +109,12 @@ export function pushKill(e: Omit<KillEntry, 'id' | 'at'>) {
 }
 
 // ---------------------------------------------------------------- toasts
-export interface Toast { id: number; text: string; kind: 'info' | 'good' | 'bad'; ttl: number }
+export interface Toast { id: number; text: string; kind: 'info' | 'good' | 'bad'; ttl: number; icon?: IconName }
 export const toasts = signal<Toast[]>([]);
 let toastSeq = 0;
-export function toast(text: string, kind: Toast['kind'] = 'info', ttl = 2800) {
+export function toast(text: string, kind: Toast['kind'] = 'info', ttl = 2800, icon?: IconName) {
   const id = ++toastSeq;
-  toasts.value = [...toasts.value.slice(-3), { id, text, kind, ttl }];
+  toasts.value = [...toasts.value.slice(-3), { id, text, kind, ttl, icon }];
   setTimeout(() => { toasts.value = toasts.value.filter((x) => x.id !== id); }, ttl);
 }
 export const toastKey = (key: I18nKey, kind?: Toast['kind']) => toast(t(key), kind);
@@ -134,7 +135,7 @@ export function handleGameEvents(events: GameEvent[], world: WorldState | null, 
       else pushKill({ kind: 'kill', killer: who(e.killer), victim });
     } else if (e.type === 'curseApplied' && e.player === localId) {
       const c = CURSE_BY_ID.get(e.curse);
-      if (c) toast(t('toast.curse', { c: `${c.emoji} ${tr(c.name)}` }), 'bad');
+      if (c) toast(t('toast.curse', { c: tr(c.name) }), 'bad', undefined, c.icon);
     }
   }
 }

@@ -29,7 +29,7 @@ export function keyLabel(code: string): string {
   if (code.startsWith('Key')) return code.slice(3);
   if (code.startsWith('Digit')) return code.slice(5);
   const map: Record<string, string> = {
-    ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
+    ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right',
     Space: 'Space', Enter: 'Enter', NumpadEnter: 'Num Enter',
     ShiftLeft: 'Shift', ShiftRight: 'R-Shift', Tab: 'Tab', Escape: 'Esc',
   };

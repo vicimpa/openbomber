@@ -1,4 +1,4 @@
-// In-world HUD widgets (canon OpenBomber language: flat translucent pills, BetterVCR, emoji
+// In-world HUD widgets (canon OpenBomber language: flat translucent pills, BetterVCR, pixel-icon
 // counters, red name tags). All read signals from ../store; none of them owns game state.
 import { Phase, PickupType } from '@ob/game';
 import type { ComponentChildren } from 'preact';
@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { HudEffect, HudMe, HudPlayer, HudSnapshot } from '../hud';
 import { t, tr } from '../i18n';
 import { ABILITY_PICKUP, CURSE_BY_ID, PICKUP_BY_TYPE } from '../pickups';
+import { Icon, type IconName } from '../icons';
 import { HeroSprite, PickupIcon } from '../sprites';
 import { actions, chat, chatOpen, fps, killFeed, menuOpen, room, settings } from '../store';
 import { RoomCode } from './RoomCode';
@@ -27,8 +28,8 @@ export function DebugInfo({ ping }: { ping: number }) {
 function RoomTag() {
   const r = room.value;
   if (!r) return null;
-  if (r.offline) return <span class="pill__tag" title={t('menu.vsBots')}>🤖</span>;
-  if (r.isPrivate) return <span class="pill__tag" title={t('hud.room')}>🔒 {r.code}</span>;
+  if (r.offline) return <span class="pill__tag" title={t('menu.vsBots')}><Icon name="bot" /></span>;
+  if (r.isPrivate) return <span class="pill__tag" title={t('hud.room')}><Icon name="lock" /> {r.code}</span>;
   return null;
 }
 
@@ -39,10 +40,10 @@ export function TopPill({ h }: { h: HudSnapshot | null }) {
     <div class="pill pill--top" role="status">
       {playing && me ? (
         <span class="counters">
-          <span title={t('hud.alive')}>👥 {h!.alive} / {h!.total}</span>
-          <span title={t('hud.wins')}>👑 × {me.wins}</span>
-          <span title={t('hud.kills')}>🔫 × {me.kills}</span>
-          <span title={t('hud.deaths')}>💀 × {me.deaths}</span>
+          <span title={t('hud.alive')}><Icon name="users" /> {h!.alive} / {h!.total}</span>
+          <span title={t('hud.wins')}><Icon name="crown" /> × {me.wins}</span>
+          <span title={t('hud.kills')}><Icon name="gun" /> × {me.kills}</span>
+          <span title={t('hud.deaths')}><Icon name="skull" /> × {me.deaths}</span>
         </span>
       ) : (
         <span>{t('hud.spectating')}</span>
@@ -65,7 +66,7 @@ export function BottomPill({ h }: { h: HudSnapshot | null }) {
         aria-label={t('hud.menu')}
         title={t('hud.menu')}
       >
-        <span aria-hidden="true">☰</span>
+        <Icon name="menu" />
       </button>
       <button
         class={`btn btn--white btn--lg bottom-pill__main ${connected ? 'is-connected' : ''}`}
@@ -82,7 +83,7 @@ export function BottomPill({ h }: { h: HudSnapshot | null }) {
         title={`${t('hud.chat')} (T)`}
         aria-pressed={chatOpen.value}
       >
-        <span aria-hidden="true">💬</span>
+        <Icon name="chat" />
         {unread > 0 && <i class="badge">{unread > 9 ? '9+' : unread}</i>}
       </button>
     </div>
@@ -98,19 +99,11 @@ function useUnread() {
 }
 
 // ---------------------------------------------------------------- local stats strip
-function Heart({ on = true }: { on?: boolean }) {
-  return (
-    <svg class={`heart ${on ? '' : 'is-off'}`} viewBox="0 0 7 6" width="14" height="12" aria-hidden="true" shape-rendering="crispEdges">
-      <path d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z" />
-    </svg>
-  );
-}
-
-const EFFECT_ICON: Record<string, PickupType | string> = {
+const EFFECT_ICON: Record<string, PickupType | IconName> = {
   shield: PickupType.Shield, ghost: PickupType.Ghost, crazy: PickupType.Crazy, fire: PickupType.Fire,
   speed: PickupType.SpeedUp, kick: PickupType.Kick, glove: PickupType.Glove, punch: PickupType.Punch,
   remote: PickupType.Remote, pierce: PickupType.Pierce, lineBomb: PickupType.LineBomb, bombPass: PickupType.BombPass,
-  curse: PickupType.Skull, invulnerable: '✨', stun: '💫', slow: '🐌',
+  curse: PickupType.Skull, invulnerable: 'sparkle', stun: 'star', slow: 'snail',
 };
 
 function effectName(e: HudEffect): string {
@@ -123,12 +116,12 @@ function effectName(e: HudEffect): string {
 }
 
 function EffectPill({ e, compact }: { e: HudEffect; compact?: boolean }) {
-  const icon = EFFECT_ICON[e.kind] ?? '⏳';
+  const icon = EFFECT_ICON[e.kind] ?? 'hourglass';
   const name = effectName(e);
   const curse = e.kind === 'curse';
   return (
     <div class={`fx ${curse ? 'fx--curse' : ''} ${e.left < 3 ? 'is-ending' : ''}`} title={name} style={{ '--frac': e.frac }}>
-      {typeof icon === 'number' ? <PickupIcon type={icon} size={compact ? 16 : 20} /> : <span class="fx__emoji">{icon}</span>}
+      {typeof icon === 'number' ? <PickupIcon type={icon} size={compact ? 16 : 20} /> : <Icon name={icon} size={compact ? 10 : 20} />}
       {curse && <span class="fx__name">{name}</span>}
       <span class="fx__time">{Math.ceil(e.left)}</span>
       <i class="fx__bar" aria-hidden="true" />
@@ -154,7 +147,7 @@ export function StatsStrip({ me, compact }: { me: HudMe; compact?: boolean }) {
       <Stat compact={compact} type={PickupType.FireUp} label={t('hud.radius')}><span key={me.radius} class="pop">{me.radius}</span></Stat>
       {hearts > 0 && (
         <div class="stat" title={t('hud.lives')}>
-          {Array.from({ length: Math.min(hearts, 3) }, () => <Heart />)}{hearts > 3 && <b class="stat__val">×{hearts}</b>}
+          {Array.from({ length: Math.min(hearts, 3) }, () => <Icon name="heart" size={compact ? 10 : 20} />)}{hearts > 3 && <b class="stat__val">×{hearts}</b>}
         </div>
       )}
       {me.abilities.map((a) => {
@@ -176,10 +169,10 @@ export function KillFeed() {
           {k.kind === 'kill' && k.killer && <>
             <HeroSprite skin={k.killer.skin} scale={0.6} still />
             <span class="kill__name">{k.killer.name}</span>
-            <span class="kill__icon">🔫</span>
+            <Icon name="gun" class="kill__icon" />
           </>}
-          {k.kind === 'self' && <span class="kill__icon">🤦</span>}
-          {k.kind === 'world' && <span class="kill__icon">🧱</span>}
+          {k.kind === 'self' && <Icon name="bomb" class="kill__icon" />}
+          {k.kind === 'world' && <Icon name="brick" class="kill__icon" />}
           <HeroSprite skin={k.victim.skin} scale={0.6} still />
           <span class="kill__name kill__name--victim">{k.victim.name}</span>
         </li>
@@ -199,9 +192,9 @@ export function Banners({ h }: { h: HudSnapshot }) {
   }, [h.suddenDeath]);
   return (
     <div class="banners">
-      {h.shrinkIn > 0 && <div class="banner banner--warn" role="alert">⚠ {t('hud.shrink', { n: Math.ceil(h.shrinkIn) })}</div>}
-      {sd && <div class="banner banner--sd" role="alert">⚠ {t('hud.suddenDeath')} <small>{t('hud.suddenDeathSub')}</small></div>}
-      {h.me && h.me.respawnIn > 0 && <div class="banner">💫 {t('hud.respawn', { n: h.me.respawnIn.toFixed(1) })}</div>}
+      {h.shrinkIn > 0 && <div class="banner banner--warn" role="alert"><Icon name="warning" /> {t('hud.shrink', { n: Math.ceil(h.shrinkIn) })}</div>}
+      {sd && <div class="banner banner--sd" role="alert"><Icon name="warning" /> {t('hud.suddenDeath')} <small>{t('hud.suddenDeathSub')}</small></div>}
+      {h.me && h.me.respawnIn > 0 && <div class="banner"><Icon name="hourglass" /> {t('hud.respawn', { n: h.me.respawnIn.toFixed(1) })}</div>}
     </div>
   );
 }
@@ -233,8 +226,8 @@ export function RoundResult({ h }: { h: HudSnapshot }) {
       {w ? <>
         <span class="round-result__hero"><span class="spot" /><HeroSprite skin={w.skin} anim="RunDown" scale={2} /></span>
         <span class="round-result__text">
-          <b>{w.isLocal ? `🎉 ${t('hud.youWon')}` : t('hud.winnerToast', { name: w.name })}</b>
-          <small>👑 × {w.wins}</small>
+          <b>{w.isLocal && <Icon name="trophy" />} {w.isLocal ? t('hud.youWon') : t('hud.winnerToast', { name: w.name })}</b>
+          <small><Icon name="crown" /> × {w.wins}</small>
         </span>
       </> : <span class="round-result__text"><b>{t('hud.noWinner')}</b></span>}
       {h.roundOverIn > 0 && <small class="round-result__next">{t('hud.nextRound', { n: Math.ceil(h.roundOverIn) })}</small>}
@@ -255,7 +248,7 @@ export function Scoreboard({ h, onClose }: { h: HudSnapshot; onClose: () => void
         <div class="table-wrap" data-scrollable>
           <table>
             <thead>
-              <tr><th class="l">{t('hud.player')}</th><th title={t('hud.wins')}>👑</th><th title={t('hud.kills')}>🔫</th><th title={t('hud.deaths')}>💀</th><th>{t('hud.ping')}</th></tr>
+              <tr><th class="l">{t('hud.player')}</th><th><Icon name="crown" title={t('hud.wins')} /></th><th><Icon name="gun" title={t('hud.kills')} /></th><th><Icon name="skull" title={t('hud.deaths')} /></th><th>{t('hud.ping')}</th></tr>
             </thead>
             <tbody>
               {h.players.map((p) => <ScoreRow p={p} ping={h.ping} offline={!!r?.offline} />)}

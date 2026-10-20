@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { canFullscreen, isFullscreen, toggleFullscreen } from '$/input/fullscreen';
 import { Button, Logo } from './components';
 import { t } from './i18n';
+import { Icon } from './icons';
 import { LINKS } from './links';
 import { NAME_MAX, randomName } from './names';
 import { SKIN_COUNT } from './settings';
@@ -29,12 +30,12 @@ function ProfileCard() {
 
   return (
     <section class="mm__profile">
-      <button class="mm__arrow" onClick={() => step(-1)} aria-label={t('menu.prevSkin')} title={t('menu.prevSkin')}>◀</button>
+      <button class="mm__arrow" onClick={() => step(-1)} aria-label={t('menu.prevSkin')} title={t('menu.prevSkin')}><Icon name="arrowLeft" /></button>
       <button class="mm__hero" onClick={() => { actions.uiSound('click'); openModal('skin'); }} aria-label={t('menu.chooseSkin')} title={t('menu.chooseSkin')}>
         <span class="mm__spot" aria-hidden="true" />
         <HeroSprite skin={skin} anim="RunDown" scale={2} />
       </button>
-      <button class="mm__arrow" onClick={() => step(1)} aria-label={t('menu.nextSkin')} title={t('menu.nextSkin')}>▶</button>
+      <button class="mm__arrow" onClick={() => step(1)} aria-label={t('menu.nextSkin')} title={t('menu.nextSkin')}><Icon name="arrowRight" /></button>
       <div class="mm__name">
         <input
           ref={input}
@@ -49,7 +50,7 @@ function ProfileCard() {
           onBlur={commit}
           onKeyDown={(e) => { if (e.key === 'Enter') input.current?.blur(); }}
         />
-        <button class="icon-btn" onClick={() => { actions.uiSound('click'); setName(randomName(language)); }} aria-label={t('menu.randomName')} title={t('menu.randomName')}>🎲</button>
+        <button class="icon-btn" onClick={() => { actions.uiSound('click'); setName(randomName(language)); }} aria-label={t('menu.randomName')} title={t('menu.randomName')}><Icon name="dice" /></button>
       </div>
     </section>
   );
@@ -78,14 +79,14 @@ export function MainMenu() {
             {t('mm.solo')}
           </Button>
           <div class="row2">
-            <Button block icon="🔒" onClick={() => actions.createPrivate()}>{t('mm.createRoom')}</Button>
-            <Button block icon="🔑" onClick={() => openModal('join')}>{t('menu.joinByCode')}</Button>
+            <Button block icon={<Icon name="lock" />} onClick={() => actions.createPrivate()}>{t('mm.createRoom')}</Button>
+            <Button block icon={<Icon name="key" />} onClick={() => openModal('join')}>{t('menu.joinByCode')}</Button>
           </div>
           <div class="row3">
-            <Button block icon="⚙️" onClick={() => openModal('settings')}>{t('settings.title')}</Button>
-            <Button block icon="❔" onClick={() => openModal('howto')}>{t('mm.rules')}</Button>
+            <Button block icon={<Icon name="gear" />} onClick={() => openModal('settings')}>{t('settings.title')}</Button>
+            <Button block icon={<Icon name="question" />} onClick={() => openModal('howto')}>{t('mm.rules')}</Button>
             {canFullscreen && (
-              <Button block icon="⛶" onClick={() => toggleFullscreen()} aria-pressed={isFullscreen.value}>{t('mm.screen')}</Button>
+              <Button block icon={<Icon name="fullscreen" />} onClick={() => toggleFullscreen()} aria-pressed={isFullscreen.value}>{t('mm.screen')}</Button>
             )}
           </div>
         </div>
@@ -93,7 +94,7 @@ export function MainMenu() {
         <nav class="mm__links" aria-label={t('menu.links')}>
           {LINKS.map((l) => (
             <a href={l.href} target="_blank" rel="noopener" title={t(l.key)} aria-label={t(l.key)}>
-              <span class="links__icon" style={{ background: l.color }} aria-hidden="true">{l.glyph}</span>
+              <Icon name={l.icon} size={30} class="links__icon" />
             </a>
           ))}
         </nav>

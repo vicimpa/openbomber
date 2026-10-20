@@ -65,7 +65,7 @@
   transition: transform 0.05s, box-shadow 0.05s, background 0.05s;
   pointer-events: none;
 }
-.btn span { pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.5)); }
+.btn span { display: grid; pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.5)); }
 .btn[data-down] { transform: scale(0.93); background: rgba(110, 110, 110, 0.95); box-shadow: inset 8px 8px 16px rgba(0, 0, 0, 0.6); }
 .bomb {
   width: calc(110 * var(--u));
