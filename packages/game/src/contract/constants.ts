@@ -69,6 +69,10 @@ export const SOLO_RESTART_TIME = sec(1);      // practice mode (1 player) restar
 export const WAIT_FOR_LIMIT = sec(15);        // zone: quiet time after round start / last shrink
 export const ZONE_LIMIT_TIMEOUT = sec(15);    // zone: warning -> the outer ring closes
 export const FALL_TIME = sec(1);              // falling-block shadow before a closing ring lands
+/** Endgame: once the open middle is this narrow, rings close quickly until nothing is left. */
+export const ZONE_FINAL_WIDTH = 5;
+export const ZONE_FINAL_QUIET = sec(3);
+export const ZONE_FINAL_TIMEOUT = sec(5);
 /** @deprecated no timed rounds any more (zone shrink instead). */
 export const ROUND_TIME = sec(150);
 /** @deprecated see ROUND_TIME */

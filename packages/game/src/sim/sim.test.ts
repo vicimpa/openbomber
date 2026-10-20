@@ -632,6 +632,21 @@ describe('round flow (canon: continuous, no lobby)', () => {
     expect(next.length).toBeGreaterThan(0);
   });
 
+  test('zone: closes all the way, so walled-off survivors cannot stall a round', () => {
+    const sim = new Simulation({ seed: 9 });
+    for (const id of ['a', 'b']) sim.addPlayer({ id, name: id, skin: 0 });
+    until(sim, (e) => e.some((x) => x.type === 'roundStart'));
+    const w = sim.state;
+    const rings = Math.ceil(Math.min(w.width, w.height) / 2);
+    // both idle in the very middle, which the legacy zone (stopping at min / 2) never closed
+    const cy = (w.height - 1) / 2;
+    const pa = w.players.get('a')!, pb = w.players.get('b')!;
+    pa.x = cy + 2; pa.y = cy; pb.x = cy + 4; pb.y = cy;
+    const over = until(sim, (e) => e.some((x) => x.type === 'roundOver'), 60 * 60 * 10);
+    expect(over.some((x) => x.type === 'roundOver')).toBe(true);
+    expect(w.zoneRing).toBe(rings);
+  });
+
   test('zone: pending shrink is cancelled when fewer than 2 players remain', () => {
     const sim = new Simulation({ seed: 5 });
     for (const id of ['a', 'b']) sim.addPlayer({ id, name: id, skin: 0 });

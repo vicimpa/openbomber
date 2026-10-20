@@ -11,6 +11,9 @@ import {
   WAIT_FOR_LIMIT,
   ZONE_LIMIT_TIMEOUT,
   sec,
+  ZONE_FINAL_QUIET,
+  ZONE_FINAL_TIMEOUT,
+  ZONE_FINAL_WIDTH,
 } from '../contract/constants';
 import { Phase, Tile, type PlayerState } from '../contract/types';
 import { emit, type SimCtx } from './context';
@@ -163,9 +166,17 @@ function checkRoundEnd(ctx: SimCtx) {
 
 // ---------------------------------------------------------------- zone shrink
 
-/** The next ring would still leave room in the middle (legacy: limitedMap < min(w, h) / 2). */
+/**
+ * A ring is left to close. Unlike legacy (which stopped at min(w, h) / 2) the zone closes all
+ * the way, so a round can't stall with survivors walled off from each other between pillars;
+ * the last ring's blocks fall in a sweep, so whoever is buried last wins.
+ */
 const canShrink = (ctx: SimCtx) =>
-  ctx.world.players.size >= 2 && ctx.world.zoneRing + 1 < Math.min(ctx.world.width, ctx.world.height) / 2;
+  ctx.world.players.size >= 2 && ctx.world.zoneRing * 2 < Math.min(ctx.world.width, ctx.world.height);
+
+/** The open middle is narrow: rings come quickly (ZONE_FINAL_*). */
+const endgame = (ctx: SimCtx) =>
+  Math.min(ctx.world.width, ctx.world.height) - 2 * ctx.world.zoneRing <= ZONE_FINAL_WIDTH;
 
 function closeRing(ctx: SimCtx) {
   const w = ctx.world;
@@ -176,7 +187,7 @@ function closeRing(ctx: SimCtx) {
     if (w.tiles[i] === Tile.Wall) continue;
     w.falling.push({ x: i % w.width, y: (i / w.width) | 0, ttl: FALL_TIME + Math.floor((k * RING_SWEEP) / tiles.length) });
   }
-  ctx.zoneQuiet = WAIT_FOR_LIMIT;
+  ctx.zoneQuiet = endgame(ctx) ? ZONE_FINAL_QUIET : WAIT_FOR_LIMIT;
   emit(ctx, { type: 'zoneShrink', ring });
   if (w.phase === Phase.Playing) {
     w.phase = Phase.SuddenDeath;
@@ -195,8 +206,8 @@ function updateZone(ctx: SimCtx) {
   }
   if (ctx.zoneQuiet > 0) ctx.zoneQuiet--;
   else if (canShrink(ctx)) {
-    w.zoneIn = ZONE_LIMIT_TIMEOUT;
-    emit(ctx, { type: 'zoneWarning', seconds: Math.round(ZONE_LIMIT_TIMEOUT / TICK_RATE) });
+    w.zoneIn = endgame(ctx) ? ZONE_FINAL_TIMEOUT : ZONE_LIMIT_TIMEOUT;
+    emit(ctx, { type: 'zoneWarning', seconds: Math.round(w.zoneIn / TICK_RATE) });
   }
 }
 
