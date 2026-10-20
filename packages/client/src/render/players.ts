@@ -78,6 +78,20 @@ export class PlayerView {
     this.tag.addChild(this.name, this.marker);
   }
 
+  /** A still copy of the hero as it looks right now (shadow + body), for the frozen old arena. */
+  freeze(): Container | null {
+    if (!this.root.visible || !this.alive) return null;
+    const c = new Container({ x: this.root.x, y: this.root.y });
+    c.addChild(new Sprite({ texture: this.shadow.texture, anchor: 0.5, y: this.shadow.y, scale: this.shadow.scale, alpha: this.shadow.alpha }));
+    const body = new Sprite({
+      texture: this.hero.texture, anchor: 0.5, y: this.upper.y + this.body.y, tint: this.hero.tint, alpha: this.upper.alpha,
+      scale: { x: this.hero.scale.x * this.body.scale.x, y: this.body.scale.y },
+    });
+    body.label = 'body';
+    c.addChild(body);
+    return c;
+  }
+
   /** Death event: drop the body at once and leave only the ghost of this player's own skin. */
   kill(cause?: string, from?: { x: number; y: number } | null) {
     if (!this.alive) return;

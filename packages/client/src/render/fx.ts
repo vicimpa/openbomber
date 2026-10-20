@@ -626,6 +626,52 @@ export class Effects {
     this.shot(new Container(), this.over, GONE, k => { if (k >= 1) this.death(x, y, ghostTex); });
   }
 
+  /**
+   * A frozen hero of the old arena beams away: a pixel column of light, a white flash, the body
+   * stretches up out of sight, a few pixel sparks. Runs inside `parent` (the frozen arena).
+   */
+  teleportOut(parent: Container, hero: Container, delay: number) {
+    const body = hero.children.find(c => c.label === 'body') as Sprite | undefined;
+    if (!body) return;
+    const x = hero.x, y = hero.y;
+    const b = this.tx.beam;
+    const beam = new Sprite({ texture: b[0], anchor: { x: 0.5, y: 1 }, x: Math.round(x), y: Math.round(y) + 9, visible: false });
+    parent.addChildAt(beam, Math.max(0, parent.getChildIndex(hero)));
+    const white = new Sprite({ texture: this.whiteOf(body.texture), anchor: 0.5, y: body.y, visible: false });
+    white.scale.copyFrom(body.scale);
+    hero.addChild(white);
+    const sparks = Array.from({ length: this.q(6) }, (_, i) => {
+      const sp = new Sprite({ texture: this.tx.white, x: Math.round(x + rand(-7, 7)), y: Math.round(y + rand(-20, 4)), tint: i % 2 ? 0xffffff : 0x9fe8ff, visible: false });
+      sp.scale.set(i % 3 ? 1 : 2);
+      parent.addChild(sp);
+      return { sp, y0: sp.y, v: rand(90, 160) };
+    });
+    const by = body.y, sx = body.scale.x, sy = body.scale.y;
+    const D = 0.4;
+    this.shot(new Container(), parent, delay + D, k => {
+      const t = k * (delay + D) - delay;
+      if (t < 0) return;
+      const f = [1, 2, 1, 3, 4];
+      const fi = Math.min(f.length - 1, Math.floor(t / 0.08));
+      beam.visible = t < D;
+      beam.texture = b[f[fi]];
+      white.visible = t < 0.12;
+      white.tint = t < 0.06 ? 0xffffff : 0xbff4ff;
+      const e = Math.max(0, (t - 0.06) / 0.22);
+      const up = Math.min(1, e);
+      body.visible = up < 1;
+      body.scale.set(sx * (1 - 0.55 * up), sy * (1 + 1.1 * up));
+      body.y = Math.round(by - 70 * up * up);
+      white.scale.copyFrom(body.scale); white.y = body.y;
+      hero.children[0].visible = up < 0.6; // shadow
+      for (const s of sparks) {
+        s.sp.visible = t > 0.05 && t < D;
+        s.sp.y = Math.round(s.y0 - s.v * Math.max(0, t - 0.05));
+      }
+      if (k >= 1) { beam.visible = false; for (const s of sparks) s.sp.visible = false; }
+    });
+  }
+
   /** Death: no body swap or flash, only a ghost of the player's own skin floating up, plus a grave decal. */
   death(x: number, y: number, tex: Texture) {
     const px = Math.round(x * T), py = Math.round(y * T);

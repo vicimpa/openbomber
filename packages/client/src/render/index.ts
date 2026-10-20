@@ -1,5 +1,5 @@
 // Pixi.js v8 renderer for WorldState. See contracts.ts (GameRenderer / CreateRenderer).
-import { Application, Container, Sprite, Texture } from 'pixi.js';
+import { Application, Container, Rectangle, Sprite, Texture } from 'pixi.js';
 import { BombMotion, DropKind, Phase, PickupType, type BombState, type GameEvent, type WorldState } from '@ob/game';
 
 import type { CreateRenderer, GameRenderer, RendererOptions } from '../contracts';
@@ -210,9 +210,12 @@ class PixiRenderer implements GameRenderer {
     this.map.age += dt;
     const young = this.map.age < 0.75;
     const travel = this.map.shown && this.nextMap !== 'snap' && (!young || this.camera.travelling);
-    this.arena.keepGhost = travel && !young;
-    const fresh = this.arena.sync(world, dt, swapped || this.nextMap !== null);
+    const force = swapped || this.nextMap !== null;
+    // leaving a map for good: freeze it as it looks now (tiles, scorch, graves, pickups, bombs, heroes)
+    const frozen = travel && !young && this.arena.willRebuild(world, force) ? this.freezeMap() : null;
+    const fresh = this.arena.sync(world, dt, force);
     if (fresh) this.onNewMap(world, travel, travel && young);
+    if (fresh && frozen) this.placeFrozen(frozen);
     if (fresh && this.primed) {
       for (const cells of this.primed) this.arena.scorch(cells);
       this.primed = null;
@@ -309,6 +312,44 @@ class PixiRenderer implements GameRenderer {
     m.w = world.width; m.h = world.height; m.shown = true; m.age = 0;
     this.mapRoot.position.set(m.ox * T, m.oy * T);
     this.syncClearings();
+  }
+
+  /** Snapshot of the current map (still at its origin) and still copies of its heroes. */
+  private freezeMap() {
+    const m = this.map;
+    const hide = [this.fx.over, this.fx.light, this.fx.particles.normal, this.fx.particles.additive, this.tags, this.entities,
+      this.arena.zoneLayer, this.drops.air, this.arena.fallingRoot];
+    const was = hide.map(c => c.visible);
+    hide.forEach(c => { c.visible = false; });
+    this.arena.showAll(this.camera.zoom);
+    const x0 = -1.5 * T, y0 = -1.5 * T, w = (m.w + 2) * T, h = (m.h + 2) * T;
+    const res = Math.min(1, 2048 / Math.max(w, h));
+    let tex: Texture | null = null;
+    try {
+      tex = this.app.renderer.generateTexture({ target: this.mapRoot, frame: new Rectangle(x0, y0, w, h), resolution: res, antialias: false });
+      tex.source.scaleMode = 'nearest';
+    } catch (e) { console.warn('[render] snapshot failed', e); }
+    hide.forEach((c, i) => { c.visible = was[i]; });
+    const heroes: Container[] = [];
+    for (const v of this.players.values()) { const f = v.freeze(); if (f) heroes.push(f); }
+    return { tex, x0, y0, w, h, heroes };
+  }
+
+  private placeFrozen(f: ReturnType<PixiRenderer['freezeMap']>) {
+    const root = this.arena.ghostRoot;
+    this.arena.clearGhost();
+    root.alpha = 1;
+    if (f.tex) {
+      const s = new Sprite({ texture: f.tex, x: f.x0, y: f.y0 });
+      s.width = f.w; s.height = f.h;
+      s.label = 'snapshot';
+      root.addChild(s);
+    }
+    // frozen heroes beam away one after another while the camera pulls out
+    f.heroes.sort((a, b) => a.y - b.y).forEach((hc, i) => {
+      root.addChild(hc);
+      this.fx.teleportOut(root, hc, 0.22 + Math.min(i, 8) * 0.045);
+    });
   }
 
   /** Drop the previous arena once the camera has left it behind (or after a while). */

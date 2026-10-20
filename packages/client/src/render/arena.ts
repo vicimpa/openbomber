@@ -29,10 +29,9 @@ export class Arena {
   readonly root = new Container();
   /** Danger tint on the ring that is about to turn into walls (zone warning). */
   readonly zoneLayer = new Container();
-  /** The previous map, left standing where it was while the camera travels to the new one. */
+  /** The previous map, left standing where it was while the camera travels to the new one
+   *  (a frozen snapshot, filled by the renderer). */
   readonly ghostRoot = new Container();
-  /** Next rebuild moves the old map into ghostRoot instead of dropping it. */
-  keepGhost = false;
 
   private w = 0;
   private h = 0;
@@ -85,6 +84,15 @@ export class Arena {
   get height() { return this.h; }
 
   /** Returns true when a brand new map was built (new round / new size). */
+  /** Whether sync() would build a brand new map for this world. */
+  willRebuild(world: WorldState, force = false) {
+    const { width: w, height: h, tiles } = world;
+    if (force || w !== this.w || h !== this.h || world.round !== this.round) return true;
+    let changed = 0;
+    for (let i = 0; i < tiles.length; i++) if (this.tiles[i] !== tiles[i] && tiles[i] !== Tile.Wall) changed++;
+    return changed > Math.max(40, tiles.length * 0.15);
+  }
+
   sync(world: WorldState, dt: number, force = false): boolean {
     this.time += dt;
     const { width: w, height: h, tiles } = world;
@@ -95,7 +103,7 @@ export class Arena {
     }
     let fresh = false;
     // a new round / regenerated map is rebuilt silently, without debris (zone shrink only adds walls)
-    if (force || w !== this.w || h !== this.h || world.round !== this.round || changed > Math.max(40, tiles.length * 0.15)) {
+    if (this.willRebuild(world, force)) {
       this.build(world);
       fresh = true;
     } else if (changed || walls) {
@@ -140,11 +148,7 @@ export class Arena {
     this.seed = (Math.random() * 0x7fffffff) | 0;
     this.gw = w + 2; this.gh = h + 2;
     this.tiles = new Uint8Array(tiles);
-    if (this.keepGhost && this.chunks.length) {
-      this.clearGhost();
-      for (const ch of this.chunks) { ch.c.visible = true; this.ghostRoot.addChild(ch.c); }
-    } else for (const ch of this.chunks) ch.c.destroy({ children: true });
-    this.keepGhost = false;
+    for (const ch of this.chunks) ch.c.destroy({ children: true });
     this.root.removeChildren();
     this.chunks = [];
     this.chunkCols = Math.ceil(this.gw / CH);
@@ -192,8 +196,15 @@ export class Arena {
   }
 
   clearGhost() {
-    for (const c of this.ghostRoot.removeChildren()) c.destroy({ children: true });
+    for (const c of this.ghostRoot.removeChildren()) {
+      // the snapshot sprite owns its render texture
+      if (c instanceof Sprite && c.label === 'snapshot') c.texture.destroy(true);
+      c.destroy({ children: true });
+    }
   }
+
+  /** Make every chunk visible and up to date (for a full snapshot of the map). */
+  showAll(zoom: number) { this.cull(-1e9, -1e9, 1e9, 1e9, zoom); }
 
   private blockLayers: Container[] = [];
   private chunkIndex(gx: number, gy: number) { return Math.floor(gy / CH) * this.chunkCols + Math.floor(gx / CH); }
