@@ -1,8 +1,8 @@
-// Bomb, pickup and flame views.
+// Bomb and pickup views (explosions: explosions.ts).
 import { Container, Sprite, Texture } from 'pixi.js';
 import {
-  BOMB_FUSE, BombKind, BombMotion, FLAME_TIME, FlameShape, TICK_RATE,
-  type BombState, type FlameState, type PickupState, type PickupType,
+  BOMB_FUSE, BombKind, BombMotion, TICK_RATE,
+  type BombState, type PickupState, type PickupType,
 } from '@ob/game';
 
 import { Anim } from './anim';
@@ -161,51 +161,4 @@ export class PickupView {
   }
 
   destroy() { this.root.destroy({ children: true }); }
-}
-
-// ---------------------------------------------------------------- flames
-const FRAMES = 10;
-
-export class FlameView {
-  readonly sprite = new Sprite({ anchor: 0.5 });
-  readonly glow: Sprite;
-  private age: number;
-  private cell: [number, number];
-  private far: boolean;
-  seen = true;
-
-  constructor(private a: GameAssets, tx: ProcTextures, f: FlameState, center: { x: number; y: number; dist: number } | undefined) {
-    this.age = FLAME_TIME - f.ttl;
-    this.far = !!center && center.dist > 1;
-    this.cell = cellFor(f, center);
-    this.sprite.position.set(f.x * T, f.y * T);
-    this.glow = new Sprite({ texture: tx.glow, anchor: 0.5, x: f.x * T, y: f.y * T, tint: 0xff8a30, scale: 1.1 });
-  }
-
-  update(f: FlameState, dt: number) {
-    this.age += dt * TICK_RATE;
-    const target = FLAME_TIME - f.ttl;
-    if (Math.abs(this.age - target) > 4) this.age = target;
-    let fr = Math.min(FRAMES - 1, Math.max(0, Math.floor((this.age / FLAME_TIME) * FRAMES)));
-    if (this.far && fr < 3) fr = 0;
-    const [cx, cy] = this.cell;
-    this.sprite.texture = this.a.explode[fr][cy][cx];
-    const k = this.age / FLAME_TIME;
-    this.glow.alpha = Math.max(0, 0.55 * (1 - k)) * (f.shape === FlameShape.Center ? 1.4 : 1);
-  }
-
-  destroy() { this.sprite.destroy(); this.glow.destroy(); }
-}
-
-function cellFor(f: FlameState, c: { x: number; y: number } | undefined): [number, number] {
-  switch (f.shape) {
-    case FlameShape.Center: return [2, 2];
-    case FlameShape.Horizontal: return [c && f.x < c.x ? 1 : 3, 2];
-    case FlameShape.Vertical: return [2, c && f.y < c.y ? 1 : 3];
-    case FlameShape.EndUp: return [2, 0];
-    case FlameShape.EndLeft: return [0, 2];
-    case FlameShape.EndRight: return [4, 2];
-    case FlameShape.EndDown: return [2, 4];
-  }
-  return [2, 2];
 }

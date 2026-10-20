@@ -1,9 +1,10 @@
 // Pooled particles and short-lived one-shot effects. Units: world pixels, seconds.
-import { BitmapText, Container, Sprite, Texture } from 'pixi.js';
+import { BitmapText, Container, Rectangle, Sprite, Texture } from 'pixi.js';
 
 import type { GameAssets } from './assets';
 import type { ProcTextures } from './textures';
 import { FONT_TAG } from './text';
+import { LETHAL } from './explosions';
 
 export const T = 32;
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
@@ -34,6 +35,8 @@ export interface ParticleOpts {
   bounce?: number;           // restitution when hitting z=0 (0 = stop)
   delay?: number;
   scaleY?: number;           // y/x ratio
+  bounces?: number;          // how many times it may bounce before it stays on the ground (default: unlimited)
+  hold?: number;             // alpha stays at `alpha` until this share of the life, then fades to alphaEnd
 }
 
 interface P extends Required<Omit<ParticleOpts, 'tex' | 'tint' | 'add'>> { s: Sprite; age: number; add: boolean }
@@ -65,7 +68,7 @@ export class Particles {
       scale: o.scale ?? 1, scaleEnd: o.scaleEnd ?? o.scale ?? 1,
       alpha: o.alpha ?? 1, alphaEnd: o.alphaEnd ?? 0,
       rot: o.rot ?? 0, spin: o.spin ?? 0, bounce: o.bounce ?? -1, delay: o.delay ?? 0,
-      scaleY: o.scaleY ?? 1,
+      scaleY: o.scaleY ?? 1, bounces: o.bounces ?? 1e9, hold: o.hold ?? 0,
     });
   }
 
@@ -87,7 +90,10 @@ export class Particles {
       p.x += p.vx * dt; p.y += p.vy * dt;
       if (p.gravity || p.vz) {
         p.vz -= p.gravity * dt; p.z += p.vz * dt;
-        if (p.z < 0 && p.bounce >= 0) { p.z = 0; p.vz = -p.vz * p.bounce; p.vx *= 0.6; p.vy *= 0.6; }
+        if (p.z < 0 && p.bounce >= 0) {
+          p.z = 0;
+          if (p.bounces-- > 0) { p.vz = -p.vz * p.bounce; p.vx *= 0.6; p.vy *= 0.6; } else { p.vz = 0; p.gravity = 0; p.vx *= 0.3; p.vy *= 0.3; p.drag = Math.max(p.drag, 8); }
+        }
       }
       p.rot += p.spin * dt;
       const s = p.s;
@@ -96,7 +102,8 @@ export class Particles {
       const sc = p.scale + (p.scaleEnd - p.scale) * k;
       s.scale.set(sc, sc * p.scaleY);
       s.rotation = p.rot;
-      s.alpha = p.alpha + (p.alphaEnd - p.alpha) * k;
+      const ka = p.hold > 0 ? Math.max(0, (k - p.hold) / (1 - p.hold)) : k;
+      s.alpha = p.alpha + (p.alphaEnd - p.alpha) * ka;
     }
   }
 
@@ -115,6 +122,8 @@ export class Effects {
   readonly over = new Container();      // above entities (labels, ghosts, beams)
   readonly light = new Container();     // additive glows
   private shots: OneShot[] = [];
+  /** The brick texture cut into n x n fragments (4x4 on high, 2x2 on low quality). */
+  private brickBits = new Map<number, { tex: Texture; ox: number; oy: number }[]>();
   private labelPool: BitmapText[] = [];
   lowQuality = false;
 
@@ -188,62 +197,73 @@ export class Effects {
   }
 
   // ---------------------------------------------------------------- composite effects
+  /** Light, sparks, embers and a short smoke tail; snappy, so it ends with the lethal window (LETHAL). */
   explosion(x: number, y: number, cells: { x: number; y: number }[], power: number) {
     const cx = x * T, cy = y * T;
-    this.flash(cx, cy, 3.2 + power * 0.5, 0xffc060, 0.35, 0.95);
-    this.flash(cx, cy, 1.6, 0xffffff, 0.12, 1);
-    this.shockwave(cx, cy, 1.4 + power * 0.25, 0xfff0c0, 0.3, 0.55);
-    const n = this.q(14 + power * 2);
+    this.flash(cx, cy, 2.6 + power * 0.3, 0xffb050, LETHAL * 0.7, 0.7);
+    this.flash(cx, cy, 1.6, 0xffffff, 0.08, 1);
+    this.shockwave(cx, cy, 1.4 + power * 0.25, 0xfff0c0, 0.22, 0.55);
+    const n = this.q(12 + power * 2);
     for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2, sp = rand(60, 220);
+      const a = Math.random() * Math.PI * 2, sp = rand(110, 280);
       this.particles.spawn({
         tex: this.tx.white, x: cx, y: cy, z: rand(0, 8), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.8,
-        vz: rand(40, 160), gravity: 380, drag: 2, life: rand(0.35, 0.8), scale: rand(1.5, 3), scaleEnd: 0.5,
-        tint: Math.random() < 0.5 ? 0xffe27a : 0xff8a3a, add: true, alpha: 1, alphaEnd: 0.2,
+        vz: rand(60, 180), gravity: 700, drag: 4, life: rand(0.2, 0.42), scale: rand(1.5, 3), scaleEnd: 0.5,
+        tint: Math.random() < 0.5 ? 0xffe27a : 0xff8a3a, add: true, alpha: 1, alphaEnd: 0.1,
       });
     }
-    // embers along the arms + delayed smoke when the flames die
+    // embers along the arms while the fire burns, then a quick smoke puff once it is out
     const step = this.lowQuality ? 3 : 1;
     for (let i = 0; i < cells.length; i += step) {
       const c = cells[i];
       const px = c.x * T, py = c.y * T;
-      if (!this.lowQuality && Math.random() < 0.6) this.particles.spawn({
-        tex: this.tx.white, x: px + rand(-10, 10), y: py + rand(-10, 10), vx: rand(-20, 20), vy: rand(-20, 20),
-        vz: rand(30, 90), gravity: 120, life: rand(0.4, 0.9), scale: rand(1, 2), tint: 0xffb347, add: true, alphaEnd: 0,
+      if (!this.lowQuality && Math.random() < 0.5) this.particles.spawn({
+        tex: this.tx.white, x: px + rand(-10, 10), y: py + rand(-10, 10), vx: rand(-25, 25), vy: rand(-25, 25),
+        vz: rand(40, 110), gravity: 260, life: rand(0.2, LETHAL), scale: rand(1, 2), tint: 0xffb347, add: true, alphaEnd: 0,
       });
-      const puffs = this.lowQuality ? 1 : 2;
-      for (let j = 0; j < puffs; j++) this.particles.spawn({
-        tex: this.tx.puff, x: px + rand(-9, 9), y: py + rand(-6, 9), z: rand(0, 6), vx: rand(-8, 8), vy: rand(-4, 4), vz: rand(14, 30),
-        life: rand(0.7, 1.2), delay: rand(0.33, 0.5), scale: rand(0.8, 1.3), scaleEnd: rand(1.8, 2.6),
-        alpha: 0.55, alphaEnd: 0, tint: 0xb8b2c4, spin: rand(-1, 1), rot: rand(0, 6),
+      this.particles.spawn({
+        tex: this.tx.puff, x: px + rand(-8, 8), y: py + rand(-6, 8), z: rand(0, 6), vx: rand(-8, 8), vy: rand(-4, 4), vz: rand(16, 30),
+        life: rand(0.3, 0.5), delay: LETHAL * rand(0.85, 1), scale: rand(0.8, 1.2), scaleEnd: rand(1.6, 2.2),
+        alpha: 0.45, alphaEnd: 0, tint: 0xb8b2c4, spin: rand(-1, 1), rot: rand(0, 6),
       });
     }
   }
 
-  /** new-openbomber Destroy: shrunken copies of the brick fly out, bounce and fade. */
+  private bits(n: number) {
+    let bits = this.brickBits.get(n);
+    if (bits) return bits;
+    const box = this.a.world.box;
+    const fw = box.frame.width / n, fh = box.frame.height / n;
+    bits = [];
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const tex = new Texture({ source: box.source, frame: new Rectangle(box.frame.x + x * fw, box.frame.y + y * fh, fw, fh) });
+      bits.push({ tex, ox: (x + 0.5) * fw - box.frame.width / 2, oy: (y + 0.5) * fh - box.frame.height / 2 });
+    }
+    this.brickBits.set(n, bits);
+    return bits;
+  }
+
+  /** Brick crumble: the brick sprite breaks into its own pixel fragments that pop out, fall, bounce once and fade. */
   brickBreak(x: number, y: number, dirX = 0, dirY = 0) {
     const px = x * T, py = y * T;
-    const box = new Sprite({ texture: this.a.world.box, anchor: 0.5, x: px, y: py });
-    this.shot(box, this.under, 0.18, k => {
-      box.tint = k < 0.4 ? 0xffffff : 0xffd0a0;
-      box.scale.set(1 + 0.15 * k, 1 - 0.8 * k);
-      box.y = py + 12 * k;
-      box.alpha = 1 - k * k;
-    });
-    const n = this.q(22);
-    for (let i = 0; i < n; i++) {
-      const dx = dirX + rand(-0.6, 0.6), dy = dirY * 0.5 + rand(-0.5, 0.5);
-      const sp = rand(60, 170);
+    const floor = py + 11; // where the fragments land
+    const bits = this.bits(this.lowQuality ? 2 : 4);
+    for (const b of bits) {
+      // start exactly where the piece was on the brick: ground position + height above it
+      const sx = px + b.ox, sy = py + b.oy;
+      const out = rand(35, 75);
+      const nx = b.ox / 16 + dirX * 0.5 + rand(-0.25, 0.25), ny = b.oy / 16 + dirY * 0.5;
       this.particles.spawn({
-        tex: Math.random() < 0.6 ? this.a.world.box : this.tx.chip, x: px + rand(-10, 10), y: py + rand(-4, 10), z: rand(4, 14),
-        vx: dx * sp, vy: dy * sp, vz: rand(80, 200), gravity: 620, bounce: 0.35, drag: 1.4,
-        life: rand(0.7, 1.3), scale: rand(0.12, 0.35), scaleEnd: 0.05, alpha: 1, alphaEnd: 0.4,
-        spin: rand(-8, 8), rot: rand(0, 6),
+        tex: b.tex, x: sx, y: floor + rand(-3, 3) + ny * 3, z: floor - sy,
+        vx: nx * out, vy: ny * out * 0.6, vz: rand(60, 120) - b.oy * 1.5, gravity: 700,
+        bounce: 0.35, bounces: 1, drag: 0.8,
+        life: rand(0.5, 0.7), scale: 1, alpha: 1, alphaEnd: 0, hold: 0.55,
       });
     }
+    // a little dust
     for (let i = 0; i < this.q(4); i++) this.particles.spawn({
-      tex: this.tx.puff, x: px + rand(-8, 8), y: py + rand(-4, 8), vz: rand(10, 25), vx: rand(-15, 15),
-      life: rand(0.5, 0.9), scale: 0.8, scaleEnd: 2, alpha: 0.5, alphaEnd: 0, tint: 0xb07a60,
+      tex: this.tx.puff, x: px + rand(-10, 10), y: floor - rand(0, 6), z: rand(0, 8), vz: rand(8, 20), vx: rand(-20, 20), drag: 3,
+      life: rand(0.35, 0.6), scale: 0.6, scaleEnd: 1.4, alpha: 0.45, alphaEnd: 0, tint: 0xb59a86,
     });
   }
 
@@ -375,34 +395,21 @@ export class Effects {
     });
   }
 
-  /** Death: fire burst at the body + a pale ghost that floats away (from the hero's last frame). */
-  death(x: number, y: number, tex: Texture, flip: boolean) {
-    const px = x * T, py = y * T - 8;
-    this.flash(px, py, 2.2, 0xff7040, 0.4, 0.9);
-    const burnt = new Sprite({ texture: tex, anchor: 0.5, x: px, y: py, tint: 0x991111 });
-    burnt.scale.x = flip ? -1 : 1;
-    this.shot(burnt, this.over, 0.6, k => {
-      burnt.y = py - (k * 4) ** 2;
-      burnt.alpha = 1 - k;
+  /** Death: no body swap or flash, only a ghost of the player's own skin floating up, plus a grave decal. */
+  death(x: number, y: number, tex: Texture) {
+    const px = Math.round(x * T), py = Math.round(y * T);
+    const ghost = new Sprite({ texture: tex, anchor: 0.5, x: px, y: py - 8, tint: 0xdce8ff });
+    this.shot(ghost, this.over, 1.5, k => {
+      ghost.y = Math.round(py - 8 - k * 44);
+      ghost.x = Math.round(px + Math.sin(k * 8) * 4);
+      ghost.alpha = 0.6 * (k < 0.1 ? k / 0.1 : 1 - (k - 0.1) / 0.9);
     });
-    const fire = new Sprite({ anchor: 0.5, x: px, y: py + 4, scale: 1.4 });
-    const frames = this.a.fire.player;
-    this.shot(fire, this.over, frames.length / 14, k => { fire.texture = frames[Math.min(frames.length - 1, Math.floor(k * frames.length))]; });
-    const ghost = new Sprite({ texture: tex, anchor: 0.5, x: px, y: py, tint: 0xd8e8ff });
-    ghost.scale.x = flip ? -1 : 1;
-    this.shot(ghost, this.over, 1.6, k => {
-      ghost.y = py - 8 - k * 40;
-      ghost.x = px + Math.sin(k * 9) * 5;
-      ghost.alpha = (k < 0.15 ? k / 0.15 : 1 - (k - 0.15) / 0.85) * 0.6;
-      ghost.scale.y = 1 + k * 0.2;
+    const grave = new Sprite({ texture: this.tx.grave, anchor: { x: 0.5, y: 1 }, x: px, y: py + 10 });
+    this.shot(grave, this.under, 5, k => {
+      const t = k * 5;
+      grave.scale.set(1, t < 0.12 ? 0.4 + 0.6 * bounce(t / 0.12) : 1);
+      grave.alpha = t < 4 ? 1 : 1 - (t - 4);
     });
-    for (let i = 0; i < this.q(12); i++) {
-      const a = Math.random() * Math.PI * 2;
-      this.particles.spawn({
-        tex: this.tx.white, x: px, y: py + 6, vx: Math.cos(a) * rand(40, 110), vy: Math.sin(a) * rand(30, 80), vz: rand(40, 120),
-        gravity: 260, drag: 2, life: rand(0.4, 0.8), scale: rand(1.5, 3), scaleEnd: 0, tint: Math.random() < 0.5 ? 0xff9040 : 0xffe080, add: true,
-      });
-    }
   }
 
   respawn(x: number, y: number) {

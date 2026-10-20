@@ -1,14 +1,15 @@
 // Pixi.js v8 renderer for WorldState. See contracts.ts (GameRenderer / CreateRenderer).
 import { Application, Container, Sprite, Texture } from 'pixi.js';
-import { Phase, PickupType, type BombState, type GameEvent, type WorldState } from '@ob/game';
+import { BombMotion, Phase, PickupType, type BombState, type GameEvent, type WorldState } from '@ob/game';
 
 import type { CreateRenderer, GameRenderer, RendererOptions } from '../contracts';
 import { Arena } from './arena';
 import { loadAssets, type GameAssets } from './assets';
 import { Camera, type CameraMode, type CameraView } from './camera';
 import { Effects } from './fx';
+import { Explosions } from './explosions';
 import { Ground, makeGroundPattern } from './ground';
-import { BombView, FlameView, PickupView } from './items';
+import { BombView, PickupView } from './items';
 import { PlayerView } from './players';
 import { installFonts } from './text';
 import { makeTextures, type ProcTextures } from './textures';
@@ -36,8 +37,9 @@ class PixiRenderer implements GameRenderer {
   private ground: Ground;
   private fx: Effects;
   private pickupLayer = new Container();
-  private flameLayer = new Container();
-  private flameGlow = new Container();
+  private bombLayer = new Container({ sortableChildren: true });
+  private airBombs = new Container({ sortableChildren: true });
+  private explosions: Explosions;
   private entities = new Container({ sortableChildren: true });
   private tags = new Container();
   private overlay = new Container();
@@ -47,17 +49,16 @@ class PixiRenderer implements GameRenderer {
   private players = new Map<string, PlayerView>();
   private bombs = new Map<number, BombView>();
   private pickups = new Map<number, PickupView>();
-  private flames = new Map<number, FlameView>();
   /** Last known positions of entities that may already be gone when their event arrives. */
   private lastPickup = new Map<number, Known & { type: PickupType }>();
   private lastBomb = new Map<number, Known>();
-  private flameCenters = new Map<number, { x: number; y: number; dist: number; t: number }>();
 
   private world: WorldState | null = null;
   private camMode: CameraMode = 'follow';
   private meAlive = false;
   private tightUntil = 0;
   private recentBooms: { x: number; y: number; t: number }[] = [];
+  private recentDeaths: { x: number; y: number; t: number }[] = [];
   private localId = '';
   private time = 0;
   private flash = 0;
@@ -70,10 +71,12 @@ class PixiRenderer implements GameRenderer {
     this.ground = new Ground(makeGroundPattern(a.world.grass, a.world.grass2, a.terrain));
     this.arena = new Arena(a, tx, this.fx);
     this.arena.onImpact = (x, y) => this.shakeAt(x, y, 0.8);
-    this.flameGlow.blendMode = 'add';
+    this.explosions = new Explosions(a, tx);
+    // grounded bombs and pickups always sit under the characters (no y-sorting with players);
+    // carried and flying bombs go above them
     this.worldRoot.addChild(
-      this.ground.sprite, this.arena.root, this.arena.zoneLayer, this.fx.under, this.arena.fallingShadows, this.pickupLayer, this.flameLayer,
-      this.flameGlow, this.entities, this.fx.particles.normal, this.arena.fallingRoot, this.fx.over,
+      this.ground.sprite, this.arena.root, this.arena.zoneLayer, this.fx.under, this.arena.fallingShadows, this.pickupLayer, this.bombLayer,
+      this.explosions.root, this.explosions.glow, this.entities, this.airBombs, this.fx.particles.normal, this.arena.fallingRoot, this.fx.over,
       this.fx.particles.additive, this.fx.light, this.tags,
     );
     this.arena.fallingRoot.sortableChildren = true;
@@ -83,26 +86,43 @@ class PixiRenderer implements GameRenderer {
     app.stage.addChild(this.worldRoot, this.overlay);
     this.setQuality(quality);
 
-    this.ro = new ResizeObserver(() => this.resize());
+    // ResizeObserver runs after this frame was drawn, and resizing the canvas wipes its buffer:
+    // redraw right away, otherwise the screen stays black until the next frame (every frame
+    // while a window edge is being dragged).
+    this.ro = new ResizeObserver(() => { if (this.resize()) this.redraw(); });
     this.ro.observe(parent);
     this.resize();
   }
 
-  private resize() {
+  /** Returns true when the canvas size actually changed. */
+  private resize(): boolean {
     const r = this.parent.getBoundingClientRect();
     const res = Math.min(MAX_DPR, window.devicePixelRatio || 1);
     const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
-    if (w === this.view.cssW && h === this.view.cssH && res === this.view.res) return;
+    if (w === this.view.cssW && h === this.view.cssH && res === this.view.res) return false;
     this.view = { cssW: w, cssH: h, res };
     this.app.renderer.resize(w, h, res);
     this.vignette.width = w; this.vignette.height = h;
     this.flashRect.width = w; this.flashRect.height = h;
+    return true;
+  }
+
+  /** Re-present the last frame for the current canvas size (no simulation / animation step). */
+  private redraw() {
+    if (this.world) {
+      this.camera.apply(this.worldRoot, this.view);
+      const sc = this.worldRoot.scale.x, ox = this.worldRoot.x, oy = this.worldRoot.y;
+      const x0 = -ox / sc, y0 = -oy / sc, x1 = (this.view.cssW - ox) / sc, y1 = (this.view.cssH - oy) / sc;
+      this.ground.cover(x0, y0, x1, y1);
+      this.arena.cull(x0 - T, y0 - T, x1 + T, y1 + T, this.camera.zoom);
+    }
+    this.app.render();
   }
 
   setQuality(q: 'low' | 'high') {
     this.fx.lowQuality = q === 'low';
     this.fx.particles.max = q === 'low' ? 350 : 1400;
-    this.flameGlow.visible = q === 'high';
+    this.explosions.glow.visible = q === 'high';
   }
 
   // ---------------------------------------------------------------- frame
@@ -125,7 +145,7 @@ class PixiRenderer implements GameRenderer {
     this.syncPlayers(world, dt, fresh);
     this.syncBombs(world, dt);
     this.syncPickups(world, dt);
-    this.syncFlames(world, dt);
+    this.explosions.update(dt);
     this.fx.update(dt);
     this.gc();
 
@@ -160,19 +180,28 @@ class PixiRenderer implements GameRenderer {
       const recent = this.recentBooms.filter(b => this.time - b.t < 3);
       if (recent.length) interest = interest.concat(recent, recent); // explosions weigh double
     }
+    let action: { x0: number; y0: number; x1: number; y1: number } | null = null;
+    if (mode === 'overview' && world.phase !== Phase.RoundOver) {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      const add = (x: number, y: number) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
+      for (const p of world.players.values()) if (p.alive && p.inRound) add(p.x, p.y);
+      for (const d of this.recentDeaths) if (this.time - d.t < 3) add(d.x, d.y);
+      if (x0 <= x1) action = { x0, y0, x1, y1 };
+    }
     this.camera.update(dt, this.view, {
       aw: world.width, ah: world.height,
       focus: playing ? { x: me!.x, y: me!.y } : null,
       tight: world.phase === Phase.Countdown || this.time < this.tightUntil,
       interest,
+      action,
     });
   }
 
   private onNewMap() {
     for (const v of this.bombs.values()) v.destroy();
     for (const v of this.pickups.values()) v.destroy();
-    for (const v of this.flames.values()) v.destroy();
-    this.bombs.clear(); this.pickups.clear(); this.flames.clear();
+    this.explosions.clear();
+    this.bombs.clear(); this.pickups.clear();
     this.fx.clear();
     this.camera.reset();
   }
@@ -208,7 +237,6 @@ class PixiRenderer implements GameRenderer {
       if (!v) {
         v = new BombView(this.a, this.tx, this.fx, b);
         this.bombs.set(b.id, v);
-        this.entities.addChild(v.root);
       }
       v.seen = true;
       let holder: { x: number; y: number } | null = null;
@@ -220,6 +248,8 @@ class PixiRenderer implements GameRenderer {
         holder = holders.get(b.id) ?? null;
       }
       v.update(b, dt, holder, world.width, world.height);
+      const layer = b.motion === BombMotion.Carried || b.motion === BombMotion.Flying ? this.airBombs : this.bombLayer;
+      if (v.root.parent !== layer) layer.addChild(v.root);
       this.lastBomb.set(b.id, { x: v.x, y: v.y, t: this.time });
     }
     for (const [id, v] of this.bombs) if (!v.seen) { v.destroy(); this.bombs.delete(id); }
@@ -253,28 +283,10 @@ class PixiRenderer implements GameRenderer {
     for (const [id, v] of this.pickups) if (!v.seen) { v.destroy(); this.pickups.delete(id); }
   }
 
-  private syncFlames(world: WorldState, dt: number) {
-    for (const v of this.flames.values()) v.seen = false;
-    for (const f of world.flames.values()) {
-      let v = this.flames.get(f.id);
-      if (!v) {
-        const c = this.flameCenters.get(f.y * 4096 + f.x);
-        v = new FlameView(this.a, this.tx, f, c && this.time - c.t < 0.6 ? c : undefined);
-        this.flames.set(f.id, v);
-        this.flameLayer.addChild(v.sprite);
-        this.flameGlow.addChild(v.glow);
-      }
-      v.seen = true;
-      v.update(f, dt);
-    }
-    for (const [id, v] of this.flames) if (!v.seen) { v.destroy(); this.flames.delete(id); }
-  }
-
   private gc() {
     const old = this.time - 3;
     for (const [k, v] of this.lastPickup) if (v.t < old) this.lastPickup.delete(k);
     for (const [k, v] of this.lastBomb) if (v.t < old) this.lastBomb.delete(k);
-    for (const [k, v] of this.flameCenters) if (v.t < old) this.flameCenters.delete(k);
   }
 
   private updateOverlay(dt: number, world: WorldState | null) {
@@ -306,11 +318,8 @@ class PixiRenderer implements GameRenderer {
     for (const e of events) {
       switch (e.type) {
         case 'explosion': {
+          this.explosions.add(e);
           this.fx.explosion(e.x, e.y, e.cells, e.power);
-          for (const c of e.cells) {
-            const dist = Math.abs(c.x - e.x) + Math.abs(c.y - e.y);
-            this.flameCenters.set(c.y * 4096 + c.x, { x: e.x, y: e.y, dist, t: this.time });
-          }
           this.shakeAt(e.x, e.y, 0.6 + 0.1 * e.power);
           this.recentBooms.push({ x: e.x, y: e.y, t: this.time });
           if (this.recentBooms.length > 8) this.recentBooms.shift();
@@ -361,7 +370,14 @@ class PixiRenderer implements GameRenderer {
           if (p) this.fx.stunHit(p.x, p.y);
           break;
         }
-        case 'playerDied': this.shakeAt(e.x, e.y, 0.4); break;
+        case 'playerDied': {
+          // hide the body right away, even if the state saying alive=false is a patch behind
+          this.players.get(e.player)?.kill();
+          this.shakeAt(e.x, e.y, 0.4);
+          this.recentDeaths.push({ x: e.x, y: e.y, t: this.time });
+          if (this.recentDeaths.length > 16) this.recentDeaths.shift();
+          break;
+        }
         case 'curseApplied': {
           const p = this.playerPos(e.player);
           if (p) this.fx.curse(p.x, p.y);

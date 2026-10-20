@@ -32,8 +32,12 @@ export class PlayerView {
 
   private tagName = '';
   private skin = -1;
+  private ownSkin = 0;
   private time = Math.random() * 10;
+  /** Whether the body is shown (false from the death event/state until a real respawn). */
   private alive = false;
+  /** After a death event: ignore stale alive=true states for a moment (online patches lag events). */
+  private hold = 0;
   private pop = 0;
   private dustT = 0;
   seen = true;
@@ -59,17 +63,36 @@ export class PlayerView {
     this.tag.addChild(this.name, this.marker);
   }
 
-  /** Hero texture currently shown (for death ghosts). */
-  get texture(): Texture { return this.hero.texture; }
-  get flipped() { return this.hero.scale.x < 0; }
+  /** Death event: drop the body at once and leave only the ghost of this player's own skin. */
+  kill() {
+    if (!this.alive) return;
+    this.die(this.root.x / T, this.root.y / T);
+    this.hold = 0.6;
+  }
+
+  private die(x: number, y: number) {
+    this.alive = false;
+    this.root.visible = false;
+    this.tag.visible = false;
+    const src = this.a.heroes[this.ownSkin];
+    this.fx.death(x, y, (src.IdleDown ?? Object.values(src)[0])[0] ?? Texture.EMPTY);
+  }
 
   update(p: PlayerState, dt: number, local: boolean, fresh: boolean, carriedBomb: boolean) {
     this.time += dt;
-    const visible = p.inRound && p.alive;
     const x = p.x * T, y = p.y * T;
-    if (this.alive && !p.alive && p.inRound && !fresh) this.fx.death(p.x, p.y, this.hero.texture, this.flipped);
-    if (!this.alive && p.alive && !fresh && p.inRound) { this.fx.respawn(p.x, p.y); this.pop = 1; }
-    this.alive = p.alive;
+    this.ownSkin = ((p.skin % 11) + 11) % 11;
+    if (this.hold > 0) this.hold -= dt;
+    if (!p.alive) {
+      this.hold = 0;
+      if (this.alive && p.inRound && !fresh) this.die(p.x, p.y);
+      this.alive = false;
+    } else if (!this.alive && (this.hold <= 0 || fresh)) {
+      if (!fresh && p.inRound) { this.fx.respawn(p.x, p.y); this.pop = 1; }
+      this.alive = true;
+      this.hold = 0;
+    }
+    const visible = p.inRound && this.alive;
     this.root.visible = visible;
     this.tag.visible = visible;
     if (!visible) return;

@@ -18,7 +18,13 @@ export interface CameraInput {
   focus: { x: number; y: number } | null; // local player (tiles) when it should be followed
   tight: boolean;                         // countdown / just spawned: zoom in a bit more
   interest: { x: number; y: number }[];   // attract mode candidates (tiles)
+  /** Overview: bounding box (tiles) of the action — live heroes + fresh death spots; null = whole arena. */
+  action: { x0: number; y0: number; x1: number; y1: number } | null;
 }
+
+/** Legacy FocusCamera: action box padding and the closest overview zoom (tiles on the short side). */
+const ACTION_PAD = 8;
+const ACTION_MIN_TILES = 10;
 
 /** Per-60Hz-frame lerp factor `f` turned into a frame-rate independent one for `dt` seconds. */
 const lerpK = (f: number, dt: number) => 1 - Math.pow(1 - f, dt * 60);
@@ -72,6 +78,13 @@ export class Camera {
       // like the prototype: a tight view around the hero, the world outside the arena included
       this.cx = inp.focus.x * T; this.cy = inp.focus.y * T;
       needScale = Math.min(W, H) / followRadius;
+    } else if (inp.action) {
+      // spectating like the old game: keep every live hero (and fresh deaths) in frame,
+      // zoomed between "the whole arena" and a 10-tile close-up
+      const a = inp.action;
+      this.cx = ((a.x0 + a.x1) / 2) * T; this.cy = ((a.y0 + a.y1) / 2) * T;
+      const fitAction = Math.min(W / ((a.x1 - a.x0 + ACTION_PAD) * T), H / ((a.y1 - a.y0 + ACTION_PAD) * T));
+      needScale = Math.min(Math.min(W, H) / (ACTION_MIN_TILES * T), Math.max(fitScale, fitAction));
     } else {
       this.cx = arenaX; this.cy = arenaY;
       needScale = fitScale;

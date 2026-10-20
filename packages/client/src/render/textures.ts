@@ -136,10 +136,29 @@ export function makeTextures() {
     return fromCanvas(c);
   })();
 
+  // grave marker left on the ground where a player died (stone cross on a dirt mound)
+  const grave = pixels([
+    '.....KKKK.....',
+    '.....KWWK.....',
+    '.....KWLK.....',
+    '..KKKKWLKKKK..',
+    '..KWWWWWWWLK..',
+    '..KLLLWLLLLK..',
+    '..KKKKWLKKKK..',
+    '.....KWLK.....',
+    '.....KWLK.....',
+    '.....KWLK.....',
+    '.....KWLK.....',
+    '..DDDKLLKDDD..',
+    '.DddddddddddD.',
+    'DdddeddddedddD',
+    '.DDDDDDDDDDDD.',
+  ], { K: '#2a2140', W: '#e4e0ee', L: '#9c95b0', D: '#3b2a24', d: '#6b4a3a', e: '#8a6450' });
+
   const chip = pixels(['bb', 'bk'], { b: '#c86a48', k: '#8a3f34' });
   const pebble = pixels(['.g.', 'ggG', '.G.'], { g: '#b9b3a8', G: '#7d776e' });
 
-  return { puff, glow, shadow, blockShadow, ring, vignette, star, sparkle, marker, skull, chip, pebble, white: Texture.WHITE };
+  return { puff, glow, shadow, blockShadow, ring, vignette, star, sparkle, marker, skull, grave, chip, pebble, white: Texture.WHITE };
 }
 
 export type ProcTextures = ReturnType<typeof makeTextures>;
