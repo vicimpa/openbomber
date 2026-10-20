@@ -2,7 +2,7 @@
 //   http://localhost:8080/render/dev.html?bots=5&skin=0&quality=high
 // Keys: WASD/arrows move, Space bomb, E/Shift action.
 //   1 spawn every pickup   2 toggle all effects   3 stun   4 sudden death   5 all abilities
-//   6 abilities w/o remote   Q quality   V spectate   C camera mode   P pause   R new round
+//   6 abilities w/o remote   Q quality   V spectate   C camera mode   P pause   R new round   N next map
 //   ?attract  starts as a menu backdrop (localId '' + attract camera)
 import {
   Ability, Bot, Button, Curse, Phase, PickupType, ROUND_TIME, STUN_TIME, Simulation, TICK_MS, Tile, sec,
@@ -108,6 +108,7 @@ function onKey(code: string) {
     case 'KeyV': spectate = !spectate; break;
     case 'KeyC': camMode = (camMode + 1) % 3; renderer.setCameraMode(MODES[camMode]); break;
     case 'KeyP': paused = !paused; break;
+    case 'KeyN': w.phase = Phase.RoundOver; w.phaseTicks = 1; break; // next map (camera travel + spawns)
     case 'KeyR': w.phase = Phase.Playing; w.phaseTicks = ROUND_TIME; for (const p of w.players.values()) if (p.id !== LOCAL) p.alive = false; break;
   }
 }
@@ -175,7 +176,7 @@ function frame(now: number) {
   const w = sim.state;
   hud.textContent = `${fps} fps  ${quality}  phase ${Phase[w.phase]} ${w.phaseTicks}  round ${w.round}  ${w.width}x${w.height}\n`
     + `bombs ${w.bombs.size} flames ${w.flames.size} pickups ${w.pickups.size} falling ${w.falling.length}\n`
-    + 'WASD Space E | 1 pickups 2 effects 3 stun 4 sudden 5/6 abilities Q quality V spectate C camera(' + MODES[camMode] + ') P pause R round';
+    + 'WASD Space E | 1 pickups 2 effects 3 stun 4 sudden 5/6 abilities Q quality V spectate C camera(' + MODES[camMode] + ') P pause R round N map';
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

@@ -8,7 +8,7 @@ import { loadAssets, type GameAssets } from './assets';
 import { Camera, type CameraMode, type CameraView } from './camera';
 import { Effects } from './fx';
 import { Explosions } from './explosions';
-import { Ground, makeGroundPattern } from './ground';
+import { Ground, type Rect } from './ground';
 import { BombView, PickupView } from './items';
 import { PlayerView } from './players';
 import { installFonts } from './text';
@@ -16,6 +16,10 @@ import { makeTextures, type ProcTextures } from './textures';
 
 const T = 32;
 const MAX_DPR = 2;
+/** Camera trip between two maps (s); the round-start freeze is 1.5 s, heroes land as it ends. */
+const TRAVEL = 1.2;
+/** Heroes start dropping in this long before the camera arrives. */
+const SPAWN_LEAD = 0.3;
 
 const PICKUP_LABEL: Record<PickupType, [string, number]> = {
   [PickupType.BombUp]: ['+1 BOMB', 0x8fe3ff], [PickupType.FireUp]: ['+1 FIRE', 0xffb35c],
@@ -33,6 +37,8 @@ class PixiRenderer implements GameRenderer {
   private view: CameraView = { cssW: 1, cssH: 1, res: 1 };
   private camera = new Camera();
   private worldRoot = new Container();
+  /** Everything of the current map, placed at its world origin (the game's coordinates stay map-local). */
+  private mapRoot = new Container();
   private arena: Arena;
   private ground: Ground;
   private fx: Effects;
@@ -65,20 +71,27 @@ class PixiRenderer implements GameRenderer {
   private flashColor = 0xffffff;
   private sdPulse = 0;
   private ro: ResizeObserver;
+  /** Map placement in the endless world: origin (tiles) and size of the current map. */
+  private map = { ox: 0, oy: 0, w: 0, h: 0, shown: false, age: 0 };
+  private ghost: { ox: number; oy: number; w: number; h: number; t: number } | null = null;
+  private lastWorld: WorldState | null = null;
+  private nextMap: 'travel' | 'snap' | null = null;
+  private spawnDelay = -1;
 
   constructor(private app: Application, private parent: HTMLElement, private a: GameAssets, private tx: ProcTextures, quality: 'low' | 'high') {
     this.fx = new Effects(a, tx);
-    this.ground = new Ground(makeGroundPattern(a.world.grass, a.world.grass2, a.terrain));
+    this.ground = new Ground(a);
     this.arena = new Arena(a, tx, this.fx);
     this.arena.onImpact = (x, y) => this.shakeAt(x, y, 0.8);
     this.explosions = new Explosions(a, tx);
     // grounded bombs and pickups always sit under the characters (no y-sorting with players);
     // carried and flying bombs go above them
-    this.worldRoot.addChild(
-      this.ground.sprite, this.arena.root, this.arena.zoneLayer, this.fx.under, this.arena.fallingShadows, this.pickupLayer, this.bombLayer,
+    this.mapRoot.addChild(
+      this.arena.root, this.arena.zoneLayer, this.fx.under, this.arena.fallingShadows, this.pickupLayer, this.bombLayer,
       this.explosions.root, this.explosions.glow, this.entities, this.airBombs, this.fx.particles.normal, this.arena.fallingRoot, this.fx.over,
       this.fx.particles.additive, this.fx.light, this.tags,
     );
+    this.worldRoot.addChild(this.ground.root, this.arena.ghostRoot, this.mapRoot);
     this.arena.fallingRoot.sortableChildren = true;
     this.vignette = new Sprite({ texture: tx.vignette, tint: 0xff1a2a, alpha: 0 });
     this.flashRect = new Sprite({ texture: Texture.WHITE, alpha: 0 });
@@ -109,15 +122,40 @@ class PixiRenderer implements GameRenderer {
 
   /** Re-present the last frame for the current canvas size (no simulation / animation step). */
   private redraw() {
-    if (this.world) {
-      this.camera.apply(this.worldRoot, this.view);
-      const sc = this.worldRoot.scale.x, ox = this.worldRoot.x, oy = this.worldRoot.y;
-      const x0 = -ox / sc, y0 = -oy / sc, x1 = (this.view.cssW - ox) / sc, y1 = (this.view.cssH - oy) / sc;
-      this.ground.cover(x0, y0, x1, y1);
-      this.arena.cull(x0 - T, y0 - T, x1 + T, y1 + T, this.camera.zoom);
-    }
+    if (this.world) this.present();
     this.app.render();
   }
+
+  /** Camera → containers; cover the visible world rect with ground chunks and cull the arena. */
+  private present() {
+    this.camera.apply(this.worldRoot, this.view);
+    const sc = this.worldRoot.scale.x, ox = this.worldRoot.x, oy = this.worldRoot.y;
+    const x0 = -ox / sc, y0 = -oy / sc, x1 = (this.view.cssW - ox) / sc, y1 = (this.view.cssH - oy) / sc;
+    const covers: Rect[] = [this.floorRect(this.map)];
+    if (this.ghost) covers.push(this.floorRect(this.ghost));
+    this.ground.setCovers(covers);
+    this.ground.cover(x0, y0, x1, y1, this.camera.zoom);
+    const mx = this.map.ox * T, my = this.map.oy * T;
+    this.arena.cull(x0 - mx - T, y0 - my - T, x1 - mx + T, y1 - my + T, this.camera.zoom);
+    return { x0, y0, x1, y1 };
+  }
+
+  /** Arena floor (opaque, hides the ground), world px. */
+  private floorRect(m: { ox: number; oy: number; w: number; h: number }): Rect {
+    return { x0: (m.ox - 0.5) * T, y0: (m.oy - 0.5) * T, x1: (m.ox + m.w - 0.5) * T, y1: (m.oy + m.h - 0.5) * T };
+  }
+
+  /** Outer edge of the border wall ring, world px. */
+  private wallRect(m: { ox: number; oy: number; w: number; h: number }): Rect {
+    return { x0: (m.ox - 1.5) * T, y0: (m.oy - 1.5) * T, x1: (m.ox + m.w + 0.5) * T, y1: (m.oy + m.h + 0.5) * T };
+  }
+
+  /**
+   * Optional extra: how the next new map is shown. 'travel' (default once a map was shown): the
+   * camera glides over the world from the old arena to the new one; 'snap': it simply appears.
+   * Also marks the next world as a new map even when its size and round match the old one.
+   */
+  transition(kind: 'travel' | 'snap' = 'travel') { this.nextMap = kind; }
 
   setQuality(q: 'low' | 'high') {
     this.fx.lowQuality = q === 'low';
@@ -139,8 +177,17 @@ class PixiRenderer implements GameRenderer {
     }
     this.worldRoot.visible = true;
 
-    const fresh = this.arena.sync(world, dt);
-    if (fresh) this.onNewMap();
+    // a new GameSource brings its own world object: always a new map
+    const swapped = world !== this.lastWorld && this.lastWorld !== null;
+    this.lastWorld = world;
+    // travel only from a map that was actually on screen for a moment; a map replaced right away
+    // (a new source's waiting map → round 1) just becomes the new destination of the trip
+    this.map.age += dt;
+    const young = this.map.age < 0.75;
+    const travel = this.map.shown && this.nextMap !== 'snap' && (!young || this.camera.travelling);
+    this.arena.keepGhost = travel && !young;
+    const fresh = this.arena.sync(world, dt, swapped || this.nextMap !== null);
+    if (fresh) this.onNewMap(world, travel, travel && young);
 
     this.syncPlayers(world, dt, fresh);
     this.syncBombs(world, dt);
@@ -150,12 +197,8 @@ class PixiRenderer implements GameRenderer {
     this.gc();
 
     this.updateCamera(world, localId, dt);
-    this.camera.apply(this.worldRoot, this.view);
-    // visible world rect → endless ground + chunk culling
-    const sc = this.worldRoot.scale.x, ox = this.worldRoot.x, oy = this.worldRoot.y;
-    const x0 = -ox / sc, y0 = -oy / sc, x1 = (this.view.cssW - ox) / sc, y1 = (this.view.cssH - oy) / sc;
-    this.ground.cover(x0, y0, x1, y1);
-    this.arena.cull(x0 - T, y0 - T, x1 + T, y1 + T, this.camera.zoom);
+    const view = this.present();
+    this.updateGhost(dt, view);
     this.updateOverlay(dt, world);
     this.app.render();
   }
@@ -200,17 +243,70 @@ class PixiRenderer implements GameRenderer {
     });
   }
 
-  private onNewMap() {
+  private onNewMap(world: WorldState, travel: boolean, retarget: boolean) {
     for (const v of this.bombs.values()) v.destroy();
     for (const v of this.pickups.values()) v.destroy();
     this.explosions.clear();
     this.bombs.clear(); this.pickups.clear();
     this.fx.clear();
-    this.camera.reset();
+    this.nextMap = null;
+    this.recentBooms.length = 0; this.recentDeaths.length = 0;
+    const m = this.map;
+    if (retarget) {
+      // same spot (centred), the trip keeps going
+      m.ox = Math.round(m.ox + (m.w - world.width) / 2); m.oy = Math.round(m.oy + (m.h - world.height) / 2);
+      this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
+      this.spawnDelay = Math.max(0.05, this.camera.travelLeft - SPAWN_LEAD);
+    } else if (travel) {
+      // the old arena stays where it was; the new one is built a little further across the world
+      this.ghost = { ox: m.ox, oy: m.oy, w: m.w, h: m.h, t: 0 };
+      this.arena.ghostRoot.position.set(m.ox * T, m.oy * T);
+      const [nx, ny] = nextOrigin(m, world.width, world.height);
+      m.ox = nx; m.oy = ny;
+      this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
+      this.camera.travel(TRAVEL);
+      this.spawnDelay = TRAVEL - SPAWN_LEAD;
+    } else {
+      this.arena.clearGhost();
+      this.ghost = null;
+      this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
+      this.camera.reset();
+      this.spawnDelay = 0.1;
+    }
+    m.w = world.width; m.h = world.height; m.shown = true; m.age = 0;
+    this.mapRoot.position.set(m.ox * T, m.oy * T);
+    this.syncClearings();
+  }
+
+  /** Drop the previous arena once the camera has left it behind (or after a while). */
+  private updateGhost(dt: number, v: Rect) {
+    const g = this.ghost;
+    if (!g || this.camera.travelling) return;
+    g.t += dt;
+    const r = this.wallRect(g);
+    const seen = r.x1 > v.x0 && r.x0 < v.x1 && r.y1 > v.y0 && r.y0 < v.y1;
+    const root = this.arena.ghostRoot;
+    if (seen && g.t < 4) return;
+    root.alpha = seen ? Math.max(0, root.alpha - dt * 2) : 0;
+    if (root.alpha > 0) return;
+    this.arena.clearGhost();
+    root.alpha = 1;
+    this.ghost = null;
+    this.syncClearings();
+  }
+
+  /** Trampled aprons around the arenas on show (current + the one being left). */
+  private syncClearings() {
+    const list = [this.wallRect(this.map)];
+    if (this.ghost) list.push(this.wallRect(this.ghost));
+    this.ground.setClearings(list);
   }
 
   private syncPlayers(world: WorldState, dt: number, fresh: boolean) {
     for (const v of this.players.values()) v.seen = false;
+    // round start: heroes drop in as the camera arrives, a little staggered
+    const delay = fresh ? this.spawnDelay : -1;
+    let n = 0;
     const carried = new Set<number>();
     for (const b of world.bombs.values()) if (b.motion === 3) carried.add(b.id);
     for (const p of world.players.values()) {
@@ -220,10 +316,11 @@ class PixiRenderer implements GameRenderer {
         this.players.set(p.id, v);
         this.entities.addChild(v.root);
         this.tags.addChild(v.tag);
-        v.update(p, 0, p.id === this.localId, true, false);
+        if (!fresh) v.update(p, 0, p.id === this.localId, true, false);
       }
       v.seen = true;
-      v.update(p, dt, p.id === this.localId, fresh, p.carrying >= 0 && carried.has(p.carrying));
+      const stagger = delay < 0 ? -1 : p.id === this.localId ? delay : delay + (n++ % 6) * 0.05 - 0.1;
+      v.update(p, dt, p.id === this.localId, fresh, p.carrying >= 0 && carried.has(p.carrying), stagger < 0 ? (delay < 0 ? -1 : 0) : stagger);
     }
     for (const [id, v] of this.players) if (!v.seen) { v.destroy(); this.players.delete(id); }
     // local tag on top of the others
@@ -419,6 +516,20 @@ export type { CameraMode } from './camera';
 export interface RendererExt extends GameRenderer {
   setCameraMode(mode: CameraMode): void;
   setViewInset(left: number): void;
+  transition(kind?: 'travel' | 'snap'): void;
+}
+
+/** Where the next map goes: a random direction, clear of the old arena by a stretch of countryside. */
+function nextOrigin(m: { ox: number; oy: number; w: number; h: number }, w: number, h: number): [number, number] {
+  const cx = m.ox + (m.w - 1) / 2, cy = m.oy + (m.h - 1) / 2;
+  let ang = Math.random() * Math.PI * 2;
+  // don't wander off forever: far from the start, head back roughly towards it
+  if (Math.hypot(cx, cy) > 240) ang = Math.atan2(-cy, -cx) + (Math.random() - 0.5) * 1.6;
+  const dx = Math.cos(ang), dy = Math.sin(ang);
+  const gap = 11 + Math.random() * 8;
+  const hw = (m.w + w) / 2 + 2 + gap, hh = (m.h + h) / 2 + 2 + gap;
+  const t = Math.min(Math.abs(dx) > 1e-3 ? hw / Math.abs(dx) : Infinity, Math.abs(dy) > 1e-3 ? hh / Math.abs(dy) : Infinity);
+  return [Math.round(cx + dx * t - (w - 1) / 2), Math.round(cy + dy * t - (h - 1) / 2)];
 }
 
 export const createRenderer = async (opts: RendererOptions): Promise<RendererExt> => {
