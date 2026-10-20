@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
-    "build": "bun build src/index.ts --target=bun --outfile=dist/index.js --minify --external '@colyseus/*'",
+    "build": "bun scripts/bundle.ts",
     "test": "bun test",
     "typecheck": "tsc -p .",
     "test:load": "bun test/load.ts"

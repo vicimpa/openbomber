@@ -5,28 +5,90 @@ on:
     branches: [ main ]
     paths:
       - 'packages/**'
+      - 'package.json'
+      - 'bun.lock'
       - '.github/workflows/main.yml'
 
 jobs:
   build:
-    name: Deploy
+    name: Test, build, deploy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.1.30
+          bun-version: 1.4.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Install deps
-        run: bun install 
+        run: bun install --frozen-lockfile
 
-      - name: Build Client
-        run: bun build-client 
+      - name: Test
+        run: bun run test
 
-      - name: Build Server
-        run: bun build-server
+      # nginx on the game host already proxies /socket.io/ to 127.0.0.1:3001 (v1 socket.io),
+      # so v2 reuses that location: the client connects to wss://<host>/socket.io.
+      - name: Build client
+        run: bun run --filter '@ob/client' build
+        env:
+          VITE_SERVER_PATH: /socket.io
 
-      - name: Deploy Client
+      - name: Build server
+        run: |
+          cd packages/server
+          bun run build
+          cd dist
+          npm install --omit=dev --no-audit --no-fund
+
+      # v2 goes to its own folder; /root/openbomber (v1) stays untouched for a rollback.
+      - name: Upload server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: "packages/server/dist/*"
+          target: "/root/openbomber-v2"
+          strip_components: 3
+          rm: true
+
+      # Smoke-start under pm2 on a spare port first (checks Node + pm2 ESM support); the live
+      # process is only switched when that answers, and v1 is restored if v2 then fails.
+      - name: Switch server
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            cd /root/openbomber-v2
+            NODE_MAJOR=$(node -p 'process.versions.node.split(".")[0]')
+            echo "node $(node -v), pm2 $(pm2 -v)"
+            if [ "$NODE_MAJOR" -lt 20 ]; then echo "Node >= 20 required"; exit 1; fi
+            health() { node -e "fetch('http://127.0.0.1:$1/socket.io/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; }
+            pm2 delete openbomber-smoke --silent || true
+            PORT=3101 HOST=127.0.0.1 BASE_PATH=/socket.io pm2 start index.js --name openbomber-smoke --update-env
+            sleep 5
+            if ! health 3101; then pm2 logs openbomber-smoke --lines 40 --nostream || true; pm2 delete openbomber-smoke || true; exit 1; fi
+            pm2 delete openbomber-smoke
+            pm2 delete openbomber --silent || true
+            PORT=3001 HOST=127.0.0.1 BASE_PATH=/socket.io pm2 start index.js --name openbomber --update-env
+            sleep 4
+            if ! health 3001; then
+              echo "v2 failed on :3001, restoring v1"
+              pm2 logs openbomber --lines 40 --nostream || true
+              pm2 delete openbomber || true
+              cd /root/openbomber && pm2 start --name openbomber index.js
+              exit 1
+            fi
+            pm2 save || true
+
+      - name: Deploy client
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -37,28 +99,3 @@ jobs:
           target: "/var/www/openbomber"
           strip_components: 3
           rm: true
-
-      - name: Deploy Server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          source: "packages/server/dist/*"
-          target: "/root/openbomber"
-          strip_components: 3
-          rm: true
-        
-      - name: Restart Server
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            pm2 delete openbomber --force --silent
-            cd /root/openbomber
-            echo "${{ secrets.DOTENVFILE }}" > .env
-            pm2 start --name openbomber index.js

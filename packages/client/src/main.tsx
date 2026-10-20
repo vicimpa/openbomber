@@ -25,5 +25,9 @@ const tryInvite = () => {
 tryInvite();
 window.addEventListener('hashchange', tryInvite);
 
+// v1 shipped a cache-first service worker; v2 has none. Drop any old registration + caches.
+navigator.serviceWorker?.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
+if ('caches' in window) caches.keys().then((ks) => ks.forEach((k) => caches.delete(k))).catch(() => {});
+
 // Prevent pinch-zoom in iOS Safari, which ignores user-scalable=no.
 document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false } as AddEventListenerOptions);
