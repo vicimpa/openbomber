@@ -1,0 +1,286 @@
+// Procedural audio engine: every SFX is synthesised (pre-rendered offline at unlock) and
+// the music is generated live. No sample files. See contracts.ts for the interface.
+
+import { PickupType, type GameEvent, type WorldState } from '@ob/game';
+import type { AudioEngine, CreateAudio, MusicMode, UiSound } from '../contracts';
+import { buildGraph, duckMusic, type Graph } from './graph';
+import { Music } from './music';
+import { renderBank, SfxPlayer, type PlayOpts, type SfxBank, type SfxKey } from './sfx';
+import { clamp, semis } from './synth';
+
+const LOOKAHEAD = 0.15;   // s of music scheduled ahead
+const WAKE_MS = 25;       // scheduler wake-up interval (timing comes from the audio clock)
+
+/** Per-batch caps so a big chain doesn't trigger 40 identical sounds at once. */
+const BATCH_CAP: Partial<Record<SfxKey, number>> = { brick: 4, spawn: 3, burn: 3, blockFall: 2, bounce: 3, land: 3, stop: 2, boom_s: 4, boom_m: 4, boom_l: 4, place: 4 };
+
+function collectSound(kind: PickupType): SfxKey {
+  switch (kind) {
+    case PickupType.Skull: return 'collectSkull';
+    case PickupType.Heart: return 'collectHeart';
+    case PickupType.Shield: return 'collectShield';
+    case PickupType.BombUp: case PickupType.FireUp: case PickupType.SpeedUp: case PickupType.FullFire: case PickupType.Random:
+      return 'collect';
+    default: return 'collectPower';
+  }
+}
+
+class Engine implements AudioEngine {
+  private ctx: AudioContext | null = null;
+  private g: Graph | null = null;
+  private player: SfxPlayer | null = null;
+  private music: Music | null = null;
+  private bank: SfxBank = new Map();
+  private vol = { master: 0.9, sfx: 1, music: 0.7 };
+  private mode: MusicMode = 'off';
+  private timer: ReturnType<typeof setInterval> | 0 = 0;
+  private disposed = false;
+  private hiddenSuspend = false;
+  private lastTick = -10;
+  private lastGo = -10;
+  private readonly onGesture = () => this.resumeIfNeeded();
+  private readonly onVisibility = () => this.visibility();
+
+  constructor() {
+    if (typeof document !== 'undefined') {
+      for (const ev of ['touchend', 'pointerup', 'keydown', 'click'] as const) {
+        document.addEventListener(ev, this.onGesture, { capture: true, passive: true });
+      }
+      document.addEventListener('visibilitychange', this.onVisibility);
+    }
+  }
+
+  // ------------------------------------------------------------ lifecycle
+
+  unlock(): void {
+    if (this.disposed) return;
+    try {
+      if (!this.ctx) this.init();
+      else this.resumeIfNeeded();
+    } catch (e) {
+      console.warn('[audio] unlock failed', e);
+    }
+  }
+
+  private init() {
+    const AC = typeof window !== 'undefined' ? window.AudioContext : undefined;
+    if (!AC) return;
+    const ctx = new AC({ latencyHint: 'interactive' });
+    this.ctx = ctx;
+    const g = buildGraph(ctx, ctx.destination);
+    this.g = g;
+    this.applyVolume(true);
+    this.player = new SfxPlayer(ctx, this.bank, g.sfx, g.sfxWet);
+    this.music = new Music(ctx, g.duck, g.musicWet, (Date.now() * 2654435761) >>> 0);
+    // iOS: playing a (silent) buffer inside the gesture fully unlocks output
+    const silent = ctx.createBufferSource();
+    silent.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+    silent.connect(ctx.destination);
+    silent.start();
+    void ctx.resume().catch(() => {});
+    ctx.addEventListener('statechange', () => { if (ctx.state === 'running' && this.music) this.music.schedule(ctx.currentTime + LOOKAHEAD); });
+    renderBank(ctx.sampleRate, this.bank, () => this.disposed).catch((e) => console.warn('[audio] render failed', e));
+    this.timer = setInterval(() => this.pump(), WAKE_MS);
+    if (this.mode !== 'off') this.music.setMode(this.mode);
+  }
+
+  private pump() {
+    const ctx = this.ctx;
+    if (!ctx || ctx.state !== 'running' || !this.music) return;
+    try { this.music.schedule(ctx.currentTime + LOOKAHEAD); } catch (e) { console.warn('[audio] music', e); }
+  }
+
+  private resumeIfNeeded() {
+    const ctx = this.ctx;
+    if (!ctx || this.disposed || (typeof document !== 'undefined' && document.hidden)) return;
+    if (ctx.state !== 'running') void ctx.resume().catch(() => {});
+  }
+
+  private visibility() {
+    const ctx = this.ctx;
+    if (!ctx || this.disposed) return;
+    if (document.hidden) {
+      if (ctx.state === 'running') { this.hiddenSuspend = true; void ctx.suspend().catch(() => {}); }
+    } else if (this.hiddenSuspend) {
+      this.hiddenSuspend = false;
+      void ctx.resume().catch(() => {});
+    }
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    if (this.timer) clearInterval(this.timer);
+    this.timer = 0;
+    if (typeof document !== 'undefined') {
+      for (const ev of ['touchend', 'pointerup', 'keydown', 'click'] as const) {
+        document.removeEventListener(ev, this.onGesture, { capture: true });
+      }
+      document.removeEventListener('visibilitychange', this.onVisibility);
+    }
+    try { this.music?.stop(); this.player?.stopAll(); } catch { /* ignore */ }
+    const ctx = this.ctx;
+    this.ctx = null;
+    this.g = null;
+    this.player = null;
+    this.music = null;
+    if (ctx) void ctx.close().catch(() => {});
+  }
+
+  // ------------------------------------------------------------ volume & music
+
+  setVolume(v: { master?: number; sfx?: number; music?: number }): void {
+    const ok = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
+    if (ok(v.master)) this.vol.master = clamp(v.master, 0, 1);
+    if (ok(v.sfx)) this.vol.sfx = clamp(v.sfx, 0, 1);
+    if (ok(v.music)) this.vol.music = clamp(v.music, 0, 1);
+    try { this.applyVolume(false); } catch { /* ignore */ }
+  }
+
+  private applyVolume(instant: boolean) {
+    const g = this.g, ctx = this.ctx;
+    if (!g || !ctx) return;
+    const now = ctx.currentTime;
+    const set = (p: AudioParam, v: number) => {
+      const x = v * v; // perceptual-ish taper
+      p.cancelScheduledValues(now);
+      if (instant) p.setValueAtTime(x, now);
+      else { p.setValueAtTime(p.value, now); p.setTargetAtTime(x, now, 0.05); }
+    };
+    set(g.master.gain, this.vol.master);
+    set(g.sfx.gain, this.vol.sfx);
+    set(g.sfxWet.gain, this.vol.sfx);
+    set(g.music.gain, this.vol.music);
+    set(g.musicWet.gain, this.vol.music);
+  }
+
+  setMusic(mode: MusicMode): void {
+    this.mode = mode;
+    if (!this.music || !this.ctx) return;
+    try {
+      this.music.setMode(mode);
+      this.pump();
+    } catch (e) { console.warn('[audio] setMusic', e); }
+  }
+
+  // ------------------------------------------------------------ sfx
+
+  private get live(): boolean {
+    return !!this.ctx && this.ctx.state === 'running' && !!this.player;
+  }
+
+  private play(key: SfxKey, o?: PlayOpts) {
+    try { this.player?.play(key, o); } catch (e) { console.warn('[audio] play', key, e); }
+  }
+
+  ui(sound: UiSound): void {
+    if (!this.live) return;
+    this.play(`ui_${sound}` as SfxKey);
+  }
+
+  /** Spatial placement relative to the local player. */
+  private where(world: WorldState | null, localId: string, x?: number, y?: number, who?: string): PlayOpts {
+    if (who && localId && who === localId) return { gain: 1.2, pan: 0, wet: 0.8 };
+    if (world && who && (x === undefined || y === undefined)) {
+      const p = world.players.get(who);
+      if (p) { x = p.x; y = p.y; }
+    }
+    if (!world || x === undefined || y === undefined) return { gain: 1, pan: 0 };
+    const me = localId ? world.players.get(localId) : undefined;
+    const lx = me ? me.x : (world.width - 1) / 2;
+    const ly = me ? me.y : (world.height - 1) / 2;
+    const dx = x - lx, dy = y - ly;
+    const d = Math.hypot(dx, dy);
+    const range = me ? 7 : 11;
+    const gain = 0.2 + 0.8 / (1 + (d / range) ** 2);
+    return { gain: gain * (who ? 0.85 : 1), pan: clamp(dx / 9, -1, 1) * 0.85, wet: 1 + d / 10 };
+  }
+
+  handleEvents(events: GameEvent[], world: WorldState | null, localId: string): void {
+    if (!this.live || !events || !events.length) return;
+    const ctx = this.ctx!;
+    const now = ctx.currentTime;
+    const count = new Map<SfxKey, number>();
+    const fire = (key: SfxKey, o: PlayOpts) => {
+      const n = count.get(key) ?? 0;
+      const cap = BATCH_CAP[key];
+      if (cap !== undefined && n >= cap) return;
+      count.set(key, n + 1);
+      // spread repeats inside one batch by a few ms so they don't phase
+      this.play(key, { ...o, when: now + n * 0.012 });
+    };
+    const W = (x?: number, y?: number, who?: string) => this.where(world, localId, x, y, who);
+
+    for (const e of events) {
+      try {
+        switch (e.type) {
+          case 'bombPlaced': fire('place', W(e.x, e.y, e.owner)); break;
+          case 'bombKicked': fire('kick', W(undefined, undefined, e.by)); break;
+          case 'bombGrabbed': fire('grab', W(undefined, undefined, e.by)); break;
+          case 'bombThrown': fire('throw', W(undefined, undefined, e.by)); break;
+          case 'bombPunched': fire('punch', W(undefined, undefined, e.by)); break;
+          case 'bombBounced': fire('bounce', W(e.x, e.y)); break;
+          case 'bombLanded': fire('land', W(e.x, e.y)); break;
+          case 'bombStopped': fire('stop', W(e.x, e.y)); break;
+          case 'bombFizzled': fire('fizzle', W(e.x, e.y)); break;
+          case 'explosion': {
+            const power = Math.max(e.power || 1, Math.sqrt(e.cells?.length ?? 1));
+            const size = power >= 6 ? 2 : power >= 3 ? 1 : 0;
+            const key: SfxKey = size === 2 ? 'boom_l' : size === 1 ? 'boom_m' : 'boom_s';
+            const o = W(e.x, e.y);
+            o.gain = (o.gain ?? 1) * (0.85 + 0.04 * Math.min(power, 6));
+            fire(key, o);
+            if (this.g) duckMusic(this.g, now, (0.25 + 0.15 * size) * Math.min(1, o.gain));
+            break;
+          }
+          case 'brickDestroyed': fire('brick', W(e.x, e.y)); break;
+          case 'pickupSpawned': fire('spawn', W(e.x, e.y)); break;
+          case 'pickupBurned': fire('burn', W(e.x, e.y)); break;
+          case 'pickupCollected': {
+            const o = W(undefined, undefined, e.by);
+            if (e.by !== localId) o.gain = (o.gain ?? 1) * 0.6;
+            fire(collectSound(e.kind), o);
+            break;
+          }
+          case 'shieldBlocked': fire('shieldBreak', W(undefined, undefined, e.player)); break;
+          case 'playerStunned': fire('stun', W(undefined, undefined, e.player)); break;
+          case 'playerDied': fire('death', e.player === localId ? W(e.x, e.y, e.player) : W(e.x, e.y)); break;
+          case 'playerRespawned': fire('respawn', e.player === localId ? W(e.x, e.y, e.player) : W(e.x, e.y)); break;
+          case 'curseApplied': fire('curse', W(undefined, undefined, e.player)); break;
+          case 'effectEnded': {
+            const o = W(undefined, undefined, e.player);
+            if (e.player !== localId) o.gain = (o.gain ?? 1) * 0.5;
+            fire('effectEnd', o);
+            break;
+          }
+          case 'countdown':
+            if (e.seconds > 0) { this.lastTick = now; fire('tick', { rate: e.seconds === 1 ? semis(2) : 1 }); }
+            else { this.lastGo = now; fire('go', {}); }
+            break;
+          case 'roundStart':
+            if (now - this.lastGo > 0.6) {
+              if (now - this.lastTick < 1.6) { this.lastGo = now; fire('go', {}); }
+              else fire('roundStart', {});
+            }
+            break;
+          case 'suddenDeath': break; // the first zoneShrink already sounds the siren
+          case 'zoneWarning': fire('ui_error', { gain: 0.9 }); break;
+          case 'zoneCancel': fire('effectEnd', {}); break;
+          case 'zoneShrink': fire('siren', {}); break;
+          case 'blockFell': {
+            const o = W(e.x, e.y);
+            fire('blockFall', o);
+            if (this.g) duckMusic(this.g, now, 0.15 * Math.min(1, o.gain ?? 1));
+            break;
+          }
+          case 'roundOver': fire(e.winner && e.winner === localId ? 'victory' : 'defeat', {}); break;
+        }
+      } catch (err) {
+        console.warn('[audio] event', e.type, err);
+      }
+    }
+  }
+}
+
+export const createAudio: CreateAudio = () => new Engine();
+export type { SfxKey } from './sfx';

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/web-manifest-combined.json",
+  "id": "openbomber",
+  "name": "OpenBomber",
+  "short_name": "OpenBomber",
+  "description": "Многопользовательский Бомбермен в браузере",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "theme_color": "#0d0b1a",
+  "background_color": "#0d0b1a",
+  "categories": ["games"],
+  "icons": [
+    { "src": "logo/logo_96.png", "sizes": "96x96", "type": "image/png", "purpose": "any" },
+    { "src": "logo/logo_192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "logo/logo_512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "logo/logo_192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "logo/logo_512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

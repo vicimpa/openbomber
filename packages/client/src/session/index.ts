@@ -1,0 +1,221 @@
+// Session layer: owns the current GameSource (shared online world, private room or offline
+// bots) and wires it to the renderer, audio, input, haptics and the UI store.
+//
+// Flow: loader → main menu over a live offline bot match (attract camera) → «Играть онлайн»
+// (shared arena), «Одиночная игра» (bots), own room / join by code → the in-game HUD.
+// Leaving any game returns to the menu. Music is off by design; sound effects stay.
+
+import { effect } from '@preact/signals';
+import type { GameEvent, WorldState } from '@ob/game';
+import type { AudioEngine, GameSource, InputManager } from '../contracts';
+import { createAudio } from '../audio';
+import { createInput, installPlayGuards } from '../input';
+import { connectQuickPlay, createPrivateRoom, joinRoomByCode, listRooms, MAIN_ROOM_ID, NetSource } from '../net';
+import { createRenderer, type RendererExt } from '../render';
+import { setStageHandler } from '../ui/App';
+import { buildHud } from '../ui/hud';
+import { t } from '../ui/i18n';
+import {
+  bindActions, connectStatus, fps, handleGameEvents, hud, onlineCount, pushChat, registerLoadTask, resetGameState,
+  room, screen, settings, spectators, toast, uiCapturesInput,
+} from '../ui/store';
+import { LocalSource } from './LocalSource';
+
+type Source = (NetSource | LocalSource) & GameSource;
+
+const HUD_INTERVAL_MS = 100;
+const ATTRACT_BOTS = 5;
+
+export function startSession() {
+  const input: InputManager = createInput();
+  const audio: AudioEngine = createAudio();
+  let renderer: RendererExt | null = null;
+  let source: Source | null = null;
+  let unsub: (() => void)[] = [];
+  let started = false;      // loader's «Играть» pressed (audio unlocked)
+
+  // ---------------------------------------------------------------- renderer on #stage
+  let resolveStage!: (el: HTMLElement) => void;
+  const stageReady = new Promise<HTMLElement>((r) => (resolveStage = r));
+  setStageHandler((el) => {
+    resolveStage(el);
+    const unguard = installPlayGuards(el);
+    return () => unguard();
+  });
+  registerLoadTask(
+    stageReady
+      .then((el) => createRenderer({ parent: el, quality: settings.peek().quality }))
+      .then((r) => { renderer = r; }),
+  );
+  effect(() => renderer?.setQuality(settings.value.quality));
+  effect(() => audio.setVolume(settings.value.volume));
+  effect(() => input.setEnabled(!uiCapturesInput.value));
+  // Desktop main menu: the panel covers the left side, so the spectator camera frames the rest.
+  const menuInset = () => {
+    const el = document.querySelector<HTMLElement>('.mm__panel');
+    const r = el?.getBoundingClientRect();
+    renderer?.setViewInset(screen.peek() === 'menu' && r && r.height < innerHeight * 0.9 ? r.right : 0);
+  };
+  effect(() => { screen.value; requestAnimationFrame(menuInset); });
+  addEventListener('resize', menuInset);
+
+  // ---------------------------------------------------------------- sources
+  const profile = () => ({ name: settings.peek().name, skin: settings.peek().skin });
+
+  function setSource(next: Source, info: { code: string; isPrivate: boolean; offline: boolean } | null, to: 'menu' | 'game') {
+    if (source && source !== next) source.dispose();
+    unsub.forEach((u) => u());
+    unsub = [];
+    resetGameState();
+    source = next;
+    room.value = info;
+    renderer?.setCameraMode(to === 'menu' ? 'overview' : 'follow');
+    if (started) screen.value = to;
+    if (next instanceof NetSource) {
+      next.chatLog.forEach(pushChat);
+      unsub.push(next.onChat(pushChat));
+      unsub.push(next.onStatus((s) => {
+        if (s === 'reconnecting') toast(t('net.reconnecting'), 'info');
+        if (s === 'disconnected' && source === next) {
+          toast(t('net.disconnected'), 'bad');
+          toMenu();
+        }
+      }));
+    }
+  }
+
+  /** Main menu: a live bot match behind it, watched with the spectator camera. */
+  function toMenu() {
+    setSource(new LocalSource({ bots: ATTRACT_BOTS, difficulty: 'normal' }), null, 'menu');
+  }
+
+  async function connect(kind: 'quick' | 'private' | 'join', job: () => Promise<NetSource>, code?: string) {
+    connectStatus.value = { kind, code };
+    screen.value = 'connecting';
+    try {
+      const net = await job();
+      setSource(net, { code: net.roomId, isPrivate: net.roomId !== MAIN_ROOM_ID, offline: false }, 'game');
+    } catch (e) {
+      console.warn('[session] connect failed', e);
+      connectStatus.value = { kind, code, error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
+  toMenu();
+  
+
+  // Shared arena head count for the menu («общая арена · игроков: N»).
+  const pollOnline = async () => {
+    if (screen.peek() === 'menu' || screen.peek() === 'loader') {
+      try {
+        const rooms = await listRooms();
+        const main = rooms.find((r) => r.roomId === MAIN_ROOM_ID);
+        onlineCount.value = main ? (main.metadata?.humans ?? 0) : null;
+      } catch {
+        onlineCount.value = null;
+      }
+    }
+    setTimeout(pollOnline, 5000);
+  };
+  pollOnline();
+
+  bindActions({
+    start() {
+      started = true;
+      audio.unlock();
+      audio.setMusic('off');
+      screen.value = 'menu';
+    },
+    async play(enabled) {
+      if (!source) return;
+      const ok = await source.play(enabled);
+      if (enabled && !ok) toast(t('net.full'), 'bad');
+    },
+    // «Играть онлайн»: the shared arena, straight into the round (spectate via «Отключиться»)
+    quickPlay: () => connect('quick', () => connectQuickPlay({ ...profile(), play: true })),
+    createPrivate: () => connect('private', () => createPrivateRoom({ ...profile(), bots: 0 })),
+    joinByCode: (code) => connect('join', () => joinRoomByCode(code, { ...profile(), play: true }), code),
+    playOffline({ bots, difficulty }) {
+      setSource(new LocalSource({ bots, difficulty, play: true, ...profile() }), { code: 'OFFLINE', isPrivate: false, offline: true }, 'game');
+    },
+    leave: () => toMenu(),
+    sendChat(text) {
+      if (source instanceof NetSource) source.sendChat(text);
+      else pushChat({ from: source?.localId ?? '', name: settings.peek().name, text, at: Date.now() });
+    },
+    setProfile(p) { source?.setProfile(p); },
+    uiSound(s) { audio.ui(s); },
+  });
+
+  // ---------------------------------------------------------------- frame loop
+  let last = performance.now();
+  let hudAcc = HUD_INTERVAL_MS;
+  let fpsAcc = 0;
+  let frames = 0;
+
+  const frame = (now: number) => {
+    requestAnimationFrame(frame);
+    const dt = Math.min(now - last, 250);
+    last = now;
+
+    const src = source;
+    if (src) {
+      const s = input.sample();
+      src.update(dt, { dx: s.dx, dy: s.dy, buttons: s.buttons });
+      const world = src.world;
+      const localId = src.localId;
+      const events = src.drainEvents();
+      if (events.length) react(events, world, localId);
+      renderer?.render(world, localId, dt);
+
+      hudAcc += dt;
+      if (world && hudAcc >= HUD_INTERVAL_MS) {
+        hudAcc = 0;
+        hud.value = buildHud(world, localId, src.ping);
+        if (src instanceof NetSource) {
+          if (spectators.peek().length !== src.spectators)
+            spectators.value = Array.from({ length: src.spectators }, (_, i) => ({ id: `s${i}`, name: '' }));
+        } else if (spectators.peek().length) spectators.value = [];
+      }
+    } else {
+      renderer?.render(null, '', dt);
+    }
+
+    frames++;
+    fpsAcc += dt;
+    if (fpsAcc >= 500) {
+      fps.value = Math.round((frames * 1000) / fpsAcc);
+      frames = 0;
+      fpsAcc = 0;
+    }
+  };
+  requestAnimationFrame(frame);
+
+  // Dev / QA hook (stripped from production builds): inspect the live session from the console.
+  if (import.meta.env.DEV) {
+    (window as unknown as { __ob: unknown }).__ob = {
+      get source() { return source; },
+      get renderer() { return renderer; },
+      audio, input,
+    };
+  }
+
+  function react(events: GameEvent[], world: WorldState | null, localId: string) {
+    renderer?.handleEvents(events, localId);
+    audio.handleEvents(events, world, localId);
+    handleGameEvents(events, world, localId);
+    if (!localId) return;
+    const me = world?.players.get(localId);
+    for (const e of events) {
+      switch (e.type) {
+        case 'bombPlaced': if (e.owner === localId) input.vibrate(15, 0.3); break;
+        case 'playerDied': if (e.player === localId) input.vibrate([60, 40, 120], 1); break;
+        case 'shieldBlocked': if (e.player === localId) input.vibrate([30, 30, 30], 0.7); break;
+        case 'pickupCollected': if (e.by === localId) input.vibrate(10, 0.2); break;
+        case 'explosion':
+          if (me && Math.hypot(e.x - me.x, e.y - me.y) < 5) input.vibrate(35, 0.6);
+          break;
+      }
+    }
+  }
+}

@@ -1,35 +1,20 @@
-import { defineConfig } from "vite";
-import paths from "vite-tsconfig-paths";
-import react from "@vitejs/plugin-react-swc";
-import { svelte } from "@sveltejs/vite-plugin-svelte";
-import { viteSingleFile } from "vite-plugin-singlefile";
+import { defineConfig } from 'vite';
+import preact from '@preact/preset-vite';
+import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
+  root: 'src',
   base: './',
-  root: './src',
   publicDir: '../public',
-  envDir: '../',
-  envPrefix: "APP_",
+  resolve: {
+    alias: { '$': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
   build: {
     outDir: '../dist',
-    target: 'esnext',
     emptyOutDir: true,
+    target: 'es2022',
+    reportCompressedSize: false,
   },
-
-  preview: {
-    host: '127.0.0.1',
-    port: 3000
-  },
-
-  server: {
-    host: '0.0.0.0',
-    port: 3000
-  },
-
-  plugins: [
-    react({ plugins: [], tsDecorators: true }),
-    svelte({ configFile: '../svelte.config.js' }),
-    paths({ root: '../' }),
-    viteSingleFile()
-  ],
+  plugins: [preact()],
+  server: { host: '0.0.0.0', port: 8080 },
 });

@@ -1,0 +1,85 @@
+/* Touch controls in the OpenBomber style (new-openbomber Gamepad.module.css): white-ringed
+   translucent dark-grey circles. --tc-lift (set by the game screen) keeps them above the
+   bottom pill. */
+.root {
+  --u: calc(var(--tc-size, 1) * 1px);
+  --lift: var(--tc-lift, 24px);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  z-index: 5;
+  opacity: var(--tc-opacity, 0.8);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.root[data-left] { flex-direction: row-reverse; }
+
+.stickZone, .btnZone { position: relative; flex: 1 1 50%; touch-action: none; }
+
+.base {
+  position: absolute;
+  left: calc(env(safe-area-inset-left, 0px) + 24px + 70 * var(--u));
+  top: calc(100% - env(safe-area-inset-bottom, 0px) - var(--lift) - 70 * var(--u));
+  width: calc(140 * var(--u));
+  height: calc(140 * var(--u));
+  margin: calc(-70 * var(--u)) 0 0 calc(-70 * var(--u));
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.15s, border-width 0.1s;
+}
+.root[data-left] .base { left: auto; right: calc(env(safe-area-inset-right, 0px) + 24px); margin: calc(-70 * var(--u)) 0 0 0; transform: translateX(50%); }
+.root[data-left] .base[data-active] { right: auto; transform: none; margin: calc(-70 * var(--u)) 0 0 calc(-70 * var(--u)); }
+.base[data-active] { opacity: 1; border-width: 6px; transition: none; }
+
+.knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(76 * var(--u));
+  height: calc(76 * var(--u));
+  margin: calc(-38 * var(--u)) 0 0 calc(-38 * var(--u));
+  border-radius: 50%;
+  background: rgba(68, 68, 68, 0.9);
+  border: 4px solid #fff;
+  box-shadow: inset 0 0 6px #000;
+}
+.base[data-active] .knob { box-shadow: 0 0 10px #000; }
+
+.btn {
+  position: absolute;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  border: 4px solid #fff;
+  background: rgba(68, 68, 68, 0.85);
+  box-shadow: inset -8px -8px 16px rgba(0, 0, 0, 0.6);
+  transition: transform 0.05s, box-shadow 0.05s, background 0.05s;
+  pointer-events: none;
+}
+.btn span { display: grid; pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.5)); }
+.btn[data-down] { transform: scale(0.93); background: rgba(110, 110, 110, 0.95); box-shadow: inset 8px 8px 16px rgba(0, 0, 0, 0.6); }
+.bomb {
+  width: calc(110 * var(--u));
+  height: calc(110 * var(--u));
+  right: calc(env(safe-area-inset-right, 0px) + 20px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--lift));
+  font-size: calc(46 * var(--u));
+}
+.action {
+  width: calc(76 * var(--u));
+  height: calc(76 * var(--u));
+  right: calc(env(safe-area-inset-right, 0px) + 20px + 116 * var(--u));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--lift) + 66 * var(--u));
+  font-size: calc(32 * var(--u));
+}
+.root[data-left] .bomb { right: auto; left: calc(env(safe-area-inset-left, 0px) + 20px); }
+.root[data-left] .action { right: auto; left: calc(env(safe-area-inset-left, 0px) + 20px + 116 * var(--u)); }

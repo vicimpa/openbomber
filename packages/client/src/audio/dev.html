@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Audio Lab</title>
+  <style>
+    :root { --bg: #14161c; --panel: #1d2029; --fg: #e6e8ef; --muted: #8b90a0; --accent: #ffb547; --ok: #5fd38d; --bad: #ff6b6b; --btn: #2a2e3a; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif; }
+    h1 { font-size: 20px; margin: 0 0 12px; }
+    h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 0 8px; }
+    section { background: var(--panel); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+    .row { display: flex; flex-wrap: wrap; gap: 6px; }
+    button { background: var(--btn); color: var(--fg); border: 1px solid #383d4c; border-radius: 6px; padding: 6px 10px; font: inherit; cursor: pointer; }
+    button:hover { border-color: var(--accent); }
+    button.on { background: var(--accent); color: #111; }
+    label { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; }
+    input[type=range] { width: 140px; }
+    #status { color: var(--muted); margin-left: 8px; }
+    table { border-collapse: collapse; width: 100%; font: 12px ui-monospace, monospace; }
+    td, th { padding: 2px 6px; border-bottom: 1px solid #2a2e3a; text-align: left; }
+    .ok { color: var(--ok); } .bad { color: var(--bad); }
+    #tableWrap { max-height: 420px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>OpenBomber procedural audio lab</h1>
+  <section>
+    <button id="unlock">Unlock audio</button><span id="status">locked</span>
+  </section>
+  <section>
+    <h2>Volume</h2>
+    <label>master <input id="v-master" type="range" min="0" max="1" step="0.01" value="0.9" /></label>
+    <label>sfx <input id="v-sfx" type="range" min="0" max="1" step="0.01" value="1" /></label>
+    <label>music <input id="v-music" type="range" min="0" max="1" step="0.01" value="0.7" /></label>
+  </section>
+  <section>
+    <h2>Music</h2>
+    <div class="row" id="music"></div>
+  </section>
+  <section>
+    <h2>Source position</h2>
+    <div class="row" id="pos"></div>
+    <h2>Game events</h2>
+    <div class="row" id="events"></div>
+    <h2>UI</h2>
+    <div class="row" id="ui"></div>
+  </section>
+  <section>
+    <h2>Offline analysis</h2>
+    <button id="analyze">Run analysis</button> <span id="verdict"></span>
+    <div id="tableWrap"><table id="table"></table></div>
+  </section>
+  <script type="module" src="./dev.ts"></script>
+</body>
+</html>
