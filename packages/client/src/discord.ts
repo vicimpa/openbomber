@@ -61,7 +61,10 @@ export async function discordLogin(httpBase: string): Promise<void> {
     const res = await fetch(`${httpBase}/discord/token`, {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code }),
     });
-    if (!res.ok) throw new Error(`token: HTTP ${res.status}`);
+    if (!res.ok) {
+      const why = ((await res.json().catch(() => null)) as { error?: string } | null)?.error;
+      throw new Error(`token: HTTP ${res.status}${why ? ` (${why})` : ''}`);
+    }
     const { access_token } = (await res.json()) as { access_token: string };
     const { user } = await sdk.commands.authenticate({ access_token });
     discord.value = {

@@ -121,8 +121,14 @@ export const discordToken = createEndpoint('/discord/token', { method: 'POST' },
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ client_id: cfg.id, client_secret: cfg.secret, grant_type: 'authorization_code', code }).toString(),
-  }).catch(() => null);
-  if (!res?.ok) return fail(401, 'code rejected');
+  }).catch((e: unknown) => { console.warn('[discord] token exchange: discord.com unreachable', e); return null; });
+  // say which side failed: the loader shows it inside the activity
+  if (!res) return fail(502, 'discord.com unreachable from the game server');
+  if (!res.ok) {
+    const why = await res.text().catch(() => '');
+    console.warn(`[discord] token exchange: HTTP ${res.status} ${why.slice(0, 200)}`);
+    return fail(401, `code rejected: ${res.status} ${why.slice(0, 120)}`.trim());
+  }
   const { access_token } = (await res.json()) as { access_token?: string };
   return access_token ? Response.json({ access_token }) : fail(502, 'no token');
 });
