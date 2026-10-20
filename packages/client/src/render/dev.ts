@@ -117,7 +117,36 @@ const parent = document.getElementById('game')!;
 const hud = document.getElementById('hud')!;
 const renderer = await createRenderer({ parent, quality });
 renderer.setCameraMode(MODES[camMode]);
-(window as unknown as { __dev: unknown }).__dev = { sim, renderer, LOCAL };
+// Deterministic driving for headless checks: __dev.manual = true stops the rAF loop, then
+// __dev.tick(ms) advances the sim and renders exactly `ms`; __dev.bomb(x, y, r, fuseTicks) drops a bomb.
+const dev = {
+  sim, renderer, LOCAL, manual: false,
+  bomb(x: number, y: number, radius = 3, fuse = 1, owner = LOCAL) {
+    const w = sim.state;
+    const id = w.nextId++;
+    w.bombs.set(id, {
+      id, owner, kind: 0, x, y, radius, fuse, motion: 0, vx: 0, vy: 0, fromX: x, fromY: y, toX: x, toY: y,
+      progress: 0, passers: [], dud: false,
+    } as never);
+    (sim.ctx.bombs as Map<number, unknown>).set(id, { pierce: false, credit: owner, flightTotal: 0, flightElapsed: 0, flightDx: 0, flightDy: 0, hops: 0 });
+    return id;
+  },
+  tick(ms: number) {
+    const events: GameEvent[] = [];
+    let left = ms;
+    while (left >= TICK_MS - 1e-6) {
+      left -= TICK_MS;
+      seq++;
+      sim.pushInput(LOCAL, { seq, dx: 0, dy: 0, buttons: 0 });
+      events.push(...sim.step());
+    }
+    const localId = spectate ? '' : LOCAL;
+    if (events.length) renderer.handleEvents(events, localId);
+    renderer.render(sim.state, localId, ms);
+    return events.map(e => e.type);
+  },
+};
+(window as unknown as { __dev: unknown }).__dev = dev;
 
 let seq = 0;
 let acc = 0;
@@ -126,6 +155,7 @@ let fpsT = 0, fpsN = 0, fps = 0;
 function frame(now: number) {
   const dt = Math.min(100, now - last);
   last = now;
+  if (dev.manual) { requestAnimationFrame(frame); return; }
   const events: GameEvent[] = [];
   if (!paused) {
     acc += dt;
