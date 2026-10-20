@@ -1,7 +1,7 @@
 // Loader: logo + progress bar while sprites / fonts (and any registered session tasks) load,
 // then a big "Играть" button. That click is the user gesture that unlocks audio (actions.start).
 import { useEffect, useState } from 'preact/hooks';
-import { discord } from '$/discord';
+import { discord, discordError } from '$/discord';
 import { Button, Logo } from './components';
 import { t } from './i18n';
 import { heroImageUrls } from './sprites';
@@ -55,9 +55,12 @@ export function Loader() {
       <Logo class="loader__logo" />
       <div class="loader__bottom">
         {ready ? (
-          <Button variant="white" size="xl" onClick={go} data-autofocus class="loader__play">
-            {discord.value ? t('loader.discord') : invite ? t('loader.joinRoom', { code: invite }) : t('loader.play')}
-          </Button>
+          <>
+            <Button variant="white" size="xl" onClick={go} data-autofocus class="loader__play">
+              {discord.value ? t('loader.discord') : invite ? t('loader.joinRoom', { code: invite }) : t('loader.play')}
+            </Button>
+            {discordError.value && <p class="loader__text muted">{t('discord.loginFailed', { e: discordError.value })}</p>}
+          </>
         ) : (
           <>
             <div class="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}>

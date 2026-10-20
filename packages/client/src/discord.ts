@@ -27,6 +27,8 @@ export interface DiscordProfile {
 
 /** Signed-in Discord player (null outside Discord or until the login finishes / if it failed). */
 export const discord = signal<DiscordProfile | null>(null);
+/** Why the Discord login failed (the loader shows it; the activity's console is hard to reach). */
+export const discordError = signal<string | null>(null);
 
 const READY_TIMEOUT_MS = 10_000;
 
@@ -71,6 +73,8 @@ export async function discordLogin(httpBase: string): Promise<void> {
     };
   } catch (e) {
     console.warn('[discord] login failed', e);
+    const err = e as { message?: string; code?: number };
+    discordError.value = `${err.message || String(e)}${err.code !== undefined ? ` (${err.code})` : ''}`;
   }
 }
 
