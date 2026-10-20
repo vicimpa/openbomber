@@ -1,5 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "types": ["bun"], "experimentalDecorators": false },
-  "include": ["src"]
+  "compilerOptions": {
+    "types": ["bun"],
+    "lib": ["ES2023", "DOM"],
+    "experimentalDecorators": false
+  },
+  "include": ["src", "test"]
 }

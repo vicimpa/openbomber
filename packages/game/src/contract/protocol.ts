@@ -70,6 +70,9 @@ export const MSG = {
   ping: 'ping',
   /** server -> client: GameEvent[] emitted during the last patch interval */
   events: 'e',
+  /** client -> server: boolean. true = «Подключиться» (enter the arena as a player),
+   *  false = «Отключиться» (back to spectators). Room clients start as spectators. */
+  play: 'play',
 } as const;
 
 export interface ChatMessage {

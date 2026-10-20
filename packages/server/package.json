@@ -7,9 +7,10 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
-    "build": "bun build src/index.ts --target=bun --outfile=dist/index.js --minify",
+    "build": "bun build src/index.ts --target=bun --outfile=dist/index.js --minify --external '@colyseus/*'",
     "test": "bun test",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "test:load": "bun test/load.ts"
   },
   "dependencies": {
     "@colyseus/core": "^0.18.18",
