@@ -372,6 +372,67 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
 .room-code__label { font-size: 12px; color: var(--muted); }
 .room-code__code { font-size: 18px; letter-spacing: 0.15em; }
 
+/* ------------------------------------------------------------ drawers */
+.drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  width: min(400px, 92vw);
+  background: var(--drawer);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0 10px #000;
+  transition: transform 0.25s ease, visibility 0s linear 0.25s;
+  visibility: hidden;
+}
+.drawer.is-open { transform: none; visibility: visible; transition: transform 0.25s ease; }
+.drawer--left { left: 0; transform: translateX(-105%); padding-left: var(--safe-l); }
+.drawer--right { right: 0; transform: translateX(105%); padding-right: var(--safe-r); width: min(370px, 92vw); }
+.drawer-scrim { position: fixed; inset: 0; z-index: 49; background: rgba(0, 0, 0, 0.35); animation: fade-in 0.2s; }
+.drawer-scrim--light { background: rgba(0, 0, 0, 0.15); }
+
+.drawer__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: calc(12px + var(--safe-t)) 12px 8px 16px; }
+.drawer__logo { width: 180px; }
+.tabs { display: flex; gap: 2px; padding: 0 12px; }
+.tabs button { flex: 1; min-height: 40px; border: 0; background: rgba(0, 0, 0, 0.3); color: var(--muted); font-size: 14px; padding: 0 6px; white-space: nowrap; }
+.tabs button.is-on { background: var(--btn); color: #fff; box-shadow: inset 0 -3px 0 #fff; }
+.drawer__body { flex: 1; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 12px 12px calc(16px + var(--safe-b)); display: flex; flex-direction: column; gap: 10px; }
+
+.card { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: rgba(0, 0, 0, 0.3); }
+.card h3 { font-size: 15px; font-weight: 400; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.row2 .btn { padding-inline: 8px; font-size: 14px; }
+
+.profile { flex-direction: row; align-items: center; gap: 12px; }
+.profile__avatar { position: relative; display: grid; place-items: center; width: 84px; height: 88px; flex: none; padding: 0; border: 0; background: none; }
+.profile__avatar .hero-sprite { position: relative; }
+.profile__spot { width: 70px; height: 70px; }
+.profile__main { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
+.profile__btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.profile__edit { display: flex; gap: 4px; }
+.profile__edit .input { min-width: 0; padding: 6px 8px; }
+
+.field.rstep { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; }
+.rstep__ctl { display: flex; align-items: center; gap: 6px; }
+.rstep__ctl .icon-btn { width: 32px; height: 32px; }
+.rstep__value { min-width: 2.2em; text-align: center; font-size: 18px; line-height: 1; }
+.room-settings.is-readonly .seg, .room-settings.is-readonly .field--toggle { opacity: 0.55; pointer-events: none; }
+.room-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.room-line__code { font-size: 22px; letter-spacing: 0.2em; margin-right: auto; }
+
+.links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.links a { display: flex; align-items: center; gap: 8px; padding: 6px 4px; text-decoration: none; font-size: 14px; }
+.links a:hover { background: rgba(255, 255, 255, 0.06); }
+.links__icon { display: block; }
+
+.plist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.plist li { display: flex; align-items: center; gap: 8px; padding: 2px 10px 2px 2px; border-radius: 10px; background: rgba(0, 0, 0, 0.2); }
+.plist li.is-me { background: rgba(255, 255, 255, 0.1); }
+.plist__name { flex: 1; min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plist__name small { color: var(--dim); }
 .plist__stats { display: flex; gap: 8px; font-size: 12px; color: #fff; }
 .spectators { font-size: 14px; padding: 0 4px; }
 
