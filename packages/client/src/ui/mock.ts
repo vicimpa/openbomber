@@ -26,7 +26,7 @@ type Fx = Record<string, number>;
 
 function makePlayer(id: string, name: string, skin: number, isBot: boolean, x: number, y: number): PlayerState {
   return {
-    id, name, skin, isBot, x, y, dir: Dir.Down, moving: false, alive: true, inRound: true, lives: 0,
+    id, name, skin, isBot, x, y, dir: Dir.Down, moving: false, alive: true, inRound: true, lives: 0, teleports: 0,
     bombs: 1, radius: 1, speedLevel: 0, abilities: 0, curse: Curse.None,
     effects: {
       shield: 0, ghost: 0, crazy: 0, fire: 0, curse: 0, invulnerable: 0, stun: 0, speed: 0,

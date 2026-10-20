@@ -32,6 +32,7 @@ export interface HudPlayer {
 
 export interface HudMe extends HudPlayer {
   lives: number;           // extra lives (Heart)
+  teleports: number;       // Teleport charges
   bombs: number;           // max simultaneous bombs
   bombsPlaced: number;     // own bombs currently in the world
   radius: number;
@@ -137,6 +138,7 @@ export function buildHud(world: WorldState, localId: string, ping = 0): HudSnaps
     me = {
       ...toPlayer(lp, localId),
       lives: lp.lives,
+      teleports: lp.teleports,
       bombs: lp.bombs,
       bombsPlaced,
       radius: lp.radius,

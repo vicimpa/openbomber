@@ -11,7 +11,9 @@ import {
   PICKUP_RADIUS,
   PLAYER_RADIUS,
   SHIELD_TIME,
+  MAX_TELEPORTS,
   SPEED_TIME,
+  TELEPORT_CHARGES,
   sec,
 } from '../contract/constants';
 import { Curse, PickupType, Tile, type PickupState, type PlayerState } from '../contract/types';
@@ -43,6 +45,7 @@ export const PICKUP_WEIGHTS: readonly number[] = (() => {
   w[PickupType.Skull] = 3;
   w[PickupType.Heart] = 2;
   w[PickupType.FullFire] = 1;
+  w[PickupType.Teleport] = 4;
   return w;
 })();
 const TOTAL_WEIGHT = PICKUP_WEIGHTS.reduce((a, b) => a + b, 0);
@@ -125,6 +128,9 @@ export function applyPickup(ctx: SimCtx, p: PlayerState, type: PickupType): Pick
       break;
     case PickupType.Heart:
       p.lives = Math.min(MAX_LIVES, p.lives + 1);
+      break;
+    case PickupType.Teleport:
+      p.teleports = Math.min(MAX_TELEPORTS, p.teleports + TELEPORT_CHARGES);
       break;
     case PickupType.Skull:
       applyCurse(ctx, p, (1 + randInt(ctx.secret, 6)) as Curse, '');

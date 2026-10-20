@@ -150,6 +150,9 @@ export function StatsStrip({ me, compact }: { me: HudMe; compact?: boolean }) {
           {Array.from({ length: Math.min(hearts, 3) }, () => <Icon name="heart" size={compact ? 10 : 20} />)}{hearts > 3 && <b class="stat__val">×{hearts}</b>}
         </div>
       )}
+      {me.teleports > 0 && (
+        <Stat compact={compact} type={PickupType.Teleport} label={t('hud.teleports')}><span key={me.teleports} class="pop">{me.teleports}</span></Stat>
+      )}
       {me.abilities.map((a) => {
         const p = ABILITY_PICKUP.get(a)!;
         const info = PICKUP_BY_TYPE.get(p);

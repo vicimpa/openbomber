@@ -72,6 +72,9 @@ export const PICKUPS: PickupInfo[] = [
   { type: PickupType.Random, group: 'timed', sprite: 'random', color: '#6b8fd6',
     name: { ru: 'Сюрприз', en: 'Random' },
     desc: { ru: 'Превращается в случайный бонус.', en: 'Turns into a random power-up.' } },
+  { type: PickupType.Teleport, group: 'timed', color: '#5fd0e8',
+    name: { ru: 'Телепорт', en: 'Teleport' },
+    desc: { ru: '+2 заряда (до 5): R переносит в случайное свободное место карты.', en: '+2 charges (up to 5): R jumps to a random free spot on the map.' } },
 ];
 
 export const PICKUP_BY_TYPE = new Map(PICKUPS.map((p) => [p.type, p]));

@@ -33,6 +33,7 @@ function syncPlayer(s: PlayerSchema, p: PlayerState, tick: number) {
   set(s, 'alive', p.alive);
   set(s, 'inRound', p.inRound);
   set(s, 'lives', p.lives);
+  set(s, 'teleports', p.teleports);
   set(s, 'bombs', p.bombs);
   set(s, 'radius', p.radius);
   set(s, 'speedLevel', p.speedLevel);

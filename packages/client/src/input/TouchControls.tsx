@@ -22,20 +22,25 @@ export interface TouchControlsProps {
   actionLabel?: ComponentChildren;
   bombTitle?: string;
   actionTitle?: string;
+  /** Teleport button: shown only while the hero holds charges (null = hidden). */
+  teleportLabel?: ComponentChildren;
+  teleportTitle?: string;
+  showTeleport?: boolean;
 }
 
 const STICK_RADIUS = 58;      // px at size 1 (knob travel)
 const STICK_DEADZONE = 0.16;  // fraction of radius
 
-type BtnName = 'bomb' | 'action';
+type BtnName = 'bomb' | 'action' | 'teleport';
 
-export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bombLabel = 'B', actionLabel = 'A', bombTitle = 'Bomb', actionTitle = 'Action' }: TouchControlsProps) {
+export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bombLabel = 'B', actionLabel = 'A', bombTitle = 'Bomb', actionTitle = 'Action', teleportLabel = 'R', teleportTitle = 'Teleport', showTeleport = false }: TouchControlsProps) {
   const stickZone = useRef<HTMLDivElement>(null);
   const btnZone = useRef<HTMLDivElement>(null);
   const base = useRef<HTMLDivElement>(null);
   const knob = useRef<HTMLDivElement>(null);
   const bombEl = useRef<HTMLDivElement>(null);
   const actionEl = useRef<HTMLDivElement>(null);
+  const teleportEl = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const zone = stickZone.current!, bz = btnZone.current!;
@@ -97,10 +102,11 @@ export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bom
     // ---- buttons: each pointer is bound to the button under it; sliding onto the other
     // button switches (classic arcade thumb roll), sliding off keeps the current one.
     const owners = new Map<number, BtnName>();
-    const btns: [BtnName, HTMLDivElement][] = [['bomb', bombEl.current!], ['action', actionEl.current!]];
+    const btns: [BtnName, HTMLDivElement][] = [['bomb', bombEl.current!], ['action', actionEl.current!], ['teleport', teleportEl.current!]];
     const hit = (x: number, y: number, slack: number): BtnName | null => {
       let best: BtnName | null = null, bestD = Infinity;
       for (const [name, el] of btns) {
+        if (el.hidden) continue;
         const r = el.getBoundingClientRect();
         const d = Math.hypot(x - (r.left + r.width / 2), y - (r.top + r.height / 2));
         if (d < (r.width / 2) * slack && d < bestD) { best = name; bestD = d; }
@@ -180,6 +186,7 @@ export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bom
       </div>
       <div class={s.btnZone} ref={btnZone}>
         <div class={`${s.btn} ${s.action}`} ref={actionEl} title={actionTitle}><span>{actionLabel}</span></div>
+        <div class={`${s.btn} ${s.teleport}`} ref={teleportEl} title={teleportTitle} hidden={!showTeleport}><span>{teleportLabel}</span></div>
         <div class={`${s.btn} ${s.bomb}`} ref={bombEl} title={bombTitle}><span>{bombLabel}</span></div>
       </div>
     </div>

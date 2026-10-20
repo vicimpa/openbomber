@@ -1,4 +1,4 @@
-import { DROP_FALL_TIME, OVERTIME_EVERY, OVERTIME_MAX_TIME, OVERTIME_MIN_TIME, PLAYER_RADIUS, TICK_RATE } from '../contract/constants';
+import { DROP_FALL_TIME, MAX_TELEPORTS, OVERTIME_EVERY, OVERTIME_MAX_TIME, OVERTIME_MIN_TIME, PLAYER_RADIUS, TELEPORT_CHARGES, TICK_RATE } from '../contract/constants';
 import { describe, expect, test } from 'bun:test';
 import {
   BOMB_FUSE,
@@ -548,6 +548,34 @@ describe('players & effects', () => {
     h.set('a', 1, 0);
     h.until((e) => ev(e, 'playerDied').length > 0, 30);
     expect(ev(h.events, 'playerDied')[0]).toMatchObject({ player: 'b', killer: 'a', cause: 'fire' });
+  });
+
+  test('teleport: a pickup gives charges, R jumps to a random free tile', () => {
+    const h = new Harness(PILLARS, [['a', 0, 0], ['b', 6, 4]]);
+    const a = h.p('a');
+    h.sim.spawnPickup(0, 0, PickupType.Teleport);
+    h.step();
+    expect(a.teleports).toBe(TELEPORT_CHARGES);
+    for (let i = 0; i < 3; i++) { h.sim.spawnPickup(0, 0, PickupType.Teleport); h.step(); }
+    expect(a.teleports).toBe(MAX_TELEPORTS);
+    h.tap('a', Button.Teleport);
+    const e = ev(h.events, 'playerTeleported')[0]!;
+    expect(e).toMatchObject({ player: 'a', fromX: 0, fromY: 0 });
+    expect(a.x === e.x && a.y === e.y).toBe(true);
+    expect(e.x !== 0 || e.y !== 0).toBe(true);
+    expect(tileAt(h.state, e.x, e.y)).toBe(Tile.Floor);
+    expect(Math.abs(e.x - 6) >= 1.5 || Math.abs(e.y - 4) >= 1.5).toBe(true); // never next to another hero
+    expect(a.teleports).toBe(MAX_TELEPORTS - 1);
+  });
+
+  test('teleport: no charges, no jump', () => {
+    const h = new Harness(OPEN, [['a', 1, 1], ['z', 8, 2]]);
+    h.tap('a', Button.Teleport);
+    expect(ev(h.events, 'playerTeleported').length).toBe(0);
+    expect(h.p('a').x).toBe(1);
+    h.p('a').teleports = 2;
+    h.tap('a', Button.Teleport);
+    expect(ev(h.events, 'playerTeleported').length).toBe(1);
   });
 
   test('eliminated players scatter their pickups', () => {

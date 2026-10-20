@@ -51,11 +51,11 @@ export class KeyboardInput {
   }
 
   read() {
-    if (!this.enabled) return { dx: 0, dy: 0, bomb: false, action: false };
+    if (!this.enabled) return { dx: 0, dy: 0, bomb: false, action: false, teleport: false };
     let dx = +this.down('right') - +this.down('left');
     let dy = +this.down('down') - +this.down('up');
     if (dx && dy) { dx *= Math.SQRT1_2; dy *= Math.SQRT1_2; }
-    return { dx, dy, bomb: this.down('bomb'), action: this.down('action') };
+    return { dx, dy, bomb: this.down('bomb'), action: this.down('action'), teleport: this.down('teleport') };
   }
 
   reset() { this.held.clear(); }

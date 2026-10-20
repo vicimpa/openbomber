@@ -47,6 +47,7 @@ export enum PickupType {
   Heart = 15,      // +1 life
   Skull = 16,      // random curse, contagious on touch
   Random = 17,     // turns into a random other pickup on collect
+  Teleport = 18,   // charges: Teleport button jumps to a random free tile
 }
 
 export enum Ability {
@@ -120,6 +121,7 @@ export interface PlayerState {
   alive: boolean;
   inRound: boolean;      // false = spectator (joined mid round)
   lives: number;         // extra lives left (Heart)
+  teleports: number;     // Teleport charges left
   bombs: number;         // max simultaneous bombs
   radius: number;
   speedLevel: number;    // 1 while SpeedUp runs (effects.speed > 0), else 0

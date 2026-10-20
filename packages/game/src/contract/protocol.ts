@@ -6,6 +6,7 @@ export enum Button {
   None = 0,
   Bomb = 1 << 0,
   Action = 1 << 1,   // grab / throw (Glove), punch (Punch), detonate (Remote) — context sensitive
+  Teleport = 1 << 2, // spend a Teleport charge: jump to a random free tile
 }
 
 /**
@@ -50,6 +51,7 @@ export type GameEvent =
   | { type: 'shieldBlocked'; player: string }
   | { type: 'playerStunned'; player: string }
   | { type: 'playerDied'; player: string; killer: string; x: number; y: number; cause: DeathCause }
+  | { type: 'playerTeleported'; player: string; fromX: number; fromY: number; x: number; y: number }
   | { type: 'playerRespawned'; player: string; x: number; y: number }
   | { type: 'curseApplied'; player: string; curse: Curse; from: string }
   | { type: 'effectEnded'; player: string; effect: EffectName }

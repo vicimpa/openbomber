@@ -14,6 +14,7 @@ export function KeyBindings() {
     [t('bind.move'), <>{kb(['KeyW', 'KeyA', 'KeyS', 'KeyD'])} / {kb(['ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'])}</>, t('bind.stick'), t('bind.joystick')],
     [t('bind.bomb'), kb(KEY_BINDINGS.bomb.slice(0, 2)), <><Kbd>A</Kbd><Kbd>RT</Kbd></>, t('bind.touchBomb')],
     [t('bind.action'), kb(['KeyE', 'ShiftLeft', 'KeyJ']), <><Kbd>B</Kbd><Kbd>X</Kbd><Kbd>RB</Kbd></>, t('bind.touchAction')],
+    [t('bind.teleport'), kb(['KeyR', 'KeyK']), <><Kbd>Y</Kbd><Kbd>LB</Kbd></>, t('bind.touchTeleport')],
     [t('bind.chat'), kb(['KeyT']), '—', <Icon name="chat" title={t('hud.chat')} />],
     [t('bind.score'), <>{kb(['Tab'])} <small>({t('bind.hold')})</small></>, <><Kbd>Back</Kbd> <small>({t('bind.hold')})</small></>, <Icon name="trophy" title={t('hud.scoreboard')} />],
     [t('bind.menu'), kb(['Escape']), <Kbd>Start</Kbd>, <Icon name="menu" title={t('hud.menu')} />],

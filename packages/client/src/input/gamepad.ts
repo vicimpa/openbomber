@@ -21,7 +21,7 @@ export function radial(x: number, y: number, dz = STICK_DEADZONE): [number, numb
 const pressed = (p: Gamepad, i: number) => !!p.buttons[i] && (p.buttons[i].pressed || p.buttons[i].value > 0.5);
 
 export function readGamepads() {
-  let dx = 0, dy = 0, bomb = false, action = false;
+  let dx = 0, dy = 0, bomb = false, action = false, teleport = false;
   for (const p of pads()) {
     let [x, y] = radial(p.axes[0] ?? 0, p.axes[1] ?? 0);
     const px = +pressed(p, PAD.Right) - +pressed(p, PAD.Left);
@@ -29,10 +29,11 @@ export function readGamepads() {
     if (px || py) { x = px; y = py; }
     const b = PAD_BINDINGS.bomb.some((i) => pressed(p, i));
     const a = PAD_BINDINGS.action.some((i) => pressed(p, i));
-    if (x || y || a || b) markDevice('gamepad');
-    dx += x; dy += y; bomb ||= b; action ||= a;
+    const tp = PAD_BINDINGS.teleport.some((i) => pressed(p, i));
+    if (x || y || a || b || tp) markDevice('gamepad');
+    dx += x; dy += y; bomb ||= b; action ||= a; teleport ||= tp;
   }
-  return { dx, dy, bomb, action };
+  return { dx, dy, bomb, action, teleport };
 }
 
 export function isPadPressed(p: Gamepad, i: number) { return pressed(p, i); }

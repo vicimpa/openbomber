@@ -35,7 +35,7 @@ function copyEffects(a: TimedEffects, b: TimedEffects) {
 export function newPlayer(id: string): PlayerState {
   return {
     id, name: '', skin: 0, isBot: false, x: 0, y: 0, dir: 0, moving: false, alive: false, inRound: false,
-    lives: 0, bombs: 0, radius: 0, speedLevel: 0, abilities: 0, curse: 0, effects: emptyEffects(),
+    lives: 0, teleports: 0, bombs: 0, radius: 0, speedLevel: 0, abilities: 0, curse: 0, effects: emptyEffects(),
     carrying: -1, respawnIn: 0, wins: 0, kills: 0, deaths: 0, ackSeq: 0,
   };
 }
@@ -43,7 +43,7 @@ export function newPlayer(id: string): PlayerState {
 export function copyPlayer(src: PlayerState, dst: PlayerState) {
   dst.id = src.id; dst.name = src.name; dst.skin = src.skin; dst.isBot = src.isBot;
   dst.x = src.x; dst.y = src.y; dst.dir = src.dir; dst.moving = src.moving;
-  dst.alive = src.alive; dst.inRound = src.inRound; dst.lives = src.lives; dst.bombs = src.bombs;
+  dst.alive = src.alive; dst.inRound = src.inRound; dst.lives = src.lives; dst.teleports = src.teleports; dst.bombs = src.bombs;
   dst.radius = src.radius; dst.speedLevel = src.speedLevel; dst.abilities = src.abilities; dst.curse = src.curse;
   copyEffects(src.effects, dst.effects);
   dst.carrying = src.carrying; dst.respawnIn = src.respawnIn; dst.wins = src.wins;
@@ -57,7 +57,7 @@ function readEffects(s: PlayerSchema['effects'] | undefined, e: TimedEffects, ti
 function readPlayer(s: PlayerSchema, p: PlayerState, tick: number) {
   p.name = s.name; p.skin = s.skin; p.isBot = s.isBot;
   p.x = s.x; p.y = s.y; p.dir = s.dir; p.moving = s.moving;
-  p.alive = s.alive; p.inRound = s.inRound; p.lives = s.lives; p.bombs = s.bombs;
+  p.alive = s.alive; p.inRound = s.inRound; p.lives = s.lives; p.teleports = s.teleports ?? 0; p.bombs = s.bombs;
   p.radius = s.radius; p.speedLevel = s.speedLevel; p.abilities = s.abilities; p.curse = s.curse;
   readEffects(s.effects, p.effects, tick);
   p.carrying = s.carrying; p.respawnIn = left(s.respawnAt, tick);

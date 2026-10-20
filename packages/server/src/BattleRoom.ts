@@ -40,7 +40,7 @@ const TICK_SAMPLES = 4096;
 /** Host clicking the bot stepper: wait this long after the last click before restarting. */
 const ROSTER_DEBOUNCE_MS = 1200;
 
-const BUTTON_MASK = Button.Bomb | Button.Action;
+const BUTTON_MASK = Button.Bomb | Button.Action | Button.Teleport;
 const BOT_NAMES = ['Bot Rusty', 'Bot Sparky', 'Bot Boomer', 'Bot Fuse', 'Bot Blaze', 'Bot Pixel', 'Bot Dyna',
   'Bot Nitro', 'Bot Cinder', 'Bot Volt', 'Bot Ember', 'Bot Kaboom', 'Bot Ash', 'Bot Flint', 'Bot Smokey'];
 

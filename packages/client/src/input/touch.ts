@@ -4,6 +4,7 @@ export const touchState = {
   dy: 0,
   bomb: false,
   action: false,
+  teleport: false,
 };
 
 export function resetTouch() {
@@ -11,4 +12,5 @@ export function resetTouch() {
   touchState.dy = 0;
   touchState.bomb = false;
   touchState.action = false;
+  touchState.teleport = false;
 }

@@ -28,6 +28,7 @@ import {
 } from './bombs';
 import { applyCurse, CURSE_IMMUNITY, freeTiles, scatterPickups } from './pickups';
 import { applyMovement } from './movement';
+import { randInt } from './rng';
 import { bombAtTile } from './world';
 
 /** After a shield soaks a hit, the rest of that blast can't hurt you. */
@@ -52,6 +53,7 @@ export function createPlayer(np: NewPlayer): PlayerState {
     alive: false,
     inRound: false,
     lives: 0,
+    teleports: 0,
     bombs: START_BOMBS,
     radius: START_RADIUS,
     speedLevel: 0,
@@ -81,6 +83,7 @@ function clearEffects(p: PlayerState) {
 /** Fresh stats for a new round. */
 export function resetStats(ctx: SimCtx, p: PlayerState) {
   p.lives = 0;
+  p.teleports = 0;
   p.bombs = START_BOMBS;
   p.radius = START_RADIUS;
   p.speedLevel = 0;
@@ -141,8 +144,40 @@ export function updatePlayer(ctx: SimCtx, p: PlayerState) {
       if (a & Ability.Remote) detonateRemote(ctx, p);
     }
   }
+  if (pressed & Button.Teleport && p.teleports > 0) teleport(ctx, p);
   const bombPressed = (pressed & Button.Bomb) !== 0;
   if (ctx.bombsAllowed && (bombPressed || p.curse === Curse.Diarrhea)) tryPlaceBomb(ctx, p, bombPressed);
+}
+
+/**
+ * Spend a Teleport charge: jump to a random free floor tile (no bomb, flame, falling block
+ * or other hero on or next to it). A carried bomb comes along. No free tile: nothing is spent.
+ */
+function teleport(ctx: SimCtx, p: PlayerState) {
+  const w = ctx.world;
+  const W = w.width;
+  const fromX = Math.round(p.x);
+  const fromY = Math.round(p.y);
+  const falling = new Set(w.falling.map((f) => f.y * W + f.x));
+  const spots: number[] = [];
+  for (let i = 0; i < w.tiles.length; i++) {
+    if (w.tiles[i] !== Tile.Floor || ctx.bombGrid[i] || ctx.flameGrid[i] || falling.has(i)) continue;
+    const x = i % W;
+    const y = (i / W) | 0;
+    if (x === fromX && y === fromY) continue;
+    let near = false;
+    for (const o of w.players.values()) {
+      if (o !== p && o.alive && Math.abs(o.x - x) < 1.5 && Math.abs(o.y - y) < 1.5) { near = true; break; }
+    }
+    if (!near) spots.push(i);
+  }
+  if (spots.length === 0) return;
+  const i = spots[randInt(ctx.secret, spots.length)]!;
+  p.x = i % W;
+  p.y = (i / W) | 0;
+  p.teleports--;
+  releasePassers(ctx, p);
+  emit(ctx, { type: 'playerTeleported', player: p.id, fromX, fromY, x: p.x, y: p.y });
 }
 
 // ---------------------------------------------------------------- damage

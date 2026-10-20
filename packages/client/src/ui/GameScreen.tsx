@@ -90,6 +90,9 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
           actionLabel={<Icon name="hand" size={34 * s.touch.size} />}
           bombTitle={t('bind.bomb')}
           actionTitle={t('bind.action')}
+          teleportLabel={<Icon name="sparkle" size={26 * s.touch.size} />}
+          teleportTitle={t('bind.teleport')}
+          showTeleport={(h?.me?.teleports ?? 0) > 0}
         />
       )}
 

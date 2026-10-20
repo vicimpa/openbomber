@@ -94,3 +94,7 @@ export const MAP_PADDING = 6;
 export const MAP_MARGIN = 8;
 export const BRICK_FILL = 0.5;               // share of free tiles
 export const PICKUP_FILL = 0.12;             // share of bricks hiding a pickup (canon 10-15%)
+
+/** Teleport pickup: charges per pickup and the most a player can hold. */
+export const TELEPORT_CHARGES = 2;
+export const MAX_TELEPORTS = 5;

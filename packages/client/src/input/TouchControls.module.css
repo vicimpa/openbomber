@@ -83,3 +83,13 @@
 }
 .root[data-left] .bomb { right: auto; left: calc(env(safe-area-inset-left, 0px) + 20px); }
 .root[data-left] .action { right: auto; left: calc(env(safe-area-inset-left, 0px) + 20px + 116 * var(--u)); }
+.teleport {
+  width: calc(64 * var(--u));
+  height: calc(64 * var(--u));
+  right: calc(env(safe-area-inset-right, 0px) + 20px + 23 * var(--u));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--lift) + 124 * var(--u));
+  font-size: calc(26 * var(--u));
+  border-color: #a8f0ff;
+}
+.teleport[hidden] { display: none; }
+.root[data-left] .teleport { right: auto; left: calc(env(safe-area-inset-left, 0px) + 20px + 23 * var(--u)); }

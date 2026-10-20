@@ -28,6 +28,7 @@ export const PlayerSchema = schema({
   alive: t.boolean().default(false),
   inRound: t.boolean().default(false),
   lives: t.uint8().default(0),
+  teleports: t.uint8().default(0),
   bombs: t.uint8().default(0),
   radius: t.uint8().default(0),
   speedLevel: t.uint8().default(0),

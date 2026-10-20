@@ -7,6 +7,7 @@ export const KEY_BINDINGS = {
   right: ['KeyD', 'ArrowRight'],
   bomb: ['Space'],
   action: ['KeyE', 'ShiftLeft', 'ShiftRight', 'KeyJ'],
+  teleport: ['KeyR', 'KeyK'],
 } as const;
 
 export type BindingName = keyof typeof KEY_BINDINGS;
@@ -20,6 +21,7 @@ export const PAD = {
 export const PAD_BINDINGS = {
   bomb: [PAD.A, PAD.RT],
   action: [PAD.B, PAD.X, PAD.RB],
+  teleport: [PAD.Y, PAD.LB],
 } as const;
 
 export const STICK_DEADZONE = 0.22;

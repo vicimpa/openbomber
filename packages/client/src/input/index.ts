@@ -34,6 +34,7 @@ export const createInput: CreateInput = (): InputManager => {
       let buttons = Button.None;
       if (k.bomb || g.bomb || touchState.bomb) buttons |= Button.Bomb;
       if (k.action || g.action || touchState.action) buttons |= Button.Action;
+      if (k.teleport || g.teleport || touchState.teleport) buttons |= Button.Teleport;
       return { dx, dy, buttons };
     },
     get lastDevice() { return lastDevice.value; },

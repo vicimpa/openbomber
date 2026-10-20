@@ -47,7 +47,7 @@ export class StubSim implements ISimulation {
     const [x, y] = SPAWNS[this.state.players.size % SPAWNS.length]!;
     const p: PlayerState = {
       id: np.id, name: np.name, skin: np.skin, isBot: !!np.isBot, x, y, dir: Dir.Down, moving: false, alive: true,
-      inRound: true, lives: 0, bombs: 1, radius: 2, speedLevel: 0, abilities: 0, curse: 0,
+      inRound: true, lives: 0, teleports: 0, bombs: 1, radius: 2, speedLevel: 0, abilities: 0, curse: 0,
       effects: {
         shield: 0, ghost: 0, crazy: 0, fire: 0, curse: 0, invulnerable: 120, stun: 0, speed: 0,
         kick: 0, glove: 0, punch: 0, remote: 0, pierce: 0, lineBomb: 0, bombPass: 0,
