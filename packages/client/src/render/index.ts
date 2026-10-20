@@ -250,7 +250,7 @@ class PixiRenderer implements GameRenderer {
         }
         holder = holders.get(b.id) ?? null;
       }
-      v.update(b, dt, holder, world.width, world.height);
+      v.update(b, dt, holder);
       const layer = b.motion === BombMotion.Carried || b.motion === BombMotion.Flying ? this.airBombs : this.bombLayer;
       if (v.root.parent !== layer) layer.addChild(v.root);
       this.lastBomb.set(b.id, { x: v.x, y: v.y, t: this.time });
@@ -330,6 +330,7 @@ class PixiRenderer implements GameRenderer {
           break;
         }
         case 'bombFizzled': this.fx.fizzle(e.x, e.y); break;
+        case 'bombVanished': this.fx.vanish(e.x, e.y); break;
         case 'bombKicked': {
           const b = this.lastBomb.get(e.bomb);
           const d = [[0, -1], [-1, 0], [1, 0], [0, 1]][e.dir];

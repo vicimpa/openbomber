@@ -1,5 +1,5 @@
 // Bomb lifecycle: placing (incl. LineBomb), kicking/sliding, Glove grab/throw, Punch,
-// flights with bounce + wrap, Remote detonation, fuses and explosions.
+// flights with bounce (off the map: the bomb evaporates), Remote detonation, fuses and explosions.
 
 import {
   BOMB_FUSE,
@@ -33,7 +33,6 @@ export const PUNCH_FLIGHT = THROW_TIME;
 const MAX_HOPS = 64;
 const TOUCH = PLAYER_RADIUS + BOMB_RADIUS;
 
-const wrap = (v: number, n: number) => ((v % n) + n) % n;
 
 export function ownedBombs(ctx: SimCtx, id: string): number {
   let n = 0;
@@ -259,8 +258,7 @@ export function throwBomb(ctx: SimCtx, p: PlayerState) {
   const fy = Math.round(p.y);
   startFlight(ctx, b, fx, fy, dx, dy, THROW_DISTANCE, THROW_TIME);
   ctx.bombs.get(b.id)!.credit = p.id;
-  const w = ctx.world;
-  emit(ctx, { type: 'bombThrown', bomb: b.id, by: p.id, toX: wrap(b.toX, w.width), toY: wrap(b.toY, w.height) });
+  emit(ctx, { type: 'bombThrown', bomb: b.id, by: p.id, toX: b.toX, toY: b.toY });
 }
 
 /** Release a carried bomb on the carrier's tile (death, stun, leaving). */
@@ -285,8 +283,7 @@ export function tryPunch(ctx: SimCtx, p: PlayerState): boolean {
   if (ddx * ddx + ddy * ddy > 1.05 * 1.05) return false;
   startFlight(ctx, b, b.x, b.y, dx, dy, PUNCH_DISTANCE, PUNCH_FLIGHT);
   ctx.bombs.get(b.id)!.credit = p.id;
-  const w = ctx.world;
-  emit(ctx, { type: 'bombPunched', bomb: b.id, by: p.id, toX: wrap(b.toX, w.width), toY: wrap(b.toY, w.height) });
+  emit(ctx, { type: 'bombPunched', bomb: b.id, by: p.id, toX: b.toX, toY: b.toY });
   return true;
 }
 
@@ -317,9 +314,15 @@ function fly(ctx: SimCtx, b: BombState) {
   b.y = b.fromY + (b.toY - b.fromY) * b.progress;
   if (bi.flightElapsed < bi.flightTotal) return;
 
-  // landed; past the edge it re-enters from the opposite side
-  const x = wrap(b.toX, w.width);
-  const y = wrap(b.toY, w.height);
+  // landed past the edge of the map: the bomb evaporates (no blast)
+  const x = b.toX;
+  const y = b.toY;
+  if (x < 0 || y < 0 || x >= w.width || y >= w.height) {
+    w.bombs.delete(b.id);
+    ctx.bombs.delete(b.id);
+    emit(ctx, { type: 'bombVanished', bomb: b.id, x, y });
+    return;
+  }
   b.x = x;
   b.y = y;
   let hitPlayer = false;

@@ -47,7 +47,7 @@ export class BombView {
     this.squash = 1; // placement pop
   }
 
-  update(b: BombState, dt: number, holder: { x: number; y: number } | null, w: number, h: number) {
+  update(b: BombState, dt: number, holder: { x: number; y: number } | null) {
     this.time += dt;
     let gx = b.x, gy = b.y, z = 0;
     const prev = this.motion;
@@ -56,9 +56,6 @@ export class BombView {
       const p = Math.min(1, Math.max(0, b.progress));
       gx = b.fromX + (b.toX - b.fromX) * p;
       gy = b.fromY + (b.toY - b.fromY) * p;
-      // wrap over the arena edge
-      gx = ((gx + 0.5) % w + w) % w - 0.5;
-      gy = ((gy + 0.5) % h + h) % h - 0.5;
       const dist = Math.hypot(b.toX - b.fromX, b.toY - b.fromY);
       const hmax = (0.45 + 0.32 * dist) * T;
       z = 4 * hmax * p * (1 - p);

@@ -293,6 +293,30 @@ export class Effects {
     this.dustRing(x, y + 8, 8, 55, 0xd8cdb8, 0.8);
   }
 
+  /** A bomb thrown off the map: it flashes, shrinks and melts into a wisp of steam with sparks. */
+  vanish(x: number, y: number) {
+    const px = x * T, py = y * T;
+    const s = new Sprite({ texture: this.a.bombs.normal[0], anchor: 0.5, x: px, y: py - 3 });
+    this.shot(s, this.over, 0.45, k => {
+      const e = 1 - (1 - k) ** 2;
+      s.tint = k < 0.15 ? 0xffffff : 0xdcd8ff;
+      s.alpha = 1 - e;
+      s.scale.set(1 + 0.25 * Math.sin(k * Math.PI) - 0.9 * e, 1 - 0.9 * e + 0.2 * Math.sin(k * Math.PI));
+      s.y = py - 3 - 10 * e;
+    });
+    for (let i = 0; i < this.q(10); i++) this.particles.spawn({
+      tex: this.tx.puff, x: px + rand(-5, 5), y: py + rand(-4, 4), vz: rand(25, 55), vx: rand(-10, 10),
+      delay: rand(0, 0.15), life: rand(0.7, 1.2), scale: 0.5, scaleEnd: 2, alpha: 0.6, alphaEnd: 0, tint: 0xe4e2f0, spin: rand(-1, 1),
+    });
+    for (let i = 0; i < this.q(14); i++) {
+      const a = rand(0, Math.PI * 2), v = rand(30, 90);
+      this.particles.spawn({
+        tex: this.tx.white, x: px, y: py - 4, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.6, vz: rand(20, 70), drag: 3,
+        life: rand(0.3, 0.6), scale: rand(1, 2), alphaEnd: 0, tint: i % 3 ? 0xbfe6ff : 0xffffff, add: true,
+      });
+    }
+  }
+
   fizzle(x: number, y: number) {
     const px = x * T, py = y * T;
     for (let i = 0; i < this.q(8); i++) this.particles.spawn({

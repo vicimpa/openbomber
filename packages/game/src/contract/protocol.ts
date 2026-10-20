@@ -39,6 +39,7 @@ export type GameEvent =
   | { type: 'bombStopped'; bomb: number; x: number; y: number }
   | { type: 'explosion'; bomb: number; owner: string; x: number; y: number; cells: { x: number; y: number; shape: FlameShape }[]; power: number }
   | { type: 'bombFizzled'; bomb: number; x: number; y: number }
+  | { type: 'bombVanished'; bomb: number; x: number; y: number }   // thrown / punched off the map: evaporates
   | { type: 'brickDestroyed'; x: number; y: number }
   | { type: 'pickupSpawned'; pickup: number; x: number; y: number; kind: PickupType }
   | { type: 'pickupCollected'; pickup: number; by: string; kind: PickupType }

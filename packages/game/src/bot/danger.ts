@@ -47,7 +47,6 @@ interface PendingBomb {
 const cache = new WeakMap<WorldState, Analysis>();
 const pending: PendingBomb[] = [];
 
-const wrap = (v: number, n: number) => ((v % n) + n) % n;
 
 /**
  * Mark one bomb's blast cells with the window [t, t + FLAME_TIME] and call `onBomb` for
@@ -179,8 +178,8 @@ export function analyze(w: WorldState): Analysis {
     let y = Math.round(b.y);
     let time = b.fuse > 0 ? b.fuse : b.fuse < 0 ? (-b.fuse <= REMOTE_TIMED ? -b.fuse : INF) : 0;
     if (b.motion === BombMotion.Flying) {
-      x = wrap(b.toX, W);
-      y = wrap(b.toY, w.height);
+      x = b.toX; // off the map it evaporates: skipped by the bounds check below
+      y = b.toY;
       time = Math.max(time, Math.ceil((1 - b.progress) * THROW_TIME));
     } else bomb[y * W + x] = b.id;
     if (x < 0 || y < 0 || x >= W || y >= w.height) continue;

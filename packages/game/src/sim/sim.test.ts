@@ -311,8 +311,8 @@ describe('bombs', () => {
     expect(onlyBomb(h).motion).toBe(BombMotion.Idle);
   });
 
-  test('glove: throws wrap around the map edge and stun on landing', () => {
-    const h = new Harness(['.........', '.........', '.........'], [['a', 7, 1], ['b', 1, 1]]);
+  test('glove: a bomb thrown off the map evaporates without a blast', () => {
+    const h = new Harness(['.........', '.........', '.........'], [['a', 7, 1]]);
     const a = h.p('a');
     h.give('a', ['glove']);
     h.tap('a', Button.Bomb);
@@ -321,11 +321,29 @@ describe('bombs', () => {
     h.step();
     h.set('a', 0, 0, 0);
     const thrown = ev(h.step(), 'bombThrown')[0]!;
-    expect([thrown.toX, thrown.toY]).toEqual([1, 1]); // 7 + 3 = 10 -> wraps to 1
+    expect([thrown.toX, thrown.toY]).toEqual([10, 1]); // 7 + 3, past the right edge
+    h.until((e) => ev(e, 'bombVanished').length > 0, 120);
+    expect(ev(h.events, 'bombVanished')[0]).toMatchObject({ x: 10, y: 1 });
+    expect(ev(h.events, 'explosion')).toEqual([]);
+    expect(h.state.bombs.size).toBe(0);
+    h.tap('a', Button.Bomb); // the bomb slot is free again
+    expect(h.state.bombs.size).toBe(1);
+  });
+
+  test('glove: a bomb landing on a head stuns and bounces on', () => {
+    const h = new Harness(['.........', '.........', '.........'], [['a', 1, 1], ['b', 4, 1]]);
+    const a = h.p('a');
+    h.give('a', ['glove']);
+    h.tap('a', Button.Bomb);
+    a.dir = Dir.Right;
+    h.set('a', 0, 0, Button.Action);
+    h.step();
+    h.set('a', 0, 0, 0);
+    h.step();
     h.until((e) => ev(e, 'bombLanded').length > 0, 120);
     expect(ev(h.events, 'playerStunned')).toEqual([{ type: 'playerStunned', player: 'b' }]);
     expect(h.p('b').effects.stun).toBeGreaterThan(STUN_TIME - 20);
-    expect([onlyBomb(h).x, onlyBomb(h).y]).toEqual([2, 1]); // bounced off b's head
+    expect([onlyBomb(h).x, onlyBomb(h).y]).toEqual([5, 1]); // bounced off b's head
   });
 
   test('punch: adjacent bomb flies 3 tiles', () => {

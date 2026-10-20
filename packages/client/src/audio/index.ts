@@ -223,6 +223,7 @@ class Engine implements AudioEngine {
           case 'bombLanded': fire('land', W(e.x, e.y)); break;
           case 'bombStopped': fire('stop', W(e.x, e.y)); break;
           case 'bombFizzled': fire('fizzle', W(e.x, e.y)); break;
+          case 'bombVanished': { const o = W(e.x, e.y); o.gain = (o.gain ?? 1) * 0.7; o.rate = 1.35; fire('fizzle', o); break; }
           case 'explosion': {
             const power = Math.max(e.power || 1, Math.sqrt(e.cells?.length ?? 1));
             const size = power >= 6 ? 2 : power >= 3 ? 1 : 0;
