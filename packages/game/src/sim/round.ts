@@ -47,7 +47,12 @@ export function newMap(ctx: SimCtx, players: number) {
       ];
     }
   }
-  const g = generateMap(w, width, height, spawns);
+  const fresh = ctx.config.entropy;
+  if (fresh) {
+    w.seed = (w.seed ^ fresh()) >>> 0;
+    ctx.secret.seed = (ctx.secret.seed ^ fresh()) >>> 0;
+  }
+  const g = generateMap(w, width, height, spawns, ctx.secret);
   w.width = width;
   w.height = height;
   w.tiles = g.tiles;

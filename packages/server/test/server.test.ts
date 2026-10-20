@@ -9,11 +9,13 @@ import { Client, type Room } from '@colyseus/sdk';
 import { matchMaker } from '@colyseus/core';
 import * as Game from '@ob/game';
 import { BOMB_FUSE, Button, MSG, ROOM_NAME, TICK_MS, type ChatMessage, type GameEvent, type PredictMovement } from '@ob/game';
+import { limits, resetLimits } from '../src/limits.ts';
 import { startGameServer, type GameServer } from '../src/app.ts';
 import { BattleRoom } from '../src/BattleRoom.ts';
 import { setGameImpl } from '../src/game.ts';
 import { CODE_ALPHABET } from '../src/util.ts';
-import type { BattleState, RoomListing } from '../src/schema.ts';
+import { BattleState, type RoomListing } from '../src/schema.ts';
+import { syncWorld } from '../src/sync.ts';
 import { stubGame, stubMove } from './stubSim.ts';
 import { connectQuickPlay, createPrivateRoom, joinRoomByCode, listRooms, type NetSource } from '../../client/src/net/index.ts';
 
@@ -60,7 +62,13 @@ async function hold(room: Room, ms: number, dx: number, dy: number, buttons = 0)
   while (Date.now() < end) { sendFrames(room, 2, dx, dy, buttons); await sleep(TICK_MS * 2); }
 }
 
+// every test client connects from 127.0.0.1: lift the per-IP limits (tested separately below)
+const STRICT = { ...limits };
+const relax = () => Object.assign(limits, { clientsPerIp: 1e6, requestBurst: 1e6, requestsPerSecond: 1e6, createBurst: 1e6, createsPerSecond: 1e6 });
+
 beforeAll(async () => {
+  relax();
+  resetLimits();
   server = await startGameServer({ port: 0, basePath: '/api' });
   url = `ws://localhost:${server.port}`;
 });
@@ -413,5 +421,63 @@ describe('NetSource (client)', () => {
     await waitFor(() => guest.status === 'disconnected', 2000, 'disconnected');
     expect(statuses).toContain('disconnected');
     await expect(joinRoomByCode('ZZZZZ', { name: 'x', skin: 0, serverUrl: url })).rejects.toThrow();
+  });
+});
+
+describe('anti-cheat', () => {
+  test('per-IP connection cap and room-creation rate', async () => {
+    Object.assign(limits, { ...STRICT, clientsPerIp: 2, createBurst: 1, createsPerSecond: 1e-6 });
+    resetLimits();
+    try {
+      const a = await join('joinById', 'MAIN', { name: 'ip1', skin: 0 });
+      const b = await join('joinById', 'MAIN', { name: 'ip2', skin: 0 });
+      await expect(join('joinById', 'MAIN', { name: 'ip3', skin: 0 })).rejects.toThrow();
+      await b.leave();
+      await sleep(300); // onLeave releases the IP slot
+      const c = await join('create', ROOM_NAME, { private: true, name: 'mk1', skin: 0, bots: 0 });
+      await expect(join('create', ROOM_NAME, { private: true, name: 'mk2', skin: 0, bots: 0 })).rejects.toThrow();
+      await Promise.all([a.leave(), c.leave()]);
+    } finally {
+      relax();
+      resetLimits();
+    }
+  });
+
+  test('crazy bombs: real fuse and radius are not sent', () => {
+    const w = (G.createWorld as (w: number, h: number, s: number) => Game.WorldState)(13, 13, 1);
+    w.bombs.set(1, {
+      id: 1, owner: 'a', kind: Game.BombKind.Crazy, x: 3, y: 3, radius: 7, fuse: 123, motion: Game.BombMotion.Idle,
+      vx: 0, vy: 0, fromX: 3, fromY: 3, toX: 3, toY: 3, progress: 0, passers: [], dud: true,
+    });
+    const s = new BattleState();
+    syncWorld(s, w);
+    const b = s.bombs.get('1')!;
+    expect(b.radius).toBe(0);
+    expect(b.fuseAt).toBe(-1);
+  });
+
+  test('«Отключиться» mid-round keeps the hero in the arena for a moment', async () => {
+    const h = await join('create', ROOM_NAME, { private: true, name: 'Leaver', skin: 0, bots: 0, play: true });
+    const sr = serverRoom(h.roomId);
+    await waitFor(() => sr.sim.state.phase === Game.Phase.Playing && sr.sim.state.players.get(h.sessionId)?.inRound, 4000, 'playing');
+    h.send(MSG.play, false);
+    await sleep(300);
+    expect(sr.sim.state.players.has(h.sessionId)).toBe(true);
+    await waitFor(() => !sr.sim.state.players.has(h.sessionId), 4000, 'removed after grace');
+    await h.leave();
+  });
+
+  test('names: reserved prefixes are refused, duplicates get a suffix', async () => {
+    const a = await join('create', ROOM_NAME, { private: true, name: '@server', skin: 0, bots: 0, play: true });
+    const b = await join('joinById', a.roomId, { name: 'Twin', skin: 0, play: true });
+    const c = await join('joinById', a.roomId, { name: 'twin', skin: 0, play: true });
+    const sr = serverRoom(a.roomId);
+    await waitFor(() => sr.sim.state.players.size === 3, 2000, 'players');
+    const name = (id: string) => sr.sim.state.players.get(id)!.name;
+    expect(name(a.sessionId).startsWith('@')).toBe(false);
+    expect(name(a.sessionId).toLowerCase()).not.toContain('server');
+    expect(name(b.sessionId)).toBe('Twin');
+    expect(name(c.sessionId)).toBe('twin 2');
+    await Promise.all([a.leave(), b.leave(), c.leave()]);
   });
 });

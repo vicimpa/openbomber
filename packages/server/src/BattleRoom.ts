@@ -4,7 +4,7 @@
 // the arena. The main public room ('MAIN') is created at boot and never disposed; private
 // and vs-bots rooms are extras.
 
-import { Room, type Client } from '@colyseus/core';
+import { Room, ServerError, type AuthContext, type Client } from '@colyseus/core';
 import {
   Button, MAX_PLAYERS, MSG, PATCH_RATE, Phase, TICK_MS, TICK_RATE, unpackAxis,
   type ChatMessage, type GameEvent, type IBot, type ISimulation, type InputFrame, type JoinOptions,
@@ -12,10 +12,11 @@ import {
 } from '@ob/game';
 import { getGameImpl, type GameImpl } from './game.ts';
 import { BattleState, type PlayReply, type RoomMeta } from './schema.ts';
+import { admit, clientJoined, clientLeft, roomCreated, roomDisposed, sweepIps } from './limits.ts';
 import { syncWorld } from './sync.ts';
 import {
   CHAT_COOLDOWN_MS, CHAT_MAX, MAIN_ROOM_ID, NAME_MAX, SKIN_COUNT, TokenBucket, allocateRoomCode, clampInt,
-  clampSkin, cleanText, releaseRoomCode, sanitizeName,
+  clampSkin, cleanText, cryptoU32, playerName, releaseRoomCode, uniqueName,
 } from './util.ts';
 
 export const DEFAULT_BOTS = 3;
@@ -27,6 +28,10 @@ export const BOT_THINK_EVERY = 1;
 export const MAX_CLIENTS = Number(process.env.MAX_CLIENTS) || 200;
 /** Main room: bots that keep a lone human company (only while exactly one human plays). */
 export const BOTS_MAIN = clampInt(Number(process.env.BOTS_MAIN), 0, 4, 0);
+/** «Отключиться» mid-round: the hero stays in the arena this long (can't dodge a blast by leaving). */
+export const LEAVE_GRACE_MS = 2000;
+/** While playing, a rename is accepted (and announced) at most this often. */
+export const RENAME_COOLDOWN_MS = 30_000;
 /** Max fixed steps per timer callback before dropping the backlog (e.g. after a GC pause). */
 const MAX_CATCHUP = 6;
 const TICK_SAMPLES = 4096;
@@ -52,9 +57,13 @@ export const T = {
 export const MAIN_TOKEN = crypto.randomUUID();
 
 interface Human {
+  ip: string;
   name: string;
   skin: number;
   playing: boolean;
+  /** Pending removal from the arena after «Отключиться» (LEAVE_GRACE_MS). */
+  leaving: { clear(): void } | null;
+  lastRename: number;
   lastSeq: number;
   connected: boolean;
   lastChat: number;
@@ -101,6 +110,21 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
   /** Seconds a dropped client is kept (a player stays frozen in the sim) awaiting reconnection. */
   static reconnectSeconds = 20;
 
+  /**
+   * Matchmaking gate (runs before a room is created or a seat reserved): per-IP request rate,
+   * concurrent connections and room creations, plus a global room cap. See ./limits.ts.
+   */
+  static async onAuth(_token: string, options: BattleCreateOptions, context: AuthContext) {
+    const ip = context.ip ?? 'unknown';
+    const url = String((context.req as { url?: string } | undefined)?.url ?? '');
+    const creating = /\/create\//.test(url) && options?.__main !== MAIN_TOKEN;
+    const denied = admit(ip, creating);
+    if (denied === 'rate') throw new ServerError(429, 'Слишком много запросов, попробуйте позже');
+    if (denied === 'clients') throw new ServerError(429, 'Слишком много подключений с вашего адреса');
+    if (denied === 'rooms') throw new ServerError(503, 'Сервер переполнен, попробуйте позже');
+    return { ip };
+  }
+
   state = new BattleState();
   maxClients = MAX_CLIENTS;
   maxMessagesPerSecond = 120;
@@ -142,7 +166,10 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
       if (options.private) await this.setPrivate(true);
     }
 
-    this.sim = this.game.createSimulation({ minPlayers: 2 });
+    roomCreated();
+    // Crypto seed + entropy: hidden information (pickups in bricks, crazy bombs, Random rolls)
+    // can't be reconstructed from the visible map by a client that runs the same simulation.
+    this.sim = this.game.createSimulation({ minPlayers: 2, seed: cryptoU32(), entropy: cryptoU32 });
     this.setPatchRate(1000 / PATCH_RATE);
     this.setSimulationInterval((dt) => this.update(dt), TICK_MS);
 
@@ -158,11 +185,16 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     this.updateMeta();
   }
 
-  onJoin(client: Client, options?: Partial<JoinOptions> & { play?: boolean }) {
+  onJoin(client: Client, options?: Partial<JoinOptions> & { play?: boolean }, auth?: { ip?: string }) {
+    const ip = auth?.ip ?? 'unknown';
+    clientJoined(ip);
     this.humans.set(client.sessionId, {
-      name: sanitizeName(options?.name),
+      ip,
+      name: uniqueName(playerName(options?.name), this.names()),
       skin: clampSkin(options?.skin),
       playing: false,
+      leaving: null,
+      lastRename: 0,
       lastSeq: 0,
       connected: true,
       lastChat: 0,
@@ -200,14 +232,23 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     const id = client.sessionId;
     const h = this.humans.get(id);
     if (!h) return;
-    if (h.playing) this.leaveArena(id, h);
+    if (h.playing || h.leaving) this.leaveArena(id, h, true);
     this.humans.delete(id);
+    clientLeft(h.ip);
     this.reconcileBots();
     this.updateMeta();
   }
 
   onDispose() {
     if (this.code) releaseRoomCode(this.code);
+    roomDisposed();
+    sweepIps();
+  }
+
+  /** Names in use in this room (humans + bots). */
+  private *names(except?: string) {
+    for (const [id, h] of this.humans) if (id !== except) yield h.name;
+    for (const p of this.sim.state.players.values()) if (p.id !== except && p.isBot) yield p.name;
   }
 
   onBeforePatch() {
@@ -244,9 +285,17 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
   private setPlaying(client: Client, enabled: boolean) {
     const id = client.sessionId;
     const h = this.humans.get(id)!;
+    if (enabled && h.leaving) {
+      // changed their mind within the grace period: the hero never left
+      h.leaving.clear();
+      h.leaving = null;
+      h.playing = true;
+      this.reply(client, { playing: true });
+      return;
+    }
     if (enabled === h.playing) { this.reply(client, { playing: h.playing }); return; }
     if (!enabled) {
-      this.leaveArena(id, h);
+      this.leaveArena(id, h, true);
       this.reconcileBots();
       this.reply(client, { playing: false });
       return;
@@ -265,8 +314,30 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     this.reply(client, { playing: true });
   }
 
-  private leaveArena(id: string, h: Human) {
+  /**
+   * Take a hero out of the arena. With `grace`, a hero still alive in a running round stays
+   * (standing still, still killable) for LEAVE_GRACE_MS, so leaving can't dodge a blast or
+   * deny a kill.
+   */
+  private leaveArena(id: string, h: Human, grace = false) {
     h.playing = false;
+    const p = this.sim.state.players.get(id);
+    const live = !!p && p.alive && p.inRound
+      && (this.sim.state.phase === Phase.Playing || this.sim.state.phase === Phase.SuddenDeath);
+    if (h.leaving) { h.leaving.clear(); h.leaving = null; }
+    if (grace && live) {
+      h.lastSeq += 1;
+      this.sim.pushInput(id, { seq: h.lastSeq, dx: 0, dy: 0, buttons: 0 });
+      h.leaving = this.clock.setTimeout(() => {
+        h.leaving = null;
+        if (h.playing) return;
+        this.sim.removePlayer(id);
+        this.systemChat(T.left(h.name));
+        this.reconcileBots();
+        this.updateMeta();
+      }, LEAVE_GRACE_MS);
+      return;
+    }
     this.sim.removePlayer(id);
     this.systemChat(T.left(h.name));
   }
@@ -430,10 +501,15 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     if (!h || !msg || typeof msg !== 'object' || !h.profile.take()) return;
     const o = msg as Record<string, unknown>;
     const p: { name?: string; skin?: number } = {};
-    if (typeof o.name === 'string') {
-      const name = cleanText(o.name, NAME_MAX);
-      if (name && name !== h.name) {
-        if (h.playing) this.systemChat(T.renamed(h.name, name));
+    if (typeof o.name === 'string' && cleanText(o.name, NAME_MAX)) {
+      const name = uniqueName(playerName(o.name), this.names(id));
+      const now = Date.now();
+      // a player in the arena may rename (and be announced) at most every RENAME_COOLDOWN_MS
+      if (name !== h.name && (!h.playing || now - h.lastRename >= RENAME_COOLDOWN_MS)) {
+        if (h.playing) {
+          this.systemChat(T.renamed(h.name, name));
+          h.lastRename = now;
+        }
         h.name = p.name = name;
       }
     }

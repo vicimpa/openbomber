@@ -8,6 +8,7 @@ import { dropCarried, updateBombs } from './bombs';
 import type { SimCtx } from './context';
 import { tickFlames } from './flames';
 import { parseMap } from './map';
+import { hashString } from './rng';
 import { pushPlayers } from './movement';
 import { collectPickups, spawnPickup, tickPickups } from './pickups';
 import {
@@ -42,6 +43,7 @@ export class Simulation implements ISimulation {
     this.ctx = {
       world: this.state,
       config,
+      secret: { seed: (hashString('secret') ^ (config.seed ?? 0x0b0b)) >>> 0 },
       events: [],
       hidden: new Int8Array(0),
       flameGrid: new Int32Array(0),

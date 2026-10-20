@@ -96,7 +96,7 @@ function addOpposed(ctx: SimCtx, p: PlayerState, add: 'speed' | 'fire', against:
 
 /** Apply a pickup's effect. Returns the kind actually applied (Random resolves). */
 export function applyPickup(ctx: SimCtx, p: PlayerState, type: PickupType): PickupType {
-  if (type === PickupType.Random) type = rollPickup(ctx.world, true);
+  if (type === PickupType.Random) type = rollPickup(ctx.secret, true);
   const e = p.effects;
   switch (type) {
     case PickupType.BombUp:
@@ -127,7 +127,7 @@ export function applyPickup(ctx: SimCtx, p: PlayerState, type: PickupType): Pick
       p.lives = Math.min(MAX_LIVES, p.lives + 1);
       break;
     case PickupType.Skull:
-      applyCurse(ctx, p, (1 + randInt(ctx.world, 6)) as Curse, '');
+      applyCurse(ctx, p, (1 + randInt(ctx.secret, 6)) as Curse, '');
       break;
     default: {
       const a = TIMED_ABILITIES.find((t) => t.pickup === type);

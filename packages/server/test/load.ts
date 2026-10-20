@@ -8,6 +8,7 @@
 import { Client, type Room } from '@colyseus/sdk';
 import { matchMaker } from '@colyseus/core';
 import { Button, MSG, TICK_RATE, packAxis } from '@ob/game';
+import { limits, resetLimits } from '../src/limits.ts';
 import { startGameServer } from '../src/app.ts';
 import type { BattleRoom } from '../src/BattleRoom.ts';
 
@@ -16,6 +17,8 @@ const SPECTATORS = Number(process.env.SPECTATORS ?? 50);
 const SECONDS = Number(process.env.SECONDS ?? 30);
 const WARMUP = Number(process.env.WARMUP ?? 4);
 
+Object.assign(limits, { clientsPerIp: 1e6, requestBurst: 1e6, requestsPerSecond: 1e6, createBurst: 1e6, createsPerSecond: 1e6 });
+resetLimits();
 const server = await startGameServer({ port: 0 });
 const url = `ws://localhost:${server.port}`;
 const players: Room[] = [];

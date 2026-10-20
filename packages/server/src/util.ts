@@ -85,3 +85,34 @@ export class TokenBucket {
     return true;
   }
 }
+
+// ------------------------------------------------------------------ names
+
+/** Names a player may not take: they would pass for system messages or bots. */
+const RESERVED = /^(@|server$|сервер$|system$|система$|admin|админ|moderator|модератор|bot\b|бот\b)/i;
+
+/** A clean, non-reserved name (random when nothing usable is left). */
+export function playerName(v: unknown): string {
+  const s = cleanText(v, NAME_MAX).replace(/^@+/, '').trim();
+  return s && !RESERVED.test(s) ? s : randomName();
+}
+
+/** `name`, or `name 2`, `name 3`… so it differs (case-insensitively) from every name in `taken`. */
+export function uniqueName(name: string, taken: Iterable<string>): string {
+  const used = new Set<string>();
+  for (const t of taken) used.add(t.toLowerCase());
+  if (!used.has(name.toLowerCase())) return name;
+  for (let n = 2; n < 100; n++) {
+    const suffix = ` ${n}`;
+    const candidate = Array.from(name).slice(0, NAME_MAX - suffix.length).join('') + suffix;
+    if (!used.has(candidate.toLowerCase())) return candidate;
+  }
+  return randomName();
+}
+
+// ------------------------------------------------------------------ randomness
+
+/** 32 bits from the OS CSPRNG (seeds and hidden-information entropy for the simulation). */
+export function cryptoU32(): number {
+  return crypto.getRandomValues(new Uint32Array(1))[0]!;
+}

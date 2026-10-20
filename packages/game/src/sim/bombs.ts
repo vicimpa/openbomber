@@ -68,10 +68,12 @@ export function createBomb(ctx: SimCtx, p: PlayerState, x: number, y: number): B
   let fuse = remote ? -REMOTE_BOMB_MAX_FUSE : BOMB_FUSE;
   let dud = false;
   if (crazy) {
-    fuse = CRAZY_FUSE_MIN + randInt(w, CRAZY_FUSE_MAX - CRAZY_FUSE_MIN + 1);
+    // hidden information: secret generator (the real fuse / radius are not sent to clients)
+    const s = ctx.secret;
+    fuse = CRAZY_FUSE_MIN + randInt(s, CRAZY_FUSE_MAX - CRAZY_FUSE_MIN + 1);
     const maxR = Math.min(MAX_RADIUS, radius * CRAZY_RADIUS_MULT);
-    radius += randInt(w, maxR - radius + 1);
-    dud = nextFloat(w) < CRAZY_DUD_CHANCE;
+    radius += randInt(s, maxR - radius + 1);
+    dud = nextFloat(s) < CRAZY_DUD_CHANCE;
   }
   const b: BombState = {
     id: w.nextId++,

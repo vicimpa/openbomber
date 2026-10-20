@@ -1,7 +1,7 @@
 // Diff the simulation's plain WorldState into the Colyseus schema. Only changed fields are
 // assigned, removed entities are deleted, so the encoder emits minimal patches.
 
-import type { BombState, FlameState, PickupState, PlayerState, TimedEffects, WorldState } from '@ob/game';
+import { BombKind, type BombState, type FlameState, type PickupState, type PlayerState, type TimedEffects, type WorldState } from '@ob/game';
 import {
   type BattleState, BombSchema, FallingSchema, FlameSchema, PickupSchema, PlayerSchema,
 } from './schema.ts';
@@ -53,8 +53,11 @@ function syncBomb(s: BombSchema, b: BombState, tick: number) {
   set(s, 'kind', b.kind);
   set(s, 'x', b.x);
   set(s, 'y', b.y);
-  set(s, 'radius', b.radius);
-  set(s, 'fuseAt', b.fuse < 0 ? b.fuse : tick + b.fuse);
+  // Crazy bombs are random by design: their real fuse and radius are hidden information
+  // (clients get radius 0 and a "waiting" fuse and just pulse evenly).
+  const secret = b.kind === BombKind.Crazy;
+  set(s, 'radius', secret ? 0 : b.radius);
+  set(s, 'fuseAt', secret ? -1 : b.fuse < 0 ? b.fuse : tick + b.fuse);
   set(s, 'motion', b.motion);
   set(s, 'vx', b.vx);
   set(s, 'vy', b.vy);

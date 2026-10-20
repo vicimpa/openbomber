@@ -4,6 +4,7 @@
 import type { MatchConfig } from '../contract/api';
 import type { GameEvent, InputFrame } from '../contract/protocol';
 import type { PickupType, WorldState } from '../contract/types';
+import type { SeedHolder } from './rng';
 
 export interface PlayerInternal {
   queue: InputFrame[];
@@ -34,6 +35,8 @@ export interface BombInternal {
 export interface SimCtx {
   world: WorldState;
   config: MatchConfig;
+  /** Generator for hidden information, never derived from anything clients can see. */
+  secret: SeedHolder;
   events: GameEvent[];
   /** Per tile: hidden PickupType inside a brick, or -1. */
   hidden: Int8Array;

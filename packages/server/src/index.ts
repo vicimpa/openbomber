@@ -3,7 +3,8 @@
 //   PORT       listen port (default 2567)
 //   HOST       bind address (default all interfaces)
 //   BASE_PATH  optional prefix also accepted for every route, e.g. "/api" when nginx
-//              forwards https://host/api/* without stripping the prefix. Root paths
+//              forwards https://host/api/* without stripping the prefix.
+//   Always set `proxy_set_header X-Real-IP $remote_addr;` (per-IP limits in limits.ts trust it). Root paths
 //              keep working either way, so both nginx styles are fine:
 //                location /api/ { proxy_pass http://127.0.0.1:2567/; }      # strips
 //                location /api/ { proxy_pass http://127.0.0.1:2567; }       # keeps, set BASE_PATH=/api

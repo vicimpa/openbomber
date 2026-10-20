@@ -12,6 +12,12 @@ export interface MatchConfig {
    */
   minPlayers?: number;
   seed?: number;
+  /**
+   * Fresh randomness for HIDDEN information (pickups inside bricks, crazy bombs, Random /
+   * Skull rolls). The server passes a crypto source; it is mixed in at every new map so the
+   * visible layout can't be used to recover what is hidden. Omit for deterministic play.
+   */
+  entropy?: () => number;
 }
 
 export interface NewPlayer {

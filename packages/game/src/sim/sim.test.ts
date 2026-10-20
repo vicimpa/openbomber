@@ -21,7 +21,7 @@ import {
   ZONE_LIMIT_TIMEOUT,
 } from '../contract/constants';
 import { Button, type GameEvent } from '../contract/protocol';
-import { mapSizeFor, ringTiles, spawnPoints } from './map';
+import { generateMap, mapSizeFor, ringTiles, spawnPoints } from './map';
 import { Ability, BombKind, BombMotion, Curse, Dir, FlameShape, Phase, PickupType, Tile } from '../contract/types';
 import { Simulation } from './Simulation';
 import { Harness, ev } from './testkit';
@@ -137,6 +137,26 @@ describe('movement & collision', () => {
     expect(h.p('a').x).toBe(x);
     h.step(1);
     expect(h.p('a').x).toBeLessThan(x);
+  });
+});
+
+describe('hidden information', () => {
+  test('pickups in bricks come from the secret generator, not the visible layout', () => {
+    const spawns = spawnPoints(4);
+    const [width, height] = mapSizeFor(4);
+    const a = generateMap({ seed: 42 }, width, height, spawns, { seed: 1 });
+    const b = generateMap({ seed: 42 }, width, height, spawns, { seed: 2 });
+    expect([...a.tiles]).toEqual([...b.tiles]);    // identical bricks...
+    expect([...a.hidden]).not.toEqual([...b.hidden]); // ...different loot
+  });
+
+  test('server entropy reshuffles every map', () => {
+    let n = 0;
+    const entropy = () => (n = (n * 1103515245 + 12345) >>> 0);
+    const s1 = new Simulation({ seed: 7, entropy });
+    const s2 = new Simulation({ seed: 7 });
+    for (const s of [s1, s2]) { s.addPlayer({ id: 'a', name: 'a', skin: 0 }); s.addPlayer({ id: 'b', name: 'b', skin: 0 }); s.step(); }
+    expect([...s1.state.tiles]).not.toEqual([...s2.state.tiles]);
   });
 });
 

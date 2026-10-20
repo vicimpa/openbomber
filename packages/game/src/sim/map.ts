@@ -56,7 +56,7 @@ export const isPillar = (x: number, y: number) => (x & 1) === 1 && (y & 1) === 1
  * Legacy GameMap.generate: pillars on odd/odd tiles, a free plus of radius 2 around every
  * spawn, bricks on BRICK_FILL of the remaining tiles, pickups hidden in PICKUP_FILL of the bricks.
  */
-export function generateMap(rng: SeedHolder, width: number, height: number, spawns: Point[]): GeneratedMap {
+export function generateMap(rng: SeedHolder, width: number, height: number, spawns: Point[], secret: SeedHolder = rng): GeneratedMap {
   const n = width * height;
   const tiles = new Uint8Array(n);
   const hidden = new Int8Array(n).fill(-1);
@@ -78,8 +78,11 @@ export function generateMap(rng: SeedHolder, width: number, height: number, spaw
   shuffle(rng, free);
   const bricks = free.slice(0, Math.ceil(free.length * BRICK_FILL));
   for (const i of bricks) tiles[i] = Tile.Brick;
+  // which bricks hide a pickup (and which one) comes from the secret generator, so it can't be
+  // reconstructed from the visible brick layout
   const withPickup = Math.round(bricks.length * PICKUP_FILL);
-  for (let k = 0; k < withPickup; k++) hidden[bricks[k]!] = rollPickup(rng, false);
+  const loot = shuffle(secret, bricks.slice());
+  for (let k = 0; k < withPickup; k++) hidden[loot[k]!] = rollPickup(secret, false);
   return { width, height, tiles, hidden, spawns };
 }
 
