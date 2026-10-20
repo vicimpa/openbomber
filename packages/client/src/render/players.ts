@@ -11,6 +11,10 @@ import { FONT_TAG } from './text';
 const T = 32;
 const DIR_NAME: Record<Dir, string> = { [Dir.Up]: 'Up', [Dir.Left]: 'Right', [Dir.Right]: 'Right', [Dir.Down]: 'Down' };
 const BLINK_WARN = TICK_RATE * 2; // timed effects blink during their last 2 s
+/** Spawn animation: a beam of light, the hero drops in, lands with a squash and a dust ring. */
+const SPAWN_DROP = 0.2;   // s, falling
+const SPAWN_LEN = 0.5;    // s, whole animation
+const SPAWN_HEIGHT = 72;  // px above the ground at the start
 
 /** Run tags open on a frame that looks like the idle pose: the run loop skips it. */
 const RUN_SKIP = 1;
@@ -48,6 +52,8 @@ export class PlayerView {
   /** After a death event: ignore stale alive=true states for a moment (online patches lag events). */
   private hold = 0;
   private pop = 0;
+  /** Spawn animation clock (s): < 0 waiting (hidden), 0..SPAWN_LEN playing, NaN idle. */
+  private spawnT = NaN;
   private dustT = 0;
   seen = true;
 
@@ -87,7 +93,14 @@ export class PlayerView {
     this.fx.death(x, y, (src.IdleDown ?? Object.values(src)[0])[0] ?? Texture.EMPTY);
   }
 
-  update(p: PlayerState, dt: number, local: boolean, fresh: boolean, carriedBomb: boolean) {
+  /** Play the spawn animation after `delay` seconds (hidden until then). */
+  spawn(delay = 0) {
+    this.spawnT = -Math.max(0, delay);
+    this.pop = 0;
+  }
+
+  /** `spawnDelay` >= 0: on a fresh map, drop in after that many seconds (negative: just appear). */
+  update(p: PlayerState, dt: number, local: boolean, fresh: boolean, carriedBomb: boolean, spawnDelay = -1) {
     this.time += dt;
     const x = p.x * T, y = p.y * T;
     this.ownSkin = ((p.skin % 11) + 11) % 11;
@@ -97,17 +110,44 @@ export class PlayerView {
       if (this.alive && p.inRound && !fresh) this.die(p.x, p.y);
       this.alive = false;
     } else if (!this.alive && (this.hold <= 0 || fresh)) {
-      if (!fresh && p.inRound) { this.fx.respawn(p.x, p.y); this.pop = 1; }
+      if (!fresh && p.inRound) this.spawn(0);
       this.alive = true;
       this.hold = 0;
+    }
+    if (fresh && p.alive && p.inRound) {
+      if (spawnDelay >= 0) this.spawn(spawnDelay); else { this.spawnT = NaN; this.tag.alpha = 1; }
     }
     const visible = p.inRound && this.alive;
     this.root.visible = visible;
     this.tag.visible = visible;
-    if (!visible) return;
+    if (!visible) { this.spawnT = NaN; this.tag.alpha = 1; return; }
 
     this.root.position.set(x, y);
     this.root.zIndex = y;
+
+    // ---- spawn: wait (hidden) → beam + drop → landing squash
+    let dropY = 0, sx = 1, sy = 1, shadowK = 1;
+    if (this.spawnT === this.spawnT) {
+      const t0 = this.spawnT;
+      this.spawnT += dt;
+      const t = this.spawnT;
+      if (t < 0) { this.root.visible = false; this.tag.visible = false; return; }
+      if (t0 <= 0 && t > 0) this.fx.spawnBeam(p.x, p.y);
+      if (t0 < SPAWN_DROP && t >= SPAWN_DROP) this.fx.spawnLand(p.x, p.y);
+      if (t < SPAWN_DROP) {
+        const k = t / SPAWN_DROP;
+        dropY = -SPAWN_HEIGHT * (1 - k * k);
+        sx = 0.8; sy = 1.3;
+        shadowK = 0.35 + 0.65 * k;
+        this.tag.visible = false;
+      } else {
+        const k = Math.min(1, (t - SPAWN_DROP) / (SPAWN_LEN - SPAWN_DROP));
+        const sq = Math.sin(k * Math.PI * 2.2) * (1 - k) ** 1.5;
+        sx = 1 + 0.38 * sq; sy = 1 - 0.32 * sq;
+        this.tag.alpha = Math.min(1, k * 2.5);
+      }
+      if (t >= SPAWN_LEN) { this.spawnT = NaN; this.tag.alpha = 1; }
+    }
 
     // ---- skin + animation tag (Left = mirrored Right)
     const skin = ((p.skin % 11) + 11) % 11;
@@ -160,6 +200,7 @@ export class PlayerView {
     let alpha = 1;
     if (ghost) alpha = warn(p.effects.ghost) ? 0.45 + 0.1 * Math.sin(this.time * 6) : 0.8;
     if (p.effects.invulnerable > 0 && Math.floor(this.time * 12) % 2 === 0) alpha *= 0.3;
+    if (this.spawnT === this.spawnT && this.spawnT < SPAWN_DROP) alpha *= Math.min(1, this.spawnT / SPAWN_DROP * 3);
     this.upper.alpha = alpha;
     this.shadow.alpha = ghost ? 0.5 : 1;
     let tint = 0xffffff;
@@ -192,8 +233,10 @@ export class PlayerView {
     // ---- spawn pop + idle breathing
     if (this.pop > 0) this.pop = Math.max(0, this.pop - dt * 3);
     const popS = this.pop > 0 ? 1 + Math.sin(this.pop * Math.PI) * 0.35 : 1;
-    this.body.scale.set(popS, 2 - popS);
-    this.shadow.scale.set(popS);
+    this.body.scale.set(popS * sx, (2 - popS) * sy);
+    this.body.y = Math.round(dropY + 12 * (1 - sy)); // squash around the feet
+    this.shadow.scale.set(popS * shadowK);
+    this.shadow.alpha *= shadowK;
 
     // ---- name tag (separate layer, always on top)
     const ny = y - (cursed ? 46 : 36);

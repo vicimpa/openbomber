@@ -436,17 +436,44 @@ export class Effects {
     });
   }
 
-  respawn(x: number, y: number) {
-    const px = x * T, py = y * T;
-    const beam = new Sprite({ texture: this.tx.glow, anchor: { x: 0.5, y: 0.9 }, x: px, y: py + 8, tint: 0x9fe8ff });
-    this.shot(beam, this.light, 0.7, k => {
-      beam.scale.set(0.5 * (1 - k * 0.7), 3.2 * (k < 0.2 ? k / 0.2 : 1));
-      beam.alpha = 1 - k;
+  /** Spawn, part 1: a column of light comes down onto the spot (the hero drops in through it). */
+  spawnBeam(x: number, y: number) {
+    const px = Math.round(x * T), py = Math.round(y * T) + 8;
+    const glow = new Sprite({ texture: this.tx.glow, anchor: { x: 0.5, y: 0.92 }, x: px, y: py, tint: 0x9fe8ff });
+    this.shot(glow, this.light, 0.55, k => {
+      const grow = Math.min(1, k / 0.15);
+      glow.scale.set(0.75 * (1 - k * 0.6), 3.4 * grow);
+      glow.alpha = 0.9 * (1 - k) ** 1.4;
     });
-    this.shockwave(px, py + 6, 1.5, 0x9fe8ff, 0.5, 0.9);
-    for (let i = 0; i < this.q(14); i++) this.particles.spawn({
-      tex: this.tx.sparkle, x: px + rand(-12, 12), y: py + rand(-4, 8), vz: rand(30, 90), life: rand(0.5, 0.9),
-      scale: rand(0.4, 0.8), scaleEnd: 0, tint: 0xc8f4ff, add: true, delay: rand(0, 0.2),
+    const core = new Sprite({ texture: this.tx.white, anchor: { x: 0.5, y: 1 }, x: px, y: py - 2, tint: 0xe8fbff });
+    this.shot(core, this.light, 0.4, k => {
+      const grow = Math.min(1, k / 0.12);
+      core.width = Math.max(1, Math.round(6 * (1 - k)));
+      core.height = Math.round(110 * grow);
+      core.alpha = 0.85 * (1 - k);
+    });
+    // ground marker: a ring closing in on the landing spot
+    const ring = new Sprite({ texture: this.tx.ring, anchor: 0.5, x: px, y: py - 2, tint: 0xbff4ff });
+    this.shot(ring, this.under, 0.22, k => {
+      const s = 0.95 - 0.6 * k;
+      ring.scale.set(s, s * 0.6);
+      ring.alpha = 0.3 + 0.6 * k;
+    });
+    for (let i = 0; i < this.q(8); i++) this.particles.spawn({
+      tex: this.tx.sparkle, x: px + rand(-7, 7), y: py - 2, z: rand(40, 100), vz: rand(-160, -90),
+      life: rand(0.25, 0.45), scale: rand(0.4, 0.7), scaleEnd: 0.1, tint: 0xd8f8ff, add: true, alphaEnd: 0.3,
+    });
+  }
+
+  /** Spawn, part 2: touchdown: flash, a light ring and a dust ring around the feet. */
+  spawnLand(x: number, y: number) {
+    const px = x * T, py = y * T;
+    this.flash(px, py, 1.6, 0xc8f4ff, 0.25, 0.85);
+    this.shockwave(px, py + 6, 1.4, 0xbff4ff, 0.32, 0.85);
+    this.dustRing(px, py + 8, 10, 75, 0xd8cdb8, 0.9);
+    for (let i = 0; i < this.q(10); i++) this.particles.spawn({
+      tex: this.tx.sparkle, x: px + rand(-10, 10), y: py + rand(-2, 8), vz: rand(30, 80), vx: rand(-25, 25),
+      life: rand(0.35, 0.6), scale: rand(0.4, 0.75), scaleEnd: 0, tint: 0xc8f4ff, add: true, delay: rand(0, 0.08),
     });
   }
 
