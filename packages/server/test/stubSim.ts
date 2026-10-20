@@ -59,6 +59,9 @@ export class StubSim implements ISimulation {
     return p;
   }
 
+  restarts = 0;
+  restartRound() { this.restarts++; }
+
   removePlayer(id: string) {
     this.state.players.delete(id);
     this.queues.delete(id);

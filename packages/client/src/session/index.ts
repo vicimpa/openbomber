@@ -84,7 +84,7 @@ export function startSession() {
       unsub.push(next.onStatus((s) => {
         if (s === 'reconnecting') toast(t('net.reconnecting'), 'info');
         if (s === 'disconnected' && source === next) {
-          toast(t('net.disconnected'), 'bad');
+          toast(t('net.disconnected'), 'bad', undefined, undefined, true);
           toMenu();
         }
       }));

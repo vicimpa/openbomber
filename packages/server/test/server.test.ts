@@ -240,16 +240,23 @@ describe('matchmaking', () => {
     await Promise.all([host.leave(), guest.leave(), quick.leave()]);
   });
 
-  test('own room: the host sets bots, difficulty, capacity and zone; others cannot', async () => {
+  test('own room: the host sets bots, difficulty, capacity, zone and rain; others cannot', async () => {
     const host = await join('create', ROOM_NAME, { private: true, name: 'Host', skin: 0, play: true });
     const sr = serverRoom(host.roomId);
     await waitFor(() => host.state.ownerId === host.sessionId, 1000, 'owner');
     expect(sr.botCount).toBe(0); // own rooms start without bots
+    await waitFor(() => sr.sim.state.round >= 1, 1000, 'first round');
+    const round0 = sr.sim.state.round;
     const said = chatsOf(host);
-    host.send(MSG.settings, { bots: 3, botDifficulty: 'hard', maxPlayers: 6, zone: false });
-    await waitFor(() => sr.botCount === 3, 1000, '3 bots');
-    await waitFor(() => host.state.bots === 3 && host.state.botDifficulty === 2 && host.state.maxPlayers === 6 && host.state.zone === false, 1000, 'settings in state');
+    host.send(MSG.settings, { bots: 3, botDifficulty: 'hard', maxPlayers: 6, zone: false, events: false });
+    await waitFor(() => host.state.bots === 3 && host.state.botDifficulty === 2 && host.state.maxPlayers === 6
+      && host.state.zone === false && host.state.events === false, 1000, 'settings in state');
     await waitFor(() => said.find((m) => m.from === '' && m.text.startsWith('Настройки комнаты')), 1000, 'announced');
+    // a bot-count change restarts the round, so the bots play right away (not a round later)
+    await waitFor(() => sr.botCount === 3, 3000, '3 bots');
+    await waitFor(() => sr.sim.state.round > round0
+      && [...sr.sim.state.players.values()].filter((p) => p.isBot && p.inRound).length === 3, 3000, 'bots in a fresh round');
+    await waitFor(() => said.find((m) => m.from === '' && m.text === 'Состав ботов изменён: новый раунд'), 1000, 'restart announced');
 
     const guest = await join('joinById', host.roomId, { name: 'Guest', skin: 0, play: true });
     guest.send(MSG.settings, { bots: 0 });
@@ -263,7 +270,27 @@ describe('matchmaking', () => {
     await waitFor(() => gsaid.find((m) => m.from === '' && m.text === 'Guest теперь управляет комнатой'), 1000, 'handover chat');
     guest.send(MSG.settings, { bots: 1 });
     await waitFor(() => guest.state.bots === 1, 1000, 'new host can change settings');
+    await waitFor(() => sr.botCount === 1, 3000, 'live bots removed for the new roster');
     await guest.leave();
+  });
+
+  test('own room: a host who drops hands over to the next one in at once; an empty room closes', async () => {
+    const host = await join('create', ROOM_NAME, { private: true, name: 'Host', skin: 0, play: true });
+    const id = host.roomId;
+    const sr = serverRoom(id);
+    const second = await join('joinById', id, { name: 'Second', skin: 0, play: true });
+    const third = await join('joinById', id, { name: 'Third', skin: 0, play: true });
+    await waitFor(() => second.state.ownerId === host.sessionId, 1000, 'host owns');
+    host.reconnection.enabled = false;
+    BattleRoom.reconnectSeconds = 0.3; // the dropped host's seat is held this long
+    (sr.clients.getById(host.sessionId) as unknown as { ref: { terminate(): void } }).ref.terminate();
+    // no 20 s reconnection wait: the next one who joined takes over right away
+    await waitFor(() => second.state.ownerId === second.sessionId, 1000, 'handed to the next one in');
+    await second.leave();
+    await waitFor(() => third.state.ownerId === third.sessionId, 1000, 'handed again');
+    await third.leave();
+    await waitFor(() => !matchMaker.getLocalRoomById(id), 3000, 'empty room disposed');
+    BattleRoom.reconnectSeconds = 20;
   });
 
   test('reconnection keeps the player in the arena; expiry removes them', async () => {

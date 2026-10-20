@@ -37,6 +37,8 @@ export const RENAME_COOLDOWN_MS = 30_000;
 /** Max fixed steps per timer callback before dropping the backlog (e.g. after a GC pause). */
 const MAX_CATCHUP = 6;
 const TICK_SAMPLES = 4096;
+/** Host clicking the bot stepper: wait this long after the last click before restarting. */
+const ROSTER_DEBOUNCE_MS = 1200;
 
 const BUTTON_MASK = Button.Bomb | Button.Action;
 const BOT_NAMES = ['Bot Rusty', 'Bot Sparky', 'Bot Boomer', 'Bot Fuse', 'Bot Blaze', 'Bot Pixel', 'Bot Dyna',
@@ -55,6 +57,7 @@ export const T = {
   full: 'Нет свободных мест',
   chatSlow: 'Не так быстро: не больше одного сообщения в 2 секунды',
   newHost: (n: string) => `${n} теперь управляет комнатой`,
+  rosterRestart: 'Состав ботов изменён: новый раунд',
   settings: (s: RoomSettings) =>
     `Настройки комнаты: ботов ${s.bots} (${DIFFICULTY_RU[s.botDifficulty]}), игроков до ${s.maxPlayers}, зона ${s.zone ? 'вкл' : 'выкл'}, дождь ${s.events ? 'вкл' : 'выкл'}`,
   rainPickups: 'С неба сыплются бонусы!',
@@ -149,6 +152,8 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
   private game!: GameImpl;
   private code = '';
   /** Own rooms: what the creator set (the shared arena ignores bots / maxPlayers here). */
+  private rosterTimer: { clear(): void } | null = null;
+  private rosterBefore: Set<string> | null = null;
   private settings: RoomSettings = { bots: DEFAULT_BOTS, botDifficulty: 'normal', maxPlayers: MAX_PLAYERS, zone: true, events: true };
   private simConfig!: MatchConfig;
   private ownerId = '';
@@ -236,6 +241,8 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     const h = this.humans.get(client.sessionId);
     if (h) {
       h.connected = false;
+      // the host lost the connection: the room doesn't wait for them, the next one in takes over
+      this.handOver(client.sessionId);
       if (h.playing) {
         // Freeze: the sim repeats the last input, so feed it a neutral one.
         h.lastSeq += 1;
@@ -249,7 +256,9 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
 
   onReconnect(client: Client) {
     const h = this.humans.get(client.sessionId);
-    if (h) h.connected = true; // a player is still in the sim: playing state is restored as-is
+    if (!h) return;
+    h.connected = true; // a player is still in the sim: playing state is restored as-is
+    if (!this.isMain && !this.ownerId) this.ownerId = client.sessionId; // everyone else had left
   }
 
   onLeave(client: Client) {
@@ -259,14 +268,21 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     if (h.playing || h.leaving) this.leaveArena(id, h, true);
     this.humans.delete(id);
     clientLeft(h.ip);
-    if (this.ownerId === id) {
-      // hand the room over to the next person still here
-      this.ownerId = this.humans.keys().next().value ?? '';
-      const next = this.ownerId ? this.humans.get(this.ownerId) : undefined;
-      if (next) this.systemChat(T.newHost(next.name));
-    }
+    this.handOver(id);
     this.reconcileBots();
     this.updateMeta();
+  }
+
+  /** The host is gone: the room passes to whoever joined next (join order) and is still connected. */
+  private handOver(from: string) {
+    if (this.isMain || this.ownerId !== from) return;
+    this.ownerId = '';
+    for (const [id, h] of this.humans) {
+      if (id === from || !h.connected) continue;
+      this.ownerId = id;
+      this.systemChat(T.newHost(h.name));
+      break;
+    }
   }
 
   onDispose() {
@@ -470,14 +486,36 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     return Math.max(0, Math.min(this.settings.bots, this.maxPlayers - n));
   }
 
-  private reconcileBots() {
+  /** `force`: remove live bots too (the round is about to restart anyway). */
+  private reconcileBots(force = false) {
     const want = this.desiredBots();
     while (this.bots.size < want && this.sim.state.players.size < this.maxPlayers) this.addBot();
     if (this.bots.size <= want) return;
     const phase = this.sim.state.phase;
     const between = phase === Phase.Waiting || phase === Phase.RoundOver || phase === Phase.Countdown;
-    this.removeBots(this.bots.size - want, between || this.sim.state.players.size > this.maxPlayers);
+    this.removeBots(this.bots.size - want, force || between || this.sim.state.players.size > this.maxPlayers);
     this.updateMeta();
+  }
+
+  /**
+   * The host changed the bot count: once they stop clicking, swap the roster and restart the
+   * round, so the change shows up right away on a map sized for it (not a round later).
+   */
+  private scheduleRosterRestart() {
+    this.rosterTimer?.clear();
+    // the roster before the first click (the periodic reconcile may add bots meanwhile)
+    this.rosterBefore ??= new Set(this.bots.keys());
+    this.rosterTimer = this.clock.setTimeout(() => {
+      const before = this.rosterBefore!;
+      this.rosterTimer = null;
+      this.rosterBefore = null;
+      this.reconcileBots(true);
+      const changed = before.size !== this.bots.size || [...this.bots.keys()].some((id) => !before.has(id));
+      if (!changed) return;
+      this.sim.restartRound();
+      this.systemChat(T.rosterRestart);
+      this.updateMeta();
+    }, ROSTER_DEBOUNCE_MS);
   }
 
   /** Remove up to `n` bots; dead / spectating bots first, live ones only if `force`. */
@@ -583,7 +621,8 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     if (prev.botDifficulty !== s.botDifficulty) {
       for (const [id, slot] of this.bots) slot.bot = this.game.createBot(id, this.sim, s.botDifficulty);
     }
-    this.reconcileBots();
+    if (prev.bots !== s.bots) this.scheduleRosterRestart();
+    else this.reconcileBots();
     this.systemChat(T.settings(s));
     this.updateMeta();
   }

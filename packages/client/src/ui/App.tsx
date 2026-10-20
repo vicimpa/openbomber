@@ -41,8 +41,8 @@ effect(() => {
 export function App() {
   useEffect(() => {
     installNav();
-    const on = () => toast(t('toast.gamepad'), 'good', undefined, 'gamepad');
-    const off = () => toast(t('toast.gamepadOff'), 'info', undefined, 'gamepad');
+    const on = () => toast(t('toast.gamepad'), 'good', undefined, 'gamepad', true);
+    const off = () => toast(t('toast.gamepadOff'), 'info', undefined, 'gamepad', true);
     window.addEventListener('gamepadconnected', on);
     window.addEventListener('gamepaddisconnected', off);
     return () => { window.removeEventListener('gamepadconnected', on); window.removeEventListener('gamepaddisconnected', off); };

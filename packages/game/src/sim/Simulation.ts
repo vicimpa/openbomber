@@ -5,7 +5,7 @@ import { MAX_PLAYERS } from '../contract/constants';
 import type { GameEvent, InputFrame } from '../contract/protocol';
 import { type PickupState, type PickupType, type PlayerState, type WorldState } from '../contract/types';
 import { dropCarried, updateBombs } from './bombs';
-import type { SimCtx } from './context';
+import { emit, type SimCtx } from './context';
 import { tickFlames } from './flames';
 import { parseMap } from './map';
 import { hashString } from './rng';
@@ -21,7 +21,7 @@ import {
   touchPlayers,
   updatePlayer,
 } from './players';
-import { newMap, updatePhase } from './round';
+import { newMap, startRound, updatePhase } from './round';
 import { createWorld } from './world';
 
 /** Carried bombs follow their holder after the player push moved them. */
@@ -98,6 +98,12 @@ export class Simulation implements ISimulation {
     this.ctx.players.delete(id);
   }
 
+  private restartAsked = false;
+
+  restartRound(): void {
+    this.restartAsked = true;
+  }
+
   updateProfile(id: string, prof: { name?: string; skin?: number }): void {
     const p = this.state.players.get(id);
     if (!p) return;
@@ -129,6 +135,11 @@ export class Simulation implements ISimulation {
     tickPickups(ctx);
     burnPlayers(ctx);
     tickPlayers(ctx);
+    if (this.restartAsked) {
+      this.restartAsked = false;
+      if (w.zoneIn > 0) emit(ctx, { type: 'zoneCancel' });
+      if (w.players.size > 0) startRound(ctx);
+    }
     updatePhase(ctx);
     return ctx.events;
   }

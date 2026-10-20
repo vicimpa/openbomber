@@ -35,6 +35,8 @@ export interface ISimulation {
   readonly state: WorldState;
   addPlayer(p: NewPlayer): PlayerState;
   removePlayer(id: string): void;
+  /** Start a new round on the next step: fresh map sized for the current players, everyone in. */
+  restartRound(): void;
   updateProfile(id: string, p: { name?: string; skin?: number }): void;
   /** Queue input for a player; frames with seq <= last applied are ignored. */
   pushInput(id: string, frame: InputFrame): void;

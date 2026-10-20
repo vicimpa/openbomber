@@ -111,12 +111,19 @@ export function pushKill(e: Omit<KillEntry, 'id' | 'at'>) {
 }
 
 // ---------------------------------------------------------------- toasts
-export interface Toast { id: number; text: string; kind: 'info' | 'good' | 'bad'; ttl: number; icon?: IconName }
+/**
+ * `system` toasts (connection lost, gamepad) show anywhere. Game toasts belong to the game
+ * screen only: dropped when it isn't showing (e.g. the menu's backdrop match) and hidden while
+ * the menu panel or a modal covers it.
+ */
+export interface Toast { id: number; text: string; kind: 'info' | 'good' | 'bad'; ttl: number; icon?: IconName; system?: boolean }
 export const toasts = signal<Toast[]>([]);
 let toastSeq = 0;
-export function toast(text: string, kind: Toast['kind'] = 'info', ttl = 2800, icon?: IconName) {
+export const gameUncovered = computed(() => screen.value === 'game' && !modals.value.length && !menuOpen.value);
+export function toast(text: string, kind: Toast['kind'] = 'info', ttl = 2800, icon?: IconName, system = false) {
+  if (!system && screen.peek() !== 'game') return;
   const id = ++toastSeq;
-  toasts.value = [...toasts.value.slice(-3), { id, text, kind, ttl, icon }];
+  toasts.value = [...toasts.value.slice(-3), { id, text, kind, ttl, icon, system }];
   setTimeout(() => { toasts.value = toasts.value.filter((x) => x.id !== id); }, ttl);
 }
 export const toastKey = (key: I18nKey, kind?: Toast['kind']) => toast(t(key), kind);
