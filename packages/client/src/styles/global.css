@@ -538,7 +538,7 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
 .settings__group { display: flex; flex-direction: column; gap: 10px; padding: 10px; background: rgba(0, 0, 0, 0.3); }
 .settings__group--wide { grid-column: 1 / -1; }
 .settings__group h3, .howto h3 { font-size: 16px; font-weight: 400; }
-.drawer .settings { grid-template-columns: 1fr; }
+.drawer .settings { grid-template-columns: minmax(0, 1fr); }
 .field { display: flex; flex-direction: column; gap: 5px; }
 .field__label, .field > label { font-size: 13px; color: var(--muted); }
 .slider { display: flex; align-items: center; gap: 6px; }
