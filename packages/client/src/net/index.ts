@@ -4,15 +4,17 @@ import { Client } from '@colyseus/sdk';
 import { ROOM_NAME, type JoinOptions } from '@ob/game';
 import type { BattleState, RoomListing } from '../../../server/src/schema.ts';
 import { NetSource, type NetSourceOptions } from './NetSource.ts';
-import { normalizeRoomCode, resolveServerUrl, toHttpUrl } from './url.ts';
+import { MAIN_ROOM_ID, normalizeRoomCode, resolveServerUrl, toHttpUrl } from './url.ts';
 
 export { NetSource, type NetStatus, type NetSourceOptions } from './NetSource.ts';
-export { resolveServerUrl, normalizeRoomCode } from './url.ts';
-export type { RoomListing, RoomMeta } from '../../../server/src/schema.ts';
+export { resolveServerUrl, normalizeRoomCode, MAIN_ROOM_ID } from './url.ts';
+export type { RoomListing, RoomMeta, PlayReply } from '../../../server/src/schema.ts';
 
 export interface NetJoinOptions extends JoinOptions, NetSourceOptions {
   /** Defaults to resolveServerUrl(). */
   serverUrl?: string;
+  /** Enter the arena right away instead of spectating (same as calling play(true)). */
+  play?: boolean;
 }
 
 export interface NetCreateOptions extends NetJoinOptions {
@@ -23,26 +25,30 @@ export interface NetCreateOptions extends NetJoinOptions {
 
 const makeClient = (url?: string) => new Client(url ?? resolveServerUrl());
 
-/** Join any public room with space, or create one. */
-export async function connectQuickPlay(opts: NetCreateOptions): Promise<NetSource> {
-  const room = await makeClient(opts.serverUrl).joinOrCreate<BattleState>(ROOM_NAME, {
-    name: opts.name, skin: opts.skin, bots: opts.bots, maxPlayers: opts.maxPlayers,
+/** Join the persistent shared world (room 'MAIN'). Spectator unless `play: true`. */
+export async function connectQuickPlay(opts: NetJoinOptions): Promise<NetSource> {
+  const room = await makeClient(opts.serverUrl).joinById<BattleState>(MAIN_ROOM_ID, {
+    name: opts.name, skin: opts.skin, play: opts.play ?? false,
   });
   return new NetSource(room, opts);
 }
 
-/** Create an unlisted room; share `source.roomId` (5-char code) with friends. */
+/**
+ * Create an unlisted room (private match or vs bots); share `source.roomId` (5-char code).
+ * The creator enters the arena immediately unless `play: false`.
+ */
 export async function createPrivateRoom(opts: NetCreateOptions): Promise<NetSource> {
   const room = await makeClient(opts.serverUrl).create<BattleState>(ROOM_NAME, {
     private: true, name: opts.name, skin: opts.skin, bots: opts.bots, maxPlayers: opts.maxPlayers,
+    play: opts.play ?? true,
   });
   return new NetSource(room, opts);
 }
 
-/** Join a room (public or private) by its code. Rejects if it does not exist or is full. */
+/** Join a room by its code (or 'MAIN'). Spectator unless `play: true`. Rejects if it does not exist. */
 export async function joinRoomByCode(code: string, opts: NetJoinOptions): Promise<NetSource> {
   const room = await makeClient(opts.serverUrl).joinById<BattleState>(normalizeRoomCode(code), {
-    name: opts.name, skin: opts.skin,
+    name: opts.name, skin: opts.skin, play: opts.play ?? false,
   });
   return new NetSource(room, opts);
 }

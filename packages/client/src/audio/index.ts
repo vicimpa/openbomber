@@ -263,7 +263,10 @@ class Engine implements AudioEngine {
               else fire('roundStart', {});
             }
             break;
-          case 'suddenDeath': fire('siren', {}); break;
+          case 'suddenDeath': break; // the first zoneShrink already sounds the siren
+          case 'zoneWarning': fire('ui_error', { gain: 0.9 }); break;
+          case 'zoneCancel': fire('effectEnd', {}); break;
+          case 'zoneShrink': fire('siren', {}); break;
           case 'blockFell': {
             const o = W(e.x, e.y);
             fire('blockFall', o);

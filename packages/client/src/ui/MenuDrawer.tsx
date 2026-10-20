@@ -1,0 +1,189 @@
+// The menu: a drawer over the live world (☰ in the bottom pill, Esc, gamepad Start).
+// Tabs: «Игра» (profile, how to play, fullscreen, private room, bots, links), «Игроки»
+// (player list, spectators) and «Настройки» (volume + device settings).
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { canFullscreen, isFullscreen, toggleFullscreen } from '$/input/fullscreen';
+import { Button, Logo } from './components';
+import { copyRoom, shareRoom } from './hud/RoomCode';
+import { t } from './i18n';
+import { LINKS } from './links';
+import { NAME_MAX, randomName } from './names';
+import { SettingsSections } from './SettingsModal';
+import { HeroSprite } from './sprites';
+import { actions, hud, menuOpen, openModal, players, room, setName, settings, spectators } from './store';
+
+type Tab = 'game' | 'players' | 'settings';
+let lastTab: Tab = 'game';
+
+function Profile() {
+  const { name, skin, language } = settings.value;
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(name);
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (editing) input.current?.select(); }, [editing]);
+  const save = (e?: Event) => {
+    e?.preventDefault();
+    setName(draft.trim() || randomName(language));
+    setEditing(false);
+  };
+  return (
+    <section class="card profile">
+      <button class="profile__avatar" onClick={() => { actions.uiSound('click'); openModal('skin'); }} title={t('menu.chooseSkin')} aria-label={t('menu.chooseSkin')}>
+        <span class="profile__spot" aria-hidden="true" />
+        <HeroSprite skin={skin} anim="RunDown" scale={2} />
+      </button>
+      <div class="profile__main">
+        {editing ? (
+          <form class="profile__edit" onSubmit={save}>
+            <input
+              ref={input}
+              class="input"
+              value={draft}
+              maxLength={NAME_MAX}
+              aria-label={t('menu.nickname')}
+              autoComplete="nickname"
+              spellcheck={false}
+              enterKeyHint="done"
+              onInput={(e) => setDraft((e.target as HTMLInputElement).value)}
+              onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setEditing(false); } }}
+            />
+            <Button type="submit" size="sm">OK</Button>
+          </form>
+        ) : (
+          <span class="nametag nametag--lg">{name}</span>
+        )}
+        <div class="profile__btns">
+          {!editing && <Button size="sm" onClick={() => { setDraft(name); setEditing(true); }}>{t('menu.edit')}</Button>}
+          <Button size="sm" onClick={() => openModal('skin')}>{t('menu.avatar')}</Button>
+          <Button size="sm" onClick={() => setName(randomName(language))} title={t('menu.randomName')} aria-label={t('menu.randomName')}>🎲</Button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function GameTab() {
+  const r = room.value;
+  const inExtra = !!r && (r.offline || r.isPrivate);
+  return (
+    <>
+      <Profile />
+      <div class="row2">
+        <Button block icon="❔" onClick={() => openModal('howto')}>{t('menu.howTo2')}</Button>
+        {canFullscreen && <Button block icon="⛶" onClick={() => toggleFullscreen()} aria-pressed={isFullscreen.value}>{t('menu.fullscreen')}</Button>}
+      </div>
+
+      <section class="card">
+        <h3>🔒 {t('menu.privateRoom')}</h3>
+        {r && r.isPrivate && !r.offline ? (
+          <div class="room-line">
+            <span class="room-line__code">{r.code}</span>
+            <Button size="sm" icon="🔗" onClick={() => copyRoom(r.code)}>{t('hud.copyLink')}</Button>
+            {typeof navigator.share === 'function' && <Button size="sm" icon="📤" onClick={() => shareRoom(r.code)}>{t('hud.share')}</Button>}
+          </div>
+        ) : (
+          <p class="muted">{t('menu.privateHint')}</p>
+        )}
+        <div class="row2">
+          <Button block onClick={() => { menuOpen.value = false; actions.createPrivate(); }}>{t('menu.create')}</Button>
+          <Button block onClick={() => openModal('join')}>{t('menu.joinByCode')}</Button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>🤖 {t('menu.vsBots')}</h3>
+        <p class="muted">{t('bots.offlineHint')}</p>
+        <Button block onClick={() => openModal('bots')}>{t('bots.start')}</Button>
+      </section>
+
+      {inExtra && (
+        <Button block variant="white" icon="🌍" onClick={() => { menuOpen.value = false; actions.quickPlay(); }}>{t('menu.backToWorld')}</Button>
+      )}
+
+      <section class="card">
+        <h3>{t('menu.links')}:</h3>
+        <ul class="links">
+          {LINKS.map((l) => (
+            <li><a href={l.href} target="_blank" rel="noopener"><span class="links__icon" style={{ background: l.color }} aria-hidden="true">{l.glyph}</span>{t(l.key)}</a></li>
+          ))}
+        </ul>
+      </section>
+    </>
+  );
+}
+
+export function PlayerList() {
+  const list = players.value;
+  const spect = spectators.value.length + list.filter((p) => !p.inRound).length;
+  return (
+    <>
+      <section class="card">
+        <h3>{t('menu.playerList')}</h3>
+        {list.length ? (
+          <ul class="plist">
+            {list.map((p) => (
+              <li key={p.id} class={`${p.isLocal ? 'is-me' : ''}`} data-state={!p.inRound ? 'wait' : p.alive || p.respawning ? 'alive' : 'dead'}>
+                <HeroSprite skin={p.skin} scale={0.9} still={!p.alive} />
+                <span class="plist__name">{p.name}{p.isBot && <small> · {t('hud.bot')}</small>}</span>
+                <span class="plist__stats"><span>👑 {p.wins}</span><span>🔫 {p.kills}</span><span>💀 {p.deaths}</span></span>
+              </li>
+            ))}
+          </ul>
+        ) : <p class="muted">—</p>}
+      </section>
+      <p class="spectators">{t('menu.spectators', { n: spect })}</p>
+    </>
+  );
+}
+
+export function MenuDrawer() {
+  const [tab, setTab] = useState<Tab>(lastTab);
+  const open = menuOpen.value;
+  const ref = useRef<HTMLElement>(null);
+  const pick = (t2: Tab) => { lastTab = t2; actions.uiSound('click'); setTab(t2); };
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.activeElement as HTMLElement | null;
+    // Keyboard / gamepad users land on the active tab; pointer users keep focus where it was.
+    if (document.documentElement.hasAttribute('data-kbd'))
+      ref.current?.querySelector<HTMLElement>('.tabs button[aria-selected="true"]')?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !document.querySelector('[data-modal-open]')) { e.preventDefault(); menuOpen.value = false; }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('keydown', onKey); if (prev && document.contains(prev)) prev.focus({ preventScroll: true }); };
+  }, [open]);
+
+  const h = hud.value;
+  return (
+    <>
+      {open && <div class="drawer-scrim" onPointerDown={() => { menuOpen.value = false; }} />}
+      <aside
+        ref={ref}
+        class={`drawer drawer--left ${open ? 'is-open' : ''}`}
+        aria-hidden={!open}
+        inert={!open ? true : undefined}
+        data-nav-root={open ? '' : undefined}
+        aria-label={t('hud.menu')}
+      >
+        <header class="drawer__head">
+          <Logo class="drawer__logo" />
+          <button class="icon-btn" onClick={() => { actions.uiSound('back'); menuOpen.value = false; }} aria-label={t('common.close')} title={t('common.close')}>✕</button>
+        </header>
+        <div class="tabs" role="tablist">
+          {(['game', 'players', 'settings'] as Tab[]).map((id) => (
+            <button role="tab" aria-selected={tab === id} class={tab === id ? 'is-on' : ''} onClick={() => pick(id)}>
+              {id === 'game' ? `🕹️ ${t('menu.tabGame')}` : id === 'players' ? `👥 ${t('menu.tabPlayers')} ${h ? h.players.length : 0}` : `⚙️ ${t('settings.title')}`}
+            </button>
+          ))}
+        </div>
+        <div class="drawer__body" data-scrollable>
+          {tab === 'game' && <GameTab />}
+          {tab === 'players' && <PlayerList />}
+          {tab === 'settings' && <SettingsSections />}
+        </div>
+      </aside>
+    </>
+  );
+}

@@ -31,55 +31,63 @@ export function KeyBindings() {
   );
 }
 
-export function SettingsModal() {
+/** Settings blocks, shared by the menu drawer («Настройки» tab) and the settings modal. */
+export function SettingsSections({ keys = true }: { keys?: boolean }) {
   const s = settings.value;
+  return (
+    <div class="settings">
+      <section class="settings__group">
+        <h3>🔊 {t('settings.audio')}</h3>
+        <Slider label={t('settings.master')} min={0} max={1} step={0.05} value={s.volume.master} format={pct} onInput={(v) => updateSettings({ volume: { master: v } })} />
+        <Slider label={t('settings.music')} min={0} max={1} step={0.05} value={s.volume.music} format={pct} onInput={(v) => updateSettings({ volume: { music: v } })} />
+        <Slider label={t('settings.sfx')} min={0} max={1} step={0.05} value={s.volume.sfx} format={pct} onInput={(v) => updateSettings({ volume: { sfx: v } })} />
+      </section>
+
+      <section class="settings__group">
+        <h3>👆 {t('settings.touch')}</h3>
+        <Slider label={t('settings.touchSize')} min={0.7} max={1.4} step={0.05} value={s.touch.size} format={pct} onInput={(v) => updateSettings({ touch: { size: v } })} />
+        <Slider label={t('settings.touchOpacity')} min={0.2} max={1} step={0.05} value={s.touch.opacity} format={pct} onInput={(v) => updateSettings({ touch: { opacity: v } })} />
+        <Toggle label={t('settings.leftHanded')} hint={t('settings.leftHandedHint')} checked={s.touch.leftHanded} onChange={(v) => updateSettings({ touch: { leftHanded: v } })} />
+        <Toggle label={t('settings.haptics')} hint={t('settings.hapticsHint')} checked={s.haptics} onChange={(v) => updateSettings({ haptics: v })} />
+      </section>
+
+      <section class="settings__group">
+        <h3>🖥️ {t('settings.graphics')}</h3>
+        <Segmented
+          label={t('settings.quality')}
+          value={s.quality}
+          options={[{ value: 'low', label: t('settings.qualityLow') }, { value: 'high', label: t('settings.qualityHigh') }]}
+          onChange={(v) => updateSettings({ quality: v })}
+        />
+        <Segmented
+          label={t('settings.language')}
+          value={s.language}
+          options={[{ value: 'ru', label: 'Русский' }, { value: 'en', label: 'English' }]}
+          onChange={(v) => updateSettings({ language: v })}
+        />
+        <Toggle label={t('settings.showFps')} checked={s.showFps} onChange={(v) => updateSettings({ showFps: v })} />
+        <Toggle label={t('settings.showPing')} checked={s.showPing} onChange={(v) => updateSettings({ showPing: v })} />
+      </section>
+
+      {keys && (
+        <section class="settings__group settings__group--wide">
+          <h3>⌨️ {t('settings.keys')}</h3>
+          <KeyBindings />
+        </section>
+      )}
+    </div>
+  );
+}
+
+export function SettingsModal() {
   return (
     <Modal
       title={t('settings.title')}
       onClose={() => closeModal('settings')}
       size="lg"
-      accent="cyan"
-      footer={<Button variant="primary" onClick={() => closeModal('settings')}>{t('settings.done')}</Button>}
+      footer={<Button variant="white" onClick={() => closeModal('settings')}>{t('settings.done')}</Button>}
     >
-      <div class="settings">
-        <section class="settings__group">
-          <h3>🔊 {t('settings.audio')}</h3>
-          <Slider label={t('settings.master')} min={0} max={1} step={0.05} value={s.volume.master} format={pct} onInput={(v) => updateSettings({ volume: { master: v } })} />
-          <Slider label={t('settings.sfx')} min={0} max={1} step={0.05} value={s.volume.sfx} format={pct} onInput={(v) => updateSettings({ volume: { sfx: v } })} />
-          <Slider label={t('settings.music')} min={0} max={1} step={0.05} value={s.volume.music} format={pct} onInput={(v) => updateSettings({ volume: { music: v } })} />
-        </section>
-
-        <section class="settings__group">
-          <h3>👆 {t('settings.touch')}</h3>
-          <Slider label={t('settings.touchSize')} min={0.7} max={1.4} step={0.05} value={s.touch.size} format={pct} onInput={(v) => updateSettings({ touch: { size: v } })} />
-          <Slider label={t('settings.touchOpacity')} min={0.2} max={1} step={0.05} value={s.touch.opacity} format={pct} onInput={(v) => updateSettings({ touch: { opacity: v } })} />
-          <Toggle label={t('settings.leftHanded')} hint={t('settings.leftHandedHint')} checked={s.touch.leftHanded} onChange={(v) => updateSettings({ touch: { leftHanded: v } })} />
-          <Toggle label={t('settings.haptics')} hint={t('settings.hapticsHint')} checked={s.haptics} onChange={(v) => updateSettings({ haptics: v })} />
-        </section>
-
-        <section class="settings__group">
-          <h3>🖥️ {t('settings.graphics')} · {t('settings.interface')}</h3>
-          <Segmented
-            label={t('settings.quality')}
-            value={s.quality}
-            options={[{ value: 'low', label: t('settings.qualityLow') }, { value: 'high', label: t('settings.qualityHigh') }]}
-            onChange={(v) => updateSettings({ quality: v })}
-          />
-          <Segmented
-            label={t('settings.language')}
-            value={s.language}
-            options={[{ value: 'ru', label: 'Русский' }, { value: 'en', label: 'English' }]}
-            onChange={(v) => updateSettings({ language: v })}
-          />
-          <Toggle label={t('settings.showFps')} checked={s.showFps} onChange={(v) => updateSettings({ showFps: v })} />
-          <Toggle label={t('settings.showPing')} checked={s.showPing} onChange={(v) => updateSettings({ showPing: v })} />
-        </section>
-
-        <section class="settings__group settings__group--wide">
-          <h3>⌨️ {t('settings.keys')}</h3>
-          <KeyBindings />
-        </section>
-      </div>
+      <SettingsSections />
     </Modal>
   );
 }

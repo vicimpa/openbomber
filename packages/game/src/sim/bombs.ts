@@ -27,7 +27,8 @@ import { pickupAt } from './pickups';
 import { nextFloat, randInt } from './rng';
 import { bombAtTile, bombIsGrounded } from './world';
 
-export const PUNCH_TIME = THROW_TIME;
+/** Punch flight duration. */
+export const PUNCH_FLIGHT = THROW_TIME;
 /** Give up on a bomb that keeps bouncing (e.g. a fully blocked row). */
 const MAX_HOPS = 64;
 const TOUCH = PLAYER_RADIUS + BOMB_RADIUS;
@@ -45,7 +46,7 @@ export function canPlaceAt(ctx: SimCtx, x: number, y: number): boolean {
   const w = ctx.world;
   if (x < 0 || y < 0 || x >= w.width || y >= w.height) return false;
   if (w.tiles[y * w.width + x] !== Tile.Floor) return false;
-  return bombAtTile(w, x, y) === undefined;
+  return bombAtTile(w, x, y) === undefined && pickupAt(ctx, x, y) === undefined;
 }
 
 /** Everyone overlapping the bomb may walk off it. */
@@ -93,7 +94,7 @@ export function createBomb(ctx: SimCtx, p: PlayerState, x: number, y: number): B
   };
   addOverlappingPassers(ctx, b);
   w.bombs.set(b.id, b);
-  const bi: BombInternal = { pierce, remote, flightTotal: 0, flightElapsed: 0, flightDx: 0, flightDy: 0, hops: 0 };
+  const bi: BombInternal = { pierce, credit: p.id, flightTotal: 0, flightElapsed: 0, flightDx: 0, flightDy: 0, hops: 0 };
   ctx.bombs.set(b.id, bi);
   emit(ctx, { type: 'bombPlaced', bomb: b.id, x, y, owner: p.id });
   return b;
@@ -165,6 +166,7 @@ export function tryKick(ctx: SimCtx, p: PlayerState, b: BombState) {
   b.motion = BombMotion.Sliding;
   b.vx = (dx * KICK_SPEED) / TICK_RATE;
   b.vy = (dy * KICK_SPEED) / TICK_RATE;
+  ctx.bombs.get(b.id)!.credit = p.id;
   emit(ctx, { type: 'bombKicked', bomb: b.id, by: p.id, dir: p.dir });
 }
 
@@ -254,6 +256,7 @@ export function throwBomb(ctx: SimCtx, p: PlayerState) {
   const fx = Math.round(p.x);
   const fy = Math.round(p.y);
   startFlight(ctx, b, fx, fy, dx, dy, THROW_DISTANCE, THROW_TIME);
+  ctx.bombs.get(b.id)!.credit = p.id;
   const w = ctx.world;
   emit(ctx, { type: 'bombThrown', bomb: b.id, by: p.id, toX: wrap(b.toX, w.width), toY: wrap(b.toY, w.height) });
 }
@@ -278,7 +281,8 @@ export function tryPunch(ctx: SimCtx, p: PlayerState): boolean {
   const ddx = b.x - p.x;
   const ddy = b.y - p.y;
   if (ddx * ddx + ddy * ddy > 1.05 * 1.05) return false;
-  startFlight(ctx, b, b.x, b.y, dx, dy, PUNCH_DISTANCE, PUNCH_TIME);
+  startFlight(ctx, b, b.x, b.y, dx, dy, PUNCH_DISTANCE, PUNCH_FLIGHT);
+  ctx.bombs.get(b.id)!.credit = p.id;
   const w = ctx.world;
   emit(ctx, { type: 'bombPunched', bomb: b.id, by: p.id, toX: wrap(b.toX, w.width), toY: wrap(b.toY, w.height) });
   return true;
@@ -350,6 +354,19 @@ function fly(ctx: SimCtx, b: BombState) {
 
 const exploding: BombState[] = [];
 
+/** Tile -> grounded bomb, for the flame scans of this tick's explosions. */
+function buildBombGrid(ctx: SimCtx) {
+  const w = ctx.world;
+  const g = ctx.bombGrid;
+  g.fill(0);
+  for (const b of w.bombs.values()) {
+    if (!bombIsGrounded(b)) continue;
+    const x = Math.round(b.x);
+    const y = Math.round(b.y);
+    if (x >= 0 && y >= 0 && x < w.width && y < w.height) g[y * w.width + x] = b.id;
+  }
+}
+
 /** Move bombs, burn fuses, detonate. */
 export function updateBombs(ctx: SimCtx) {
   const w = ctx.world;
@@ -368,19 +385,23 @@ export function updateBombs(ctx: SimCtx) {
     // a bomb sitting in fire (slid / landed / placed into it) chains
     const tx = Math.round(b.x);
     const ty = Math.round(b.y);
-    if (tx >= 0 && ty >= 0 && tx < w.width && ty < w.height && ctx.flameGrid[ty * w.width + tx]) chainBomb(b);
+    if (tx >= 0 && ty >= 0 && tx < w.width && ty < w.height) {
+      const fid = ctx.flameGrid[ty * w.width + tx]!;
+      if (fid) chainBomb(ctx, b, w.flames.get(fid)?.owner ?? b.owner);
+    }
     if (b.fuse > 0) {
       if (--b.fuse === 0) exploding.push(b);
     } else if (b.fuse < 0) {
       if (++b.fuse === 0) exploding.push(b);
     }
   }
+  if (exploding.length > 0) buildBombGrid(ctx);
   for (let i = 0; i < exploding.length; i++) {
     const b = exploding[i]!;
     const bi = ctx.bombs.get(b.id);
     w.bombs.delete(b.id);
     ctx.bombs.delete(b.id);
-    explode(ctx, b, bi?.pierce ?? false);
+    explode(ctx, b, bi?.pierce ?? false, bi?.credit ?? b.owner);
   }
   exploding.length = 0;
 }

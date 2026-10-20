@@ -1,9 +1,11 @@
-// Shared UI primitives: Modal, Button, Slider, Toggle, Segmented.
+// Shared UI primitives in the OpenBomber style: Modal (dark blurred box), Button (white bevel
+// or flat grey), Slider (− [bar] +), Toggle, Segmented, Kbd, Logo.
 import type { ComponentChildren, JSX } from 'preact';
 import { useEffect, useId, useRef } from 'preact/hooks';
 import { t } from './i18n';
-import { actions } from './store';
+import logoUrl from './logo.svg';
 import { focusables } from './nav';
+import { actions } from './store';
 
 // ---------------------------------------------------------------- Modal
 export interface ModalProps {
@@ -12,11 +14,9 @@ export interface ModalProps {
   children: ComponentChildren;
   footer?: ComponentChildren;
   size?: 'sm' | 'md' | 'lg';
-  /** Accent for the header stripe. */
-  accent?: 'orange' | 'pink' | 'cyan' | 'lime';
 }
 
-export function Modal({ title, onClose, children, footer, size = 'md', accent = 'orange' }: ModalProps) {
+export function Modal({ title, onClose, children, footer, size = 'md' }: ModalProps) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
 
@@ -30,7 +30,6 @@ export function Modal({ title, onClose, children, footer, size = 'md', accent = 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); actions.uiSound('back'); onClose(); }
       if (e.key === 'Tab') {
-        // focus trap
         const items = focusables(el);
         if (!items.length) return;
         const i = items.indexOf(document.activeElement as HTMLElement);
@@ -48,10 +47,10 @@ export function Modal({ title, onClose, children, footer, size = 'md', accent = 
 
   return (
     <div class="modal-backdrop" data-modal-open onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div ref={ref} class={`modal modal--${size} accent-${accent}`} role="dialog" aria-modal="true" aria-labelledby={titleId} data-nav-root>
+      <div ref={ref} class={`modal modal--${size}`} role="dialog" aria-modal="true" aria-labelledby={titleId} data-nav-root>
         <header class="modal__head">
-          <h2 id={titleId} class="pixel">{title}</h2>
-          <button class="icon-btn" onClick={() => { actions.uiSound('back'); onClose(); }} aria-label={t('common.close')} title={t('common.close')}>✕</button>
+          <h2 id={titleId}>{title}</h2>
+          <button class="icon-btn modal__x" onClick={() => { actions.uiSound('back'); onClose(); }} aria-label={t('common.close')} title={t('common.close')}>✕</button>
         </header>
         <div class="modal__body" data-scrollable>{children}</div>
         {footer && <footer class="modal__foot">{footer}</footer>}
@@ -61,7 +60,8 @@ export function Modal({ title, onClose, children, footer, size = 'md', accent = 
 }
 
 // ---------------------------------------------------------------- Button
-type BtnVariant = 'primary' | 'pink' | 'cyan' | 'lime' | 'ghost' | 'danger' | 'plain';
+/** `white` = chunky bevelled primary (from the loader), `flat` = classic #444, `danger` = red. */
+type BtnVariant = 'white' | 'flat' | 'danger' | 'ghost';
 export interface ButtonProps extends Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, 'icon' | 'size' | 'type'> {
   variant?: BtnVariant;
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -71,7 +71,7 @@ export interface ButtonProps extends Omit<JSX.ButtonHTMLAttributes<HTMLButtonEle
   type?: 'button' | 'submit';
 }
 
-export function Button({ variant = 'plain', size = 'md', icon, sub, block, children, onClick, class: cls, ...rest }: ButtonProps) {
+export function Button({ variant = 'flat', size = 'md', icon, sub, block, children, onClick, class: cls, ...rest }: ButtonProps) {
   return (
     <button
       type="button"
@@ -88,7 +88,7 @@ export function Button({ variant = 'plain', size = 'md', icon, sub, block, child
   );
 }
 
-// ---------------------------------------------------------------- Slider
+// ---------------------------------------------------------------- Slider: "− [ 42% ] +"
 export interface SliderProps {
   label: string;
   value: number;
@@ -102,20 +102,26 @@ export interface SliderProps {
 export function Slider({ label, value, min, max, step, onInput, format }: SliderProps) {
   const id = useId();
   const pct = ((value - min) / (max - min)) * 100;
+  const set = (v: number) => onInput(Number((Math.round(Math.min(max, Math.max(min, v)) / step) * step).toFixed(4)));
   return (
     <div class="field field--slider">
       <label for={id}>{label}</label>
-      <input
-        id={id}
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        style={{ '--pct': `${pct}%` }}
-        onInput={(e) => onInput(Number((e.target as HTMLInputElement).value))}
-      />
-      <output for={id}>{format ? format(value) : value}</output>
+      <div class="slider">
+        <button type="button" class="icon-btn icon-btn--sm" tabIndex={-1} aria-hidden="true" onClick={() => set(value - step * 2)}>−</button>
+        <div class="slider__track" style={{ '--pct': `${pct}%` }}>
+          <input
+            id={id}
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={value}
+            onInput={(e) => onInput(Number((e.target as HTMLInputElement).value))}
+          />
+          <output for={id}>{format ? format(value) : value}</output>
+        </div>
+        <button type="button" class="icon-btn icon-btn--sm" tabIndex={-1} aria-hidden="true" onClick={() => set(value + step * 2)}>+</button>
+      </div>
     </div>
   );
 }
@@ -134,7 +140,7 @@ export function Toggle({ label, hint, checked, onChange }: { label: string; hint
         <span>{label}</span>
         {hint && <small>{hint}</small>}
       </span>
-      <span class="switch" aria-hidden="true"><span /></span>
+      <span class="switch" aria-hidden="true">{checked ? t('common.on') : t('common.off')}</span>
     </button>
   );
 }
@@ -168,4 +174,9 @@ export function Segmented<T extends string | number>({ label, value, options, on
 
 export function Kbd({ children }: { children: ComponentChildren }) {
   return <kbd class="kbd">{children}</kbd>;
+}
+
+/** The pixel OPENBOMBER logo (from new-openbomber) with its hero sprite and drop shadow. */
+export function Logo({ class: cls }: { class?: string }) {
+  return <img class={`logo ${cls ?? ''}`} src={logoUrl} alt="OpenBomber" width={450} height={197} draggable={false} />;
 }

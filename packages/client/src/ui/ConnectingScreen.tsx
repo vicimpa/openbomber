@@ -1,3 +1,4 @@
+// Connecting overlay (over the world): joining / creating a room, or the error with retry.
 import { useEffect } from 'preact/hooks';
 import { Button } from './components';
 import { t } from './i18n';
@@ -10,7 +11,7 @@ export function ConnectingScreen() {
     : st.kind === 'join' ? t('connect.joining', { code: st.code ?? '' })
     : st.kind === 'quick' ? t('connect.searching') : t('connect.connecting');
 
-  const back = () => { actions.uiSound('back'); actions.leave(); screen.value = 'menu'; };
+  const back = () => { actions.uiSound('back'); actions.leave(); screen.value = 'game'; };
   const retry = () => {
     if (st.kind === 'private') actions.createPrivate();
     else if (st.kind === 'join' && st.code) actions.joinByCode(st.code);
@@ -26,26 +27,21 @@ export function ConnectingScreen() {
   }, []);
 
   return (
-    <div class="screen connecting" data-nav-root>
-      <div class="menu__bg" aria-hidden="true"><div class="menu__grid" /><div class="menu__glow" /></div>
-      <div class={`connect-card card ${st.error ? 'is-error' : ''}`} role="status" aria-live="polite">
+    <div class="overlay" data-nav-root>
+      <div class={`box connect ${st.error ? 'is-error' : ''}`} role="status" aria-live="polite">
         {st.error ? <>
-          <div class="connect-card__icon" aria-hidden="true">💥</div>
-          <h2 class="pixel">{t('connect.error')}</h2>
-          <p class="connect-card__err">{st.error}</p>
-          <div class="connect-card__row">
-            <Button variant="primary" icon="↻" onClick={retry} data-autofocus>{t('connect.retry')}</Button>
-            <Button variant="lime" icon="🤖" onClick={() => { screen.value = 'menu'; openModal('bots'); }}>{t('connect.offline')}</Button>
-            <Button variant="ghost" onClick={back}>{t('connect.back')}</Button>
+          <h2>💥 {t('connect.error')}</h2>
+          <p class="muted">{st.error}</p>
+          <div class="connect__row">
+            <Button variant="white" onClick={retry} data-autofocus>{t('connect.retry')}</Button>
+            <Button onClick={() => { screen.value = 'game'; openModal('bots'); }}>🤖 {t('connect.offline')}</Button>
+            <Button onClick={back}>{t('connect.back')}</Button>
           </div>
         </> : <>
-          <div class="connect-card__runner" aria-hidden="true">
-            <HeroSprite skin={settings.value.skin} anim="RunRight" scale={3} />
-            <span class="connect-card__bomb">💣</span>
-          </div>
-          <h2 class="pixel connect-card__msg">{msg}</h2>
-          <div class="dots" aria-hidden="true"><i /><i /><i /></div>
-          <Button variant="ghost" onClick={back} data-autofocus>{t('connect.cancel')}</Button>
+          <div class="connect__runner" aria-hidden="true"><HeroSprite skin={settings.value.skin} anim="RunRight" scale={2} /></div>
+          <h2>{msg}</h2>
+          <div class="progress progress--busy" aria-hidden="true"><div class="progress__fill" /></div>
+          <Button onClick={back} data-autofocus>{t('connect.cancel')}</Button>
         </>}
       </div>
     </div>

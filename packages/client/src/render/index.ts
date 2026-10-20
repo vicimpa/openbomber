@@ -7,6 +7,7 @@ import { Arena } from './arena';
 import { loadAssets, type GameAssets } from './assets';
 import { Camera, type CameraMode, type CameraView } from './camera';
 import { Effects } from './fx';
+import { Ground, makeGroundPattern } from './ground';
 import { BombView, FlameView, PickupView } from './items';
 import { PlayerView } from './players';
 import { installFonts } from './text';
@@ -32,6 +33,7 @@ class PixiRenderer implements GameRenderer {
   private camera = new Camera();
   private worldRoot = new Container();
   private arena: Arena;
+  private ground: Ground;
   private fx: Effects;
   private pickupLayer = new Container();
   private flameLayer = new Container();
@@ -65,11 +67,12 @@ class PixiRenderer implements GameRenderer {
 
   constructor(private app: Application, private parent: HTMLElement, private a: GameAssets, private tx: ProcTextures, quality: 'low' | 'high') {
     this.fx = new Effects(a, tx);
+    this.ground = new Ground(makeGroundPattern(a.world.grass, a.world.grass2, a.terrain));
     this.arena = new Arena(a, tx, this.fx);
     this.arena.onImpact = (x, y) => this.shakeAt(x, y, 0.8);
     this.flameGlow.blendMode = 'add';
     this.worldRoot.addChild(
-      this.arena.root, this.fx.under, this.arena.fallingShadows, this.pickupLayer, this.flameLayer,
+      this.ground.sprite, this.arena.root, this.arena.zoneLayer, this.fx.under, this.arena.fallingShadows, this.pickupLayer, this.flameLayer,
       this.flameGlow, this.entities, this.fx.particles.normal, this.arena.fallingRoot, this.fx.over,
       this.fx.particles.additive, this.fx.light, this.tags,
     );
@@ -128,6 +131,11 @@ class PixiRenderer implements GameRenderer {
 
     this.updateCamera(world, localId, dt);
     this.camera.apply(this.worldRoot, this.view);
+    // visible world rect → endless ground + chunk culling
+    const sc = this.worldRoot.scale.x, ox = this.worldRoot.x, oy = this.worldRoot.y;
+    const x0 = -ox / sc, y0 = -oy / sc, x1 = (this.view.cssW - ox) / sc, y1 = (this.view.cssH - oy) / sc;
+    this.ground.cover(x0, y0, x1, y1);
+    this.arena.cull(x0 - T, y0 - T, x1 + T, y1 + T, this.camera.zoom);
     this.updateOverlay(dt, world);
     this.app.render();
   }
@@ -265,7 +273,7 @@ class PixiRenderer implements GameRenderer {
     this.vignette.alpha += (target - this.vignette.alpha) * (1 - Math.exp(-dt * 8));
     this.vignette.visible = this.vignette.alpha > 0.01;
     this.flash = Math.max(0, this.flash - dt * 2.2);
-    this.flashRect.alpha = this.flash * this.flash * 0.85;
+    this.flashRect.alpha = this.flash * this.flash * 0.5;
     this.flashRect.tint = this.flashColor;
     this.flashRect.visible = this.flash > 0;
   }
@@ -286,7 +294,6 @@ class PixiRenderer implements GameRenderer {
       switch (e.type) {
         case 'explosion': {
           this.fx.explosion(e.x, e.y, e.cells, e.power);
-          this.arena.addScorch(e.cells);
           for (const c of e.cells) {
             const dist = Math.abs(c.x - e.x) + Math.abs(c.y - e.y);
             this.flameCenters.set(c.y * 4096 + c.x, { x: e.x, y: e.y, dist, t: this.time });
@@ -354,7 +361,14 @@ class PixiRenderer implements GameRenderer {
           if (p) this.fx.confetti(p.x, p.y);
           break;
         }
-        default: break;
+        default: {
+          // zone shrink events (being added to the contract): tolerate any field naming
+          const z = e as unknown as { type: string; ring?: number; inset?: number };
+          if (z.type === 'zoneWarning') this.arena.setZone(z.ring ?? z.inset ?? this.arena.nextRing());
+          else if (z.type === 'zoneCancel') this.arena.setZone(-1);
+          else if (z.type === 'zoneShrink') { this.arena.setZone(-1); this.camera.shake(3); }
+          break;
+        }
       }
     }
   }

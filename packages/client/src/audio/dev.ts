@@ -1,5 +1,5 @@
 // Dev harness for the procedural audio engine: /audio/dev.html
-import { Curse, Dir, FlameShape, Phase, PickupType, type GameEvent, type PlayerState, type WorldState } from '@ob/game';
+import { Curse, Dir, emptyEffects, FlameShape, Phase, PickupType, type GameEvent, type PlayerState, type WorldState } from '@ob/game';
 import type { MusicMode, UiSound } from '../contracts';
 import { createAudio } from './index';
 import { runAnalysis, type Row } from './analysis';
@@ -13,7 +13,7 @@ function mkPlayer(id: string, x: number, y: number): PlayerState {
   return {
     id, name: id, skin: 0, isBot: id !== 'me', x, y, dir: Dir.Down, moving: false, alive: true, inRound: true,
     lives: 0, bombs: 1, radius: 2, speedLevel: 0, abilities: 0, curse: Curse.None,
-    effects: { shield: 0, ghost: 0, crazy: 0, fire: 0, curse: 0, invulnerable: 0, stun: 0 },
+    effects: emptyEffects(),
     carrying: -1, respawnIn: 0, wins: 0, kills: 0, deaths: 0, ackSeq: 0,
   };
 }
@@ -26,7 +26,7 @@ const world: WorldState = {
     ['right', mkPlayer('right', 12, 6)],
     ['far', mkPlayer('far', 14, 12)],
   ]),
-  bombs: new Map(), flames: new Map(), pickups: new Map(), falling: [], winner: '', nextId: 1,
+  bombs: new Map(), flames: new Map(), pickups: new Map(), falling: [], winner: '', nextId: 1, zoneRing: 0, zoneIn: 0,
 };
 const LOCAL = 'me';
 

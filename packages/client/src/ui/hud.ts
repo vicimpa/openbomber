@@ -1,11 +1,13 @@
 // HUD view-model: a small, render-friendly snapshot derived from WorldState by a pure function.
 // The session layer calls `hud.value = buildHud(world, localId, ping)` ~10 times per second.
-import {
-  Ability, Curse, CURSE_TIME, CRAZY_TIME, FIRE_TIME, GHOST_TIME, Phase, ROUND_TIME, SHIELD_TIME,
-  SPAWN_INVULNERABLE, STUN_TIME, TICK_RATE, type PlayerState, type WorldState,
-} from '@ob/game';
+import * as G from '@ob/game';
+import { Ability, Curse, Phase, TICK_RATE, type PlayerState, type WorldState } from '@ob/game';
 
-export type EffectKind = 'shield' | 'ghost' | 'crazy' | 'fire' | 'curse' | 'invulnerable' | 'stun';
+/**
+ * Any key of PlayerState.effects (shield, ghost, crazy, fire, curse, invulnerable, stun and the
+ * canon timed boosts the sim adds: speed, kick, glove, punch, remote, pierce, lineBomb, bombPass…).
+ */
+export type EffectKind = string;
 
 export interface HudEffect {
   kind: EffectKind;
@@ -34,12 +36,13 @@ export interface HudMe extends HudPlayer {
   bombsPlaced: number;     // own bombs currently in the world
   radius: number;
   speedLevel: number;
-  abilities: Ability[];    // individual flags, in display order
+  /** Ability flags that have NO timed effect counterpart (permanent ones), in display order. */
+  abilities: Ability[];
   curse: Curse;
   effects: HudEffect[];    // active timed effects, longest first
   carrying: boolean;
   respawnIn: number;       // seconds, 0 = none
-  /** Not playing this round: joined mid-round or eliminated. */
+  /** Not playing this round: joined mid-round (waits for the next one) or eliminated. */
   spectating: boolean;
 }
 
@@ -49,27 +52,50 @@ export interface HudSnapshot {
   round: number;
   /** Whole seconds left in Countdown (3, 2, 1), else 0. */
   countdown: number;
-  /** Seconds until sudden death while Playing; 0 otherwise. */
+  /** @deprecated canon has no round timer; always 0. */
   timeLeft: number;
   /** Seconds left in RoundOver. */
   roundOverIn: number;
   suddenDeath: boolean;
+  /** Seconds until the next zone ring closes («Уменьшение размера карты через N сек»), 0 = none pending. */
+  shrinkIn: number;
+  /** Zone rings already closed (0 = full map). */
+  zoneRing: number;
   alive: number;           // players still in the round (alive or respawning)
   total: number;           // players taking part in the round
   ping: number;            // ms, 0 offline
+  /** The local player is connected (has a PlayerState) — the bottom button shows «Отключиться». */
+  connected: boolean;
   me: HudMe | null;
   /** Scoreboard order: wins, kills desc; deaths asc. */
   players: HudPlayer[];
   winner: HudPlayer | null;  // valid in RoundOver; null + phase RoundOver = draw
 }
 
-const EFFECT_TOTAL: Record<EffectKind, number> = {
-  shield: SHIELD_TIME, ghost: GHOST_TIME, crazy: CRAZY_TIME, fire: FIRE_TIME,
-  curse: CURSE_TIME, invulnerable: SPAWN_INVULNERABLE, stun: STUN_TIME,
+/** Fallback durations (ticks) when the contract has no `<KIND>_TIME` constant. Canon values. */
+const FALLBACK_TOTAL: Record<string, number> = {
+  shield: 50, ghost: 30, crazy: 30, fire: 25, curse: 15, invulnerable: 2, stun: 1.2,
+  speed: 25, slow: 25, kick: 35, glove: 35, punch: 35, remote: 35, pierce: 35, lineBomb: 35, bombPass: 35,
 };
-const EFFECT_ORDER: EffectKind[] = ['shield', 'ghost', 'crazy', 'fire', 'curse', 'invulnerable', 'stun'];
 
-const ABILITY_ORDER = [Ability.Kick, Ability.Glove, Ability.Punch, Ability.Remote, Ability.Pierce, Ability.LineBomb, Ability.BombPass];
+const constName = (kind: string) => `${kind.replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase()}_TIME`;
+const special: Record<string, string> = { invulnerable: 'SPAWN_INVULNERABLE' };
+
+/** Full duration in ticks for an effect: contract constant if exported, else canon fallback. */
+export function effectTotal(kind: string): number {
+  const c = (G as unknown as Record<string, unknown>)[special[kind] ?? constName(kind)];
+  if (typeof c === 'number' && c > 0) return c;
+  return (FALLBACK_TOTAL[kind] ?? 30) * TICK_RATE;
+}
+
+/** Display order: defensive first, then movement, abilities, curse last. Unknown kinds keep insertion order. */
+const ORDER = ['shield', 'invulnerable', 'ghost', 'speed', 'fire', 'crazy', 'kick', 'glove', 'punch', 'remote', 'pierce', 'lineBomb', 'bombPass', 'curse', 'stun'];
+
+/** Ability flag → effect key that times it (when the sim made the ability timed). */
+const ABILITY_EFFECT: [Ability, string][] = [
+  [Ability.Kick, 'kick'], [Ability.Glove, 'glove'], [Ability.Punch, 'punch'], [Ability.Remote, 'remote'],
+  [Ability.Pierce, 'pierce'], [Ability.LineBomb, 'lineBomb'], [Ability.BombPass, 'bombPass'],
+];
 
 const secs = (ticks: number) => Math.max(0, ticks) / TICK_RATE;
 
@@ -98,14 +124,16 @@ export function buildHud(world: WorldState, localId: string, ping = 0): HudSnaps
   if (lp) {
     let bombsPlaced = 0;
     for (const b of world.bombs.values()) if (b.owner === lp.id) bombsPlaced++;
-    const effects: HudEffect[] = [];
-    for (const kind of EFFECT_ORDER) {
-      const left = lp.effects[kind];
-      if (left > 0) effects.push({
-        kind, left: secs(left), frac: Math.min(1, left / EFFECT_TOTAL[kind]),
-        curse: kind === 'curse' ? lp.curse : undefined,
-      });
-    }
+    const fx = lp.effects as unknown as Record<string, number>;
+    const kinds = Object.keys(fx).filter((k) => typeof fx[k] === 'number' && fx[k] > 0);
+    kinds.sort((a, b) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99));
+    const effects: HudEffect[] = kinds.map((kind) => ({
+      kind,
+      left: secs(fx[kind]),
+      frac: Math.min(1, fx[kind] / effectTotal(kind)),
+      curse: kind === 'curse' ? lp.curse : undefined,
+    }));
+    const timed = new Set(kinds);
     me = {
       ...toPlayer(lp, localId),
       lives: lp.lives,
@@ -113,7 +141,7 @@ export function buildHud(world: WorldState, localId: string, ping = 0): HudSnaps
       bombsPlaced,
       radius: lp.radius,
       speedLevel: lp.speedLevel,
-      abilities: ABILITY_ORDER.filter((a) => lp.abilities & a),
+      abilities: ABILITY_EFFECT.filter(([a, k]) => lp.abilities & a && !timed.has(k)).map(([a]) => a),
       curse: lp.curse,
       effects,
       carrying: lp.carrying >= 0,
@@ -130,10 +158,13 @@ export function buildHud(world: WorldState, localId: string, ping = 0): HudSnaps
     phase,
     round: world.round,
     countdown: phase === Phase.Countdown ? Math.ceil(secs(world.phaseTicks)) : 0,
-    timeLeft: phase === Phase.Playing ? secs(ROUND_TIME - world.phaseTicks) : 0,
+    timeLeft: 0,
     roundOverIn: phase === Phase.RoundOver ? secs(world.phaseTicks) : 0,
     suddenDeath: phase === Phase.SuddenDeath,
+    shrinkIn: secs(world.zoneIn ?? 0),
+    zoneRing: world.zoneRing ?? 0,
     alive, total, ping,
+    connected: !!lp,
     me,
     players,
     winner: winnerState ? toPlayer(winnerState, localId) : null,

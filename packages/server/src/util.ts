@@ -40,6 +40,9 @@ export function clampInt(v: unknown, min: number, max: number, fallback: number)
   return Math.max(min, Math.min(max, Math.floor(v)));
 }
 
+/** roomId of the persistent main public room (clients: keep in sync with net/url.ts). */
+export const MAIN_ROOM_ID = 'MAIN';
+
 // Room codes: no 0/O, 1/I/L, 5/S, 2/Z, 8/B to avoid misreads.
 export const CODE_ALPHABET = 'ACDEFGHJKMNPQRTUVWXY34679';
 export const CODE_LENGTH = 5;

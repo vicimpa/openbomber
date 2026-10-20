@@ -2,12 +2,13 @@
 // held inputs re-sent every tick (like a real client).
 
 import type { GameEvent, InputFrame } from '../contract/protocol';
-import { Phase, type PlayerState } from '../contract/types';
+import { Phase, type PlayerState, type TimedEffects } from '../contract/types';
+import { syncAbilities } from './effects';
 import { Simulation } from './Simulation';
 
 export interface HarnessOptions {
-  /** Run the scenario inside a real round (Playing) instead of free-roam Waiting. */
-  playing?: boolean;
+  /** Let the round end / restart / shrink normally (default: held, so scenarios stay put). */
+  live?: boolean;
   seed?: number;
 }
 
@@ -18,11 +19,10 @@ export class Harness {
   private seq = 0;
 
   constructor(rows: string[], players: [id: string, x: number, y: number][], opts: HarnessOptions = {}) {
-    this.sim = new Simulation({ minPlayers: opts.playing ? players.length : 99, seed: opts.seed ?? 1 });
+    this.sim = new Simulation({ seed: opts.seed ?? 1 });
     for (const [id] of players) this.sim.addPlayer({ id, name: id, skin: 0 });
-    if (opts.playing) {
-      for (let i = 0; i < 1000 && this.sim.state.phase !== Phase.Playing; i++) this.sim.step();
-    }
+    for (let i = 0; i < 1000 && this.sim.state.phase !== Phase.Playing; i++) this.sim.step();
+    this.sim.holdRound = !opts.live;
     this.sim.loadMap(rows);
     for (const [id, x, y] of players) {
       const p = this.p(id);
@@ -41,6 +41,13 @@ export class Harness {
 
   p(id: string): PlayerState {
     return this.sim.state.players.get(id)!;
+  }
+
+  /** Give timed effects / abilities (e.g. 'kick', 'glove', 'shield') for `ticks`. */
+  give(id: string, keys: (keyof TimedEffects)[], ticks = 100000) {
+    const p = this.p(id);
+    for (const k of keys) p.effects[k] = ticks;
+    syncAbilities(p);
   }
 
   /** Set the held input for a player (kept until changed). */

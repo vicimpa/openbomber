@@ -20,6 +20,25 @@ sim.addPlayer({ id: LOCAL, name: params.get('name') ?? 'You', skin: Number(param
 const NAMES = ['Bob', 'Алиса', 'Zed', 'Mia', 'Kotik', 'Rex', 'Lou', 'Ника', 'Dex', 'Ivy', 'Gus', 'Oz', 'Pip', 'Tom', 'Uma'];
 for (let i = 0; i < BOTS; i++) sim.addPlayer({ id: 'bot' + i, name: NAMES[i], skin: i + 1, isBot: true });
 
+// ?map=75 : load a big ASCII arena (pillars + random bricks) to stress the static layer / camera
+if (params.get('map')) {
+  const n = Math.max(9, Number(params.get('map')) | 1);
+  const rows: string[] = [];
+  for (let y = 0; y < n; y++) {
+    let r = '';
+    for (let x = 0; x < n; x++) r += x % 2 === 1 && y % 2 === 1 ? '#' : Math.random() < 0.55 && (x > 2 || y > 2) ? 'B' : '.';
+    rows.push(r);
+  }
+  sim.loadMap(rows);
+  for (const p of sim.state.players.values()) {
+    for (;;) {
+      const x = Math.floor(Math.random() * n), y = Math.floor(Math.random() * n);
+      if (sim.state.tiles[y * n + x] !== Tile.Floor) continue;
+      p.x = x; p.y = y; p.alive = true; p.inRound = true; break;
+    }
+  }
+}
+
 // ---------------------------------------------------------------- input
 const held = new Set<string>();
 addEventListener('keydown', e => { held.add(e.code); onKey(e.code); if (e.code === 'Space') e.preventDefault(); });

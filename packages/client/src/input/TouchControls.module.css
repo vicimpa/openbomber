@@ -1,5 +1,9 @@
+/* Touch controls in the OpenBomber style (new-openbomber Gamepad.module.css): white-ringed
+   translucent dark-grey circles. --tc-lift (set by the game screen) keeps them above the
+   bottom pill. */
 .root {
   --u: calc(var(--tc-size, 1) * 1px);
+  --lift: var(--tc-lift, 24px);
   position: absolute;
   inset: 0;
   display: flex;
@@ -13,88 +17,69 @@
 }
 .root[data-left] { flex-direction: row-reverse; }
 
-.stickZone, .btnZone {
-  position: relative;
-  flex: 1 1 50%;
-  touch-action: none;
-}
+.stickZone, .btnZone { position: relative; flex: 1 1 50%; touch-action: none; }
 
-/* Joystick base. At rest it sits faded in the lower corner as a hint. */
 .base {
   position: absolute;
-  left: calc(env(safe-area-inset-left, 0px) + 28px + 70 * var(--u));
-  top: calc(100% - env(safe-area-inset-bottom, 0px) - 28px - 70 * var(--u));
+  left: calc(env(safe-area-inset-left, 0px) + 24px + 70 * var(--u));
+  top: calc(100% - env(safe-area-inset-bottom, 0px) - var(--lift) - 70 * var(--u));
   width: calc(140 * var(--u));
   height: calc(140 * var(--u));
   margin: calc(-70 * var(--u)) 0 0 calc(-70 * var(--u));
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0 55%, rgba(255, 255, 255, 0.12) 56% 100%);
-  border: calc(3 * var(--u)) solid rgba(255, 255, 255, 0.35);
-  box-shadow: 0 0 0 calc(3 * var(--u)) rgba(0, 0, 0, 0.35), inset 0 0 calc(18 * var(--u)) rgba(0, 0, 0, 0.45);
-  opacity: 0.45;
+  border: 2px solid #fff;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: 0.5;
   pointer-events: none;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, border-width 0.1s;
 }
-.root[data-left] .base {
-  left: auto;
-  right: calc(env(safe-area-inset-right, 0px) + 28px);
-  margin: calc(-70 * var(--u)) 0 0 0;
-  transform: translateX(50%);
-}
+.root[data-left] .base { left: auto; right: calc(env(safe-area-inset-right, 0px) + 24px); margin: calc(-70 * var(--u)) 0 0 0; transform: translateX(50%); }
 .root[data-left] .base[data-active] { right: auto; transform: none; margin: calc(-70 * var(--u)) 0 0 calc(-70 * var(--u)); }
-.base[data-active] { opacity: 1; transition: none; }
+.base[data-active] { opacity: 1; border-width: 6px; transition: none; }
 
 .knob {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: calc(64 * var(--u));
-  height: calc(64 * var(--u));
-  margin: calc(-32 * var(--u)) 0 0 calc(-32 * var(--u));
+  width: calc(76 * var(--u));
+  height: calc(76 * var(--u));
+  margin: calc(-38 * var(--u)) 0 0 calc(-38 * var(--u));
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #6be3ff, #1aa8d6 55%, #0b6f95);
-  border: calc(3 * var(--u)) solid #fff;
-  box-shadow: 0 calc(4 * var(--u)) 0 rgba(0, 0, 0, 0.45);
+  background: rgba(68, 68, 68, 0.9);
+  border: 4px solid #fff;
+  box-shadow: inset 0 0 6px #000;
 }
+.base[data-active] .knob { box-shadow: 0 0 10px #000; }
 
-.btnZone { }
 .btn {
   position: absolute;
   border-radius: 50%;
   display: grid;
   place-items: center;
   line-height: 1;
-  color: #fff;
-  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.45);
-  border: calc(4 * var(--u)) solid rgba(255, 255, 255, 0.9);
-  transition: transform 0.06s, box-shadow 0.06s, filter 0.06s;
+  border: 4px solid #fff;
+  background: rgba(68, 68, 68, 0.85);
+  box-shadow: inset -8px -8px 16px rgba(0, 0, 0, 0.6);
+  transition: transform 0.05s, box-shadow 0.05s, background 0.05s;
   pointer-events: none;
 }
-.btn span { pointer-events: none; }
-.btn[data-down] {
-  transform: scale(0.92) translateY(calc(3 * var(--u)));
-  filter: brightness(1.25);
-}
+.btn span { pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.5)); }
+.btn[data-down] { transform: scale(0.93); background: rgba(110, 110, 110, 0.95); box-shadow: inset 8px 8px 16px rgba(0, 0, 0, 0.6); }
 .bomb {
-  width: calc(108 * var(--u));
-  height: calc(108 * var(--u));
-  right: calc(env(safe-area-inset-right, 0px) + 24px);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
-  background: radial-gradient(circle at 35% 30%, #ffb35c, #ff7a00 55%, #b84f00);
-  box-shadow: 0 calc(6 * var(--u)) 0 #6e2c00, 0 calc(10 * var(--u)) calc(16 * var(--u)) rgba(0, 0, 0, 0.45);
-  font-size: calc(44 * var(--u));
+  width: calc(110 * var(--u));
+  height: calc(110 * var(--u));
+  right: calc(env(safe-area-inset-right, 0px) + 20px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--lift));
+  font-size: calc(46 * var(--u));
 }
-.bomb[data-down] { box-shadow: 0 calc(2 * var(--u)) 0 #6e2c00, 0 0 calc(26 * var(--u)) rgba(255, 160, 60, 0.8); }
 .action {
-  width: calc(78 * var(--u));
-  height: calc(78 * var(--u));
-  right: calc(env(safe-area-inset-right, 0px) + 24px + 112 * var(--u));
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 24px + 70 * var(--u));
-  background: radial-gradient(circle at 35% 30%, #ff7fb0, #ff2f78 55%, #a3104a);
-  box-shadow: 0 calc(5 * var(--u)) 0 #5e0729, 0 calc(8 * var(--u)) calc(14 * var(--u)) rgba(0, 0, 0, 0.45);
+  width: calc(76 * var(--u));
+  height: calc(76 * var(--u));
+  right: calc(env(safe-area-inset-right, 0px) + 20px + 116 * var(--u));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--lift) + 66 * var(--u));
   font-size: calc(32 * var(--u));
 }
-.action[data-down] { box-shadow: 0 calc(2 * var(--u)) 0 #5e0729, 0 0 calc(22 * var(--u)) rgba(255, 70, 140, 0.8); }
-
-.root[data-left] .bomb { right: auto; left: calc(env(safe-area-inset-left, 0px) + 24px); }
-.root[data-left] .action { right: auto; left: calc(env(safe-area-inset-left, 0px) + 24px + 112 * var(--u)); }
+.root[data-left] .bomb { right: auto; left: calc(env(safe-area-inset-left, 0px) + 20px); }
+.root[data-left] .action { right: auto; left: calc(env(safe-area-inset-left, 0px) + 20px + 116 * var(--u)); }

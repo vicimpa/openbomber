@@ -6,9 +6,9 @@ export type PickupGroup = 'stat' | 'ability' | 'timed';
 export interface PickupInfo {
   type: PickupType;
   group: PickupGroup;
-  /** Tag in assets/bonuses/bonuses.json (frame `<tag>:0`), when the art exists. */
+  /** Legacy tag in assets/bonuses (unused now: icons come from assets/pickups by PickupType name). */
   sprite?: string;
-  /** Placeholder while no sprite exists. TODO(render): replace once the renderer exports icons. */
+  /** Fallback glyph if the atlas frame is missing. */
   emoji: string;
   /** Accent colour used behind emoji placeholders. */
   color: string;
@@ -25,45 +25,45 @@ export const PICKUPS: PickupInfo[] = [
     desc: { ru: '+1 к радиусу взрыва.', en: '+1 explosion radius.' } },
   { type: PickupType.SpeedUp, group: 'stat', sprite: 'speed', emoji: '👟', color: '#2fae6b',
     name: { ru: 'Скорость', en: 'Speed up' },
-    desc: { ru: 'Бегаете быстрее.', en: 'Run faster.' } },
+    desc: { ru: 'Бегаете быстрее 25 с. Время складывается и гасит огонь.', en: 'Run faster for 25 s. Stacks time and cancels Fire.' } },
   { type: PickupType.FullFire, group: 'stat', emoji: '🌋', color: '#ff6a00',
     name: { ru: 'Полный огонь', en: 'Full fire' },
     desc: { ru: 'Радиус взрыва сразу на максимум.', en: 'Explosion radius jumps to the maximum.' } },
 
   { type: PickupType.Kick, group: 'ability', sprite: 'kick', emoji: '🦶', color: '#c2532f',
     name: { ru: 'Пинок', en: 'Kick' },
-    desc: { ru: 'Упритесь в бомбу, и она покатится до препятствия.', en: 'Walk into a bomb to kick it until it hits something.' } },
+    desc: { ru: 'Упритесь в бомбу, и она покатится до препятствия. 35 с.', en: 'Walk into a bomb to kick it until it hits something. 35 s.' } },
   { type: PickupType.Glove, group: 'ability', emoji: '🧤', color: '#8e5bd6',
     name: { ru: 'Перчатка', en: 'Glove' },
-    desc: { ru: '«Действие» у бомбы: схватить. Отпустите, чтобы бросить через стены.', en: 'Action near a bomb grabs it; release to throw it over walls.' } },
+    desc: { ru: '«Действие» у бомбы: схватить, отпустить — бросить через стены. 35 с.', en: 'Action near a bomb grabs it; release to throw it over walls. 35 s.' } },
   { type: PickupType.Punch, group: 'ability', emoji: '🥊', color: '#d63b6a',
     name: { ru: 'Кулак', en: 'Punch' },
-    desc: { ru: '«Действие» лицом к бомбе отбрасывает её на 3 клетки.', en: 'Action facing a bomb punches it 3 tiles away.' } },
+    desc: { ru: '«Действие» лицом к бомбе отбрасывает её на 3 клетки. 35 с.', en: 'Action facing a bomb punches it 3 tiles away. 35 s.' } },
   { type: PickupType.Remote, group: 'ability', emoji: '📡', color: '#2f9fd6',
     name: { ru: 'Пульт', en: 'Remote' },
-    desc: { ru: 'Ваши бомбы ждут сигнала: «Действие» взрывает самую старую.', en: 'Your bombs wait for a signal: Action detonates the oldest one.' } },
+    desc: { ru: 'Бомбы ждут сигнала: «Действие» взрывает самую старую. 30 с.', en: 'Bombs wait for a signal: Action detonates the oldest one. 30 s.' } },
   { type: PickupType.Pierce, group: 'ability', emoji: '🗡️', color: '#d6a12f',
     name: { ru: 'Пробивной огонь', en: 'Pierce' },
-    desc: { ru: 'Пламя проходит сквозь кирпичи.', en: 'Flames go through bricks.' } },
+    desc: { ru: 'Пламя проходит сквозь кирпичи. 30 с.', en: 'Flames go through bricks. 30 s.' } },
   { type: PickupType.LineBomb, group: 'ability', emoji: '⛓️', color: '#5f6bd6',
     name: { ru: 'Линия бомб', en: 'Line bomb' },
-    desc: { ru: 'Стоя на своей бомбе, нажмите «Бомба»: вся линия по взгляду.', en: 'Press Bomb while standing on your bomb to drop a whole line.' } },
+    desc: { ru: 'Стоя на своей бомбе, нажмите «Бомба»: линия бомб по взгляду. 35 с.', en: 'Press Bomb on your own bomb to drop a whole line. 35 s.' } },
   { type: PickupType.BombPass, group: 'ability', emoji: '👣', color: '#3fbfae',
     name: { ru: 'Сквозь бомбы', en: 'Bomb pass' },
-    desc: { ru: 'Проходите сквозь бомбы.', en: 'Walk through bombs.' } },
+    desc: { ru: 'Проходите сквозь бомбы. 30 с.', en: 'Walk through bombs. 30 s.' } },
 
   { type: PickupType.Shield, group: 'timed', sprite: 'shield', emoji: '🛡️', color: '#2f8fd6',
     name: { ru: 'Щит', en: 'Shield' },
-    desc: { ru: 'Блокирует один взрыв. 30 секунд.', en: 'Blocks one explosion. 30 seconds.' } },
+    desc: { ru: 'Снимается первым же взрывом. 50 с.', en: 'Absorbs the first explosion. 50 s.' } },
   { type: PickupType.Ghost, group: 'timed', emoji: '👻', color: '#9aa3c7',
     name: { ru: 'Призрак', en: 'Ghost' },
-    desc: { ru: 'Проходите сквозь кирпичи 15 секунд.', en: 'Walk through bricks for 15 seconds.' } },
+    desc: { ru: 'Проходите сквозь кирпичи. 30 с.', en: 'Walk through bricks. 30 s.' } },
   { type: PickupType.Crazy, group: 'timed', sprite: 'ebomb', emoji: '🤪', color: '#b53fd6',
     name: { ru: 'Безумные бомбы', en: 'Crazy bombs' },
-    desc: { ru: 'Случайный фитиль и радиус. Иногда бомба не взрывается.', en: 'Random fuse and radius. Sometimes a bomb fizzles.' } },
+    desc: { ru: 'Взрыв через 0.5–5 с, радиус до ×5, 10% не взорвётся. 30 с.', en: 'Fuse 0.5–5 s, radius up to ×5, 10% fizzle. 30 s.' } },
   { type: PickupType.Fire, group: 'timed', sprite: 'fire', emoji: '☄️', color: '#ff4d1f',
     name: { ru: 'Огненный', en: 'On fire' },
-    desc: { ru: 'Медленнее, но касание убивает других. 15 секунд.', en: 'Slower, but your touch kills others. 15 seconds.' } },
+    desc: { ru: 'Вы горите: медленнее, но касание убивает. 25 с.', en: 'You are on fire: slower, but your touch kills. 25 s.' } },
   { type: PickupType.Heart, group: 'timed', emoji: '❤️', color: '#d62f4a',
     name: { ru: 'Сердце', en: 'Heart' },
     desc: { ru: '+1 жизнь: после смерти вы возродитесь.', en: '+1 life: you respawn after dying.' } },

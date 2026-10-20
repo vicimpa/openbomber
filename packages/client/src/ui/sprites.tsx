@@ -1,9 +1,9 @@
 // DOM-side sprite helpers: animated hero previews (small canvas per sprite, one shared rAF
 // ticker) and static pickup icons (CSS background-position into the bonuses atlas).
-import type { PickupType } from '@ob/game';
+import { PickupType } from '@ob/game';
 import { useEffect, useRef } from 'preact/hooks';
-import bonusesJson from '$/assets/bonuses/bonuses.json';
-import bonusesPng from '$/assets/bonuses/bonuses.png';
+import pickupsJson from '$/assets/pickups/pickups.json';
+import pickupsPng from '$/assets/pickups/pickups.png';
 import { PICKUP_BY_TYPE } from './pickups';
 
 interface AseFrame {
@@ -23,6 +23,7 @@ const skins = Object.keys(heroJson)
   .map((k) => ({ json: heroJson[k], png: heroPng[k.replace('.json', '.png')] }));
 
 export const HERO_SKINS = skins.length;
+export const heroImageUrls = skins.map((s) => s.png);
 
 export type HeroAnim = 'IdleDown' | 'IdleUp' | 'IdleRight' | 'RunDown' | 'RunUp' | 'RunRight'
   | 'IdleDownBomb' | 'RunDownBomb' | 'RunRightBomb';
@@ -121,13 +122,14 @@ export function HeroSprite({ skin, anim = 'IdleDown', flip, scale = 2, still, cl
 }
 
 // ---- pickup icons
-const bonuses = bonusesJson as unknown as AseJson;
+// Atlas exported by the render agent: one frame per PickupType name (BombUp, FireUp, ...).
+const pickups = pickupsJson as unknown as AseJson;
 
 export interface PickupIconProps { type: PickupType; size?: number; class?: string; title?: string }
 
 export function PickupIcon({ type, size = 32, class: cls, title }: PickupIconProps) {
   const info = PICKUP_BY_TYPE.get(type);
-  const f = info?.sprite ? bonuses.frames[`${info.sprite}:0`] : undefined;
+  const f = pickups.frames[PickupType[type]];
   if (f) {
     const k = size / f.frame.w;
     return (
@@ -139,14 +141,14 @@ export function PickupIcon({ type, size = 32, class: cls, title }: PickupIconPro
         style={{
           width: `${size}px`,
           height: `${size}px`,
-          backgroundImage: `url(${bonusesPng})`,
+          backgroundImage: `url(${pickupsPng})`,
           backgroundPosition: `${-f.frame.x * k}px ${-f.frame.y * k}px`,
-          backgroundSize: `${bonuses.meta.size.w * k}px ${bonuses.meta.size.h * k}px`,
+          backgroundSize: `${pickups.meta.size.w * k}px ${pickups.meta.size.h * k}px`,
         }}
       />
     );
   }
-  // TODO(render): placeholder until the renderer exports icons for the new pickup types.
+  // Fallback if a frame is missing from the atlas.
   return (
     <span
       class={`pickup-icon pickup-icon--emoji ${cls ?? ''}`}

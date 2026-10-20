@@ -6,8 +6,11 @@ export interface MatchConfig {
   /** Arena size; when omitted the sim picks one from the player count at round start. */
   width?: number;
   height?: number;
-  /** Minimum players (humans + bots) for a real round; below it the phase stays Waiting. */
-  minPlayers: number;
+  /**
+   * @deprecated Ignored: rounds are continuous (canon). A round runs whenever >= 1 player
+   * exists; with 1 player it is practice mode. Kept so existing callers compile.
+   */
+  minPlayers?: number;
   seed?: number;
 }
 

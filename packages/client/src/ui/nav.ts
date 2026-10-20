@@ -1,11 +1,11 @@
 // Keyboard + gamepad navigation for menus and modals: arrows / d-pad / stick move focus
 // spatially, Enter / A activates, Esc / B goes back. In the game screen (no modal open) it
-// stays out of the way so arrows drive the hero; Start opens the in-game menu, Back holds
+// stays out of the way so arrows drive the hero; Start opens the menu drawer, Back holds
 // the scoreboard.
 import { isPadPressed, pads } from '$/input/gamepad';
 import { PAD } from '$/input/bindings';
 import { markDevice } from '$/input/device';
-import { closeModal, modals, openModal, scoreboardOpen, screen, chatOpen } from './store';
+import { closeModal, modals, menuOpen, scoreboardOpen, screen, chatOpen } from './store';
 
 type Dir = 'up' | 'down' | 'left' | 'right';
 
@@ -65,7 +65,8 @@ export function moveFocus(dir: Dir): boolean {
 }
 
 /** In the game with no modal open, arrows belong to gameplay. */
-const menuActive = () => screen.value !== 'game' || modals.value.length > 0;
+const inWorld = () => screen.value === 'game' || screen.value === 'menu';
+const menuActive = () => !inWorld() || modals.value.length > 0 || menuOpen.value;
 
 function isTextLike(el: Element | null) {
   return el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && !['checkbox', 'radio', 'range', 'button', 'submit'].includes(el.type));
@@ -86,6 +87,7 @@ function onKeyDown(e: KeyboardEvent) {
 function goBack() {
   if (modals.value.length) { closeModal(); return; }
   if (chatOpen.value) { chatOpen.value = false; return; }
+  if (menuOpen.value) { menuOpen.value = false; return; }
   document.dispatchEvent(new CustomEvent('ui:back'));
 }
 
@@ -120,8 +122,8 @@ function pollPads(now: number) {
     prevButtons.set(p.index, cur);
     dir ??= padDir(p);
 
-    if (screen.value === 'game' && !modals.value.length) {
-      if (edge(PAD.Start)) { markDevice('gamepad'); openModal('pause'); }
+    if (inWorld() && !modals.value.length && !menuOpen.value) {
+      if (edge(PAD.Start)) { markDevice('gamepad'); menuOpen.value = true; }
       if (!!cur[PAD.Back] !== !!prev[PAD.Back]) scoreboardOpen.value = !!cur[PAD.Back]; // hold
       continue;
     }
@@ -132,7 +134,7 @@ function pollPads(now: number) {
       else moveFocus('down');
     }
     if (edge(PAD.B)) { markDevice('gamepad'); goBack(); }
-    if (edge(PAD.Start) && screen.value === 'game') closeModal();
+    if (edge(PAD.Start)) { if (modals.value.length) closeModal(); else menuOpen.value = false; }
   }
   if (!menuActive()) { repeatDir = null; return; }
   if (dir) {

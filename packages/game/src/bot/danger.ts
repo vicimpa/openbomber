@@ -152,6 +152,24 @@ export function analyze(w: WorldState): Analysis {
     if (f.ttl < dStart[i]!) dStart[i] = f.ttl;
     dEnd[i] = INF;
   }
+  // the ring the zone will close next: get out before the warning runs out
+  if (w.zoneIn > 0) {
+    const r = w.zoneRing;
+    const x1 = W - 1 - r;
+    const y1 = w.height - 1 - r;
+    const mark = (i: number) => {
+      if (w.zoneIn < dStart[i]!) dStart[i] = w.zoneIn;
+      dEnd[i] = INF;
+    };
+    for (let x = r; x <= x1; x++) {
+      mark(r * W + x);
+      mark(y1 * W + x);
+    }
+    for (let y = r; y <= y1; y++) {
+      mark(y * W + r);
+      mark(y * W + x1);
+    }
+  }
 
   // bombs -> pending list with their expected detonation time
   pending.length = 0;

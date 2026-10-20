@@ -2,16 +2,25 @@ import { describe, expect, test } from 'bun:test';
 import {
   BOMB_FUSE,
   CHAIN_DELAY,
+  BASE_SPEED,
   COUNTDOWN_TIME,
   CRAZY_FUSE_MAX,
   CRAZY_FUSE_MIN,
+  FALL_TIME,
+  FIRE_TIME,
+  KICK_TIME,
+  PICKUP_FILL,
   REMOTE_BOMB_MAX_FUSE,
   RESPAWN_DELAY,
   ROUND_OVER_TIME,
-  ROUND_TIME,
+  SOLO_RESTART_TIME,
+  SPEED_MULT,
   STUN_TIME,
+  WAIT_FOR_LIMIT,
+  ZONE_LIMIT_TIMEOUT,
 } from '../contract/constants';
-import { Button } from '../contract/protocol';
+import { Button, type GameEvent } from '../contract/protocol';
+import { mapSizeFor, ringTiles, spawnPoints } from './map';
 import { Ability, BombKind, BombMotion, Curse, Dir, FlameShape, Phase, PickupType, Tile } from '../contract/types';
 import { Simulation } from './Simulation';
 import { Harness, ev } from './testkit';
@@ -198,7 +207,7 @@ describe('bombs', () => {
 
   test('kick: bomb slides until a wall', () => {
     const h = new Harness(['.........', '.......#.', '.........'], [['a', 3, 1]]);
-    h.p('a').abilities |= Ability.Kick;
+    h.give('a', ['kick']);
     h.tap('a', Button.Bomb);
     h.p('a').x = 1;
     h.set('a', 1, 0);
@@ -213,7 +222,7 @@ describe('bombs', () => {
 
   test('kick: sliding bomb stops in front of a player', () => {
     const h = new Harness(['.........', '.........', '.........'], [['a', 3, 1], ['b', 7, 1]]);
-    h.p('a').abilities |= Ability.Kick;
+    h.give('a', ['kick']);
     h.tap('a', Button.Bomb);
     h.p('a').x = 1;
     h.set('a', 1, 0);
@@ -226,7 +235,7 @@ describe('bombs', () => {
   test('glove: grab, fuse paused while held, throw over a wall, bounce off a brick', () => {
     const h = new Harness(['.........', '...#B....', '.........'], [['a', 1, 1]]);
     const a = h.p('a');
-    a.abilities |= Ability.Glove;
+    h.give('a', ['glove']);
     h.tap('a', Button.Bomb);
     a.dir = Dir.Right;
     h.set('a', 0, 0, Button.Action);
@@ -246,7 +255,7 @@ describe('bombs', () => {
   test('glove: throws wrap around the map edge and stun on landing', () => {
     const h = new Harness(['.........', '.........', '.........'], [['a', 7, 1], ['b', 1, 1]]);
     const a = h.p('a');
-    a.abilities |= Ability.Glove;
+    h.give('a', ['glove']);
     h.tap('a', Button.Bomb);
     a.dir = Dir.Right;
     h.set('a', 0, 0, Button.Action);
@@ -263,7 +272,7 @@ describe('bombs', () => {
   test('punch: adjacent bomb flies 3 tiles', () => {
     const h = new Harness(['.........', '.........', '.........'], [['a', 2, 1]]);
     const a = h.p('a');
-    a.abilities |= Ability.Punch;
+    h.give('a', ['punch']);
     h.tap('a', Button.Bomb);
     a.x = 1;
     a.dir = Dir.Right;
@@ -277,7 +286,7 @@ describe('bombs', () => {
   test('remote: waits for Action, oldest first, auto after max fuse', () => {
     const h = new Harness(['.........', '.........', '.........'], [['a', 1, 1]]);
     const a = h.p('a');
-    a.abilities |= Ability.Remote;
+    h.give('a', ['remote']);
     a.bombs = 2;
     h.tap('a', Button.Bomb);
     a.x = 4;
@@ -300,7 +309,7 @@ describe('bombs', () => {
   test('line bomb lays a row of bombs in the facing direction', () => {
     const h = new Harness(['.........', '.........', '.........'], [['a', 1, 1]]);
     const a = h.p('a');
-    a.abilities |= Ability.LineBomb;
+    h.give('a', ['lineBomb']);
     a.bombs = 4;
     a.dir = Dir.Right;
     h.tap('a', Button.Bomb);
@@ -314,7 +323,7 @@ describe('bombs', () => {
       const h = new Harness(['.........', '..BBB....', '.........'], [['a', 1, 1]]);
       const a = h.p('a');
       a.radius = 3;
-      if (pierce) a.abilities |= Ability.Pierce;
+      if (pierce) h.give('a', ['pierce']);
       h.tap('a', Button.Bomb);
       a.x = 8;
       a.y = 2;
@@ -334,13 +343,13 @@ describe('bombs', () => {
     expect(b.fuse).toBeGreaterThanOrEqual(CRAZY_FUSE_MIN - 2);
     expect(b.fuse).toBeLessThanOrEqual(CRAZY_FUSE_MAX);
     expect(b.radius).toBeGreaterThanOrEqual(2);
-    expect(b.radius).toBeLessThanOrEqual(6);
+    expect(b.radius).toBeLessThanOrEqual(10); // up to x CRAZY_RADIUS_MULT
   });
 });
 
 describe('players & effects', () => {
   test('flames kill; kill credit goes to the bomb owner', () => {
-    const h = new Harness(OPEN, [['a', 1, 1], ['b', 3, 1], ['c', 8, 2]], { playing: true });
+    const h = new Harness(OPEN, [['a', 1, 1], ['b', 3, 1], ['c', 8, 2]]);
     h.p('a').radius = 3;
     h.tap('a', Button.Bomb);
     h.p('a').x = 8;
@@ -352,7 +361,7 @@ describe('players & effects', () => {
   });
 
   test('shield blocks one explosion', () => {
-    const h = new Harness(OPEN, [['a', 1, 1], ['z', 8, 2]], { playing: true });
+    const h = new Harness(OPEN, [['a', 1, 1], ['z', 8, 2]]);
     const a = h.p('a');
     a.effects.shield = 10000;
     h.tap('a', Button.Bomb);
@@ -367,7 +376,7 @@ describe('players & effects', () => {
   });
 
   test('heart: respawn after RESPAWN_DELAY with invulnerability', () => {
-    const h = new Harness(OPEN, [['a', 1, 1], ['z', 8, 2]], { playing: true });
+    const h = new Harness(OPEN, [['a', 1, 1], ['z', 8, 2]]);
     const a = h.p('a');
     h.sim.spawnPickup(1, 1, PickupType.Heart);
     h.step();
@@ -420,7 +429,7 @@ describe('players & effects', () => {
   });
 
   test('fire: touching kills other players', () => {
-    const h = new Harness(OPEN, [['a', 1, 1], ['b', 2, 1], ['z', 8, 2]], { playing: true });
+    const h = new Harness(OPEN, [['a', 1, 1], ['b', 2, 1], ['z', 8, 2]]);
     h.p('a').effects.fire = 600;
     h.set('a', 1, 0);
     h.until((e) => ev(e, 'playerDied').length > 0, 30);
@@ -428,7 +437,7 @@ describe('players & effects', () => {
   });
 
   test('eliminated players scatter their pickups', () => {
-    const h = new Harness(OPEN, [['a', 1, 1], ['z', 8, 2], ['y', 8, 0]], { playing: true });
+    const h = new Harness(OPEN, [['a', 1, 1], ['z', 8, 2], ['y', 8, 0]]);
     for (const t of [PickupType.BombUp, PickupType.FireUp, PickupType.Kick]) {
       h.sim.spawnPickup(1, 1, t);
       h.step();
@@ -439,97 +448,186 @@ describe('players & effects', () => {
   });
 });
 
-describe('round flow', () => {
-  test('waiting -> countdown -> playing -> round over with winner -> next round', () => {
-    const sim = new Simulation({ minPlayers: 2, seed: 7 });
+const run = (sim: Simulation, n: number) => {
+  const out: GameEvent[] = [];
+  for (let i = 0; i < n; i++) out.push(...sim.step());
+  return out;
+};
+const until = (sim: Simulation, pred: (e: GameEvent[]) => boolean, max = 5000) => {
+  const out: GameEvent[] = [];
+  for (let i = 0; i < max; i++) {
+    const e = sim.step();
+    out.push(...e);
+    if (pred(e)) return out;
+  }
+  throw new Error('condition never met');
+};
+const phaseOf = (sim: Simulation) => sim.state.phase as Phase;
+
+describe('round flow (canon: continuous, no lobby)', () => {
+  test('a round runs as soon as someone is there; joiners spectate until the restart; winner on restart', () => {
+    const sim = new Simulation({ seed: 7 });
+    expect(phaseOf(sim)).toBe(Phase.Waiting);
     sim.addPlayer({ id: 'a', name: 'A', skin: 0 });
-    expect(sim.state.phase).toBe(Phase.Waiting);
-    sim.step();
-    expect(sim.state.phase).toBe(Phase.Waiting);
-    sim.addPlayer({ id: 'b', name: 'B', skin: 0 });
-    const e0 = sim.step();
-    expect(sim.state.phase).toBe(Phase.Countdown);
-    expect(e0).toContainEqual({ type: 'countdown', seconds: 3 });
-    const startTiles = sim.state.tiles.slice();
-    let started = false;
-    for (let i = 0; i < COUNTDOWN_TIME; i++) {
-      const before = { ...sim.state.players.get('a')! };
-      if (sim.step().some((e) => e.type === 'roundStart')) started = true;
-      if (!started) expect(sim.state.players.get('a')!.x).toBe(before.x);
-    }
-    expect(started).toBe(true);
-    expect(sim.state.phase).toBe(Phase.Playing);
-    // a spectator joins mid round
-    const c = sim.addPlayer({ id: 'c', name: 'C', skin: 0 });
-    expect(c.inRound).toBe(false);
-    // b sits on its own bomb
-    sim.pushInput('b', { seq: 1, dx: 0, dy: 0, buttons: Button.Bomb });
-    let over = null;
-    for (let i = 0; i < BOMB_FUSE + 10 && !over; i++) over = sim.step().find((e) => e.type === 'roundOver') ?? null;
-    expect(over).toEqual({ type: 'roundOver', winner: 'a' });
-    expect(sim.state.phase).toBe(Phase.RoundOver);
-    expect(sim.state.winner).toBe('a');
-    expect(sim.state.players.get('a')!.wins).toBe(1);
-    expect(sim.state.players.get('b')!.deaths).toBe(1);
-    for (let i = 0; i < ROUND_OVER_TIME; i++) sim.step();
-    expect(sim.state.phase).toBe(Phase.Countdown);
+    expect(sim.step()).toContainEqual({ type: 'countdown', seconds: 2 });
+    expect(phaseOf(sim)).toBe(Phase.Countdown);
+    expect([sim.state.width, sim.state.height]).toEqual([13, 13]);
+    const a = sim.state.players.get('a')!;
+    const x0 = a.x;
+    sim.pushInput('a', { seq: 1, dx: 1, dy: 0, buttons: 0 });
+    const started = until(sim, (e) => e.some((x) => x.type === 'roundStart'));
+    expect(started.filter((e) => e.type === 'countdown')).toEqual([{ type: 'countdown', seconds: 1 }]);
+    expect(a.x).toBe(x0); // frozen during the countdown
+    sim.pushInput('a', { seq: 2, dx: 0, dy: 0, buttons: 0 });
+
+    // a second player joins mid-round: spectator; with 2 players and 1 alive the round is decided
+    const b = sim.addPlayer({ id: 'b', name: 'B', skin: 0 });
+    expect(b.inRound).toBe(false);
+    const over = until(sim, (e) => e.some((x) => x.type === 'roundOver'), 10);
+    expect(over).toContainEqual({ type: 'roundOver', winner: '' }); // practice round: nobody wins
+    expect(sim.state.phaseTicks).toBe(ROUND_OVER_TIME - 1 + 1);
+    run(sim, ROUND_OVER_TIME);
+    expect(phaseOf(sim)).toBe(Phase.Countdown);
     expect(sim.state.round).toBe(2);
-    expect(sim.state.players.get('c')!.inRound).toBe(true);
-    expect(sim.state.width).toBe(15);
-    expect(Buffer.from(sim.state.tiles).equals(Buffer.from(startTiles))).toBe(false);
+    expect([sim.state.width, sim.state.height]).toEqual([19, 13]); // resized for 2 players
+    expect(b.inRound && b.alive).toBe(true);
+
+    until(sim, (e) => e.some((x) => x.type === 'roundStart'));
+    sim.pushInput('b', { seq: 1, dx: 0, dy: 0, buttons: Button.Bomb }); // b sits on its own bomb
+    const end = until(sim, (e) => e.some((x) => x.type === 'roundOver'), BOMB_FUSE + 60);
+    expect(end).toContainEqual({ type: 'roundOver', winner: 'a' });
+    // decided only once bombs and flames are gone
+    const died = end.findIndex((e) => e.type === 'playerDied');
+    expect(end.length - died).toBeGreaterThan(1);
+    expect(sim.state.flames.size).toBe(0);
+    expect(a.wins).toBe(1);
+    expect(b.deaths).toBe(1);
+    run(sim, ROUND_OVER_TIME);
+    expect(sim.state.round).toBe(3);
   });
 
-  test('sudden death drops blocks in a spiral with warnings', () => {
-    const sim = new Simulation({ minPlayers: 2, seed: 3 });
+  test('practice mode: a lone player restarts when bricks and pickups run out, or on death', () => {
+    const sim = new Simulation({ seed: 3 });
     sim.addPlayer({ id: 'a', name: 'A', skin: 0 });
-    sim.addPlayer({ id: 'b', name: 'B', skin: 0 });
-    while (sim.state.phase !== Phase.Playing) sim.step();
-    sim.state.phaseTicks = ROUND_TIME - 1;
-    expect(sim.step()).toContainEqual({ type: 'suddenDeath' });
+    until(sim, (e) => e.some((x) => x.type === 'roundStart'));
     sim.step();
-    expect(sim.state.falling.length).toBe(1);
-    expect(sim.state.falling[0]).toMatchObject({ x: 0, y: 0 });
-    const fell: unknown[] = [];
-    let died = 0;
-    const phase = () => sim.state.phase as Phase;
-    for (let i = 0; i < 600 && phase() === Phase.SuddenDeath; i++) {
-      for (const e of sim.step()) {
-        if (e.type === 'blockFell') fell.push(e);
-        if (e.type === 'playerDied') died++;
-      }
-    }
-    expect(fell[0]).toEqual({ type: 'blockFell', x: 0, y: 0 });
-    expect(tileAt(sim.state, 0, 0)).toBe(Tile.Wall);
-    // corner spawns get crushed: the round ends
-    expect(died).toBeGreaterThan(0);
-    expect(phase()).toBe(Phase.RoundOver);
+    expect(phaseOf(sim)).toBe(Phase.Playing); // bricks left
+    sim.loadMap(['.....', '.....', '.....']); // cleared arena
+    expect(sim.step()).toContainEqual({ type: 'roundOver', winner: '' });
+    expect(sim.state.phaseTicks).toBe(SOLO_RESTART_TIME);
+    run(sim, SOLO_RESTART_TIME);
+    expect(phaseOf(sim)).toBe(Phase.Countdown);
+    until(sim, (e) => e.some((x) => x.type === 'roundStart'));
+    sim.pushInput('a', { seq: 1, dx: 0, dy: 0, buttons: Button.Bomb });
+    const e = until(sim, (ev) => ev.some((x) => x.type === 'roundOver'), BOMB_FUSE + 60);
+    expect(e.some((x) => x.type === 'playerDied')).toBe(true);
+    expect(sim.state.players.get('a')!.deaths).toBe(0); // deaths count only with company
   });
 
-  test('map size follows player count, hidden pickups stay out of WorldState', () => {
-    const sim = new Simulation({ minPlayers: 6, seed: 11 });
-    for (let i = 0; i < 6; i++) sim.addPlayer({ id: `p${i}`, name: '', skin: 0 });
+  test('zone: warning after WAIT_FOR_LIMIT, ring closes ZONE_LIMIT_TIMEOUT later with falling blocks', () => {
+    const sim = new Simulation({ seed: 5 });
+    for (const id of ['a', 'b', 'c']) sim.addPlayer({ id, name: id, skin: 0 });
+    until(sim, (e) => e.some((x) => x.type === 'roundStart'));
+    const w = sim.state;
+    expect([w.width, w.height]).toEqual([19, 19]);
+    const warn = until(sim, (e) => e.some((x) => x.type === 'zoneWarning'), WAIT_FOR_LIMIT + 5);
+    expect(warn).toContainEqual({ type: 'zoneWarning', seconds: 15 });
+    expect(w.zoneIn).toBe(ZONE_LIMIT_TIMEOUT);
+    // c stands on the outer ring when it closes
+    const c = w.players.get('c')!;
+    c.x = 0;
+    c.y = 0;
+    const shrink = until(sim, (e) => e.some((x) => x.type === 'zoneShrink'), ZONE_LIMIT_TIMEOUT + 5);
+    expect(shrink).toContainEqual({ type: 'zoneShrink', ring: 1 });
+    expect(shrink).toContainEqual({ type: 'suddenDeath' });
+    expect(phaseOf(sim)).toBe(Phase.SuddenDeath);
+    expect(w.zoneRing).toBe(1);
+    const ring = ringTiles(w.width, w.height, 0);
+    expect(w.falling.length).toBe(ring.length); // the outer ring is all floor / bricks
+    expect(w.falling[0]!.ttl).toBeGreaterThanOrEqual(FALL_TIME);
+    const fell = run(sim, FALL_TIME + 40);
+    expect(fell.filter((e) => e.type === 'blockFell').length).toBe(ring.length);
+    expect(ring.every((i) => w.tiles[i] === Tile.Wall)).toBe(true);
+    expect(fell).toContainEqual({ type: 'playerDied', player: 'c', killer: '', x: 0, y: 0 });
+    expect(w.players.get('a')!.alive && w.players.get('b')!.alive).toBe(true);
+    // the next warning comes WAIT_FOR_LIMIT after the shrink
+    const next = until(sim, (e) => e.some((x) => x.type === 'zoneWarning'), WAIT_FOR_LIMIT + 5);
+    expect(next.length).toBeGreaterThan(0);
+  });
+
+  test('zone: pending shrink is cancelled when fewer than 2 players remain', () => {
+    const sim = new Simulation({ seed: 5 });
+    for (const id of ['a', 'b']) sim.addPlayer({ id, name: id, skin: 0 });
+    until(sim, (e) => e.some((x) => x.type === 'zoneWarning'), COUNTDOWN_TIME + WAIT_FOR_LIMIT + 5);
+    sim.removePlayer('b');
+    expect(sim.step()).toContainEqual({ type: 'zoneCancel' });
+    expect(sim.state.zoneIn).toBe(0);
+    // left alone before anyone died: practice, no win
+    expect(sim.state.phase).toBe(Phase.Playing);
+  });
+
+  test('map size and spawns follow legacy calcMap', () => {
+    expect(mapSizeFor(1)).toEqual([13, 13]);
+    expect(mapSizeFor(2)).toEqual([19, 13]);
+    expect(mapSizeFor(3)).toEqual([19, 19]);
+    expect(mapSizeFor(4)).toEqual([19, 19]);
+    expect(mapSizeFor(9)).toEqual([33, 33]);
+    expect(mapSizeFor(32)).toEqual([75, 75]);
+    expect(spawnPoints(1)).toEqual([{ x: 6, y: 6 }]);
+    expect(spawnPoints(2)).toEqual([{ x: 2, y: 6 }, { x: 16, y: 6 }]);
+    expect(spawnPoints(32).length).toBe(36);
+
+    const sim = new Simulation({ seed: 11 });
+    for (let i = 0; i < 9; i++) sim.addPlayer({ id: `p${i}`, name: '', skin: 0 });
     sim.step();
-    expect([sim.state.width, sim.state.height]).toEqual([19, 15]);
-    expect(sim.state.pickups.size).toBe(0);
+    const w = sim.state;
+    expect([w.width, w.height]).toEqual([33, 33]);
+    expect(w.pickups.size).toBe(0); // hidden pickups are not in WorldState
     let hidden = 0;
     let bricks = 0;
-    for (let i = 0; i < sim.state.tiles.length; i++) {
-      if (sim.state.tiles[i] === Tile.Brick) bricks++;
+    for (let i = 0; i < w.tiles.length; i++) {
+      if (w.tiles[i] === Tile.Brick) bricks++;
       if (sim.ctx.hidden[i]! >= 0) hidden++;
     }
-    expect(bricks).toBeGreaterThan(50);
-    expect(hidden).toBe(Math.round(bricks * 0.3));
-    // every spawn has its free L-zone
-    for (const p of sim.state.players.values()) {
-      expect(tileAt(sim.state, p.x, p.y)).toBe(Tile.Floor);
+    expect(hidden).toBe(Math.round(bricks * PICKUP_FILL));
+    for (const p of w.players.values()) {
+      // every spawn has a free plus of radius 2
+      for (let k = -2; k <= 2; k++) {
+        expect(tileAt(w, p.x + k, p.y)).toBe(Tile.Floor);
+        expect(tileAt(w, p.x, p.y + k)).toBe(Tile.Floor);
+      }
     }
+  });
+
+  test('add / remove at any moment is safe (carried, flying, respawning)', () => {
+    const h = new Harness(OPEN, [['a', 1, 1], ['b', 5, 1], ['c', 8, 2]], { live: true });
+    h.give('a', ['glove']);
+    h.give('b', ['glove']);
+    h.tap('a', Button.Bomb);
+    h.p('a').dir = Dir.Right;
+    h.set('a', 0, 0, Button.Action);
+    h.step();
+    expect(h.p('a').carrying).toBeGreaterThan(0);
+    h.sim.removePlayer('a'); // carried bomb drops
+    expect([...h.state.bombs.values()][0]!.motion).toBe(BombMotion.Idle);
+    h.tap('b', Button.Bomb);
+    h.p('b').dir = Dir.Left;
+    h.set('b', 0, 0, Button.Action);
+    h.step();
+    h.set('b', 0, 0, 0);
+    h.step(); // thrown
+    h.sim.removePlayer('b'); // mid-flight
+    h.sim.addPlayer({ id: 'a', name: 'again', skin: 1 });
+    expect(h.p('a').inRound).toBe(false);
+    expect(() => h.step(BOMB_FUSE + 400)).not.toThrow();
   });
 });
 
 describe('input handling', () => {
   test('one queued input per step, last input repeats, ackSeq, held buttons edge-detected', () => {
-    const sim = new Simulation({ minPlayers: 99, seed: 1 });
+    const sim = new Simulation({ seed: 1 });
     sim.addPlayer({ id: 'a', name: 'a', skin: 0 });
+    until(sim, (e) => e.some((x) => x.type === 'roundStart'));
     const p = sim.state.players.get('a')!;
     for (let s = 1; s <= 3; s++) sim.pushInput('a', { seq: s, dx: 0, dy: 0, buttons: Button.Bomb });
     sim.pushInput('a', { seq: 2, dx: 1, dy: 0, buttons: 0 }); // stale: ignored
@@ -553,12 +651,83 @@ describe('input handling', () => {
     expect(mergeShape(FlameShape.EndUp, FlameShape.EndLeft)).toBe(FlameShape.Center);
   });
 
-  test('a duel ends when the opponent leaves', () => {
-    const sim = new Simulation({ minPlayers: 2, seed: 1 });
+  test('a duel decided by a death still has a winner after the loser leaves', () => {
+    const sim = new Simulation({ seed: 1 });
     sim.addPlayer({ id: 'a', name: 'a', skin: 0 });
     sim.addPlayer({ id: 'b', name: 'b', skin: 0 });
-    while (sim.state.phase !== Phase.Playing) sim.step();
+    until(sim, (e) => e.some((x) => x.type === 'roundStart'));
+    sim.pushInput('b', { seq: 1, dx: 0, dy: 0, buttons: Button.Bomb });
+    until(sim, (e) => e.some((x) => x.type === 'playerDied'), BOMB_FUSE + 5);
     sim.removePlayer('b');
-    expect(sim.step()).toContainEqual({ type: 'roundOver', winner: 'a' });
+    const e = until(sim, (ev) => ev.some((x) => x.type === 'roundOver'), 60);
+    expect(e).toContainEqual({ type: 'roundOver', winner: 'a' });
+  });
+});
+
+describe('canon pickups', () => {
+  test('abilities are timed: bit set while the timer runs, effectEnded when it stops; time stacks', () => {
+    const h = new Harness(OPEN, [['a', 1, 1]]);
+    const a = h.p('a');
+    h.sim.spawnPickup(1, 1, PickupType.Kick);
+    h.step();
+    expect(a.effects.kick).toBeGreaterThan(KICK_TIME - 3);
+    expect(a.abilities & Ability.Kick).toBeTruthy();
+    h.sim.spawnPickup(1, 1, PickupType.Kick);
+    h.step();
+    expect(a.effects.kick).toBeGreaterThan(2 * KICK_TIME - 5);
+    a.effects.kick = 2;
+    h.step(2);
+    expect(a.abilities & Ability.Kick).toBe(0);
+    expect(ev(h.events, 'effectEnded')).toContainEqual({ type: 'effectEnded', player: 'a', effect: 'kick' });
+  });
+
+  test('SpeedUp is timed and cancels Fire (and vice versa); BombUp / FireUp persist', () => {
+    const h = new Harness(OPEN, [['a', 1, 1]]);
+    const a = h.p('a');
+    h.sim.spawnPickup(1, 1, PickupType.Fire);
+    h.step();
+    expect(a.effects.fire).toBeGreaterThan(FIRE_TIME - 3);
+    h.sim.spawnPickup(1, 1, PickupType.SpeedUp);
+    h.step();
+    expect(a.effects.fire).toBe(0); // 25 s of speed eats 25 s of fire
+    expect(a.effects.speed).toBe(0);
+    expect(ev(h.events, 'effectEnded')).toContainEqual({ type: 'effectEnded', player: 'a', effect: 'fire' });
+    h.sim.spawnPickup(1, 1, PickupType.SpeedUp);
+    h.step();
+    expect(a.speedLevel).toBe(1);
+    const x = a.x;
+    h.set('a', 1, 0);
+    h.step(10);
+    expect(a.x - x).toBeCloseTo((10 * BASE_SPEED * SPEED_MULT) / 60, 5);
+    for (const t of [PickupType.BombUp, PickupType.FireUp]) {
+      h.sim.spawnPickup(Math.round(a.x), 1, t);
+      h.step();
+    }
+    expect([a.bombs, a.radius]).toEqual([2, 2]);
+  });
+
+  test('remote running out gives waiting bombs a normal fuse', () => {
+    const h = new Harness(OPEN, [['a', 1, 1]]);
+    h.give('a', ['remote'], 30);
+    h.tap('a', Button.Bomb);
+    const b = [...h.state.bombs.values()][0]!;
+    expect(b.fuse).toBeLessThan(0);
+    h.step(30);
+    expect(b.fuse).toBeGreaterThan(BOMB_FUSE - 5);
+  });
+
+  test('kicking a bomb takes the kill credit (legacy)', () => {
+    const h = new Harness(['.........', '.........', '.........'], [['a', 3, 1], ['k', 1, 1], ['v', 8, 1], ['z', 0, 2]]);
+    h.give('k', ['kick']);
+    h.tap('a', Button.Bomb);
+    h.p('a').x = 0; // out of the way
+    h.p('a').y = 0;
+    h.set('k', 1, 0);
+    h.until((e) => ev(e, 'bombKicked').length > 0, 60);
+    h.set('k', 0, 0);
+    h.p('v').x = 7.6; // the bomb stops next to v
+    h.until((e) => ev(e, 'playerDied').length > 0, BOMB_FUSE + 10);
+    expect(ev(h.events, 'playerDied')[0]).toMatchObject({ player: 'v', killer: 'k' });
+    expect(h.p('k').kills).toBe(1);
   });
 });

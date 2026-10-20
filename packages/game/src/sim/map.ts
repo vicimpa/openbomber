@@ -1,9 +1,8 @@
-// Arena generation: pillars on odd/odd tiles, spawn safe zones, random bricks with
-// hidden pickups, and the sudden-death spiral order.
+// Arena generation (canon: legacy core/calcMap.ts + server GameMap.ts) and zone rings.
 
-import { BRICK_FILL, PICKUP_FILL } from '../contract/constants';
+import { BRICK_FILL, MAP_MARGIN, MAP_PADDING, PICKUP_FILL } from '../contract/constants';
 import { Tile } from '../contract/types';
-import { randInt, shuffle, type SeedHolder } from './rng';
+import { shuffle, type SeedHolder } from './rng';
 import { rollPickup } from './pickups';
 
 export interface Point {
@@ -19,119 +18,83 @@ export interface GeneratedMap {
   spawns: Point[];
 }
 
-/** Arena size by player count (from the plan). */
+/**
+ * Arena size and spawn points by player count, exactly as legacy core/calcMap.ts: a grid of
+ * cells (MAP_PADDING + MAP_MARGIN = 14 tiles apart) just big enough for everyone.
+ * 1 -> 13x13, 2 -> 19x13, 4 -> 19x19, 9 -> 33x33, 32 -> 75x75. There may be more spawns than players.
+ */
+export function calcMap(players: number): { width: number; height: number; spawns: Point[] } {
+  players = Math.max(1, players);
+  let gw = 0;
+  let gh = 0;
+  let internal = 0;
+  do {
+    internal += 0.5;
+    gw = Math.ceil(internal);
+    gh = Math.floor(internal);
+  } while (gw * gh < players);
+  const px = players > 1 ? 2 : MAP_PADDING;
+  const py = players > 2 ? 2 : MAP_PADDING;
+  const m = MAP_MARGIN + MAP_PADDING;
+  const spawns: Point[] = [];
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) spawns.push({ x: px + m * x, y: py + m * y });
+  return { width: 2 * px + m * (gw - 1) + 1, height: 2 * py + m * (gh - 1) + 1, spawns };
+}
+
 export function mapSizeFor(players: number): [number, number] {
-  if (players <= 4) return [15, 13];
-  if (players <= 8) return [19, 15];
-  if (players <= 12) return [23, 17];
-  return [27, 19];
+  const m = calcMap(players);
+  return [m.width, m.height];
+}
+
+export function spawnPoints(players: number): Point[] {
+  return calcMap(players).spawns;
 }
 
 export const isPillar = (x: number, y: number) => (x & 1) === 1 && (y & 1) === 1;
 
 /**
- * Spawn points: the four corners first (diagonal pair first so 2 players start far
- * apart), then greedy farthest-point picks among even/even tiles. Deterministic.
+ * Legacy GameMap.generate: pillars on odd/odd tiles, a free plus of radius 2 around every
+ * spawn, bricks on BRICK_FILL of the remaining tiles, pickups hidden in PICKUP_FILL of the bricks.
  */
-export function spawnPoints(width: number, height: number, count: number): Point[] {
-  const W = width - 1;
-  const H = height - 1;
-  const pts: Point[] = [
-    { x: 0, y: 0 },
-    { x: W, y: H },
-    { x: W, y: 0 },
-    { x: 0, y: H },
-  ];
-  // corners must be even tiles to have free neighbours (matters for even-sized custom arenas)
-  for (const p of pts) {
-    p.x -= p.x & 1;
-    p.y -= p.y & 1;
-  }
-  const out = pts.slice(0, Math.min(count, 4));
-  while (out.length < count) {
-    let best: Point | null = null;
-    let bestD = -1;
-    for (let y = 0; y < height; y += 2) {
-      for (let x = 0; x < width; x += 2) {
-        let d = Infinity;
-        for (const p of out) {
-          const dx = p.x - x;
-          const dy = p.y - y;
-          const dd = dx * dx + dy * dy;
-          if (dd < d) d = dd;
-        }
-        if (d > bestD) {
-          bestD = d;
-          best = { x, y };
-        }
-      }
-    }
-    if (!best || bestD <= 0) break;
-    out.push(best);
-  }
-  // tiny arenas can run out of distinct points: reuse
-  for (let i = out.length; i < count; i++) out.push({ ...out[i % Math.max(1, out.length)]! });
-  return out;
-}
-
-/** Mark the spawn and an L of two tiles along each axis (towards the centre). */
-function markSafeZone(width: number, height: number, safe: Uint8Array, s: Point) {
-  safe[s.y * width + s.x] = 1;
-  let hx = s.x < width / 2 ? 1 : -1;
-  if (s.x + hx * 2 < 0 || s.x + hx * 2 >= width) hx = -hx;
-  let vy = s.y < height / 2 ? 1 : -1;
-  if (s.y + vy * 2 < 0 || s.y + vy * 2 >= height) vy = -vy;
-  for (let i = 1; i <= 2; i++) {
-    const x = s.x + hx * i;
-    if (x >= 0 && x < width) safe[s.y * width + x] = 1;
-    const y = s.y + vy * i;
-    if (y >= 0 && y < height) safe[y * width + s.x] = 1;
-  }
-}
-
-export function generateMap(rng: SeedHolder, width: number, height: number, spawnCount: number): GeneratedMap {
+export function generateMap(rng: SeedHolder, width: number, height: number, spawns: Point[]): GeneratedMap {
   const n = width * height;
   const tiles = new Uint8Array(n);
   const hidden = new Int8Array(n).fill(-1);
   const safe = new Uint8Array(n);
-  const spawns = spawnPoints(width, height, spawnCount);
-  for (const s of spawns) markSafeZone(width, height, safe, s);
-
-  const bricks: number[] = [];
+  for (const s of spawns) {
+    for (let i = -2; i <= 2; i++) {
+      if (s.x + i >= 0 && s.x + i < width) safe[s.y * width + s.x + i] = 1;
+      if (s.y + i >= 0 && s.y + i < height) safe[(s.y + i) * width + s.x] = 1;
+    }
+  }
+  const free: number[] = [];
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const i = y * width + x;
       if (isPillar(x, y)) tiles[i] = Tile.Wall;
-      else if (!safe[i] && randInt(rng, 1 << 20) < BRICK_FILL * (1 << 20)) {
-        tiles[i] = Tile.Brick;
-        bricks.push(i);
-      }
+      else if (!safe[i]) free.push(i);
     }
   }
-  shuffle(rng, bricks);
+  shuffle(rng, free);
+  const bricks = free.slice(0, Math.ceil(free.length * BRICK_FILL));
+  for (const i of bricks) tiles[i] = Tile.Brick;
   const withPickup = Math.round(bricks.length * PICKUP_FILL);
   for (let k = 0; k < withPickup; k++) hidden[bricks[k]!] = rollPickup(rng, false);
   return { width, height, tiles, hidden, spawns };
 }
 
-/** All tile indices in a clockwise spiral from the outer ring inwards. */
-export function spiralOrder(width: number, height: number): Int32Array {
-  const out = new Int32Array(width * height);
-  let k = 0;
-  let x0 = 0;
-  let y0 = 0;
-  let x1 = width - 1;
-  let y1 = height - 1;
-  while (x0 <= x1 && y0 <= y1) {
-    for (let x = x0; x <= x1; x++) out[k++] = y0 * width + x;
-    for (let y = y0 + 1; y <= y1; y++) out[k++] = y * width + x1;
-    if (y1 > y0) for (let x = x1 - 1; x >= x0; x--) out[k++] = y1 * width + x;
-    if (x1 > x0) for (let y = y1 - 1; y > y0; y--) out[k++] = y * width + x0;
-    x0++;
-    y0++;
-    x1--;
-    y1--;
-  }
+/** Tile indices of zone ring `ring` (0 = the outer edge), clockwise from the top-left corner. */
+export function ringTiles(width: number, height: number, ring: number): number[] {
+  const out: number[] = [];
+  const x0 = ring;
+  const y0 = ring;
+  const x1 = width - 1 - ring;
+  const y1 = height - 1 - ring;
+  if (x0 > x1 || y0 > y1) return out;
+  for (let x = x0; x <= x1; x++) out.push(y0 * width + x);
+  for (let y = y0 + 1; y <= y1; y++) out.push(y * width + x1);
+  if (y1 > y0) for (let x = x1 - 1; x >= x0; x--) out.push(y1 * width + x);
+  if (x1 > x0) for (let y = y1 - 1; y > y0; y--) out.push(y * width + x0);
   return out;
 }
 

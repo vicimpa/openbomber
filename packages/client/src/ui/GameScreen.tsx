@@ -1,27 +1,26 @@
-// Game screen: a full-viewport stage for the renderer canvas with the DOM HUD layered on top.
+// The world screen: ALWAYS mounted. A full-viewport stage for the renderer canvas (the live
+// shared arena, spectated by default) with the canon UI layered on top: top counters pill,
+// bottom «Подключиться»/«Отключиться» pill, Ping/FPS, stats strip, kill feed, banners, chat
+// drawer + ticker, menu drawer, touch controls.
 //
 // INTEGRATION POINT (session layer):
-//   <GameScreen onStageReady={(el) => { renderer = await createRenderer({ parent: el }); return () => renderer.destroy(); }} />
-//   - `el` is the full-viewport `<div id="stage">`; append the canvas there (it is sized by CSS
-//     to the viewport, use a ResizeObserver on it).
-//   - The callback may return a cleanup, called when the screen unmounts.
-//   - The same element is published as `stage.value` in ./store for code that prefers signals.
-//   App renders this when `screen.value === 'game'` and forwards `stageHooks.onStageReady`
-//   (see ./App.tsx → `setStageHandler`).
+//   setStageHandler((el) => { renderer = await createRenderer({ parent: el }); return () => renderer.destroy(); })
+//   (from ./App) or pass <GameScreen onStageReady={...}/>.
+//   - `el` is the full-viewport `<div id="stage">`; append the canvas there (size it with a
+//     ResizeObserver). Called ONCE at app start, because the world is visible behind every
+//     screen (loader excepted, which covers it). The callback may return a cleanup.
+//   - The same element is published as `stage.value` in ./store.
 // The HUD reads `hud.value` (buildHud), `chat`, `killFeed`, `room`, `fps` from the store.
 import { useEffect, useRef } from 'preact/hooks';
 import { lastDevice } from '$/input/device';
 import { installPlayGuards } from '$/input/guards';
 import { isTextTarget } from '$/input/keyboard';
 import { TouchControls } from '$/input/TouchControls';
-import { Chat } from './hud/Chat';
-import {
-  Countdown, HudButtons, KillFeed, NetStats, RoundOver, Scoreboard, SpectatorBanner, StatsPanel,
-  SuddenDeathBanner, TopBar,
-} from './hud/Hud';
-import { RoomCode } from './hud/RoomCode';
+import { ChatDrawer, ChatTicker } from './hud/Chat';
+import { Banners, BottomPill, Countdown, DebugInfo, KillFeed, RoundResult, Scoreboard, StatsStrip, TopPill } from './hud/Hud';
 import { t } from './i18n';
-import { chatOpen, hud, modals, openModal, room, scoreboardOpen, settings, stage } from './store';
+import { MenuDrawer } from './MenuDrawer';
+import { chatOpen, hud, menuOpen, modals, scoreboardOpen, screen, settings, stage } from './store';
 
 export interface GameScreenProps {
   /** Called once with the #stage element after mount; may return a cleanup. */
@@ -31,28 +30,31 @@ export interface GameScreenProps {
 export function GameScreen({ onStageReady }: GameScreenProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const sc = screen.value;
+  const inWorld = sc === 'game' || sc === 'menu';
 
   useEffect(() => {
     const el = stageRef.current!;
     stage.value = el;
     const cleanup = onStageReady?.(el);
-    const unguard = installPlayGuards(rootRef.current!);
     return () => {
-      unguard();
       if (typeof cleanup === 'function') cleanup();
       if (stage.peek() === el) stage.value = null;
     };
   }, []);
 
+  useEffect(() => (inWorld ? installPlayGuards(rootRef.current!) : undefined), [inWorld]);
+
   // Desktop shortcuts: T / Enter chat, hold Tab scoreboard, Esc menu.
   useEffect(() => {
+    if (!inWorld) return;
     const down = (e: KeyboardEvent) => {
-      if (modals.peek().length || isTextTarget(e.target)) return;
+      if (modals.peek().length || isTextTarget(e.target) || menuOpen.peek() || chatOpen.peek()) return;
       if (e.code === 'Tab') { e.preventDefault(); if (!e.repeat) scoreboardOpen.value = true; return; }
       if (e.code === 'Escape') {
         e.preventDefault();
         if (scoreboardOpen.peek()) scoreboardOpen.value = false;
-        else openModal('pause');
+        else menuOpen.value = true;
         return;
       }
       const me = hud.peek()?.me;
@@ -67,19 +69,21 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
     return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
-  }, []);
+  }, [inWorld]);
 
   const h = hud.value;
   const s = settings.value;
   const touch = lastDevice.value === 'touch';
-  const r = room.value;
   const me = h?.me;
+  const playing = !!me && !me.spectating;
+  const showTouch = inWorld && touch && playing && !chatOpen.value && !menuOpen.value && !modals.value.length;
 
   return (
-    <div ref={rootRef} class={`screen game ${touch ? 'is-touch' : ''} ${s.touch.leftHanded ? 'is-lefty' : ''}`}>
+    <div ref={rootRef} class={`world ${touch ? 'is-touch' : ''} ${playing ? 'is-playing-round' : ''} ${inWorld ? '' : 'is-covered'}`}>
       <div id="stage" class="stage" ref={stageRef} />
+      <div class="stage-vignette" aria-hidden="true" />
 
-      {touch && !chatOpen.value && (
+      {showTouch && (
         <TouchControls
           size={s.touch.size}
           opacity={s.touch.opacity}
@@ -91,35 +95,23 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
         />
       )}
 
-      <div class="hud" aria-label="HUD">
-        {h && <>
-          <div class="hud__top">
-            <div class="hud__left">
-              {me && <StatsPanel me={me} compact={touch} />}
-              {r && !r.offline && r.isPrivate && !touch && <RoomCode code={r.code} />}
-              {touch && <Chat compact />}
-            </div>
-            <div class="hud__center">
-              <TopBar h={h} />
-              {touch && <NetStats ping={h.ping} />}
-              <SuddenDeathBanner h={h} />
-            </div>
-            <div class="hud__right">
-              <div class="hud__right-row">
-                {!touch && <NetStats ping={h.ping} />}
-                <HudButtons touch={touch} />
-              </div>
-              <KillFeed />
-            </div>
-          </div>
-
-          <Countdown h={h} />
-          {me && <SpectatorBanner me={me} phase={h.phase} />}
-          <RoundOver h={h} />
-          {!touch && <Chat compact={false} />}
-          {scoreboardOpen.value && <Scoreboard h={h} onClose={() => { scoreboardOpen.value = false; }} />}
-        </>}
-      </div>
+      {inWorld && (
+        <div class="hud" aria-label="HUD">
+          <DebugInfo ping={h?.ping ?? 0} />
+          <TopPill h={h} />
+          {h && <>
+            <div class="hud__left">{me && playing && <StatsStrip me={me} compact={touch} />}</div>
+            <div class="hud__right"><KillFeed /></div>
+            <div class="hud__center"><Banners h={h} /><RoundResult h={h} /></div>
+            <Countdown h={h} />
+            {scoreboardOpen.value && <Scoreboard h={h} onClose={() => { scoreboardOpen.value = false; }} />}
+          </>}
+          <ChatTicker />
+          <BottomPill h={h} />
+        </div>
+      )}
+      {inWorld && <ChatDrawer />}
+      {inWorld && <MenuDrawer />}
     </div>
   );
 }

@@ -70,10 +70,25 @@ const PICKUP_VALUE: Partial<Record<PickupType, number>> = {
 const STEP_DIRS = [Dir.Up, Dir.Left, Dir.Right, Dir.Down] as const;
 /** Fire this close (ticks) cancels scripted tricks. */
 const IMMINENT = 45;
+/** Only the nearest few opponents steer target scoring (keeps 32-bot maps cheap). */
+const NEAREST_ENEMIES = 4;
+/** Planning horizon in steps: keeps a replan bounded on 75x75 maps (far goals come from the enemy drift). */
+const PLAN_STEPS = 26;
+/** Only bombs this close (tiles, Chebyshev) trigger an immediate replan when they appear / go off. */
+const BOMB_WATCH = 11;
+
+function countNear(w: WorldState, p: PlayerState, r: number): number {
+  let n = 0;
+  for (const b of w.bombs.values()) if (Math.abs(b.x - p.x) <= r && Math.abs(b.y - p.y) <= r) n++;
+  return n;
+}
 
 // ---------------------------------------------------------------- shared scratch buffers
 // think() is synchronous, so all bots can share these.
 let cap = 0;
+/** Search stamp per tile: a tile is visited in the current search iff sMark[i] === mark. */
+let sMark = new Int32Array(0);
+let mark = 0;
 let sSteps = new Int32Array(0);
 let sPrev = new Int32Array(0);
 let sQueue = new Int32Array(0);
@@ -82,6 +97,8 @@ let hEnd = new Int32Array(0);
 function ensure(n: number) {
   if (n <= cap) return;
   cap = n;
+  sMark = new Int32Array(n);
+  mark = 0;
   sSteps = new Int32Array(n);
   sPrev = new Int32Array(n);
   sQueue = new Int32Array(n);
@@ -120,11 +137,11 @@ const safeAt = (ds: Int32Array, de: Int32Array, i: number, k: number, tpt: numbe
 function search(a: Analysis, o: SearchOpts): number {
   const w = a.world;
   const W = a.width;
-  const n = W * a.height;
-  sSteps.fill(-1, 0, n);
+  const m = ++mark; // bounded by maxSteps, so no O(map) reset per search
   let head = 0;
   let tail = 0;
   sQueue[tail++] = o.start;
+  sMark[o.start] = m;
   sSteps[o.start] = 0;
   sPrev[o.start] = -1;
   while (head < tail) {
@@ -138,12 +155,13 @@ function search(a: Analysis, o: SearchOpts): number {
       const ny = y + (d === 0 ? -1 : d === 3 ? 1 : 0);
       if (nx < 0 || ny < 0 || nx >= W || ny >= a.height) continue;
       const j = ny * W + nx;
-      if (sSteps[j]! >= 0) continue;
+      if (sMark[j] === m) continue;
       if (w.tiles[j] !== Tile.Floor || a.bomb[j]) continue;
       if (!o.allowSkull && isSkull(a, j)) continue;
       if (!safeAt(o.ds, o.de, j, k, o.tpt, o.margin)) continue;
       if (nearFire(a, nx, ny, o.selfId)) continue;
       if (o.avoid && nearAny(o.avoid, nx, ny, k >= 2 ? 1 : 0)) continue;
+      sMark[j] = m;
       sSteps[j] = k;
       sPrev[j] = i;
       sQueue[tail++] = j;
@@ -248,17 +266,18 @@ export class Bot implements IBot {
       return this.out(dx, dy, 0);
     }
 
+    const nearBombs = countNear(world, p, BOMB_WATCH);
     const next = this.path[0];
     const nextUnsafe = next !== undefined && (!safeAt(a.dStart, a.dEnd, next, 1, tpt, 1) || a.bomb[next] !== 0);
     if (
       --this.cooldown <= 0 ||
       this.arrived ||
-      world.bombs.size !== this.lastBombs ||
+      nearBombs !== this.lastBombs ||
       (inDanger && !this.fleeing) ||
       nextUnsafe
     ) {
       this.arrived = false;
-      this.lastBombs = world.bombs.size;
+      this.lastBombs = nearBombs;
       this.cooldown = this.tune.replan;
       this.plan(a, p, cur, inDanger, tpt);
       if (this.script.length) return this.out(...this.script.shift()!);
@@ -287,7 +306,7 @@ export class Bot implements IBot {
       de: a.dEnd,
       allowSkull: false,
       selfId: p.id,
-      maxSteps: 40,
+      maxSteps: PLAN_STEPS,
     };
     if (this.tune.tricks && a.dStart[cur]! > IMMINENT && this.tryTricks(a, p, cur)) return;
     if (inDanger) {
@@ -307,8 +326,8 @@ export class Bot implements IBot {
     const W = a.width;
     const canBomb = p.curse !== Curse.Constipation && p.carrying < 0 && this.ownBombs(a, p) < p.bombs;
     const radius = p.curse === Curse.TinyFlame ? 1 : p.radius;
-    const enemies = this.enemies(a, p);
-    const sudden = a.world.phase === Phase.SuddenDeath;
+    const enemies = this.enemies(a, p, NEAREST_ENEMIES);
+    const sudden = a.world.zoneRing > 0 || a.world.zoneIn > 0;
     const midX = (a.width - 1) / 2;
     const midY = (a.height - 1) / 2;
     let best = -1;
@@ -440,11 +459,18 @@ export class Bot implements IBot {
     return bricks * 12 + foes * 30 * this.tune.aggression;
   }
 
-  private enemies(a: Analysis, p: PlayerState): { x: number; y: number }[] {
-    const out: { x: number; y: number }[] = [];
+  /** Living opponents, nearest first (optionally only the `limit` nearest). */
+  private enemies(a: Analysis, p: PlayerState, limit = Infinity): { x: number; y: number; d: number }[] {
+    const out: { x: number; y: number; d: number }[] = [];
     for (const q of a.world.players.values()) {
       if (q === p || !q.alive || !q.inRound) continue;
-      out.push({ x: Math.round(q.x), y: Math.round(q.y) });
+      const x = Math.round(q.x);
+      const y = Math.round(q.y);
+      out.push({ x, y, d: Math.abs(x - p.x) + Math.abs(y - p.y) });
+    }
+    if (out.length > limit) {
+      out.sort((u, v) => u.d - v.d);
+      out.length = limit;
     }
     return out;
   }

@@ -48,12 +48,20 @@ export type GameEvent =
   | { type: 'playerDied'; player: string; killer: string; x: number; y: number }
   | { type: 'playerRespawned'; player: string; x: number; y: number }
   | { type: 'curseApplied'; player: string; curse: Curse; from: string }
-  | { type: 'effectEnded'; player: string; effect: 'shield' | 'ghost' | 'crazy' | 'fire' | 'curse' }
+  | { type: 'effectEnded'; player: string; effect: EffectName }
   | { type: 'countdown'; seconds: number }
   | { type: 'roundStart'; round: number }
-  | { type: 'suddenDeath' }
+  | { type: 'suddenDeath' }                         // first ring of the zone closes
+  | { type: 'zoneWarning'; seconds: number }       // "the map shrinks in N s"
+  | { type: 'zoneCancel' }                         // fewer than 2 players: shrink cancelled
+  | { type: 'zoneShrink'; ring: number }           // ring closes now (its blocks fall over FALL_TIME)
   | { type: 'blockFell'; x: number; y: number }
   | { type: 'roundOver'; winner: string };
+
+/** Timed effects that announce their end. */
+export type EffectName =
+  | 'shield' | 'ghost' | 'crazy' | 'fire' | 'curse' | 'speed'
+  | 'kick' | 'glove' | 'punch' | 'remote' | 'pierce' | 'lineBomb' | 'bombPass';
 
 export type GameEventType = GameEvent['type'];
 

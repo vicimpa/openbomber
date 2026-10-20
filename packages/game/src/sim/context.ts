@@ -21,7 +21,8 @@ export interface PlayerInternal {
 
 export interface BombInternal {
   pierce: boolean;
-  remote: boolean;
+  /** Who gets the kill: the owner, or whoever kicked / threw / chained it last (legacy). */
+  credit: string;
   /** Current flight leg (Flying only). */
   flightTotal: number;
   flightElapsed: number;
@@ -38,18 +39,26 @@ export interface SimCtx {
   hidden: Int8Array;
   /** Per tile: id of the flame burning there, 0 = none. */
   flameGrid: Int32Array;
+  /** Per tile: id of the last pickup spawned there (stale ids resolve to nothing; ids never repeat). */
+  pickupGrid: Int32Array;
+  /** Per tile: grounded bomb id, rebuilt before each batch of explosions. */
+  bombGrid: Int32Array;
   /** Per tile: ticks a just-destroyed brick still stops (non-pierce) flames. */
   brickBurn: Uint8Array;
   brickBurnCount: number;
   players: Map<string, PlayerInternal>;
   bombs: Map<number, BombInternal>;
   spawns: { x: number; y: number }[];
-  /** Sudden death spiral (tile indices) and progress. */
-  spiral: Int32Array;
-  spiralPos: number;
-  suddenTimer: number;
-  /** Players that started the current round (decides when it is over). */
-  roundPlayers: number;
+  /** Ticks before the next zone warning may be issued (WAIT_FOR_LIMIT after start / a shrink). */
+  zoneQuiet: number;
+  /** The round can produce a winner (started with >= 2 players; legacy isHaveWin). */
+  hasWin: boolean;
+  /** Deaths so far this round (a leaver can't cancel a win once someone died). */
+  roundDeaths: number;
+  /** Bomb placement allowed this step (legacy: not once a multiplayer round is decided). */
+  bombsAllowed: boolean;
+  /** Tests / tools: suspend round end, restarts and zone shrink. */
+  hold: boolean;
 }
 
 export function emit(ctx: SimCtx, ev: GameEvent) {

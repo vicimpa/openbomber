@@ -121,10 +121,25 @@ export function makeTextures() {
     '..KKKKK..',
   ], { K: '#2a2140', W: '#f1ecff', R: '#ff3355' });
 
+  // soft pixel smoke puff (white, tinted at runtime)
+  const puff = (() => {
+    const n = 12;
+    const [c, g] = canvas(n, n);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const dx = x + 0.5 - n / 2, dy = y + 0.5 - n / 2, d = Math.hypot(dx, dy) / (n / 2);
+      if (d > 1) continue;
+      const light = dx + dy < -2 ? 1 : dx + dy > 3 ? 0.78 : 0.9;
+      const v = Math.round(255 * light);
+      g.fillStyle = `rgba(${v},${v},${v},${d > 0.8 ? 0.55 : 0.9})`;
+      g.fillRect(x, y, 1, 1);
+    }
+    return fromCanvas(c);
+  })();
+
   const chip = pixels(['bb', 'bk'], { b: '#c86a48', k: '#8a3f34' });
   const pebble = pixels(['.g.', 'ggG', '.G.'], { g: '#b9b3a8', G: '#7d776e' });
 
-  return { glow, shadow, blockShadow, ring, vignette, star, sparkle, marker, skull, chip, pebble, white: Texture.WHITE };
+  return { puff, glow, shadow, blockShadow, ring, vignette, star, sparkle, marker, skull, chip, pebble, white: Texture.WHITE };
 }
 
 export type ProcTextures = ReturnType<typeof makeTextures>;

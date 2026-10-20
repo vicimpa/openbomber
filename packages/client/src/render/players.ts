@@ -114,7 +114,9 @@ export class PlayerView {
     this.shieldBack.visible = this.shieldFront.visible = shield;
     this.fireBack.visible = this.fireFront.visible = fire;
     this.crazy.visible = p.effects.crazy > 0;
-    this.kicking.visible = (p.abilities & Ability.Kick) !== 0;
+    // abilities are timed in v2 (effects.kick etc. when present): blink the overlay before it runs out
+    const kickLeft = (p.effects as unknown as Record<string, number | undefined>).kick;
+    this.kicking.visible = (p.abilities & Ability.Kick) !== 0 && (kickLeft === undefined || warn(kickLeft) || kickLeft <= 0);
     this.shieldBack.tick(dt); this.shieldFront.tick(dt);
     this.fireBack.tick(dt); this.fireFront.tick(dt);
     this.crazy.tick(dt); this.kicking.tick(dt);
@@ -163,8 +165,9 @@ export class PlayerView {
     const ny = y - (cursed ? 46 : 36);
     this.tag.position.set(x, ny);
     if (this.name.text !== p.name) this.name.text = p.name;
-    this.name.tint = local ? 0xffe14d : p.isBot ? 0xc9c4d9 : 0xffffff;
-    this.name.alpha = local ? 1 : 0.85;
+    // canon: red nick above the hero
+    this.name.tint = local ? 0xff5a4a : 0xe8423a;
+    this.name.alpha = local ? 1 : 0.9;
     this.marker.visible = local;
     if (local) this.marker.y = -11 - Math.round(Math.abs(Math.sin(this.time * 4)) * 3);
   }

@@ -115,3 +115,47 @@ export class Track {
     out.dir = this.dirs[oldest]!; out.moving = this.moving[oldest] === 1;
   }
 }
+
+/** Ring buffer of one bomb's recent positions (x, y, flight progress), same timing as Track. */
+export class BombTrack {
+  private readonly ticks = new Float64Array(CAP);
+  private readonly xs = new Float64Array(CAP);
+  private readonly ys = new Float64Array(CAP);
+  private readonly ps = new Float64Array(CAP);
+  private n = 0;
+  private head = 0;
+
+  push(tick: number, x: number, y: number, progress: number) {
+    if (this.n > 0) {
+      const last = this.ticks[this.head]!;
+      if (tick < last) this.n = 0;
+      else if (tick === last) { this.xs[this.head] = x; this.ys[this.head] = y; this.ps[this.head] = progress; return; }
+    }
+    this.head = (this.head + 1) % CAP;
+    this.ticks[this.head] = tick; this.xs[this.head] = x; this.ys[this.head] = y; this.ps[this.head] = progress;
+    if (this.n < CAP) this.n++;
+  }
+
+  /** Interpolated position at `renderTick` (holds the ends, no extrapolation; wraps snap). */
+  sample(renderTick: number, out: { x: number; y: number; progress: number }) {
+    if (this.n === 0) return;
+    let b = this.head;
+    if (renderTick >= this.ticks[b]!) { out.x = this.xs[b]!; out.y = this.ys[b]!; out.progress = this.ps[b]!; return; }
+    for (let k = 1; k < this.n; k++) {
+      const a = (this.head - k + CAP) % CAP;
+      const ta = this.ticks[a]!;
+      if (ta > renderTick) { b = a; continue; }
+      const tb = this.ticks[b]!;
+      const f = tb > ta ? (renderTick - ta) / (tb - ta) : 1;
+      const ax = this.xs[a]!, ay = this.ys[a]!, bx = this.xs[b]!, by = this.ys[b]!;
+      if (Math.hypot(bx - ax, by - ay) > TELEPORT_DIST || this.ps[b]! < this.ps[a]!) {
+        out.x = ax; out.y = ay; out.progress = this.ps[a]!;   // wrap-around throw / new flight
+      } else {
+        out.x = ax + (bx - ax) * f; out.y = ay + (by - ay) * f;
+        out.progress = this.ps[a]! + (this.ps[b]! - this.ps[a]!) * f;
+      }
+      return;
+    }
+    out.x = this.xs[b]!; out.y = this.ys[b]!; out.progress = this.ps[b]!;
+  }
+}

@@ -20,7 +20,11 @@ import { settings, updateSettings, type Settings } from './settings';
 export { settings, updateSettings, type Settings };
 
 // ---------------------------------------------------------------- navigation
-/** 'loader' (asset preload + "Играть" gesture) → 'menu' → 'connecting' → 'game'. */
+/**
+ * 'loader' (asset preload + "Играть" gesture) → 'game' (the shared world, spectating first; the
+ * menu is a drawer over it). 'connecting' overlays the world while switching rooms.
+ * 'menu' is kept for compatibility and renders like 'game'.
+ */
 export type Screen = 'loader' | 'menu' | 'connecting' | 'game';
 export const screen = signal<Screen>('loader');
 
@@ -34,7 +38,7 @@ export function registerLoadTask<T>(p: Promise<T>): Promise<T> {
 }
 export function pendingLoadTasks() { return loadTasks; }
 
-export type ModalId = null | 'settings' | 'howto' | 'join' | 'bots' | 'pause' | 'leave' | 'skin' | 'links';
+export type ModalId = null | 'settings' | 'howto' | 'join' | 'bots' | 'leave' | 'skin';
 /** Stack of open modals (top = last). */
 export const modals = signal<Exclude<ModalId, null>[]>([]);
 export const topModal = computed<ModalId>(() => modals.value[modals.value.length - 1] ?? null);
@@ -70,9 +74,17 @@ export const stage = signal<HTMLElement | null>(null);
 
 /** Chat drawer open (T / 💬); its input gets focus. */
 export const chatOpen = signal(false);
+/** Menu drawer open (☰ / Esc / gamepad Start). */
+export const menuOpen = signal(false);
 export const scoreboardOpen = signal(false);
 /** True while the UI owns the keyboard (chat input, modal). Session: input.setEnabled(!value). */
-export const uiCapturesInput = computed(() => chatOpen.value || modals.value.length > 0);
+export const uiCapturesInput = computed(() => chatOpen.value || menuOpen.value || modals.value.length > 0);
+
+/** Players of the current world (scoreboard order) — derived from `hud`. */
+export const players = computed(() => hud.value?.players ?? []);
+/** People watching the room without a PlayerState (canon «Наблюдателей: N»). Session sets it. */
+export interface SpectatorInfo { id: string; name: string }
+export const spectators = signal<SpectatorInfo[]>([]);
 
 export const chat = signal<(ChatMessage & { id: number })[]>([]);
 let chatSeq = 0;
@@ -132,6 +144,8 @@ export interface OfflineOptions { bots: number; difficulty: Difficulty }
 export interface Actions {
   /** The player pressed "Играть" on the loader (a user gesture: unlock audio, start the attract-mode arena). */
   start(): void;
+  /** Canon core loop: «Подключиться» (true) enters the round, «Отключиться» (false) back to spectating. */
+  play(enabled: boolean): void | Promise<void>;
   quickPlay(): void | Promise<void>;
   createPrivate(): void | Promise<void>;
   joinByCode(code: string): void | Promise<void>;
@@ -149,6 +163,7 @@ const log = (name: string) => (...args: unknown[]) => console.info(`[ui stub] ${
 
 const stubActions: Actions = {
   start: log('start'),
+  play: log('play'),
   quickPlay: log('quickPlay'),
   createPrivate: log('createPrivate'),
   joinByCode: log('joinByCode'),
@@ -171,6 +186,7 @@ export function bindActions(next: Partial<Actions>): () => void {
 /** Stable facade: always calls the currently bound implementation. */
 export const actions: Actions = {
   start: () => impl.start(),
+  play: (v) => impl.play(v),
   quickPlay: () => impl.quickPlay(),
   createPrivate: () => impl.createPrivate(),
   joinByCode: (code) => impl.joinByCode(code),
@@ -197,6 +213,7 @@ export function resetGameState() {
   chat.value = [];
   killFeed.value = [];
   chatOpen.value = false;
+  menuOpen.value = false;
   scoreboardOpen.value = false;
   room.value = null;
   closeAllModals();

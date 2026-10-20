@@ -8,23 +8,13 @@
 // - Countdown fields are sent as ABSOLUTE ticks (`*At`) instead of "ticks remaining", so
 //   they only change when an effect starts/stops instead of every tick:
 //     remaining = at > 0 ? max(0, at - state.tick) : 0
+//   Player `effects` is a map { <TimedEffects key>: endTick } using the same rule.
 //   Bomb `fuseAt` is the same, except that a negative value is the raw (remote) fuse.
 // - Hidden data is never synced: pickups inside bricks live only inside the simulation,
 //   `BombState.dud` (crazy bomb that will fizzle) is not sent, nor are `seed` / `nextId`.
 // - Map keys for bombs / flames / pickups are `String(id)`; players are keyed by id.
 
 import { schema, t, type SchemaType } from '@colyseus/schema';
-
-export const EffectsSchema = schema({
-  shieldAt: t.uint32().default(0),
-  ghostAt: t.uint32().default(0),
-  crazyAt: t.uint32().default(0),
-  fireAt: t.uint32().default(0),
-  curseAt: t.uint32().default(0),
-  invulnerableAt: t.uint32().default(0),
-  stunAt: t.uint32().default(0),
-}, 'Effects');
-export type EffectsSchema = SchemaType<typeof EffectsSchema>;
 
 export const PlayerSchema = schema({
   id: t.string().default(''),
@@ -43,7 +33,9 @@ export const PlayerSchema = schema({
   speedLevel: t.uint8().default(0),
   abilities: t.uint16().default(0),
   curse: t.uint8().default(0),
-  effects: EffectsSchema,
+  /** TimedEffects as absolute end ticks, keyed by field name (generic: new effect fields
+   *  in the contract are mirrored without schema changes). */
+  effects: t.map('uint32'),
   carrying: t.int32().default(-1),
   respawnAt: t.uint32().default(0),
   wins: t.uint16().default(0),
@@ -107,6 +99,14 @@ export const BattleState = schema({
   width: t.uint8().default(0),
   height: t.uint8().default(0),
   winner: t.string().default(''),
+  /** Zone shrink: rings already closed. */
+  zoneRing: t.uint8().default(0),
+  /** Tick at which the next ring closes (0 = nothing pending), see `*At` rule. */
+  zoneAt: t.uint32().default(0),
+  /** Connected clients that are not in the arena. */
+  spectators: t.uint16().default(0),
+  /** Arena capacity (sim players incl. bots). */
+  maxPlayers: t.uint8().default(0),
   /** width * height Tile values, index = y * width + x; patched per index. */
   tiles: t.array('uint8'),
   players: t.map(PlayerSchema),
@@ -119,11 +119,20 @@ export type BattleState = SchemaType<typeof BattleState>;
 
 /** Room listing metadata (also returned by GET /rooms). */
 export interface RoomMeta {
+  /** Human players in the arena. */
   humans: number;
   bots: number;
+  spectators: number;
   phase: number;
   round: number;
   maxPlayers: number;
+  main: boolean;
+}
+
+/** server -> client reply to MSG.play. */
+export interface PlayReply {
+  playing: boolean;
+  reason?: 'full' | 'rate';
 }
 
 /** One entry of GET /rooms (public rooms only). */

@@ -3,7 +3,7 @@
 
 import type { BombState, FlameState, PickupState, PlayerState, TimedEffects, WorldState } from '@ob/game';
 import {
-  type BattleState, type EffectsSchema, BombSchema, FallingSchema, FlameSchema, PickupSchema, PlayerSchema,
+  type BattleState, BombSchema, FallingSchema, FlameSchema, PickupSchema, PlayerSchema,
 } from './schema.ts';
 
 const at = (remaining: number, tick: number) => (remaining > 0 ? tick + remaining : 0);
@@ -14,14 +14,11 @@ function set<T extends object>(obj: T, key: keyof T & string, v: unknown) {
   if ((obj as Writable)[key] !== v) (obj as Writable)[key] = v;
 }
 
-function syncEffects(s: EffectsSchema, e: TimedEffects, tick: number) {
-  set(s, 'shieldAt', at(e.shield, tick));
-  set(s, 'ghostAt', at(e.ghost, tick));
-  set(s, 'crazyAt', at(e.crazy, tick));
-  set(s, 'fireAt', at(e.fire, tick));
-  set(s, 'curseAt', at(e.curse, tick));
-  set(s, 'invulnerableAt', at(e.invulnerable, tick));
-  set(s, 'stunAt', at(e.stun, tick));
+function syncEffects(s: PlayerSchema['effects'], e: TimedEffects, tick: number) {
+  for (const k in e) {
+    const v = at((e as unknown as Record<string, number>)[k]!, tick);
+    if (s.get(k) !== v) s.set(k, v);
+  }
 }
 
 function syncPlayer(s: PlayerSchema, p: PlayerState, tick: number) {
@@ -141,6 +138,8 @@ export function syncWorld(state: BattleState, w: WorldState) {
   set(state, 'width', w.width);
   set(state, 'height', w.height);
   set(state, 'winner', w.winner);
+  set(state, 'zoneRing', w.zoneRing ?? 0);
+  set(state, 'zoneAt', at(w.zoneIn ?? 0, tick));
 
   const tiles = state.tiles;
   const n = w.tiles.length;

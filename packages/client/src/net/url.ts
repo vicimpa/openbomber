@@ -26,3 +26,6 @@ export function toHttpUrl(wsUrl: string): string {
 export function normalizeRoomCode(code: string): string {
   return code.toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
+
+/** roomId of the persistent main public room (server: util.ts MAIN_ROOM_ID). */
+export const MAIN_ROOM_ID = 'MAIN';

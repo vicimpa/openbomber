@@ -12,12 +12,13 @@ installMockActions();
 
 render(<App />, document.getElementById('app')!);
 
-// Invite links: #room=CODE auto-joins (and keeps a banner in the menu if joining fails).
+// Invite links: #room=CODE. On first load the loader's button becomes «Войти в комнату CODE»
+// (that click is also the audio-unlock gesture); later hash changes join directly.
 const tryInvite = () => {
   const code = parseRoomHash();
-  if (!code || screen.peek() !== 'menu' || room.peek()?.code === code) return;
-  pendingInvite.value = code;
-  setTimeout(() => { pendingInvite.value = null; actions.joinByCode(code); }, 0);
+  if (!code || room.peek()?.code === code) return;
+  if (screen.peek() === 'loader') pendingInvite.value = code;
+  else actions.joinByCode(code);
 };
 tryInvite();
 window.addEventListener('hashchange', tryInvite);

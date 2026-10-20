@@ -213,9 +213,9 @@ export class Effects {
       });
       const puffs = this.lowQuality ? 1 : 2;
       for (let j = 0; j < puffs; j++) this.particles.spawn({
-        tex: this.a.smoke, x: px + rand(-9, 9), y: py + rand(-6, 9), z: rand(0, 6), vx: rand(-8, 8), vy: rand(-4, 4), vz: rand(14, 30),
+        tex: this.tx.puff, x: px + rand(-9, 9), y: py + rand(-6, 9), z: rand(0, 6), vx: rand(-8, 8), vy: rand(-4, 4), vz: rand(14, 30),
         life: rand(0.7, 1.2), delay: rand(0.33, 0.5), scale: rand(0.8, 1.3), scaleEnd: rand(1.8, 2.6),
-        alpha: 0.55, alphaEnd: 0, tint: 0x8a8296, spin: rand(-1, 1), rot: rand(0, 6),
+        alpha: 0.55, alphaEnd: 0, tint: 0xb8b2c4, spin: rand(-1, 1), rot: rand(0, 6),
       });
     }
   }
@@ -242,7 +242,7 @@ export class Effects {
       });
     }
     for (let i = 0; i < this.q(4); i++) this.particles.spawn({
-      tex: this.a.smoke, x: px + rand(-8, 8), y: py + rand(-4, 8), vz: rand(10, 25), vx: rand(-15, 15),
+      tex: this.tx.puff, x: px + rand(-8, 8), y: py + rand(-4, 8), vz: rand(10, 25), vx: rand(-15, 15),
       life: rand(0.5, 0.9), scale: 0.8, scaleEnd: 2, alpha: 0.5, alphaEnd: 0, tint: 0xb07a60,
     });
   }
@@ -252,7 +252,7 @@ export class Effects {
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 + rand(-0.2, 0.2);
       this.particles.spawn({
-        tex: this.a.smoke, x: x + Math.cos(a) * 8, y: y + Math.sin(a) * 5, z: 2,
+        tex: this.tx.puff, x: x + Math.cos(a) * 8, y: y + Math.sin(a) * 5, z: 2,
         vx: Math.cos(a) * speed * rand(0.7, 1.2), vy: Math.sin(a) * speed * 0.6, vz: rand(4, 18), drag: 4,
         life: rand(0.4, 0.75), scale: 0.6 * size, scaleEnd: 1.4 * size, alpha: 0.75, alphaEnd: 0, tint, spin: rand(-2, 2),
       });
@@ -276,7 +276,7 @@ export class Effects {
   fizzle(x: number, y: number) {
     const px = x * T, py = y * T;
     for (let i = 0; i < this.q(8); i++) this.particles.spawn({
-      tex: this.a.smoke, x: px + rand(-6, 6), y: py + rand(-6, 4), vz: rand(15, 35), vx: rand(-12, 12),
+      tex: this.tx.puff, x: px + rand(-6, 6), y: py + rand(-6, 4), vz: rand(15, 35), vx: rand(-12, 12),
       life: rand(0.8, 1.4), scale: 0.7, scaleEnd: 2.2, alpha: 0.7, alphaEnd: 0, tint: 0x9c98a8, spin: rand(-1, 1),
     });
     for (let i = 0; i < this.q(6); i++) this.particles.spawn({
@@ -326,7 +326,7 @@ export class Effects {
     const frames = this.a.fire.base;
     this.shot(f, this.over, frames.length / 12, k => { f.texture = frames[Math.min(frames.length - 1, Math.floor(k * frames.length))]; });
     for (let i = 0; i < this.q(5); i++) this.particles.spawn({
-      tex: this.a.smoke, x: px + rand(-6, 6), y: py, vz: rand(20, 40), life: rand(0.6, 1), scale: 0.6, scaleEnd: 1.6, alpha: 0.6, tint: 0x605860,
+      tex: this.tx.puff, x: px + rand(-6, 6), y: py, vz: rand(20, 40), life: rand(0.6, 1), scale: 0.6, scaleEnd: 1.6, alpha: 0.6, tint: 0x605860,
     });
   }
 
@@ -422,7 +422,7 @@ export class Effects {
   curse(x: number, y: number) {
     const px = x * T, py = y * T - 8;
     for (let i = 0; i < this.q(10); i++) this.particles.spawn({
-      tex: this.a.smoke, x: px + rand(-8, 8), y: py + rand(-6, 6), vz: rand(10, 30), vx: rand(-20, 20),
+      tex: this.tx.puff, x: px + rand(-8, 8), y: py + rand(-6, 6), vz: rand(10, 30), vx: rand(-20, 20),
       life: rand(0.6, 1), scale: 0.6, scaleEnd: 1.6, alpha: 0.7, alphaEnd: 0, tint: Math.random() < 0.5 ? 0x9a5cff : 0x5cff8a,
     });
     this.label(px, py - 18, 'CURSED!', 0xc58cff);
@@ -451,7 +451,7 @@ export class Effects {
 
   footDust(x: number, y: number) {
     this.particles.spawn({
-      tex: this.a.smoke, x: x + rand(-3, 3), y: y + rand(-1, 2), vz: rand(4, 10), vx: rand(-6, 6),
+      tex: this.tx.puff, x: x + rand(-3, 3), y: y + rand(-1, 2), vz: rand(4, 10), vx: rand(-6, 6),
       life: 0.4, scale: 0.35, scaleEnd: 0.8, alpha: 0.45, alphaEnd: 0, tint: 0xd8cdb8,
     });
   }

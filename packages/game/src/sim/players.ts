@@ -2,18 +2,19 @@
 // and player-vs-player touches (Fire, curse contagion).
 
 import {
+  BOMB_FUSE,
   FLAME_TIME,
   PLAYER_RADIUS,
   RESPAWN_DELAY,
   SPAWN_INVULNERABLE,
   START_BOMBS,
   START_RADIUS,
-  sec,
 } from '../contract/constants';
 import type { NewPlayer } from '../contract/api';
 import { Button } from '../contract/protocol';
 import { Ability, Curse, Dir, DIR_VEC, Phase, Tile, type PlayerState } from '../contract/types';
 import { circleTouchesTile } from './collision';
+import { emptyEffects, syncAbilities, TIMED_ABILITIES } from './effects';
 import { EMPTY_INPUT, emit, type PlayerInternal, type SimCtx } from './context';
 import {
   detonateRemote,
@@ -29,16 +30,13 @@ import { applyCurse, CURSE_IMMUNITY, freeTiles, scatterPickups } from './pickups
 import { applyMovement } from './movement';
 import { bombAtTile } from './world';
 
-/** "Instant" respawn while Waiting: just long enough to show the death. */
-export const WAITING_RESPAWN = sec(0.5);
 /** After a shield soaks a hit, the rest of that blast can't hurt you. */
 const SHIELD_GRACE = FLAME_TIME + 2;
 const FLAME_HIT_RADIUS = 0.6 * PLAYER_RADIUS;
 const TOUCH2 = (2 * PLAYER_RADIUS) ** 2;
 const MAX_QUEUE = 6;
 
-export const gameplayPhase = (ph: Phase) => ph === Phase.Waiting || ph === Phase.Playing || ph === Phase.SuddenDeath;
-export const realRound = (ph: Phase) => ph === Phase.Playing || ph === Phase.SuddenDeath;
+export const gameplayPhase = (ph: Phase) => ph === Phase.Playing || ph === Phase.SuddenDeath;
 
 export function createPlayer(np: NewPlayer): PlayerState {
   const p: PlayerState = {
@@ -58,7 +56,7 @@ export function createPlayer(np: NewPlayer): PlayerState {
     speedLevel: 0,
     abilities: 0,
     curse: Curse.None,
-    effects: { shield: 0, ghost: 0, crazy: 0, fire: 0, curse: 0, invulnerable: 0, stun: 0 },
+    effects: emptyEffects(),
     carrying: -1,
     respawnIn: 0,
     wins: 0,
@@ -74,9 +72,9 @@ export function createInternal(): PlayerInternal {
 }
 
 function clearEffects(p: PlayerState) {
-  const e = p.effects;
-  e.shield = e.ghost = e.crazy = e.fire = e.curse = e.invulnerable = e.stun = 0;
+  Object.assign(p.effects, emptyEffects());
   p.curse = Curse.None;
+  syncAbilities(p);
 }
 
 /** Fresh stats for a new round. */
@@ -143,7 +141,7 @@ export function updatePlayer(ctx: SimCtx, p: PlayerState) {
     }
   }
   const bombPressed = (pressed & Button.Bomb) !== 0;
-  if (bombPressed || p.curse === Curse.Diarrhea) tryPlaceBomb(ctx, p, bombPressed);
+  if (ctx.bombsAllowed && (bombPressed || p.curse === Curse.Diarrhea)) tryPlaceBomb(ctx, p, bombPressed);
 }
 
 // ---------------------------------------------------------------- damage
@@ -197,17 +195,15 @@ export function killPlayer(ctx: SimCtx, p: PlayerState, killer: string, force: b
   p.moving = false;
   if (p.carrying >= 0) dropCarried(ctx, p);
   releasePassers(ctx, p);
-  const counted = realRound(w.phase);
-  if (counted) {
-    p.deaths++;
-    if (killer && killer !== p.id) {
-      const k = w.players.get(killer);
-      if (k) k.kills++;
-    }
+  ctx.roundDeaths++;
+  // legacy: deaths count only with company; kills by another player always count
+  if (w.players.size > 1) p.deaths++;
+  if (killer && killer !== p.id) {
+    const k = w.players.get(killer);
+    if (k) k.kills++;
   }
   emit(ctx, { type: 'playerDied', player: p.id, killer, x: Math.round(p.x) | 0, y: Math.round(p.y) | 0 });
-  if (w.phase === Phase.Waiting) p.respawnIn = WAITING_RESPAWN;
-  else if (p.lives > 0) {
+  if (p.lives > 0) {
     p.lives--;
     p.respawnIn = RESPAWN_DELAY;
   } else scatterPickups(ctx, p);
@@ -302,9 +298,7 @@ export function spawnPlayerAt(p: PlayerState, x: number, y: number, invulnerable
 }
 
 function respawn(ctx: SimCtx, p: PlayerState) {
-  const pi = ctx.players.get(p.id)!;
-  const waiting = ctx.world.phase === Phase.Waiting;
-  const t = findSafeTile(ctx, p, waiting ? pi.spawnX : -1, waiting ? pi.spawnY : -1);
+  const t = findSafeTile(ctx, p, -1, -1);
   spawnPlayerAt(p, t.x, t.y, SPAWN_INVULNERABLE);
   emit(ctx, { type: 'playerRespawned', player: p.id, x: t.x, y: t.y });
 }
@@ -364,5 +358,18 @@ export function tickPlayers(ctx: SimCtx) {
       pi.curseImmune = CURSE_IMMUNITY;
       emit(ctx, { type: 'effectEnded', player: p.id, effect: 'curse' });
     }
+    if (e.speed > 0 && --e.speed === 0) emit(ctx, { type: 'effectEnded', player: p.id, effect: 'speed' });
+    for (const a of TIMED_ABILITIES) {
+      if (e[a.key] > 0 && --e[a.key] === 0) {
+        emit(ctx, { type: 'effectEnded', player: p.id, effect: a.key });
+        if (a.bit === Ability.Remote) timeRemoteBombs(ctx, p.id);
+      }
+    }
+    syncAbilities(p);
   }
+}
+
+/** Remote ran out: waiting bombs get a normal fuse. */
+function timeRemoteBombs(ctx: SimCtx, owner: string) {
+  for (const b of ctx.world.bombs.values()) if (b.owner === owner && b.fuse < 0) b.fuse = BOMB_FUSE;
 }

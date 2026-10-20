@@ -17,8 +17,7 @@ export function HowToPlayModal() {
       title={t('howto.title')}
       onClose={() => closeModal('howto')}
       size="lg"
-      accent="lime"
-      footer={<Button variant="primary" onClick={() => closeModal('howto')}>{t('settings.done')}</Button>}
+      footer={<Button variant="white" onClick={() => closeModal('howto')}>{t('settings.done')}</Button>}
     >
       <div class="howto">
         <section class="howto__goal">

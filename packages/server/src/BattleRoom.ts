@@ -1,4 +1,8 @@
 // One battle = one Colyseus room wrapping one authoritative Simulation.
+//
+// Canon: clients join as SPECTATORS (not in the sim). MSG.play true/false enters / leaves
+// the arena. The main public room ('MAIN') is created at boot and never disposed; private
+// and vs-bots rooms are extras.
 
 import { Room, type Client } from '@colyseus/core';
 import {
@@ -7,19 +11,22 @@ import {
   type RoomOptions,
 } from '@ob/game';
 import { getGameImpl, type GameImpl } from './game.ts';
-import { BattleState, type RoomMeta } from './schema.ts';
+import { BattleState, type PlayReply, type RoomMeta } from './schema.ts';
 import { syncWorld } from './sync.ts';
 import {
-  CHAT_COOLDOWN_MS, CHAT_MAX, NAME_MAX, SKIN_COUNT, TokenBucket, allocateRoomCode, clampInt, clampSkin,
-  cleanText, releaseRoomCode, sanitizeName,
+  CHAT_COOLDOWN_MS, CHAT_MAX, MAIN_ROOM_ID, NAME_MAX, SKIN_COUNT, TokenBucket, allocateRoomCode, clampInt,
+  clampSkin, cleanText, releaseRoomCode, sanitizeName,
 } from './util.ts';
 
 export const DEFAULT_BOTS = 3;
 /** Max frames accepted per input message (client sends 2 per message normally). */
 export const MAX_INPUT_BATCH = 12;
-/** Bots think every N ticks (staggered); the sim repeats their last input in between.
- *  Bot's internal timers assume 1 (one think per tick). */
+/** Bots think every N ticks (staggered). Bot's internal timers assume 1. */
 export const BOT_THINK_EVERY = 1;
+/** Connected clients per room (players + spectators). */
+export const MAX_CLIENTS = Number(process.env.MAX_CLIENTS) || 200;
+/** Main room: bots that keep a lone human company (only while exactly one human plays). */
+export const BOTS_MAIN = clampInt(Number(process.env.BOTS_MAIN), 0, 4, 0);
 /** Max fixed steps per timer callback before dropping the backlog (e.g. after a GC pause). */
 const MAX_CATCHUP = 6;
 const TICK_SAMPLES = 4096;
@@ -28,14 +35,33 @@ const BUTTON_MASK = Button.Bomb | Button.Action;
 const BOT_NAMES = ['Bot Rusty', 'Bot Sparky', 'Bot Boomer', 'Bot Fuse', 'Bot Blaze', 'Bot Pixel', 'Bot Dyna',
   'Bot Nitro', 'Bot Cinder', 'Bot Volt', 'Bot Ember', 'Bot Kaboom', 'Bot Ash', 'Bot Flint', 'Bot Smokey'];
 
+/** Canon system chat (sent from '@server', i.e. from === ''). */
+export const T = {
+  joined: (n: string) => `${n} подключился`,
+  left: (n: string) => `${n} отключился`,
+  renamed: (a: string, b: string) => `${a} теперь ${b}`,
+  mapResized: 'Размер карты был изменен',
+  winner: (n: string) => `${n} победил`,
+  noWinner: 'Никто не выиграл',
+  zoneWarning: (sec: number) => `Уменьшение размера карты через ${sec} сек`,
+  zoneCancel: 'Уменьшение размера карты отменено',
+  full: 'Нет свободных мест',
+};
+
+/** Server-only token: only startGameServer() may create the main room. */
+export const MAIN_TOKEN = crypto.randomUUID();
+
 interface Human {
   name: string;
+  skin: number;
+  playing: boolean;
   lastSeq: number;
   connected: boolean;
   lastChat: number;
   inputs: TokenBucket;
   profile: TokenBucket;
   pings: TokenBucket;
+  plays: TokenBucket;
   droppedFrames: number;
 }
 
@@ -44,7 +70,7 @@ interface BotSlot {
   seq: number;
 }
 
-export type BattleCreateOptions = RoomOptions & Partial<JoinOptions>;
+export type BattleCreateOptions = RoomOptions & Partial<JoinOptions> & { __main?: string; play?: boolean };
 
 function parseFrame(raw: unknown): InputFrame | null {
   let seq: unknown, dx: number, dy: number, buttons: unknown;
@@ -69,15 +95,20 @@ function parseFrame(raw: unknown): InputFrame | null {
   return { seq, dx, dy, buttons: b };
 }
 
+const evType = (e: GameEvent) => (e as { type: string }).type;
+
 export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }> {
-  /** Seconds a dropped player is kept (frozen) waiting for reconnection. */
+  /** Seconds a dropped client is kept (a player stays frozen in the sim) awaiting reconnection. */
   static reconnectSeconds = 20;
 
   state = new BattleState();
-  maxClients = MAX_PLAYERS;
+  maxClients = MAX_CLIENTS;
   maxMessagesPerSecond = 120;
 
   sim!: ISimulation;
+  /** Max players in the sim (humans + bots); everyone else spectates. */
+  maxPlayers = MAX_PLAYERS;
+  isMain = false;
   private game!: GameImpl;
   private code = '';
   private botTarget = DEFAULT_BOTS;
@@ -88,6 +119,8 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
   private events: GameEvent[] = [];
   private lastPhase = -1;
   private lastRound = -1;
+  private lastW = 0;
+  private lastH = 0;
 
   // tick timing stats (ms per sim step, incl. bots)
   private readonly tickSamples = new Float64Array(TICK_SAMPLES);
@@ -96,12 +129,18 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
 
   async onCreate(options: BattleCreateOptions = {}) {
     this.game = getGameImpl();
-    const maxPlayers = clampInt(options.maxPlayers, 2, MAX_PLAYERS, MAX_PLAYERS);
-    this.maxClients = maxPlayers;
-    this.botTarget = clampInt(options.bots, 0, maxPlayers - 1, DEFAULT_BOTS);
-    this.code = allocateRoomCode();
-    this.roomId = this.code;
-    if (options.private) await this.setPrivate(true);
+    this.maxPlayers = clampInt(options.maxPlayers, 1, MAX_PLAYERS, MAX_PLAYERS);
+    this.isMain = options.__main === MAIN_TOKEN;
+    if (this.isMain) {
+      this.roomId = MAIN_ROOM_ID;
+      this.autoDispose = false;
+      this.botTarget = BOTS_MAIN;
+    } else {
+      this.botTarget = clampInt(options.bots, 0, this.maxPlayers - 1, DEFAULT_BOTS);
+      this.code = allocateRoomCode();
+      this.roomId = this.code;
+      if (options.private) await this.setPrivate(true);
+    }
 
     this.sim = this.game.createSimulation({ minPlayers: 2 });
     this.setPatchRate(1000 / PATCH_RATE);
@@ -110,6 +149,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     this.onMessage(MSG.input, (client, msg: unknown) => this.handleInput(client, msg));
     this.onMessage(MSG.chat, (client, msg: unknown) => this.handleChat(client, msg));
     this.onMessage(MSG.profile, (client, msg: unknown) => this.handleProfile(client, msg));
+    this.onMessage(MSG.play, (client, msg: unknown) => this.handlePlay(client, msg === true));
     this.onMessage(MSG.ping, (client, msg: unknown) => {
       const h = this.humans.get(client.sessionId);
       if (!h || typeof msg !== 'number' || !Number.isFinite(msg) || !h.pings.take()) return;
@@ -118,22 +158,21 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     this.updateMeta();
   }
 
-  onJoin(client: Client, options?: Partial<JoinOptions>) {
-    const id = client.sessionId;
-    const name = sanitizeName(options?.name);
-    this.humans.set(id, {
-      name,
+  onJoin(client: Client, options?: Partial<JoinOptions> & { play?: boolean }) {
+    this.humans.set(client.sessionId, {
+      name: sanitizeName(options?.name),
+      skin: clampSkin(options?.skin),
+      playing: false,
       lastSeq: 0,
       connected: true,
       lastChat: 0,
       inputs: new TokenBucket(TICK_RATE / 2, TICK_RATE * 1.25),
       profile: new TokenBucket(3, 0.5),
       pings: new TokenBucket(5, 2),
+      plays: new TokenBucket(4, 1),
       droppedFrames: 0,
     });
-    this.reconcileBots(); // frees a slot first if bots would overflow the arena
-    this.sim.addPlayer({ id, name, skin: clampSkin(options?.skin) });
-    this.systemChat(`${name} joined`);
+    if (options?.play === true) this.setPlaying(client, true);
     this.updateMeta();
   }
 
@@ -141,41 +180,99 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     const h = this.humans.get(client.sessionId);
     if (h) {
       h.connected = false;
-      // Freeze: the sim repeats the last input, so feed it a neutral one.
-      h.lastSeq += 1;
-      this.sim.pushInput(client.sessionId, { seq: h.lastSeq, dx: 0, dy: 0, buttons: 0 });
+      if (h.playing) {
+        // Freeze: the sim repeats the last input, so feed it a neutral one.
+        h.lastSeq += 1;
+        this.sim.pushInput(client.sessionId, { seq: h.lastSeq, dx: 0, dy: 0, buttons: 0 });
+      }
     }
     // On expiry Colyseus calls onLeave(), which removes the player.
-    // (rejects when the room is disposing, e.g. on shutdown; expiry is handled by Colyseus)
+    // (rejects when the room is disposing, e.g. on shutdown)
     Promise.resolve(this.allowReconnection(client, BattleRoom.reconnectSeconds)).catch(() => {});
   }
 
   onReconnect(client: Client) {
     const h = this.humans.get(client.sessionId);
-    if (h) h.connected = true;
+    if (h) h.connected = true; // a player is still in the sim: playing state is restored as-is
   }
 
   onLeave(client: Client) {
     const id = client.sessionId;
     const h = this.humans.get(id);
     if (!h) return;
+    if (h.playing) this.leaveArena(id, h);
     this.humans.delete(id);
-    this.sim.removePlayer(id);
-    this.systemChat(`${h.name} left`);
     this.reconcileBots();
     this.updateMeta();
   }
 
   onDispose() {
-    releaseRoomCode(this.code);
+    if (this.code) releaseRoomCode(this.code);
   }
 
   onBeforePatch() {
-    syncWorld(this.state, this.sim.state);
+    const s = this.state;
+    syncWorld(s, this.sim.state);
+    const spectators = this.humans.size - this.playingCount();
+    if (s.spectators !== spectators) s.spectators = spectators;
+    if (s.maxPlayers !== this.maxPlayers) s.maxPlayers = this.maxPlayers;
     if (this.events.length > 0) {
       (this as Room).broadcast(MSG.events, this.events, { afterNextPatch: true });
       this.events = [];
     }
+  }
+
+  // ------------------------------------------------------------------ arena entry / exit
+
+  private playingCount() {
+    let n = 0;
+    for (const h of this.humans.values()) if (h.playing) n++;
+    return n;
+  }
+
+  private handlePlay(client: Client, enabled: boolean) {
+    const h = this.humans.get(client.sessionId);
+    if (!h) return;
+    if (!h.plays.take()) {
+      this.reply(client, { playing: h.playing, reason: 'rate' });
+      return;
+    }
+    this.setPlaying(client, enabled);
+    this.updateMeta();
+  }
+
+  private setPlaying(client: Client, enabled: boolean) {
+    const id = client.sessionId;
+    const h = this.humans.get(id)!;
+    if (enabled === h.playing) { this.reply(client, { playing: h.playing }); return; }
+    if (!enabled) {
+      this.leaveArena(id, h);
+      this.reconcileBots();
+      this.reply(client, { playing: false });
+      return;
+    }
+    // need a free slot: drop a bot first if the arena is full
+    if (this.sim.state.players.size >= this.maxPlayers) this.removeBots(1, true);
+    if (this.sim.state.players.size >= this.maxPlayers) {
+      this.whisper(client, T.full);
+      this.reply(client, { playing: false, reason: 'full' });
+      return;
+    }
+    h.playing = true;
+    this.sim.addPlayer({ id, name: h.name, skin: h.skin });
+    this.systemChat(T.joined(h.name));
+    this.reconcileBots();
+    this.reply(client, { playing: true });
+  }
+
+  private leaveArena(id: string, h: Human) {
+    h.playing = false;
+    this.sim.removePlayer(id);
+    this.systemChat(T.left(h.name));
+  }
+
+  private reply(client: Client, r: PlayReply) {
+    client.send(MSG.play, r);
   }
 
   // ------------------------------------------------------------------ simulation
@@ -207,9 +304,18 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     for (let i = 0; i < ev.length; i++) {
       const e = ev[i]!;
       this.events.push(e);
-      if (e.type === 'roundOver') this.announceWinner(e.winner);
+      switch (evType(e)) {
+        case 'roundOver': this.announceWinner((e as { winner: string }).winner); break;
+        case 'zoneWarning': this.systemChat(T.zoneWarning((e as { seconds?: number }).seconds ?? 15)); break;
+        case 'zoneCancel': this.systemChat(T.zoneCancel); break;
+      }
     }
     const w = sim.state;
+    if (w.width !== this.lastW || w.height !== this.lastH) {
+      if (this.lastW !== 0) this.systemChat(T.mapResized);
+      this.lastW = w.width;
+      this.lastH = w.height;
+    }
     if (w.phase !== this.lastPhase || w.round !== this.lastRound) {
       this.lastPhase = w.phase;
       this.lastRound = w.round;
@@ -243,33 +349,38 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
 
   // ------------------------------------------------------------------ bots
 
-  /** Bots fill the room up to `bots` while humans are few, never below 2 players total. */
+  /**
+   * Main room: BOTS_MAIN bots only while exactly one human plays (default 0, canon).
+   * Other rooms: fill up to `bots` while human players are few, never below 2 players total.
+   */
   private desiredBots(): number {
-    const humans = this.humans.size;
-    if (humans === 0 || this.botTarget === 0) return 0;
-    const want = Math.max(this.botTarget - (humans - 1), 2 - humans, 0);
-    return Math.min(want, MAX_PLAYERS - humans);
+    const n = this.playingCount();
+    if (this.isMain) return n === 1 ? Math.min(this.botTarget, this.maxPlayers - 1) : 0;
+    if (n === 0 || this.botTarget === 0) return 0;
+    const want = Math.max(this.botTarget - (n - 1), 2 - n, 0);
+    return Math.min(want, this.maxPlayers - n);
   }
 
   private reconcileBots() {
     const want = this.desiredBots();
-    while (this.bots.size < want) this.addBot();
+    while (this.bots.size < want && this.sim.state.players.size < this.maxPlayers) this.addBot();
     if (this.bots.size <= want) return;
-
     const phase = this.sim.state.phase;
     const between = phase === Phase.Waiting || phase === Phase.RoundOver || phase === Phase.Countdown;
-    // Prefer bots that are already out of the round.
+    this.removeBots(this.bots.size - want, between || this.sim.state.players.size > this.maxPlayers);
+    this.updateMeta();
+  }
+
+  /** Remove up to `n` bots; dead / spectating bots first, live ones only if `force`. */
+  private removeBots(n: number, force: boolean) {
     const ordered = [...this.bots.keys()].sort((a, b) => this.botScore(a) - this.botScore(b));
     for (const id of ordered) {
-      if (this.bots.size <= want) break;
-      const p = this.sim.state.players.get(id);
-      const out = !p || !p.alive || !p.inRound;
-      if (between || out || this.humans.size + this.bots.size > MAX_PLAYERS) {
-        this.bots.delete(id);
-        this.sim.removePlayer(id);
-      }
+      if (n <= 0) break;
+      if (!force && this.botScore(id) > 0) continue;
+      this.bots.delete(id);
+      this.sim.removePlayer(id);
+      n--;
     }
-    this.updateMeta();
   }
 
   private botScore(id: string) {
@@ -290,7 +401,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
   private handleInput(client: Client, msg: unknown) {
     const id = client.sessionId;
     const h = this.humans.get(id);
-    if (!h || !Array.isArray(msg) || msg.length === 0) return;
+    if (!h || !h.playing || !Array.isArray(msg) || msg.length === 0) return;
     const start = Math.max(0, msg.length - MAX_INPUT_BATCH);
     for (let i = start; i < msg.length; i++) {
       const f = parseFrame(msg[i]);
@@ -322,12 +433,12 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     if (typeof o.name === 'string') {
       const name = cleanText(o.name, NAME_MAX);
       if (name && name !== h.name) {
-        this.systemChat(`${h.name} is now ${name}`);
+        if (h.playing) this.systemChat(T.renamed(h.name, name));
         h.name = p.name = name;
       }
     }
-    if (o.skin !== undefined) p.skin = clampSkin(o.skin);
-    if (p.name !== undefined || p.skin !== undefined) this.sim.updateProfile(id, p);
+    if (o.skin !== undefined) h.skin = p.skin = clampSkin(o.skin);
+    if (h.playing && (p.name !== undefined || p.skin !== undefined)) this.sim.updateProfile(id, p);
   }
 
   private systemChat(text: string) {
@@ -335,27 +446,37 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     this.broadcast(MSG.chat, m);
   }
 
+  private whisper(client: Client, text: string) {
+    const m: ChatMessage = { from: '', name: '', text, at: Date.now() };
+    client.send(MSG.chat, m);
+  }
+
   private announceWinner(winner: string) {
     const p = winner ? this.sim.state.players.get(winner) : undefined;
-    this.systemChat(p ? `${p.name} wins round ${this.sim.state.round}!` : `Round ${this.sim.state.round}: draw`);
+    this.systemChat(p ? T.winner(p.name) : T.noWinner);
   }
 
   private updateMeta() {
     const w = this.sim?.state;
+    const players = this.playingCount();
     const meta: RoomMeta = {
-      humans: this.humans.size,
+      humans: players,
       bots: this.bots.size,
+      spectators: this.humans.size - players,
       phase: w?.phase ?? Phase.Waiting,
       round: w?.round ?? 0,
-      maxPlayers: this.maxClients,
+      maxPlayers: this.maxPlayers,
+      main: this.isMain,
     };
     const m = this.metadata;
-    if (m && m.humans === meta.humans && m.bots === meta.bots && m.phase === meta.phase && m.round === meta.round) return;
+    if (m && m.humans === meta.humans && m.bots === meta.bots && m.spectators === meta.spectators
+      && m.phase === meta.phase && m.round === meta.round) return;
     void this.setMetadata(meta);
   }
 
   // test / diagnostics helpers
-  get humanCount() { return this.humans.size; }
+  get humanCount() { return this.playingCount(); }
+  get clientCount() { return this.humans.size; }
   get botCount() { return this.bots.size; }
-  get roomCode() { return this.code; }
+  get roomCode() { return this.code || this.roomId; }
 }

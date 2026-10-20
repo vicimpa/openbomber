@@ -11,8 +11,7 @@ import explodeJson from '../assets/explode/explode.json';
 import explodePng from '../assets/explode/explode.png';
 import fireJson from '../assets/fire/fire.json';
 import firePng from '../assets/fire/fire.png';
-import ruinesJson from '../assets/ruines/ruines.json';
-import ruinesPng from '../assets/ruines/ruines.png';
+import terrainPng from '../assets/world/terrain.png';
 import dustJson from '../assets/dust/dust.json';
 import dustPng from '../assets/dust/dust.png';
 import shieldJson from '../assets/effects/shield.json';
@@ -23,7 +22,6 @@ import crazyJson from '../assets/effects/crazy.json';
 import crazyPng from '../assets/effects/crazy.png';
 import kickingJson from '../assets/effects/kicking.json';
 import kickingPng from '../assets/effects/kicking.png';
-import smokePng from '../assets/particles/smoke.png';
 import monocraftUrl from '../assets/fonts/Monocraft.otf';
 
 import { PickupType } from '@ob/game';
@@ -91,29 +89,24 @@ export const PICKUP_FRAME: Record<PickupType, string> = Object.fromEntries(
 export const FONT = 'Monocraft';
 
 export async function loadAssets() {
-  const [world, bombs, pickups, explodeTex, fire, ruinesTex, dust, shield, fxFire, crazy, kicking, smoke] = await Promise.all([
+  const [world, bombs, pickups, explodeTex, fire, terrain, dust, shield, fxFire, crazy, kicking] = await Promise.all([
     sheet(worldJson, worldPng),
     sheet(bombsJson, bombsPng).then(tags),
     sheet(pickupsJson, pickupsPng),
     Assets.load<Texture>(explodePng),
     sheet(fireJson, firePng).then(tags),
-    Assets.load<Texture>(ruinesPng),
+    Assets.load<Texture>(terrainPng),
     sheet(dustJson, dustPng).then(tags),
     sheet(shieldJson, shieldPng).then(tags),
     sheet(fxFireJson, fxFirePng).then(tags),
     sheet(crazyJson, crazyPng).then(f => tags(f)['']),
     sheet(kickingJson, kickingPng).then(f => tags(f)['']),
-    Assets.load<Texture>(smokePng),
   ]);
   const heroes: Tags[] = [];
   for (let i = 1; i <= 11; i++) {
     const key = `../assets/heroes/type${i}`;
     heroes.push(tags(await sheet(heroJson[key + '.json'], heroPng[key + '.png'])));
   }
-  const ruines = ruinesJson.frames.map(f => new Texture({
-    source: ruinesTex.source,
-    frame: new Rectangle(f.frame.x, f.frame.y, f.frame.w, f.frame.h),
-  }));
   const pickupTags = tags(pickups);
   const pickupIcon = {} as Record<PickupType, Texture>;
   for (const [type, name] of Object.entries(PICKUP_FRAME)) pickupIcon[Number(type) as PickupType] = pickups[name];
@@ -134,13 +127,12 @@ export async function loadAssets() {
     explode: sliceExplode(explodeJson, explodeTex, 'normal'),
     explodeFake: sliceExplode(explodeJson, explodeTex, 'fake'),
     fire,
-    ruines,
+    terrain,
     dust,
     shield,
     fxFire,
     crazy,
     kicking,
-    smoke,
     heroes,
   };
 }

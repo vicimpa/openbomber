@@ -4,7 +4,7 @@ import { CHAIN_DELAY, FLAME_TIME } from '../contract/constants';
 import { Dir, DIR_VEC, FlameShape, Tile, type BombState, type FlameState } from '../contract/types';
 import { emit, type SimCtx } from './context';
 import { pickupAt, spawnPickup } from './pickups';
-import { bombAtTile } from './world';
+import { bombIsGrounded } from './world';
 
 const END_SHAPE: Record<Dir, FlameShape> = {
   [Dir.Up]: FlameShape.EndUp,
@@ -40,9 +40,12 @@ export function addFlame(ctx: SimCtx, x: number, y: number, shape: FlameShape, o
   ctx.flameGrid[idx] = f.id;
 }
 
-/** Make a bomb go off after CHAIN_DELAY (unless it is already about to). */
-export function chainBomb(b: BombState) {
-  if (b.fuse <= 0 || b.fuse > CHAIN_DELAY) b.fuse = CHAIN_DELAY;
+/** Make a bomb go off after CHAIN_DELAY (unless it is already about to); `credit` gets its kills. */
+export function chainBomb(ctx: SimCtx, b: BombState, credit: string) {
+  if (b.fuse > 0 && b.fuse <= CHAIN_DELAY) return;
+  b.fuse = CHAIN_DELAY;
+  const bi = ctx.bombs.get(b.id);
+  if (bi) bi.credit = credit;
 }
 
 export function destroyBrick(ctx: SimCtx, x: number, y: number) {
@@ -87,8 +90,15 @@ function hitPickup(ctx: SimCtx, x: number, y: number): boolean {
   return true;
 }
 
-/** Detonate a bomb (already removed from the world by the caller). */
-export function explode(ctx: SimCtx, b: BombState, pierce: boolean) {
+/** Grounded bomb on a tile via ctx.bombGrid (exploded ones have left the map). */
+function gridBomb(ctx: SimCtx, x: number, y: number): BombState | undefined {
+  const w = ctx.world;
+  const b = w.bombs.get(ctx.bombGrid[y * w.width + x]!);
+  return b && bombIsGrounded(b) && Math.round(b.x) === x && Math.round(b.y) === y ? b : undefined;
+}
+
+/** Detonate a bomb (already removed from the world by the caller). Uses ctx.bombGrid. */
+export function explode(ctx: SimCtx, b: BombState, pierce: boolean, credit: string) {
   const w = ctx.world;
   const bx = Math.round(b.x);
   const by = Math.round(b.y);
@@ -100,8 +110,8 @@ export function explode(ctx: SimCtx, b: BombState, pierce: boolean) {
   if (bx >= 0 && by >= 0 && bx < w.width && by < w.height) {
     cells.push({ x: bx, y: by, shape: FlameShape.Center });
     hitPickup(ctx, bx, by);
-    const other = bombAtTile(w, bx, by);
-    if (other) chainBomb(other);
+    const other = gridBomb(ctx, bx, by);
+    if (other) chainBomb(ctx, other, credit);
   }
   for (const d of DIRS) {
     const [dx, dy] = DIR_VEC[d];
@@ -122,9 +132,9 @@ export function explode(ctx: SimCtx, b: BombState, pierce: boolean) {
         stop = true; // a brick destroyed a moment ago still soaks up the flame
       }
       if (hitPickup(ctx, x, y)) stop = true;
-      const other = bombAtTile(w, x, y);
+      const other = gridBomb(ctx, x, y);
       if (other) {
-        chainBomb(other);
+        chainBomb(ctx, other, credit);
         stop = true;
       }
       cells.push({ x, y, shape: mid });
@@ -132,6 +142,6 @@ export function explode(ctx: SimCtx, b: BombState, pierce: boolean) {
     }
     if (cells.length > start) cells[cells.length - 1]!.shape = END_SHAPE[d];
   }
-  for (const c of cells) addFlame(ctx, c.x, c.y, c.shape, b.owner);
-  emit(ctx, { type: 'explosion', bomb: b.id, owner: b.owner, x: bx, y: by, cells, power: b.radius });
+  for (const c of cells) addFlame(ctx, c.x, c.y, c.shape, credit);
+  emit(ctx, { type: 'explosion', bomb: b.id, owner: credit, x: bx, y: by, cells, power: b.radius });
 }

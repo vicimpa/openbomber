@@ -7,18 +7,18 @@ import type { PredictMovement } from '../contract/api';
 import {
   BASE_SPEED,
   BOMB_RADIUS,
+  FIRE_SPEED_MULT,
   INPUT_DEADZONE,
   PLAYER_RADIUS,
-  SPEED_STEP,
+  SPEED_MULT,
   TICK_RATE,
 } from '../contract/constants';
 import type { InputFrame } from '../contract/protocol';
 import { Ability, BombMotion, Curse, Dir, Phase, Tile, type BombState, type PlayerState, type WorldState } from '../contract/types';
 import { cir2cir, cir2sqr, type Vec } from './collision';
 
-export const FIRE_SPEED_MULT = 0.6;
-export const SLOW_SPEED_MULT = 0.5;
-export const FAST_SPEED_MULT = 1.6;
+export const SLOW_CURSE_MULT = 0.5;
+export const FAST_CURSE_MULT = 1.6;
 /** How far off a lane centre (in tiles) you must be for corner assist to steer you into the next lane. */
 export const CORNER_ASSIST_MIN = 0.1;
 
@@ -31,10 +31,11 @@ const NY = [0, -1, 0, 0, 1, -1, -1, 1, 1];
 
 /** Movement speed in tiles per tick. */
 export function playerSpeed(p: PlayerState): number {
-  let s = BASE_SPEED + SPEED_STEP * p.speedLevel;
+  let s = BASE_SPEED;
+  if (p.effects.speed > 0) s *= SPEED_MULT;
   if (p.effects.fire > 0) s *= FIRE_SPEED_MULT;
-  if (p.curse === Curse.Slow) s *= SLOW_SPEED_MULT;
-  else if (p.curse === Curse.Fast) s *= FAST_SPEED_MULT;
+  if (p.curse === Curse.Slow) s *= SLOW_CURSE_MULT;
+  else if (p.curse === Curse.Fast) s *= FAST_CURSE_MULT;
   return s / TICK_RATE;
 }
 

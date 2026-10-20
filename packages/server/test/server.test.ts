@@ -84,20 +84,31 @@ describe('http', () => {
   });
 });
 
+const chatsOf = (r: Room) => {
+  const got: ChatMessage[] = [];
+  r.onMessage(MSG.chat, (m: ChatMessage) => got.push(m));
+  return got;
+};
+/** Phase in which a player can move (stub has no phases). */
+const movablePhase = (sr: BattleRoom) => (useStub ? true : sr.sim.state.phase === 2 || sr.sim.state.phase === 3);
+
 describe('room', () => {
   let a: Room<any, BattleState>;
 
-  test('join: sanitised profile, state arrives', async () => {
-    a = await join('joinOrCreate', ROOM_NAME, { name: '  Al\u0000ice‮  ', skin: 999, bots: 0 });
+  test('join as player: sanitised profile, state arrives', async () => {
+    a = await join('create', ROOM_NAME, { private: true, name: '  Al\u0000ice‮  ', skin: 999, bots: 0, play: true });
     expect(a.roomId).toMatch(new RegExp(`^[${CODE_ALPHABET}]{5}$`));
     const me = await waitFor(() => a.state.width > 0 && a.state.players?.get(a.sessionId), 2000, 'state');
     expect(me.name).toBe('Alice');
     expect(me.skin).toBe(10);
     expect(a.state.tiles.length).toBe(a.state.width * a.state.height);
+    expect(a.state.maxPlayers).toBe(32);
+    expect(me.effects.size).toBeGreaterThanOrEqual(15); // generic TimedEffects map
   });
 
   test('inputs move the player authoritatively', async () => {
     const sr = serverRoom(a.roomId);
+    await waitFor(() => movablePhase(sr), 4000, 'playing phase');
     const p0 = sr.sim.state.players.get(a.sessionId)!;
     const startX = p0.x, startY = p0.y;
     const dx = startX < sr.sim.state.width / 2 ? 1 : -1;
@@ -106,7 +117,6 @@ describe('room', () => {
     expect(Math.abs(p.x - startX)).toBeGreaterThan(0.5);
     expect(Math.abs(p.y - startY)).toBeLessThan(0.3);
     await waitFor(() => sr.sim.state.players.get(a.sessionId)!.ackSeq === seq, 500, 'ack');
-    // the client sees it too (after the next patch)
     await waitFor(() => Math.abs(a.state.players.get(a.sessionId)!.x - p.x) < 1e-3, 1000, 'patched x');
     // invalid / replayed frames are ignored
     a.send(MSG.input, [[1, 127, 0, 0], ['x', 1, 1, 1], null, { seq: 'NaN' }]);
@@ -128,10 +138,31 @@ describe('room', () => {
     await waitFor(() => !a.state.bombs.has(String(bombId)), 500, 'bomb removed');
   });
 
-  test('chat: sanitised, rate limited, system join message', async () => {
+  test('spectator first; play true/false; canon system chat', async () => {
+    const sr = serverRoom(a.roomId);
+    const seen = chatsOf(a);
     const b = await join('joinById', a.roomId, { name: 'Bob', skin: 1 });
-    const got: ChatMessage[] = [];
-    b.onMessage(MSG.chat, (m: ChatMessage) => got.push(m));
+    await waitFor(() => b.state.spectators === 1, 1000, 'spectator count');
+    expect(sr.sim.state.players.has(b.sessionId)).toBe(false);
+    const replies: { playing: boolean }[] = [];
+    b.onMessage(MSG.play, (r: { playing: boolean }) => replies.push(r));
+    b.send(MSG.play, true);
+    await waitFor(() => replies.length === 1, 1000, 'play reply');
+    expect(replies[0]!.playing).toBe(true);
+    expect(sr.sim.state.players.has(b.sessionId)).toBe(true);
+    await waitFor(() => seen.find((m) => m.from === '' && m.text === 'Bob подключился'), 1000, 'подключился');
+    await waitFor(() => b.state.spectators === 0, 1000, 'no spectators');
+    // inputs from spectators are ignored, from players accepted
+    b.send(MSG.play, false);
+    await waitFor(() => replies.length === 2, 1000, 'unplay reply');
+    expect(sr.sim.state.players.has(b.sessionId)).toBe(false);
+    await waitFor(() => seen.find((m) => m.text === 'Bob отключился'), 1000, 'отключился');
+    await b.leave(true);
+  });
+
+  test('chat: sanitised, rate limited', async () => {
+    const b = await join('joinById', a.roomId, { name: 'Bob', skin: 1 });
+    const got = chatsOf(b);
     await sleep(50);
     b.send(MSG.chat, 'hi\u0007 there' + 'x'.repeat(200));
     b.send(MSG.chat, 'spam');
@@ -142,7 +173,7 @@ describe('room', () => {
     expect(mine[0]!.text.startsWith('hi there')).toBe(true);
     expect(mine[0]!.text.length).toBe(100);
     await b.leave(true);
-    await waitFor(() => serverRoom(a.roomId).humanCount === 1, 1000, 'b left');
+    await waitFor(() => serverRoom(a.roomId).clientCount === 1, 1000, 'b left');
   });
 
   test('ping echo', async () => {
@@ -154,44 +185,74 @@ describe('room', () => {
 });
 
 describe('matchmaking', () => {
-  test('private room: joinable by code, not listed, not used by quick play', async () => {
-    const host = await join('create', ROOM_NAME, { private: true, name: 'Host', skin: 2, bots: 0 });
+  test('main room: persistent, listed, spectators by default, no bots', async () => {
+    const list = (await (await fetch(`http://localhost:${server.port}/api/rooms`)).json()) as RoomListing[];
+    const main = list.find((r) => r.roomId === 'MAIN');
+    expect(main?.metadata?.main).toBe(true);
+    expect(main?.maxClients).toBe(200);
+    const s1 = await join('joinById', 'MAIN', { name: 'Watcher', skin: 0 });
+    const sr = serverRoom('MAIN');
+    await waitFor(() => s1.state.width > 0, 1000, 'state');
+    expect(sr.sim.state.players.size).toBe(0);
+    const p1 = await join('joinById', 'MAIN', { name: 'Lone', skin: 0, play: true });
+    await waitFor(() => sr.sim.state.players.has(p1.sessionId), 1000, 'lone player');
+    await sleep(100);
+    expect(sr.botCount).toBe(0); // BOTS_MAIN defaults to 0 (canon)
+    await Promise.all([s1.leave(), p1.leave()]);
+    await sleep(100);
+    expect(matchMaker.getLocalRoomById('MAIN')).toBeTruthy(); // autoDispose = false
+  });
+
+  test('arena capacity: extra clients stay spectators ("Нет свободных мест")', async () => {
+    const h = await join('create', ROOM_NAME, { private: true, name: 'H', skin: 0, bots: 0, maxPlayers: 2, play: true });
+    const g = await join('joinById', h.roomId, { name: 'G', skin: 0, play: true });
+    const x = await join('joinById', h.roomId, { name: 'X', skin: 0 });
+    const said = chatsOf(x);
+    const replies: { playing: boolean; reason?: string }[] = [];
+    x.onMessage(MSG.play, (r: { playing: boolean; reason?: string }) => replies.push(r));
+    x.send(MSG.play, true);
+    await waitFor(() => replies.length === 1, 1000, 'reply');
+    expect(replies[0]).toEqual({ playing: false, reason: 'full' });
+    await waitFor(() => said.find((m) => m.from === '' && m.text === 'Нет свободных мест'), 1000, 'whisper');
+    expect(serverRoom(h.roomId).sim.state.players.size).toBe(2);
+    await Promise.all([h.leave(), g.leave(), x.leave()]);
+  });
+
+  test('private room: joinable by code, not listed, quick play goes to MAIN', async () => {
+    const host = await join('create', ROOM_NAME, { private: true, name: 'Host', skin: 2, bots: 0, play: true });
     const code = host.roomId;
-    expect(code).toMatch(new RegExp(`^[${CODE_ALPHABET}]{5}$`));
     const list = (await (await fetch(`http://localhost:${server.port}/api/rooms`)).json()) as RoomListing[];
     expect(list.some((r) => r.roomId === code)).toBe(false);
-    expect(list.length).toBeGreaterThan(0); // the public room from the previous suite
-    expect(list[0]!.metadata?.maxPlayers).toBe(16);
-
-    const guest = await join('joinById', code.toLowerCase().split('').join(' ').toUpperCase().replace(/ /g, ''), { name: 'Guest', skin: 3 });
+    const guest = await join('joinById', code.toLowerCase().toUpperCase(), { name: 'Guest', skin: 3, play: true });
     expect(guest.roomId).toBe(code);
     await waitFor(() => guest.state.players?.size === 2, 1000, 'two players');
-
     const quick = await join('joinOrCreate', ROOM_NAME, { name: 'Quick', skin: 0 });
-    expect(quick.roomId).not.toBe(code);
+    expect(quick.roomId).toBe('MAIN');
     await Promise.all([host.leave(), guest.leave(), quick.leave()]);
   });
 
-  test('bots fill a quick-play room and leave as humans join', async () => {
-    const h1 = await join('create', ROOM_NAME, { name: 'Solo', skin: 0, bots: 3 });
+  test('vs-bots room: bots fill and leave as human players join', async () => {
+    const h1 = await join('create', ROOM_NAME, { private: true, name: 'Solo', skin: 0, bots: 3, play: true });
     const sr = serverRoom(h1.roomId);
     expect(sr.botCount).toBe(3);
     await waitFor(() => h1.state.players?.size === 4, 1000, '4 players');
-    const h2 = await join('joinById', h1.roomId, { name: 'Second', skin: 0 });
-    await waitFor(() => sr.botCount === 2, 3000, 'bot left');
-    const h3 = await join('joinById', h1.roomId, { name: 'Third', skin: 0 });
-    await waitFor(() => sr.botCount === 1, 3000, 'second bot left');
-    await Promise.all([h2.leave(), h3.leave()]);
-    await waitFor(() => sr.humanCount === 1 && sr.botCount === 3, 6000, 'bots back');
+    const spect = await join('joinById', h1.roomId, { name: 'Watch', skin: 0 });
+    await sleep(100);
+    expect(sr.botCount).toBe(3); // spectators do not count
+    const h2 = await join('joinById', h1.roomId, { name: 'Second', skin: 0, play: true });
+    const h3 = await join('joinById', h1.roomId, { name: 'Third', skin: 0, play: true });
+    // spare bots leave once they are out of the round or between rounds
+    await waitFor(() => sr.botCount === 1, 15000, 'bots left');
+    await Promise.all([h2.leave(), h3.leave(), spect.leave()]);
+    await waitFor(() => sr.humanCount === 1 && sr.botCount === 3, 3000, 'bots back');
     const meta = (await matchMaker.query({ roomId: h1.roomId }))[0]!.metadata;
-    expect(meta.bots).toBe(3);
-    expect(meta.humans).toBe(1);
+    expect([meta.bots, meta.humans]).toEqual([3, 1]);
     await h1.leave();
-  });
+  }, 25000);
 
-  test('reconnection keeps the player; expiry removes them', async () => {
-    const r = await join('create', ROOM_NAME, { name: 'Flaky', skin: 0, bots: 0 });
-    const other = await join('joinById', r.roomId, { name: 'Stable', skin: 0 });
+  test('reconnection keeps the player in the arena; expiry removes them', async () => {
+    const r = await join('create', ROOM_NAME, { private: true, name: 'Flaky', skin: 0, bots: 0, play: true });
+    const other = await join('joinById', r.roomId, { name: 'Stable', skin: 0, play: true });
     r.reconnection.minUptime = 0;
     const sr = serverRoom(r.roomId);
     await waitFor(() => r.state.players?.size === 2, 1000, 'joined');
@@ -199,16 +260,14 @@ describe('matchmaking', () => {
     let dropped = false, back = false;
     r.onDrop(() => { dropped = true; });
     r.onReconnect(() => { back = true; });
-    // kill the socket server-side (abnormal close 1006)
     (sr.clients.getById(sid) as unknown as { ref: { terminate(): void } }).ref.terminate();
     await waitFor(() => dropped, 2000, 'drop');
     expect(sr.sim.state.players.has(sid)).toBe(true);
     await waitFor(() => back, 5000, 'reconnect');
     expect(r.sessionId).toBe(sid);
     hold(r, 200, 1, 0);
-    await waitFor(() => sr.sim.state.players.get(sid)!.ackSeq === seq, 2000, 'inputs after reconnect');
+    await waitFor(() => sr.sim.state.players.get(sid)?.ackSeq === seq, 2000, 'inputs after reconnect');
 
-    // expiry: no client-side retry, short window
     BattleRoom.reconnectSeconds = 0.3;
     r.reconnection.enabled = false;
     (sr.clients.getById(sid) as unknown as { ref: { terminate(): void } }).ref.terminate();
@@ -253,7 +312,7 @@ describe('state sync', () => {
     for (const [id, b] of s.bombs) expect(w.bombs.get(id)!.fuse).toBe(b.fuse);
     expect([...w.flames.keys()].sort()).toEqual([...s.flames.keys()].sort());
     expect([...w.pickups.keys()].sort()).toEqual([...s.pickups.keys()].sort());
-    expect([w.phase, w.phaseTicks, w.round, w.tick]).toEqual([s.phase, s.phaseTicks, s.round, s.tick]);
+    expect([w.phase, w.phaseTicks, w.round, w.tick, w.zoneRing, w.zoneIn]).toEqual([s.phase, s.phaseTicks, s.round, s.tick, s.zoneRing, s.zoneIn]);
   }, 15000);
 });
 
@@ -261,8 +320,7 @@ describe('NetSource (client)', () => {
   test('prediction, interpolation, events, ping, chat', async () => {
     const src = await createPrivateRoom({ name: 'Net', skin: 4, serverUrl: url + '/api', bots: 0, predict });
     sources.push(src);
-    const peer = await join('joinById', src.roomId, { name: 'Peer', skin: 5 });
-    expect(src.localId).toBeTruthy();
+    const peer = await join('joinById', src.roomId, { name: 'Peer', skin: 5, play: true });
     let last = performance.now();
     const step = async (ms: number, dx: number, dy: number, buttons = 0) => {
       const end = performance.now() + ms;
@@ -279,7 +337,9 @@ describe('NetSource (client)', () => {
       const p = sr.sim.state.players.get(src.localId);
       return p && p.alive && p.inRound && sr.sim.state.phase === (useStub ? 0 : 2); // Playing (stub: no phases)
     };
-    // 2 humans -> countdown -> playing (keep updating so the source stays live)
+    // countdown -> playing (keep updating so the source stays live)
+    while (!src.localId) await step(20, 0, 0);
+    expect(src.localId).toBe(src.sessionId);
     const until = Date.now() + 8000;
     while (!movable() && Date.now() < until) await step(50, 0, 0);
     expect(movable()).toBe(true);
@@ -304,8 +364,10 @@ describe('NetSource (client)', () => {
     await step(80, 0, 0, Button.Bomb);
     await step(400, 0, 0);
     const ev = src.drainEvents();
-    expect(ev.some((e) => e.type === 'bombPlaced' && e.owner === src.localId)).toBe(true);
+    const placed = ev.filter((e) => e.type === 'bombPlaced' && e.owner === src.localId);
+    expect(placed.length).toBe(1); // predicted locally (bomb -1, server echo swallowed) or server's
     expect(src.drainEvents().length).toBe(0);
+    expect(w.bombs.size).toBe(sr.sim.state.bombs.size); // view bombs (interpolated copies)
 
     await waitFor(() => src.ping > 0, 3000, 'ping');
     const chats: ChatMessage[] = [];
@@ -315,11 +377,27 @@ describe('NetSource (client)', () => {
     await peer.leave();
   }, 20000);
 
-  test('quick play is listed', async () => {
+  test('quick play: MAIN as spectator, play(true) / play(false)', async () => {
     const src = await connectQuickPlay({ name: 'Quick', skin: 1, serverUrl: url, predict });
     sources.push(src);
+    expect(src.roomId).toBe('MAIN');
+    let last = performance.now();
+    const pump = async (ms: number) => {
+      const end = performance.now() + ms;
+      while (performance.now() < end) { await sleep(10); const n = performance.now(); src.update(n - last, { dx: 0, dy: 0, buttons: 0 }); last = n; }
+    };
+    await pump(150);
+    expect(src.world).not.toBeNull();
+    expect([src.localId, src.isPlaying, src.spectators]).toEqual(['', false, 1]);
+    expect(await src.play(true)).toBe(true);
+    await pump(150);
+    expect([src.localId, src.isPlaying, src.spectators, src.playersCount]).toEqual([src.sessionId, true, 0, 1]);
+    expect(src.maxPlayers).toBe(32);
+    expect(await src.play(false)).toBe(false);
+    await pump(150);
+    expect([src.localId, src.isPlaying, src.playersCount]).toEqual(['', false, 0]);
     const rooms = await listRooms(url + '/api');
-    expect(rooms.some((r) => r.roomId === src.roomId)).toBe(true);
+    expect(rooms.some((r) => r.roomId === 'MAIN')).toBe(true);
   });
 
   test('private room + join by code + status on disconnect', async () => {

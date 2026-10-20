@@ -1,6 +1,7 @@
-// Static arena: ground, scorch marks (ruines autotile), walls and bricks with soft shadows.
-// Everything lives in one container cached as a texture and is redrawn only when tiles change.
-import { Container, Sprite, Texture } from 'pixi.js';
+// Static arena: floor grass, cracked-ground decals where bricks were destroyed, walls and bricks,
+// the grey border wall ring. Split into 16x16-tile chunks, each cached as a texture and redrawn
+// only when one of its tiles changes; chunks outside the view are culled. Handles 75x75 maps.
+import { Container, Sprite } from 'pixi.js';
 import { Tile, type FallingBlock, type WorldState } from '@ob/game';
 
 import type { GameAssets } from './assets';
@@ -8,47 +9,39 @@ import type { Effects } from './fx';
 import type { ProcTextures } from './textures';
 
 const T = 32;
-export const OUTSIDE = 7; // tiles of decorative ground drawn beyond the border walls
+const CH = 16; // chunk size in tiles
 
-const hash = (x: number, y: number, s: number) => {
-  let h = (x * 374761393 + y * 668265263 + s * 2147483647) | 0;
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-};
-
-// ruines.png frame index for each 4-neighbour mask (T=1, L=2, R=4, B=8), from new-openbomber's terrain table
-const RUIN_FRAMES: Record<number, number[]> = {
-  0: [9], 8: [1], 9: [2, 7], 4: [3], 6: [4, 5], 2: [6], 1: [8], 15: [10],
-  11: [11], 13: [12], 3: [13], 5: [14], 10: [15], 12: [16], 7: [17], 14: [18],
-};
+interface Chunk { c: Container; x0: number; y0: number; x1: number; y1: number; dirty: boolean }
 
 export class Arena {
   readonly root = new Container();
-  private ground = new Container();
-  private scorchLayer = new Container();
-  private shadowLayer = new Container();
-  private blockLayer = new Container();
+  /** Danger tint on the ring that is about to turn into walls (zone warning). */
+  readonly zoneLayer = new Container();
 
   private w = 0;
   private h = 0;
+  private gw = 0; // grid incl. border ring: (w + 2) x (h + 2), cell (x, y) ↔ grid (x + 1, y + 1)
+  private gh = 0;
   private tiles = new Uint8Array(0);
   private round = -1;
+  private floor: Sprite[] = [];
   private blocks: (Sprite | null)[] = [];
-  private shadows: Sprite[] = [];
-  private scorch = new Map<number, Sprite>();
-  private dirty = false;
+  private cracked = new Uint8Array(0);
+  private chunks: Chunk[] = [];
+  private chunkCols = 0;
+  private smooth = false;
 
-  /** Live falling blocks (dynamic, drawn by the caller in the entity layer). */
-  readonly fallingRoot = new Container();
+  /** Live falling blocks (dynamic). */
+  readonly fallingRoot = new Container({ sortableChildren: true });
   readonly fallingShadows = new Container();
   private falling = new Map<number, { block: Sprite; shadow: Sprite; warn: Sprite; ttl0: number; seen: boolean }>();
   private impacts: { s: Sprite; t: number }[] = [];
   private time = 0;
+  private zone: { ring: number; t: number; strips: Sprite[] } | null = null;
 
-  constructor(private a: GameAssets, private tx: ProcTextures, private fx: Effects) {
-    this.root.addChild(this.ground, this.scorchLayer, this.shadowLayer, this.blockLayer);
-    this.root.cacheAsTexture(true);
-  }
+  onImpact?: (x: number, y: number) => void;
+
+  constructor(private a: GameAssets, private tx: ProcTextures, private fx: Effects) {}
 
   get width() { return this.w; }
   get height() { return this.h; }
@@ -57,132 +50,169 @@ export class Arena {
   sync(world: WorldState, dt: number): boolean {
     this.time += dt;
     const { width: w, height: h, tiles } = world;
+    let changed = 0, walls = 0;
+    if (w === this.w && h === this.h) for (let i = 0; i < tiles.length; i++) {
+      if (this.tiles[i] === tiles[i]) continue;
+      if (tiles[i] === Tile.Wall) walls++; else changed++;
+    }
     let fresh = false;
-    let changed = 0;
-    if (w === this.w && h === this.h) for (let i = 0; i < tiles.length; i++) if (this.tiles[i] !== tiles[i]) changed++;
-    // a new round / regenerated map (many cells at once) is rebuilt silently, without debris
-    if (w !== this.w || h !== this.h || world.round !== this.round || changed > tiles.length * 0.15) {
+    // a new round / regenerated map is rebuilt silently, without debris (zone shrink only adds walls)
+    if (w !== this.w || h !== this.h || world.round !== this.round || changed > Math.max(40, tiles.length * 0.15)) {
       this.build(world);
       fresh = true;
-    } else if (changed) {
+    } else if (changed || walls) {
+      const every = Math.max(1, Math.ceil(walls / 10)); // a whole ring closing at once: thin out the FX
+      let wi = 0;
       for (let i = 0; i < tiles.length; i++) {
         const was = this.tiles[i], now = tiles[i];
         if (was === now) continue;
         const x = i % w, y = (i / w) | 0;
-        if (was === Tile.Brick && now === Tile.Floor) this.fx.brickBreak(x, y);
-        if (now === Tile.Wall) this.impact(x, y);
+        if (was === Tile.Brick && now === Tile.Floor) { this.fx.brickBreak(x, y); this.setCracked(x, y); }
+        if (now === Tile.Wall) this.impact(x, y, wi++ % every === 0, walls < 4);
         this.tiles[i] = now;
-        this.setBlock(i, now);
+        this.setBlock(x, y, now);
       }
     }
-    this.syncFalling(world.falling, dt);
+    this.syncFalling(world.falling);
     this.updateImpacts(dt);
-    if (this.dirty) {
-      this.dirty = false;
-      this.root.updateCacheTexture();
-    }
+    this.updateZone(dt);
     return fresh;
   }
 
-  isSolid(x: number, y: number) {
-    if (x < 0 || y < 0 || x >= this.w || y >= this.h) return true;
-    return this.tiles[y * this.w + x] !== Tile.Floor;
+  /** Cull chunks against the visible world rect (px) and refresh dirty caches. */
+  cull(x0: number, y0: number, x1: number, y1: number, zoom: number) {
+    const smooth = zoom < 0.8;
+    const remode = smooth !== this.smooth;
+    this.smooth = smooth;
+    for (const ch of this.chunks) {
+      const vis = ch.x1 >= x0 && ch.x0 <= x1 && ch.y1 >= y0 && ch.y0 <= y1;
+      ch.c.visible = vis;
+      if (remode) { ch.c.cacheAsTexture(false); this.cache(ch); ch.dirty = false; continue; }
+      if (ch.dirty && vis) { ch.c.updateCacheTexture(); ch.dirty = false; }
+    }
+  }
+
+  private cache(ch: Chunk) {
+    ch.c.cacheAsTexture({ resolution: 1, antialias: false, scaleMode: this.smooth ? 'linear' : 'nearest' });
   }
 
   private build(world: WorldState) {
     const { width: w, height: h, tiles } = world;
     this.w = w; this.h = h; this.round = world.round;
+    this.gw = w + 2; this.gh = h + 2;
     this.tiles = new Uint8Array(tiles);
-    for (const l of [this.ground, this.scorchLayer, this.shadowLayer, this.blockLayer]) l.removeChildren().forEach(c => c.destroy());
-    this.scorch.clear();
-    this.blocks = new Array(w * h).fill(null);
-    this.shadows = [];
-    const seed = world.round * 7 + 13;
-    const { grass, grass2, wall } = this.a.world;
-    for (let y = -OUTSIDE; y < h + OUTSIDE; y++) for (let x = -OUTSIDE; x < w + OUTSIDE; x++) {
-      const inside = x >= 0 && y >= 0 && x < w && y < h;
-      const r = hash(x, y, seed);
-      const g = new Sprite({ texture: r < 0.07 && inside ? grass2 : grass, anchor: 0.5, x: x * T, y: y * T });
-      if (hash(y, x, seed + 1) < 0.5) g.scale.x = -1;
-      if (inside) g.tint = (x + y) & 1 ? 0xffffff : 0xeef3ea;
-      else {
-        const d = Math.max(-x, -y, x - w + 1, y - h + 1);
-        const v = Math.max(0.28, 0.62 - d * 0.06);
-        const c = Math.round(255 * v);
-        g.tint = (c << 16) | (Math.round(c * 1.02) << 8) | Math.round(c * 1.08);
-      }
-      this.ground.addChild(g);
-      const border = !inside && x >= -1 && y >= -1 && x <= w && y <= h;
+    for (const ch of this.chunks) ch.c.destroy({ children: true });
+    this.root.removeChildren();
+    this.chunks = [];
+    this.chunkCols = Math.ceil(this.gw / CH);
+    const rows = Math.ceil(this.gh / CH);
+    for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < this.chunkCols; cx++) {
+      const c = new Container();
+      const gx0 = cx * CH, gy0 = cy * CH;
+      const ch: Chunk = {
+        c, dirty: true,
+        x0: (gx0 - 1) * T - T / 2, y0: (gy0 - 1) * T - T / 2,
+        x1: (Math.min(this.gw, gx0 + CH) - 1) * T - T / 2, y1: (Math.min(this.gh, gy0 + CH) - 1) * T - T / 2,
+      };
+      this.chunks.push(ch);
+      this.root.addChild(c);
+    }
+    const n = this.gw * this.gh;
+    this.floor = new Array(n);
+    this.blocks = new Array(n).fill(null);
+    this.cracked = new Uint8Array(n);
+    const { grass, wall } = this.a.world;
+    // floor layer first in every chunk, blocks above
+    const floorLayers = this.chunks.map(ch => ch.c.addChild(new Container()));
+    const blockLayers = this.chunks.map(ch => ch.c.addChild(new Container()));
+    this.blockLayers = blockLayers;
+    for (let gy = 0; gy < this.gh; gy++) for (let gx = 0; gx < this.gw; gx++) {
+      const gi = gy * this.gw + gx;
+      const k = this.chunkIndex(gx, gy);
+      const x = gx - 1, y = gy - 1;
+      const border = gx === 0 || gy === 0 || gx === this.gw - 1 || gy === this.gh - 1;
       if (border) {
-        const s = new Sprite({ texture: wall, anchor: 0.5, x: x * T, y: y * T, tint: 0xc9c2d6 });
-        this.blockLayer.addChild(s);
+        const s = new Sprite({ texture: wall, anchor: 0.5, x: x * T, y: y * T });
+        blockLayers[k].addChild(s);
+        this.blocks[gi] = s;
+        continue;
       }
+      const f = new Sprite({ texture: grass, anchor: 0.5, x: x * T, y: y * T });
+      floorLayers[k].addChild(f);
+      this.floor[gi] = f;
+      this.setBlock(x, y, tiles[y * w + x]);
     }
-    for (let i = 0; i < w * h; i++) {
-      const sh = this.shadowSprite(i % w, (i / w) | 0, false);
-      this.shadows.push(sh);
-      this.shadowLayer.addChild(sh);
-    }
-    for (let i = 0; i < w * h; i++) this.setBlock(i, tiles[i]);
+    for (const ch of this.chunks) { this.cache(ch); ch.dirty = true; }
     this.clearFalling();
-    this.dirty = true;
+    this.setZone(-1);
   }
 
-  private shadowSprite(x: number, y: number, visible: boolean) {
-    const s = new Sprite({ texture: Texture.WHITE, x: x * T - T / 2, y: y * T - T / 2, tint: 0x14101e, alpha: 0.22 });
-    s.width = T; s.height = 6;
-    s.visible = visible;
-    return s;
-  }
+  private blockLayers: Container[] = [];
+  private chunkIndex(gx: number, gy: number) { return Math.floor(gy / CH) * this.chunkCols + Math.floor(gx / CH); }
+  private touch(gx: number, gy: number) { const ch = this.chunks[this.chunkIndex(gx, gy)]; if (ch) ch.dirty = true; }
 
-  private setBlock(i: number, tile: number) {
-    const x = i % this.w, y = (i / this.w) | 0;
-    let s = this.blocks[i];
+  private setBlock(x: number, y: number, tile: number) {
+    const gx = x + 1, gy = y + 1, gi = gy * this.gw + gx;
+    let s = this.blocks[gi];
     if (tile === Tile.Floor) {
-      if (s) { s.destroy(); this.blocks[i] = null; }
+      if (s) { s.destroy(); this.blocks[gi] = null; }
     } else {
       const tex = tile === Tile.Wall ? this.a.world.wall : this.a.world.box;
-      if (!s) { s = new Sprite({ texture: tex, anchor: 0.5, x: x * T, y: y * T }); this.blockLayer.addChild(s); this.blocks[i] = s; }
+      if (!s) {
+        s = new Sprite({ texture: tex, anchor: 0.5, x: x * T, y: y * T });
+        this.blockLayers[this.chunkIndex(gx, gy)].addChild(s);
+        this.blocks[gi] = s;
+      }
       s.texture = tex;
     }
-    this.updateShadow(i);
-    if (y + 1 < this.h) this.updateShadow(i + this.w);
-    this.dirty = true;
+    this.touch(gx, gy);
   }
 
-  private updateShadow(i: number) {
-    const y = (i / this.w) | 0;
-    this.shadows[i].visible = this.tiles[i] === Tile.Floor && (y === 0 || this.tiles[i - this.w] !== Tile.Floor);
+  private setCracked(x: number, y: number) {
+    const gi = (y + 1) * this.gw + x + 1;
+    if (this.cracked[gi]) return;
+    this.cracked[gi] = 1;
+    const f = this.floor[gi];
+    if (f) { f.texture = this.a.world.grass2; f.scale.x = (x * 7 + y * 3) & 1 ? -1 : 1; }
+    this.touch(x + 1, y + 1);
   }
 
-  /** Mark exploded cells as scorched ground. */
-  addScorch(cells: { x: number; y: number }[]) {
-    const changed = new Set<number>();
-    for (const c of cells) {
-      if (c.x < 0 || c.y < 0 || c.x >= this.w || c.y >= this.h) continue;
-      const i = c.y * this.w + c.x;
-      if (!this.scorch.has(i)) {
-        const s = new Sprite({ anchor: 0.5, x: c.x * T, y: c.y * T, alpha: 0.8 });
-        this.scorch.set(i, s);
-        this.scorchLayer.addChild(s);
-      }
-      changed.add(i);
-      changed.add(i - 1); changed.add(i + 1); changed.add(i - this.w); changed.add(i + this.w);
+  // ---------------------------------------------------------------- zone shrink warning
+  /** Highlight ring `ring` (0 = outermost row of the arena); -1 clears. */
+  setZone(ring: number) {
+    if (this.zone) { for (const s of this.zone.strips) s.destroy(); this.zone = null; }
+    if (ring < 0 || ring * 2 >= Math.min(this.w, this.h)) return;
+    const x0 = ring, y0 = ring, x1 = this.w - 1 - ring, y1 = this.h - 1 - ring;
+    const rect = (ax: number, ay: number, bx: number, by: number) => {
+      const s = new Sprite({ texture: this.tx.white, x: ax * T - T / 2, y: ay * T - T / 2, tint: 0xff2a3a });
+      s.width = (bx - ax + 1) * T; s.height = (by - ay + 1) * T;
+      this.zoneLayer.addChild(s);
+      return s;
+    };
+    const strips = [rect(x0, y0, x1, y0), rect(x0, y1, x1, y1)];
+    if (y1 - 1 >= y0 + 1) strips.push(rect(x0, y0 + 1, x0, y1 - 1), rect(x1, y0 + 1, x1, y1 - 1));
+    this.zone = { ring, t: 0, strips };
+  }
+
+  /** Outermost ring that still has non-wall cells (the next one to close). */
+  nextRing() {
+    const { w, h } = this;
+    for (let r = 0; r * 2 < Math.min(w, h); r++) {
+      for (let x = r; x < w - r; x++) if (this.tiles[r * w + x] !== Tile.Wall || this.tiles[(h - 1 - r) * w + x] !== Tile.Wall) return r;
+      for (let y = r; y < h - r; y++) if (this.tiles[y * w + r] !== Tile.Wall || this.tiles[y * w + w - 1 - r] !== Tile.Wall) return r;
     }
-    for (const i of changed) {
-      const s = this.scorch.get(i);
-      if (!s) continue;
-      const x = i % this.w;
-      const has = (j: number, dx: number) => (dx === 0 || ((j % this.w) - x) === dx) && this.scorch.has(j);
-      const m = (has(i - this.w, 0) ? 1 : 0) | (has(i - 1, -1) ? 2 : 0) | (has(i + 1, 1) ? 4 : 0) | (has(i + this.w, 0) ? 8 : 0);
-      const opts = RUIN_FRAMES[m];
-      s.texture = this.a.ruines[opts[(i * 31) % opts.length]];
-    }
-    if (changed.size) this.dirty = true;
+    return -1;
   }
 
-  // ---------------------------------------------------------------- sudden death
-  private syncFalling(list: FallingBlock[], dt: number) {
+  private updateZone(dt: number) {
+    if (!this.zone) return;
+    this.zone.t += dt;
+    const a = 0.16 + 0.1 * Math.sin(this.zone.t * 5);
+    for (const s of this.zone.strips) s.alpha = a;
+  }
+
+  // ---------------------------------------------------------------- sudden death / zone blocks
+  private syncFalling(list: FallingBlock[]) {
     for (const f of this.falling.values()) f.seen = false;
     for (const b of list) {
       const key = b.y * 4096 + b.x;
@@ -190,7 +220,7 @@ export class Arena {
       if (!f) {
         const shadow = new Sprite({ texture: this.tx.blockShadow, anchor: 0.5, x: b.x * T, y: b.y * T });
         const warn = new Sprite({ texture: this.tx.ring, anchor: 0.5, x: b.x * T, y: b.y * T, tint: 0xff3040 });
-        const block = new Sprite({ texture: this.a.world.wall, anchor: { x: 0.5, y: 0.5 }, x: b.x * T, y: b.y * T });
+        const block = new Sprite({ texture: this.a.world.wall, anchor: 0.5, x: b.x * T, y: b.y * T });
         this.fallingShadows.addChild(shadow, warn);
         this.fallingRoot.addChild(block);
         f = { block, shadow, warn, ttl0: Math.max(b.ttl, 1), seen: true };
@@ -208,7 +238,7 @@ export class Arena {
       const drop = Math.min(1, b.ttl / 27);
       f.block.visible = b.ttl < 27;
       f.block.y = b.y * T - drop * drop * 260;
-      f.block.zIndex = b.y * T + 15;
+      f.block.zIndex = b.y * T;
       f.block.alpha = 1 - drop * 0.3;
       f.block.scale.set(1 - drop * 0.1, 1 + drop * 0.25);
     }
@@ -216,7 +246,6 @@ export class Arena {
       f.block.destroy(); f.shadow.destroy(); f.warn.destroy();
       this.falling.delete(key);
     }
-    void dt;
   }
 
   private clearFalling() {
@@ -226,16 +255,14 @@ export class Arena {
     this.impacts = [];
   }
 
-  private impact(x: number, y: number) {
-    this.fx.blockImpact(x, y);
+  private impact(x: number, y: number, fx: boolean, shake: boolean) {
+    if (fx) this.fx.blockImpact(x, y);
     const s = new Sprite({ texture: this.a.world.wall, anchor: { x: 0.5, y: 1 }, x: x * T, y: y * T + T / 2 });
-    s.zIndex = y * T + 15;
+    s.zIndex = y * T;
     this.fallingRoot.addChild(s);
     this.impacts.push({ s, t: 0 });
-    this.onImpact?.(x, y);
+    if (shake || fx) this.onImpact?.(x, y);
   }
-
-  onImpact?: (x: number, y: number) => void;
 
   private updateImpacts(dt: number) {
     for (let i = this.impacts.length - 1; i >= 0; i--) {

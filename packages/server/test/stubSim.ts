@@ -39,6 +39,7 @@ export class StubSim implements ISimulation {
     this.state = {
       tick: 0, seed: 1, phase: Phase.Waiting, phaseTicks: 0, round: 1, width: W, height: H, tiles,
       players: new Map(), bombs: new Map(), flames: new Map(), pickups: new Map(), falling: [], winner: '', nextId: 1,
+      zoneRing: 0, zoneIn: 0,
     };
   }
 
@@ -47,7 +48,10 @@ export class StubSim implements ISimulation {
     const p: PlayerState = {
       id: np.id, name: np.name, skin: np.skin, isBot: !!np.isBot, x, y, dir: Dir.Down, moving: false, alive: true,
       inRound: true, lives: 0, bombs: 1, radius: 2, speedLevel: 0, abilities: 0, curse: 0,
-      effects: { shield: 0, ghost: 0, crazy: 0, fire: 0, curse: 0, invulnerable: 120, stun: 0 },
+      effects: {
+        shield: 0, ghost: 0, crazy: 0, fire: 0, curse: 0, invulnerable: 120, stun: 0, speed: 0,
+        kick: 0, glove: 0, punch: 0, remote: 0, pierce: 0, lineBomb: 0, bombPass: 0,
+      },
       carrying: -1, respawnIn: 0, wins: 0, kills: 0, deaths: 0, ackSeq: 0,
     };
     this.state.players.set(p.id, p);

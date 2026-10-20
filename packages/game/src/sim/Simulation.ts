@@ -3,7 +3,7 @@
 import type { ISimulation, MatchConfig, NewPlayer } from '../contract/api';
 import { MAX_PLAYERS } from '../contract/constants';
 import type { GameEvent, InputFrame } from '../contract/protocol';
-import { Phase, type PickupState, type PickupType, type PlayerState, type WorldState } from '../contract/types';
+import { type PickupState, type PickupType, type PlayerState, type WorldState } from '../contract/types';
 import { dropCarried, updateBombs } from './bombs';
 import type { SimCtx } from './context';
 import { tickFlames } from './flames';
@@ -19,7 +19,7 @@ import {
   touchPlayers,
   updatePlayer,
 } from './players';
-import { joinWaiting, startWaiting, updatePhase } from './round';
+import { newMap, updatePhase } from './round';
 import { createWorld } from './world';
 
 export class Simulation implements ISimulation {
@@ -28,24 +28,35 @@ export class Simulation implements ISimulation {
   readonly ctx: SimCtx;
 
   constructor(config: MatchConfig) {
-    this.state = createWorld(15, 13, config.seed ?? 0x0b0b);
+    this.state = createWorld(13, 13, config.seed ?? 0x0b0b);
     this.ctx = {
       world: this.state,
       config,
       events: [],
       hidden: new Int8Array(0),
       flameGrid: new Int32Array(0),
+      pickupGrid: new Int32Array(0),
+      bombGrid: new Int32Array(0),
       brickBurn: new Uint8Array(0),
       brickBurnCount: 0,
       players: new Map(),
       bombs: new Map(),
       spawns: [],
-      spiral: new Int32Array(0),
-      spiralPos: 0,
-      suddenTimer: 0,
-      roundPlayers: 0,
+      zoneQuiet: 0,
+      hasWin: false,
+      roundDeaths: 0,
+      bombsAllowed: false,
+      hold: false,
     };
-    startWaiting(this.ctx);
+    newMap(this.ctx, 1); // idle arena until somebody joins
+  }
+
+  /** Tests / tools: freeze round end, restarts and the zone (bombs, flames etc. still run). */
+  get holdRound(): boolean {
+    return this.ctx.hold;
+  }
+  set holdRound(v: boolean) {
+    this.ctx.hold = v;
   }
 
   addPlayer(np: NewPlayer): PlayerState {
@@ -55,8 +66,7 @@ export class Simulation implements ISimulation {
     const p = createPlayer(np);
     this.state.players.set(p.id, p);
     this.ctx.players.set(p.id, createInternal());
-    if (this.state.phase === Phase.Waiting) joinWaiting(this.ctx, p);
-    else p.x = p.y = 0; // spectator until the next round
+    // spectator (inRound = false) until the next restart; an idle arena restarts right away
     return p;
   }
 
@@ -64,6 +74,7 @@ export class Simulation implements ISimulation {
     const p = this.state.players.get(id);
     if (!p) return;
     if (p.carrying >= 0) dropCarried(this.ctx, p);
+    p.alive = false;
     for (const b of this.state.bombs.values()) {
       const i = b.passers.indexOf(id);
       if (i >= 0) b.passers.splice(i, 1);
@@ -90,6 +101,7 @@ export class Simulation implements ISimulation {
     const w = this.state;
     ctx.events = [];
     w.tick++;
+    ctx.bombsAllowed = gameplayPhase(w.phase) && (w.players.size <= 1 || aliveCount(w) >= 2);
     for (const p of w.players.values()) updatePlayer(ctx, p);
     if (gameplayPhase(w.phase)) {
       collectPickups(ctx);
@@ -116,6 +128,8 @@ export class Simulation implements ISimulation {
     w.tiles = m.tiles;
     ctx.hidden = new Int8Array(m.width * m.height).fill(-1);
     ctx.flameGrid = new Int32Array(m.width * m.height);
+    ctx.pickupGrid = new Int32Array(m.width * m.height);
+    ctx.bombGrid = new Int32Array(m.width * m.height);
     ctx.brickBurn = new Uint8Array(m.width * m.height);
     ctx.brickBurnCount = 0;
     w.bombs.clear();
@@ -123,6 +137,8 @@ export class Simulation implements ISimulation {
     w.flames.clear();
     w.pickups.clear();
     w.falling.length = 0;
+    w.zoneRing = 0;
+    w.zoneIn = 0;
   }
 
   /** Hide a pickup inside the brick at (x, y). */
@@ -140,4 +156,11 @@ export class Simulation implements ISimulation {
     p.protect = 0;
     return p;
   }
+}
+
+/** Alive players in the round (legacy livePlayersCount). */
+function aliveCount(w: WorldState): number {
+  let n = 0;
+  for (const p of w.players.values()) if (p.alive && p.inRound) n++;
+  return n;
 }

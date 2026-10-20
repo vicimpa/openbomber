@@ -3,8 +3,9 @@
 import type { IncomingMessage, Server as HttpServer, ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { createEndpoint, createRouter, defineRoom, defineServer, matchMaker } from '@colyseus/core';
+import { Encoder } from '@colyseus/schema';
 import { ROOM_NAME } from '@ob/game';
-import { BattleRoom } from './BattleRoom.ts';
+import { BattleRoom, MAIN_TOKEN } from './BattleRoom.ts';
 import type { RoomListing, RoomMeta } from './schema.ts';
 
 export interface GameServerOptions {
@@ -18,6 +19,9 @@ export interface GameServer {
   port: number;
   close(): Promise<void>;
 }
+
+// A 75x75 map (5625 tiles) + 32 players encodes to ~45 KB on a full sync (8 KB default).
+Encoder.BUFFER_SIZE = 128 * 1024;
 
 const health = createEndpoint('/health', { method: 'GET' }, async () => {
   const rooms = await matchMaker.query({ name: ROOM_NAME });
@@ -69,6 +73,9 @@ export async function startGameServer(opts: GameServerOptions = {}): Promise<Gam
     http.prependListener('request', (req: IncomingMessage, _res: ServerResponse) => strip(req));
     http.prependListener('upgrade', (req: IncomingMessage) => strip(req));
   }
+
+  // The persistent shared world everyone lands in (autoDispose = false).
+  await matchMaker.createRoom(ROOM_NAME, { __main: MAIN_TOKEN });
 
   const port = (http.address() as AddressInfo).port;
   return {

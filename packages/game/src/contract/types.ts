@@ -18,20 +18,20 @@ export const DIR_VEC: Record<Dir, readonly [number, number]> = {
 };
 
 export enum Phase {
-  Waiting = 0,      // not enough players, free roam
-  Countdown = 1,
+  Waiting = 0,      // no players at all (idle arena)
+  Countdown = 1,    // short "get ready" freeze at round start
   Playing = 2,
-  SuddenDeath = 3,  // falling blocks spiral inwards
-  RoundOver = 4,
+  SuddenDeath = 3,  // the zone has started shrinking
+  RoundOver = 4,    // decided; restart after phaseTicks
 }
 
 export enum PickupType {
   // stackable stats (whole round)
   BombUp = 0,
   FireUp = 1,
-  SpeedUp = 2,
+  SpeedUp = 2,     // timed (SPEED_TIME)
   FullFire = 3,
-  // abilities (whole round)
+  // abilities (timed, see *_TIME constants)
   Kick = 4,
   Glove = 5,       // grab a bomb (Action) and throw it over walls/bricks
   Punch = 6,       // Action facing an adjacent bomb punches it 3 tiles
@@ -97,6 +97,15 @@ export interface TimedEffects {
   curse: number;
   invulnerable: number;
   stun: number;
+  speed: number;    // SpeedUp
+  // timed abilities: the matching Ability bit is set exactly while the timer runs
+  kick: number;
+  glove: number;
+  punch: number;
+  remote: number;
+  pierce: number;
+  lineBomb: number;
+  bombPass: number;
 }
 
 export interface PlayerState {
@@ -113,7 +122,7 @@ export interface PlayerState {
   lives: number;         // extra lives left (Heart)
   bombs: number;         // max simultaneous bombs
   radius: number;
-  speedLevel: number;
+  speedLevel: number;    // 1 while SpeedUp runs (effects.speed > 0), else 0
   abilities: number;     // Ability bitmask
   curse: Curse;
   effects: TimedEffects;
@@ -188,4 +197,8 @@ export interface WorldState {
   falling: FallingBlock[];
   winner: string;        // '' = none / draw (valid in RoundOver)
   nextId: number;
+  /** Zone shrink: rings already closed (0 = full map). */
+  zoneRing: number;
+  /** Ticks until the next ring closes (warning running), 0 = nothing pending. */
+  zoneIn: number;
 }

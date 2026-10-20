@@ -4,7 +4,7 @@
 
 import type { BombState, FlameState, PickupState, PlayerState, TimedEffects, WorldState } from '@ob/game';
 import type {
-  BattleState, BombSchema, EffectsSchema, FlameSchema, PickupSchema, PlayerSchema,
+  BattleState, BombSchema, FlameSchema, PickupSchema, PlayerSchema,
 } from '../../../server/src/schema.ts';
 
 const left = (at: number, tick: number) => (at > 0 ? Math.max(0, at - tick) : 0);
@@ -14,12 +14,22 @@ export function emptyWorld(): WorldState {
     tick: 0, seed: 0, phase: 0, phaseTicks: 0, round: 0, width: 0, height: 0,
     tiles: new Uint8Array(0),
     players: new Map(), bombs: new Map(), flames: new Map(), pickups: new Map(),
-    falling: [], winner: '', nextId: 0,
+    falling: [], winner: '', nextId: 0, zoneRing: 0, zoneIn: 0,
   };
 }
 
+/** Known effect keys are pre-filled; any other TimedEffects field arrives from the server
+ *  (effects are synced as a generic map), so this stays valid as the contract grows. */
 export function emptyEffects(): TimedEffects {
-  return { shield: 0, ghost: 0, crazy: 0, fire: 0, curse: 0, invulnerable: 0, stun: 0 };
+  return {
+    shield: 0, ghost: 0, crazy: 0, fire: 0, curse: 0, invulnerable: 0, stun: 0, speed: 0,
+    kick: 0, glove: 0, punch: 0, remote: 0, pierce: 0, lineBomb: 0, bombPass: 0,
+  } as TimedEffects;
+}
+
+type NumRecord = Record<string, number>;
+function copyEffects(a: TimedEffects, b: TimedEffects) {
+  for (const k in a) (b as unknown as NumRecord)[k] = (a as unknown as NumRecord)[k]!;
 }
 
 export function newPlayer(id: string): PlayerState {
@@ -35,22 +45,13 @@ export function copyPlayer(src: PlayerState, dst: PlayerState) {
   dst.x = src.x; dst.y = src.y; dst.dir = src.dir; dst.moving = src.moving;
   dst.alive = src.alive; dst.inRound = src.inRound; dst.lives = src.lives; dst.bombs = src.bombs;
   dst.radius = src.radius; dst.speedLevel = src.speedLevel; dst.abilities = src.abilities; dst.curse = src.curse;
-  const a = src.effects, b = dst.effects;
-  b.shield = a.shield; b.ghost = a.ghost; b.crazy = a.crazy; b.fire = a.fire;
-  b.curse = a.curse; b.invulnerable = a.invulnerable; b.stun = a.stun;
+  copyEffects(src.effects, dst.effects);
   dst.carrying = src.carrying; dst.respawnIn = src.respawnIn; dst.wins = src.wins;
   dst.kills = src.kills; dst.deaths = src.deaths; dst.ackSeq = src.ackSeq;
 }
 
-function readEffects(s: EffectsSchema | undefined, e: TimedEffects, tick: number) {
-  if (!s) return;
-  e.shield = left(s.shieldAt, tick);
-  e.ghost = left(s.ghostAt, tick);
-  e.crazy = left(s.crazyAt, tick);
-  e.fire = left(s.fireAt, tick);
-  e.curse = left(s.curseAt, tick);
-  e.invulnerable = left(s.invulnerableAt, tick);
-  e.stun = left(s.stunAt, tick);
+function readEffects(s: PlayerSchema['effects'] | undefined, e: TimedEffects, tick: number) {
+  s?.forEach((at, k) => { (e as unknown as NumRecord)[k] = left(at, tick); });
 }
 
 function readPlayer(s: PlayerSchema, p: PlayerState, tick: number) {
@@ -105,7 +106,15 @@ function syncNumMap<S extends { id: number }, T extends { id: number }>(
   if (dst.size !== live.size) for (const k of dst.keys()) if (!live.has(k)) dst.delete(k);
 }
 
-const newBomb = (id: number): BombState => ({
+export function copyBomb(a: BombState, b: BombState) {
+  b.owner = a.owner; b.kind = a.kind; b.x = a.x; b.y = a.y; b.radius = a.radius; b.fuse = a.fuse;
+  b.motion = a.motion; b.vx = a.vx; b.vy = a.vy; b.fromX = a.fromX; b.fromY = a.fromY;
+  b.toX = a.toX; b.toY = a.toY; b.progress = a.progress; b.dud = a.dud;
+  b.passers.length = 0;
+  for (const id of a.passers) b.passers.push(id);
+}
+
+export const newBomb = (id: number): BombState => ({
   id, owner: '', kind: 0, x: 0, y: 0, radius: 0, fuse: 0, motion: 0, vx: 0, vy: 0,
   fromX: 0, fromY: 0, toX: 0, toY: 0, progress: 0, passers: [], dud: false,
 });
@@ -129,6 +138,8 @@ export class ReadModel {
     w.width = s.width;
     w.height = s.height;
     w.winner = s.winner;
+    w.zoneRing = s.zoneRing ?? 0;
+    w.zoneIn = left(s.zoneAt ?? 0, tick);
 
     const n = s.tiles?.length ?? 0;
     if (w.tiles.length !== n) w.tiles = new Uint8Array(n);

@@ -8,35 +8,39 @@ import {
   GHOST_TIME,
   MAX_BOMBS,
   MAX_RADIUS,
-  MAX_SPEED_LEVEL,
   PICKUP_RADIUS,
   PLAYER_RADIUS,
   SHIELD_TIME,
+  SPEED_TIME,
   sec,
 } from '../contract/constants';
-import { Ability, Curse, PickupType, Tile, type PickupState, type PlayerState } from '../contract/types';
+import { Curse, PickupType, Tile, type PickupState, type PlayerState } from '../contract/types';
+import { grantAbility, syncAbilities, TIMED_ABILITIES } from './effects';
 import { emit, type SimCtx } from './context';
 import { randInt, weightedIndex, type SeedHolder } from './rng';
 
-/** Drop weights indexed by PickupType (from the plan). */
+/**
+ * Drop weights indexed by PickupType. The canon pool (legacy Achivment STORE: +bomb, +radius,
+ * shield, +speed, kick, fire, crazy, random) dominates; the v2 additions are rarer.
+ */
 export const PICKUP_WEIGHTS: readonly number[] = (() => {
   const w: number[] = [];
-  w[PickupType.BombUp] = 18;
-  w[PickupType.FireUp] = 18;
-  w[PickupType.SpeedUp] = 12;
-  w[PickupType.Kick] = 7;
-  w[PickupType.Glove] = 6;
-  w[PickupType.Punch] = 5;
-  w[PickupType.Shield] = 5;
-  w[PickupType.LineBomb] = 4;
-  w[PickupType.Skull] = 4;
-  w[PickupType.Random] = 4;
+  w[PickupType.BombUp] = 14;
+  w[PickupType.FireUp] = 14;
+  w[PickupType.SpeedUp] = 10;
+  w[PickupType.Shield] = 9;
+  w[PickupType.Kick] = 9;
+  w[PickupType.Fire] = 8;
+  w[PickupType.Crazy] = 8;
+  w[PickupType.Random] = 8;
+  w[PickupType.Glove] = 4;
+  w[PickupType.Punch] = 3;
   w[PickupType.Remote] = 3;
   w[PickupType.Pierce] = 3;
+  w[PickupType.LineBomb] = 3;
   w[PickupType.BombPass] = 3;
   w[PickupType.Ghost] = 3;
-  w[PickupType.Crazy] = 3;
-  w[PickupType.Fire] = 3;
+  w[PickupType.Skull] = 3;
   w[PickupType.Heart] = 2;
   w[PickupType.FullFire] = 1;
   return w;
@@ -57,25 +61,18 @@ export function rollPickup(rng: SeedHolder, excludeRandom: boolean): PickupType 
     : (weightedIndex(rng, PICKUP_WEIGHTS, TOTAL_WEIGHT) as PickupType);
 }
 
-const ABILITY_OF: Partial<Record<PickupType, Ability>> = {
-  [PickupType.Kick]: Ability.Kick,
-  [PickupType.Glove]: Ability.Glove,
-  [PickupType.Punch]: Ability.Punch,
-  [PickupType.Remote]: Ability.Remote,
-  [PickupType.Pierce]: Ability.Pierce,
-  [PickupType.LineBomb]: Ability.LineBomb,
-  [PickupType.BombPass]: Ability.BombPass,
-};
-
 export function pickupAt(ctx: SimCtx, x: number, y: number): PickupState | undefined {
-  for (const p of ctx.world.pickups.values()) if (p.x === x && p.y === y) return p;
-  return undefined;
+  const w = ctx.world;
+  if (x < 0 || y < 0 || x >= w.width || y >= w.height) return undefined;
+  const k = w.pickups.get(ctx.pickupGrid[y * w.width + x]!);
+  return k && k.x === x && k.y === y ? k : undefined;
 }
 
 export function spawnPickup(ctx: SimCtx, x: number, y: number, type: PickupType): PickupState {
   const w = ctx.world;
   const p: PickupState = { id: w.nextId++, x, y, type, protect: PICKUP_PROTECT };
   w.pickups.set(p.id, p);
+  ctx.pickupGrid[y * w.width + x] = p.id;
   emit(ctx, { type: 'pickupSpawned', pickup: p.id, x, y, kind: type });
   return p;
 }
@@ -86,6 +83,15 @@ export function applyCurse(ctx: SimCtx, p: PlayerState, curse: Curse, from: stri
   const pi = ctx.players.get(p.id);
   if (pi) pi.curseImmune = CURSE_IMMUNITY;
   emit(ctx, { type: 'curseApplied', player: p.id, curse, from });
+}
+
+/** "+speed" and "-speed / fire" cancel each other's time (legacy SpeedEffect.append). */
+function addOpposed(ctx: SimCtx, p: PlayerState, add: 'speed' | 'fire', against: 'speed' | 'fire', time: number) {
+  const e = p.effects;
+  if (e[against] > 0) {
+    e[against] = Math.max(0, e[against] - time);
+    if (e[against] === 0) emit(ctx, { type: 'effectEnded', player: p.id, effect: against });
+  } else e[add] += time;
 }
 
 /** Apply a pickup's effect. Returns the kind actually applied (Random resolves). */
@@ -99,23 +105,23 @@ export function applyPickup(ctx: SimCtx, p: PlayerState, type: PickupType): Pick
     case PickupType.FireUp:
       p.radius = Math.min(MAX_RADIUS, p.radius + 1);
       break;
-    case PickupType.SpeedUp:
-      p.speedLevel = Math.min(MAX_SPEED_LEVEL, p.speedLevel + 1);
-      break;
     case PickupType.FullFire:
       p.radius = MAX_RADIUS;
       break;
-    case PickupType.Shield:
-      e.shield = SHIELD_TIME;
-      break;
-    case PickupType.Ghost:
-      e.ghost = GHOST_TIME;
-      break;
-    case PickupType.Crazy:
-      e.crazy = CRAZY_TIME;
+    case PickupType.SpeedUp:
+      addOpposed(ctx, p, 'speed', 'fire', SPEED_TIME);
       break;
     case PickupType.Fire:
-      e.fire = FIRE_TIME;
+      addOpposed(ctx, p, 'fire', 'speed', FIRE_TIME);
+      break;
+    case PickupType.Shield:
+      e.shield += SHIELD_TIME;
+      break;
+    case PickupType.Ghost:
+      e.ghost += GHOST_TIME;
+      break;
+    case PickupType.Crazy:
+      e.crazy += CRAZY_TIME;
       break;
     case PickupType.Heart:
       p.lives = Math.min(MAX_LIVES, p.lives + 1);
@@ -124,10 +130,11 @@ export function applyPickup(ctx: SimCtx, p: PlayerState, type: PickupType): Pick
       applyCurse(ctx, p, (1 + randInt(ctx.world, 6)) as Curse, '');
       break;
     default: {
-      const a = ABILITY_OF[type];
-      if (a) p.abilities |= a;
+      const a = TIMED_ABILITIES.find((t) => t.pickup === type);
+      if (a) grantAbility(p, a);
     }
   }
+  syncAbilities(p);
   if (type !== PickupType.Skull && type !== PickupType.Heart) ctx.players.get(p.id)?.collected.push(type);
   return type;
 }

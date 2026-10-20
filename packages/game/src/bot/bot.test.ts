@@ -17,22 +17,33 @@ interface SoakStats {
   pure: number;
   bombs: number;
   maxThinkMs: number;
+  avgThinkUs: number;
+  avgStepUs: number;
+  width: number;
 }
 
 function soak(players: number, minutes: number, seed: number): SoakStats {
-  const sim = new Simulation({ minPlayers: players, seed });
+  const sim = new Simulation({ seed });
   const bots: Bot[] = [];
   for (let i = 0; i < players; i++) {
     sim.addPlayer({ id: `bot${i}`, name: `Bot ${i}`, skin: i, isBot: true });
     bots.push(new Bot(`bot${i}`, DIFFS[i % 3]));
   }
-  const s: SoakStats = { rounds: 0, deaths: 0, ownBomb: 0, pure: 0, bombs: 0, maxThinkMs: 0 };
+  const s: SoakStats = { rounds: 0, deaths: 0, ownBomb: 0, pure: 0, bombs: 0, maxThinkMs: 0, avgThinkUs: 0, avgStepUs: 0, width: 0 };
+  let think = 0;
+  let stepT = 0;
+  const ticks = minutes * 60 * TICK_RATE;
   const recent: { t: number; x: number; y: number; owner: string }[] = [];
-  for (let t = 0; t < minutes * 60 * TICK_RATE; t++) {
+  for (let t = 0; t < ticks; t++) {
     const t0 = performance.now();
     for (const b of bots) sim.pushInput(b.id, b.think(sim.state));
-    s.maxThinkMs = Math.max(s.maxThinkMs, performance.now() - t0);
-    for (const e of sim.step()) {
+    const t1 = performance.now();
+    const events = sim.step();
+    stepT += performance.now() - t1;
+    think += t1 - t0;
+    if (t > 300) s.maxThinkMs = Math.max(s.maxThinkMs, t1 - t0); // skip JIT warm-up
+    s.width = Math.max(s.width, sim.state.width);
+    for (const e of events) {
       if (e.type === 'roundOver') s.rounds++;
       if (e.type === 'bombPlaced') {
         s.bombs++;
@@ -49,16 +60,18 @@ function soak(players: number, minutes: number, seed: number): SoakStats {
     }
     while (recent.length && sim.state.tick - recent[0]!.t > 200) recent.shift();
   }
+  s.avgThinkUs = (think / ticks) * 1000;
+  s.avgStepUs = (stepT / ticks) * 1000;
   return s;
 }
 
 describe('bots', () => {
-  test('soak: 6 mixed bots play ~4 minutes, rounds finish, few suicides', () => {
-    const s = soak(6, 4, 2024);
+  test('soak: 4 mixed bots, the zone closes in and rounds finish, few suicides', () => {
+    const s = soak(4, 5, 2024);
     const rate = s.ownBomb / Math.max(1, s.deaths);
     console.log(
-      `[bot soak] rounds=${s.rounds} deaths=${s.deaths} ownBomb=${s.ownBomb} (${(rate * 100).toFixed(0)}%) ` +
-        `pureSuicides=${s.pure} bombs=${s.bombs} maxThink(6 bots)=${s.maxThinkMs.toFixed(2)}ms`,
+      `[bot soak 4] ${s.width}x map, rounds=${s.rounds} deaths=${s.deaths} ownBomb=${s.ownBomb} (${(rate * 100).toFixed(0)}%) ` +
+        `pureSuicides=${s.pure} bombs=${s.bombs}`,
     );
     expect(s.rounds).toBeGreaterThanOrEqual(1);
     expect(s.bombs).toBeGreaterThan(100); // they actually play
@@ -66,11 +79,19 @@ describe('bots', () => {
     expect(s.pure).toBeLessThanOrEqual(3);
   });
 
-  test('soak: 8 bots on a bigger map', () => {
-    const s = soak(8, 3, 7);
-    console.log(`[bot soak 8] rounds=${s.rounds} deaths=${s.deaths} ownBomb=${s.ownBomb} pure=${s.pure} bombs=${s.bombs}`);
+  test('soak: 32 bots on the 75x75 map', () => {
+    const s = soak(32, 2, 7);
+    const rate = s.ownBomb / Math.max(1, s.deaths);
+    console.log(
+      `[bot soak 32] ${s.width}x map, rounds=${s.rounds} deaths=${s.deaths} ownBomb=${s.ownBomb} (${(rate * 100).toFixed(0)}%) ` +
+        `pure=${s.pure} bombs=${s.bombs} think=${s.avgThinkUs.toFixed(0)}us/tick (max ${s.maxThinkMs.toFixed(1)}ms) step=${s.avgStepUs.toFixed(1)}us`,
+    );
+    expect(s.width).toBe(75);
     expect(s.deaths).toBeGreaterThan(0);
-    expect(s.ownBomb / Math.max(1, s.deaths)).toBeLessThan(0.5);
+    expect(s.bombs).toBeGreaterThan(300);
+    expect(rate).toBeLessThan(0.5);
+    expect(s.avgThinkUs).toBeLessThan(1000); // all 32 bots together
+    expect(s.avgStepUs).toBeLessThan(500);
   });
 
   test('flees from its own bomb and survives', () => {
@@ -110,10 +131,10 @@ describe('bots', () => {
     expect(d.dStart[0 * W + 8]).toBe(INF);
   });
 
-  test('bots are cheap: 15 bots think in well under a millisecond on average', () => {
-    const sim = new Simulation({ minPlayers: 15, seed: 99 });
+  test('bots are cheap: 32 bots think in well under a millisecond on average', () => {
+    const sim = new Simulation({ seed: 99 });
     const bots: Bot[] = [];
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 32; i++) {
       sim.addPlayer({ id: `b${i}`, name: '', skin: 0, isBot: true });
       bots.push(new Bot(`b${i}`, DIFFS[i % 3]));
     }
@@ -126,7 +147,7 @@ describe('bots', () => {
       sim.step();
     }
     const avg = think / ticks;
-    console.log(`[bot perf] 15 bots: ${(avg * 1000).toFixed(1)}us per tick (all bots), phase=${Phase[sim.state.phase]}`);
+    console.log(`[bot perf] 32 bots: ${(avg * 1000).toFixed(1)}us per tick (all bots), phase=${Phase[sim.state.phase]}`);
     expect(avg).toBeLessThan(1);
   });
 });

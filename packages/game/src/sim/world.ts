@@ -38,6 +38,8 @@ export function createWorld(width: number, height: number, seed: number): WorldS
     falling: [],
     winner: '',
     nextId: 1,
+    zoneRing: 0,
+    zoneIn: 0,
   };
 }
 
