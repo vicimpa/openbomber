@@ -33,7 +33,8 @@ import { bombAtTile } from './world';
 /** After a shield soaks a hit, the rest of that blast can't hurt you. */
 const SHIELD_GRACE = FLAME_TIME + 2;
 const FLAME_HIT_RADIUS = 0.6 * PLAYER_RADIUS;
-const TOUCH2 = (2 * PLAYER_RADIUS) ** 2;
+// players push each other apart to exactly 2R, so contact means within a hair of that
+const TOUCH2 = (2 * PLAYER_RADIUS + 0.06) ** 2;
 const MAX_QUEUE = 6;
 
 export const gameplayPhase = (ph: Phase) => ph === Phase.Playing || ph === Phase.SuddenDeath;

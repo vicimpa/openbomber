@@ -218,7 +218,56 @@ export function applyMovement(w: WorldState, p: PlayerState, input: InputFrame):
   return perpOff > -0.3 && perpOff < 0.3 ? b.id : -1;
 }
 
-/** Client prediction: identical movement code path, no world mutation. */
+// ---------------------------------------------------------------- player pushing
+
+/** Players that collide with others (dead heroes and spectators don't). */
+const solidPlayer = (p: PlayerState) => p.alive && p.inRound;
+
+/**
+ * Separate overlapping heroes along the line between them. `share` is how much of the
+ * overlap `p` takes (0.5 = an even split, so walking into someone pushes them along at
+ * half speed). Walls stay a hard constraint, so nobody is shoved through a block.
+ */
+function pushApart(w: WorldState, p: PlayerState, q: PlayerState, share: number): boolean {
+  const dx = p.x - q.x;
+  const dy = p.y - q.y;
+  const min = 2 * PLAYER_RADIUS;
+  const d2 = dx * dx + dy * dy;
+  if (d2 >= min * min) return false;
+  const d = Math.sqrt(d2);
+  // exactly on top of each other: split along x, by id so the result is deterministic
+  const nx = d > 1e-6 ? dx / d : p.id < q.id ? -1 : 1;
+  const ny = d > 1e-6 ? dy / d : 0;
+  const overlap = min - d;
+  p.x += nx * overlap * share;
+  p.y += ny * overlap * share;
+  resolveTiles(w, p);
+  return true;
+}
+
+/** Authoritative player-vs-player push, run once per tick after everybody moved. */
+export function pushPlayers(w: WorldState) {
+  for (let pass = 0; pass < 2; pass++) {
+    for (const a of w.players.values()) {
+      if (!solidPlayer(a)) continue;
+      let after = false;
+      for (const b of w.players.values()) {
+        if (b === a) { after = true; continue; }
+        if (!after || !solidPlayer(b)) continue;
+        if (pushApart(w, a, b, 0.5)) pushApart(w, b, a, 1);
+      }
+    }
+  }
+}
+
+/**
+ * Client prediction: the same movement code path, then the local hero's half of the push
+ * against the (interpolated) others. Never mutates the world.
+ */
 export const predictMovement: PredictMovement = (world, player, input) => {
   applyMovement(world, player, input);
+  if (!solidPlayer(player)) return;
+  for (const q of world.players.values()) {
+    if (q.id !== player.id && solidPlayer(q)) pushApart(world, player, q, 0.5);
+  }
 };

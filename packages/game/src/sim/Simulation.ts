@@ -8,6 +8,7 @@ import { dropCarried, updateBombs } from './bombs';
 import type { SimCtx } from './context';
 import { tickFlames } from './flames';
 import { parseMap } from './map';
+import { pushPlayers } from './movement';
 import { collectPickups, spawnPickup, tickPickups } from './pickups';
 import {
   burnPlayers,
@@ -21,6 +22,15 @@ import {
 } from './players';
 import { newMap, updatePhase } from './round';
 import { createWorld } from './world';
+
+/** Carried bombs follow their holder after the player push moved them. */
+function syncCarried(w: WorldState) {
+  for (const p of w.players.values()) {
+    if (p.carrying < 0) continue;
+    const b = w.bombs.get(p.carrying);
+    if (b) { b.x = p.x; b.y = p.y; }
+  }
+}
 
 export class Simulation implements ISimulation {
   readonly state: WorldState;
@@ -103,6 +113,8 @@ export class Simulation implements ISimulation {
     w.tick++;
     ctx.bombsAllowed = gameplayPhase(w.phase) && (w.players.size <= 1 || aliveCount(w) >= 2);
     for (const p of w.players.values()) updatePlayer(ctx, p);
+    pushPlayers(w);
+    syncCarried(w);
     if (gameplayPhase(w.phase)) {
       collectPickups(ctx);
       touchPlayers(ctx);

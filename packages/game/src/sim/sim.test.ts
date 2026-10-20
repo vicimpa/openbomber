@@ -1,3 +1,4 @@
+import { PLAYER_RADIUS } from '../contract/constants';
 import { describe, expect, test } from 'bun:test';
 import {
   BOMB_FUSE,
@@ -79,6 +80,33 @@ describe('movement & collision', () => {
     const p = h.p('a');
     expect(p.x).toBeGreaterThan(1.8);
     expect(p.y).toBeGreaterThanOrEqual(1.75 - 1e-6);
+  });
+
+  test('walking into another hero pushes them along', () => {
+    const h = new Harness(OPEN, [['a', 1, 1], ['b', 1.6, 1]]);
+    h.set('a', 1, 0);
+    h.step(30);
+    const a = h.p('a'), b = h.p('b');
+    expect(b.x).toBeGreaterThan(2);
+    expect(b.x - a.x).toBeGreaterThanOrEqual(2 * PLAYER_RADIUS - 0.01);
+    expect(Math.abs(b.y - 1)).toBeLessThan(1e-6);
+  });
+
+  test('a hero cannot be shoved through the map edge', () => {
+    const h = new Harness(OPEN, [['a', 7, 1], ['b', 7.6, 1]]);
+    h.set('a', 1, 0);
+    h.step(60);
+    expect(h.p('b').x).toBeLessThanOrEqual(8.5 - PLAYER_RADIUS + 1e-6); // last tile's outer edge
+    expect(h.p('a').x).toBeLessThan(h.p('b').x);
+  });
+
+  test('dead heroes do not block or push', () => {
+    const h = new Harness(OPEN, [['a', 1, 1], ['b', 1.6, 1]]);
+    h.p('b').alive = false;
+    h.set('a', 1, 0);
+    h.step(30);
+    expect(h.p('b').x).toBe(1.6);
+    expect(h.p('a').x).toBeGreaterThan(2);
   });
 
   test('predictMovement matches the authoritative sim exactly', () => {

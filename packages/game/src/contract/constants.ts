@@ -28,7 +28,7 @@ export const INPUT_DEADZONE = 0.3;
 // --- bombs & flames
 export const BOMB_FUSE = sec(2);
 export const REMOTE_BOMB_MAX_FUSE = sec(12);  // remote bombs auto-explode eventually
-export const FLAME_TIME = sec(0.5);
+export const FLAME_TIME = sec(0.35);            // lethal window == the visible fire (smoke after it is harmless)
 export const CHAIN_DELAY = 3;                 // ticks between chained explosions (visual ripple)
 export const START_BOMBS = 1;
 export const START_RADIUS = 1;
