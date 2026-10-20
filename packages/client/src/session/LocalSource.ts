@@ -2,7 +2,7 @@
 // Used for «Против ботов» and as the live attract-mode world behind the menu.
 
 import {
-  Bot, BombMotion, Simulation, TICK_MS,
+  Bot, BombMotion, Phase, Simulation, TICK_MS, sec,
   type BotDifficulty, type GameEvent, type InputFrame, type PlayerState, type WorldState,
 } from '@ob/game';
 import type { GameSource } from '../contracts';
@@ -24,6 +24,8 @@ export interface LocalSourceOptions {
   name?: string;
   skin?: number;
   seed?: number;
+  /** Fast-forward this many ticks before the first frame (menu backdrop: start mid-game). */
+  warmupTicks?: number;
 }
 
 export class LocalSource implements GameSource {
@@ -40,6 +42,8 @@ export class LocalSource implements GameSource {
   private readonly view: WorldState = emptyWorld();
   private readonly prevPlayers = new Map<string, Prev>();
   private readonly prevBombs = new Map<number, Prev>();
+  /** Events from the warm-up that leave marks on the current map (scorch), for renderer.prime(). */
+  private primeEvents: GameEvent[] = [];
 
   constructor(opts: LocalSourceOptions) {
     this.sim = new Simulation({ seed: opts.seed ?? (Math.random() * 0x7fffffff) | 0 });
@@ -51,7 +55,32 @@ export class LocalSource implements GameSource {
       this.bots.push(new Bot(id, difficulty));
     }
     if (opts.play) this.play(true);
+    if (opts.warmupTicks) this.warmUp(opts.warmupTicks);
     this.compose(0);
+  }
+
+  /**
+   * Play `ticks` of bots-only game before anything is shown, then keep going (bounded) until a
+   * round is actually being fought. Explosions on the map that ends up on screen are kept for
+   * renderer.prime(); everything else from the warm-up is dropped.
+   */
+  private warmUp(ticks: number) {
+    const w = this.sim.state;
+    const fighting = () => w.phase === Phase.Playing || w.phase === Phase.SuddenDeath;
+    for (let i = 0; i < ticks + sec(20) && (i < ticks || !fighting()); i++) {
+      for (const bot of this.bots) if (w.players.has(bot.id)) this.sim.pushInput(bot.id, bot.think(w));
+      for (const e of this.sim.step()) {
+        if (e.type === 'roundStart') this.primeEvents = [];
+        else if (e.type === 'explosion') this.primeEvents.push(e);
+      }
+    }
+  }
+
+  /** Warm-up events for renderer.prime(); handed out once. */
+  takePrimeEvents(): GameEvent[] {
+    const out = this.primeEvents;
+    this.primeEvents = [];
+    return out;
   }
 
   get world(): WorldState { return this.view; }

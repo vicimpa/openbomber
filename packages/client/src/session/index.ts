@@ -6,7 +6,7 @@
 // Leaving any game returns to the menu. Music is off by design; sound effects stay.
 
 import { effect } from '@preact/signals';
-import type { GameEvent, WorldState } from '@ob/game';
+import { sec, type GameEvent, type WorldState } from '@ob/game';
 import type { AudioEngine, GameSource, InputManager } from '../contracts';
 import { createAudio } from '../audio';
 import { createInput, installPlayGuards } from '../input';
@@ -89,7 +89,9 @@ export function startSession() {
 
   /** Main menu: a live bot match behind it, watched with the spectator camera. */
   function toMenu() {
-    setSource(new LocalSource({ bots: ATTRACT_BOTS, difficulty: 'normal' }), null, 'menu');
+    // start the backdrop mid-game (20-35 s in), not on a pristine map
+    const warmupTicks = sec(20 + Math.random() * 15);
+    setSource(new LocalSource({ bots: ATTRACT_BOTS, difficulty: 'normal', warmupTicks }), null, 'menu');
   }
 
   async function connect(kind: 'quick' | 'private' | 'join', job: () => Promise<NetSource>, code?: string) {
