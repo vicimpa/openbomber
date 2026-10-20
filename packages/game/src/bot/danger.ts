@@ -10,9 +10,11 @@ import {
   CRAZY_RADIUS_MULT,
   FLAME_TIME,
   MAX_RADIUS,
+  SKY_BOMB_FUSE,
+  SKY_BOMB_RADIUS,
   THROW_TIME,
 } from '../contract/constants';
-import { Ability, BombKind, BombMotion, Curse, PickupType, Tile, type BombState, type PlayerState, type WorldState } from '../contract/types';
+import { Ability, BombKind, BombMotion, Curse, DropKind, PickupType, Tile, type BombState, type PlayerState, type WorldState } from '../contract/types';
 
 export const INF = 0x3fffffff;
 /** Remote bombs this close to their automatic detonation count as timed bombs. */
@@ -43,6 +45,10 @@ export interface Analysis {
   fire: { id: string; x: number; y: number }[];
   /** Cursed players (touch = their curse). */
   cursed: { id: string; x: number; y: number }[];
+  /** Overtime: ticks + 1 until a sky bomb lands on the tile (0 = none); it blocks from then on. */
+  land: Int32Array;
+  /** Overtime: pickup type + 1 falling onto the tile (0 = none). */
+  dropPickup: Int8Array;
   /** First tick each Crazy bomb was seen: its real fuse is a secret, only its age is known. */
   crazySeen: Map<number, number>;
 }
@@ -133,6 +139,8 @@ export function analyze(w: WorldState): Analysis {
       players: new Uint8Array(n),
       fire: [],
       cursed: [],
+      land: new Int32Array(n),
+      dropPickup: new Int8Array(n),
       crazySeen: new Map(),
     };
     cache.set(w, a);
@@ -150,6 +158,8 @@ export function analyze(w: WorldState): Analysis {
   players.fill(0);
   a.fire.length = 0;
   a.cursed.length = 0;
+  a.land.fill(0);
+  a.dropPickup.fill(0);
   const W = w.width;
 
   for (const k of w.pickups.values()) pickup[k.y * W + k.x] = k.type + 1;
@@ -234,6 +244,19 @@ export function analyze(w: WorldState): Analysis {
     if (x < 0 || y < 0 || x >= W || y >= w.height) continue;
     pending.push({ id: b.id, x, y, radius, pierce: bombPierces(w, b), time, dur, done: false });
   }
+  // overtime rain: a sky bomb lands on its shadow and goes off SKY_BOMB_FUSE later
+  if (w.drops) {
+    for (const d of w.drops) {
+      const i = d.y * W + d.x;
+      if (w.tiles[i] !== Tile.Floor || bomb[i]) continue; // it fizzles
+      if (d.kind === DropKind.Pickup) {
+        a.dropPickup[i] = d.pickup + 1;
+        continue;
+      }
+      a.land[i] = d.ttl + 1;
+      pending.push({ id: -d.id, x: d.x, y: d.y, radius: SKY_BOMB_RADIUS, pierce: false, time: d.ttl - 1 + SKY_BOMB_FUSE, dur: FLAME_TIME, done: false });
+    }
+  }
   resolveChains(w, bomb, pickup, gone, dStart, dEnd, soft);
   return a;
 }
@@ -316,14 +339,12 @@ export function withExtraBomb(
     const by = Math.round(b.y);
     if (bt < a.dStart[by * W + bx]!) markBlast(w, a.bomb, a.pickup, a.gone, bx, by, b.radius, bombPierces(w, b), bt, ds, de, null);
   };
-  const one = (bx: number, by: number) => {
-    // our bomb goes off early if it already sits in a blast
-    const i = by * W + bx;
-    const t0 = Math.min(time, a.dStart[i]! < INF ? a.dStart[i]! + CHAIN_DELAY : INF);
-    markBlast(w, a.bomb, a.pickup, a.gone, bx, by, radius, pierce, t0, ds, de, chain, dur);
-  };
-  one(x, y);
-  if (more) for (const i of more) one(i % W, (i / W) | 0);
+  // our bomb goes off early if it already sits in a blast; a line chains as one
+  const early = (i: number) => (a.dStart[i]! < INF ? a.dStart[i]! + CHAIN_DELAY : INF);
+  let t0 = Math.min(time, early(y * W + x));
+  if (more) for (const i of more) t0 = Math.min(t0, early(i));
+  markBlast(w, a.bomb, a.pickup, a.gone, x, y, radius, pierce, t0, ds, de, chain, dur);
+  if (more) for (const i of more) markBlast(w, a.bomb, a.pickup, a.gone, i % W, (i / W) | 0, radius, pierce, t0, ds, de, chain, dur);
 }
 
 /** Largest blast a Crazy bomb of this owner can have. */

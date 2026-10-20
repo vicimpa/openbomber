@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import { BOMB_FUSE, CHAIN_DELAY, CRAZY_FUSE_MAX, CRAZY_FUSE_MIN, TICK_RATE, sec } from '../contract/constants';
+import { BOMB_FUSE, CHAIN_DELAY, CRAZY_FUSE_MAX, CRAZY_FUSE_MIN, DROP_FALL_TIME, SKY_BOMB_FUSE, TICK_RATE, sec } from '../contract/constants';
 import { Button, type GameEvent } from '../contract/protocol';
-import { Curse, Phase, PickupType, Tile, type WorldState } from '../contract/types';
+import { Curse, DropKind, Phase, PickupType, Tile, type WorldState } from '../contract/types';
 import { Simulation } from '../sim/Simulation';
 import { Harness, ev } from '../sim/testkit';
 import { Bot, type BotDifficulty } from './Bot';
@@ -358,5 +358,24 @@ describe('bots use what they hold', () => {
     expect(d.dStart[5]).toBeLessThanOrEqual(CRAZY_FUSE_MIN); // radius 1 x CRAZY_RADIUS_MULT
     expect(d.dStart[6]).toBe(INF);
     expect(d.dEnd[5]).toBeGreaterThan(CRAZY_FUSE_MAX - 10);
+  });
+
+  test('overtime: steps off a sky-bomb shadow and out of its cross before it blows', () => {
+    for (const diff of DIFFS) {
+      const h = new Harness(['.........', '.#.#.#.#.', '.........'], [['bot', 4, 0], ['z', 0, 2]]);
+      h.state.drops.push({ id: h.state.nextId++, x: 4, y: 0, kind: DropKind.Bomb, pickup: 0, ttl: DROP_FALL_TIME });
+      const bot = new Bot('bot', diff);
+      const events = drive(h, [bot], DROP_FALL_TIME + SKY_BOMB_FUSE + 30);
+      expect(ev(events, 'explosion').length).toBe(1);
+      expect(h.p('bot').alive).toBe(true);
+    }
+  });
+
+  test('overtime: walks to a pickup falling from the sky', () => {
+    const h = new Harness(['.........', '.#.#.#.#.', '.........'], [['bot', 0, 0], ['z', 0, 2]]);
+    h.state.drops.push({ id: h.state.nextId++, x: 6, y: 0, kind: DropKind.Pickup, pickup: PickupType.BombUp, ttl: DROP_FALL_TIME });
+    const bot = new Bot('bot', 'hard');
+    drive(h, [bot], DROP_FALL_TIME + 120, () => h.p('bot').bombs > 1);
+    expect(h.p('bot').bombs).toBe(2);
   });
 });

@@ -8,6 +8,7 @@ import {
   BASE_SPEED,
   BOMB_FUSE,
   BOUNCE_TIME,
+  CHAIN_DELAY,
   CRAZY_FUSE_MAX,
   CRAZY_FUSE_MIN,
   FIRE_SPEED_MULT,
@@ -116,6 +117,8 @@ const NOTICE: readonly (readonly [keyof TimedEffects, number])[] = [
 ];
 
 const STEP_DIRS = [Dir.Up, Dir.Left, Dir.Right, Dir.Down] as const;
+const DX = [0, -1, 1, 0];
+const DY = [-1, 0, 0, 1];
 /** Fire this close (ticks) cancels scripted tricks. */
 const IMMINENT = 45;
 /** Only the nearest few opponents steer target scoring (keeps 32-bot maps cheap). */
@@ -270,7 +273,9 @@ const safeAt = (ds: Int32Array, de: Int32Array, i: number, k: number, tpt: numbe
 function passable(a: Analysis, m: Mobility, j: number, k: number): boolean {
   const t = a.world.tiles[j];
   if (t !== Tile.Floor && (t !== Tile.Brick || (k + 1) * m.tpt > m.ghost)) return false;
-  return !a.bomb[j] || (k + 1) * m.tpt <= m.pass;
+  // a sky bomb lands here: walking in after that means walking into a bomb
+  const bombed = a.bomb[j] !== 0 || (a.land[j] !== 0 && (k - 0.7) * m.tpt >= a.land[j]! - 2);
+  return !bombed || (k + 1) * m.tpt <= m.pass;
 }
 
 /** A tile to stop on after `k` steps: floor, or a brick while Ghost lasts long after. */
@@ -309,9 +314,9 @@ function search(a: Analysis, o: SearchOpts): number {
       if (!o.allowSkull && isSkull(a, j)) continue;
       if (!o.blind) {
         if (!safeAt(o.ds, o.de, j, k, o.tpt, o.margin)) continue;
-        if (o.fire && nearFire(a, nx, ny, o.selfId)) continue;
+        if (o.fire && a.fire.length && nearFire(a, nx, ny, o.selfId)) continue;
       }
-      if (o.curse && nearCursed(a, nx, ny, k <= 2 ? 1 : 0, o.selfId)) continue;
+      if (o.curse && a.cursed.length && nearCursed(a, nx, ny, k <= 2 ? 1 : 0, o.selfId)) continue;
       if (o.avoid && nearAny(o.avoid, nx, ny, k >= 2 ? 1 : 0)) continue;
       sMark[j] = m;
       sSteps[j] = k;
@@ -588,6 +593,8 @@ export class Bot implements IBot {
       let bombValue = 0;
       const pk = a.pickup[i]! - 1;
       if (pk >= 0) score += pickupValue(p, pk as PickupType);
+      const fall = a.dropPickup[i]! - 1; // overtime: about to land here, worth waiting for
+      if (fall >= 0) score += pickupValue(p, fall as PickupType) * 0.8;
       if (canBomb) {
         bombValue = this.bombValue(a, x, y, radius, pierce, cur);
         score += bombValue;
@@ -715,25 +722,33 @@ export class Bot implements IBot {
     return route;
   }
 
-  /** Bricks / enemies a bomb at (x, y) would hit (Pierce: bricks behind bricks too). */
+  /** Bricks / enemies a bomb at (x, y) would hit (Pierce: bricks behind bricks too). Hot: keep it lean. */
   private bombValue(a: Analysis, x: number, y: number, radius: number, pierce: boolean, self: number): number {
-    const w = a.world;
+    const tiles = a.world.tiles;
+    const players = a.players;
+    const ds = a.dStart;
     const W = a.width;
+    const H = a.height;
     let bricks = 0;
     const at = y * W + x;
-    let foes = a.players[at]! - (at === self ? 1 : 0);
+    let foes = players[at]! - (at === self ? 1 : 0);
     for (let d = 0; d < 4; d++) {
-      const [dx, dy] = DIR_VEC[STEP_DIRS[d]!];
+      const dx = DX[d]!;
+      const dy = DY[d]!;
+      const step = dy * W + dx;
+      let cx = x;
+      let cy = y;
+      let i = at;
       for (let k = 1; k <= radius; k++) {
-        const cx = x + dx * k;
-        const cy = y + dy * k;
-        if (cx < 0 || cy < 0 || cx >= W || cy >= a.height) break;
-        const i = cy * W + cx;
-        const t = w.tiles[i];
+        cx += dx;
+        cy += dy;
+        i += step;
+        if (cx < 0 || cy < 0 || cx >= W || cy >= H) break;
+        const t = tiles[i];
         if (t === Tile.Wall) break;
-        foes += a.players[i]! - (i === self ? 1 : 0);
+        if (players[i]) foes += players[i]! - (i === self ? 1 : 0);
         if (t === Tile.Brick) {
-          if (a.dStart[i]! >= INF) bricks++; // not already being blown up
+          if (ds[i]! >= INF) bricks++; // not already being blown up
           if (!pierce) break;
           continue;
         }
@@ -951,7 +966,9 @@ export class Bot implements IBot {
     if (at < 0) return 0; // evaporates off the map: harmless disposal
     const lx = at % W;
     const ly = (at / W) | 0;
-    const fuseAfter = b.fuse > 0 ? Math.max(1, b.fuse - delay) : b.fuse < 0 ? (b.owner === p.id ? INF : 30) : 1;
+    let fuseAfter = b.fuse > 0 ? Math.max(1, b.fuse - delay) : b.fuse < 0 ? (b.owner === p.id ? INF : 30) : 1;
+    // coming down in (or next to) a blast: it chains and goes off early
+    if (a.dStart[at]! < INF && (b.fuse <= 0 || a.dStart[at]! < b.fuse)) fuseAfter = Math.min(fuseAfter, Math.max(1, a.dStart[at]! - delay) + CHAIN_DELAY);
     const radius = b.kind === BombKind.Crazy ? crazyRadius(w.players.get(b.owner)) : b.radius;
     const pierce = bombPierces(w, b);
     if (fuseAfter < SAFE_FUSE && inBlast(a, lx, ly, radius, pierce, ox, oy)) return -INF;
@@ -1071,6 +1088,15 @@ export class Bot implements IBot {
       const saved = a.bomb[from]!;
       a.bomb[from] = 0;
       const slideTicks = Math.ceil(dist / (KICK_SPEED / TICK_RATE)) + 6;
+      let burns = false; // sliding through a blast sets it off on the way
+      for (let j = 1, i = from; j <= dist; j++) {
+        const t = a.dStart[(i += dy * W + dx)]!; // (the bomb's own blast doesn't count)
+        burns ||= t < INF && (b.fuse <= 0 || t + CHAIN_DELAY < b.fuse);
+      }
+      if (burns) {
+        a.bomb[from] = saved;
+        continue;
+      }
       const s = this.blastScore(a, p, b, stop, slideTicks, x, y, foes);
       a.bomb[from] = saved;
       if (s === -INF || (aim && this.hits === 0)) continue;
@@ -1110,6 +1136,10 @@ export class Bot implements IBot {
         if (lx < 0 || ly < 0 || lx >= W || ly >= a.height) break;
         const i = ly * W + lx;
         if (w.tiles[i] !== Tile.Floor || a.bomb[i] || a.pickup[i]) break;
+        if (a.dStart[i]! < INF) {
+          line.length = 0; // a line bomb laid into a blast chains the whole line early
+          break;
+        }
         line.push(i);
       }
       if (line.length === 0) continue;
