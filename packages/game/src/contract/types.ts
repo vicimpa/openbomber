@@ -9,7 +9,7 @@ export enum Tile {
 }
 
 /** Outline of the playable arena inside its width x height box (see sim/shapes.ts). */
-export enum ArenaShape { Rect = 0, Circle = 1, Diamond = 2, Cross = 3, Ring = 4 }
+export enum ArenaShape { Rect = 0, Circle = 1, Diamond = 2, Cross = 3 }
 
 export enum Dir { Up = 0, Left = 1, Right = 2, Down = 3 }
 

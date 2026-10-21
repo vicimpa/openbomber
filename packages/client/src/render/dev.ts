@@ -4,7 +4,7 @@
 //   1 spawn every pickup   2 toggle all effects   3 stun   4 sudden death   5 all abilities
 //   6 abilities w/o remote   Q quality   V spectate   C camera mode   P pause   R new round   N next map
 //   ?attract  starts as a menu backdrop (localId '' + attract camera)
-//   ?shape=N  always arena shape N (0 rect, 1 circle, 2 diamond, 3 cross, 4 ring)
+//   ?shape=N  always arena shape N (0 rect, 1 circle, 2 diamond, 3 cross)
 import {
   Ability, Bot, Button, Curse, Phase, PickupType, ROUND_TIME, STUN_TIME, Simulation, TICK_MS, Tile, sec,
   type GameEvent,
@@ -16,7 +16,7 @@ const BOTS = Math.min(15, Number(params.get('bots') ?? 5));
 const LOCAL = 'me';
 let quality: 'low' | 'high' = params.get('quality') === 'low' ? 'low' : 'high';
 
-// ?shape=0..4 : always that ArenaShape (rect, circle, diamond, cross, ring); random otherwise
+// ?shape=0..3 : always that ArenaShape (rect, circle, diamond, cross); random otherwise
 const shape = params.get('shape');
 const sim = new Simulation({
   minPlayers: Number(params.get('min') ?? 2), seed: (Date.now() & 0xffff) || 1, shapes: true,

@@ -6,7 +6,7 @@ import { maxZoneDepth, shapeMask, shapeRingTiles, shapeSize, shapeSpawns, zoneDe
 import { Simulation } from './Simulation';
 import { Harness, ev } from './testkit';
 
-const SHAPES = [ArenaShape.Circle, ArenaShape.Diamond, ArenaShape.Cross, ArenaShape.Ring];
+const SHAPES = [ArenaShape.Circle, ArenaShape.Diamond, ArenaShape.Cross];
 
 /** Every cell reachable from `from` through non-wall cells (bricks break, so they count as open). */
 function reach(tiles: Uint8Array, w: number, h: number, from: number) {
@@ -48,17 +48,6 @@ describe('arena shapes', () => {
     }
   });
 
-  test('the ring closes from the outside only, not from the rim of its middle', () => {
-    const [w, h] = shapeSize(ArenaShape.Ring, 33, 33);
-    const depth = zoneDepth(ArenaShape.Ring, w, h), mask = shapeMask(ArenaShape.Ring, w, h);
-    const c = ((h - 1) / 2) * w + (w - 1) / 2;
-    expect(mask[c]).toBe(0);
-    // walk right from the middle: the first cell of the arena is its deepest ring there
-    let i = c;
-    while (!mask[i]) i++;
-    expect(depth[i]).toBe(maxZoneDepth(ArenaShape.Ring, w, h));
-  });
-
   test('a rectangle closes the same rings as before', () => {
     for (const [w, h] of [[13, 13], [19, 13], [33, 33], [20, 14]] as const) {
       for (let r = 0; r <= maxZoneDepth(ArenaShape.Rect, w, h); r++) {
@@ -69,7 +58,7 @@ describe('arena shapes', () => {
 
   test('every shape comes up, and its zone closes all the way', () => {
     const seen = new Set<ArenaShape>();
-    for (let seed = 1; seen.size < 5 && seed < 200; seed++) {
+    for (let seed = 1; seen.size < 4 && seed < 200; seed++) {
       const sim = new Simulation({ seed, shapes: true, overtime: false });
       for (const id of ['a', 'b']) sim.addPlayer({ id, name: id, skin: 0 });
       let over = false;
@@ -92,7 +81,7 @@ describe('arena shapes', () => {
       expect(w.zoneRing).toBeGreaterThanOrEqual(deepest + 1);
       expect(w.zoneRing).toBeLessThanOrEqual(maxZoneDepth(w.shape, w.width, w.height) + 1);
     }
-    expect(seen.size).toBe(5);
+    expect(seen.size).toBe(4);
   });
 
   test('glove: a bomb thrown into the countryside around a shape evaporates', () => {

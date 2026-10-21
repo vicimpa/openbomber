@@ -12,17 +12,16 @@ export interface Point {
 }
 
 /** How often each shape comes up (by ArenaShape). The classic rectangle stays the most common. */
-const SHAPE_WEIGHTS: readonly number[] = [4, 2, 2, 2, 2];
+const SHAPE_WEIGHTS: readonly number[] = [4, 2, 2, 2];
 
 /**
  * Bounding box growth per shape, so the playable area stays about the size of the rectangle
- * the same players would get (circle pi/4, diamond 1/2, cross ~2/3, ring ~0.7 of the box).
+ * the same players would get (circle pi/4, diamond 1/2, cross ~2/3 of the box).
  */
-const SHAPE_SCALE: readonly number[] = [1, 1.13, 1.41, 1.23, 1.19];
+const SHAPE_SCALE: readonly number[] = [1, 1.13, 1.41, 1.23];
 
-/** Half-width of the cross arms and radius of the ring's hole, as a share of the half-size. */
+/** Half-width of the cross arms, as a share of the half-size. */
 const CROSS_ARM = 0.42;
-const RING_HOLE = 0.34;
 
 export function pickShape(rng: SeedHolder): ArenaShape {
   let total = 0;
@@ -51,10 +50,6 @@ function rawInside(shape: ArenaShape, w: number, h: number, x: number, y: number
     case ArenaShape.Circle: return nx * nx + ny * ny <= 1.04;
     case ArenaShape.Diamond: return Math.abs(nx) + Math.abs(ny) <= 1.02;
     case ArenaShape.Cross: return Math.abs(nx) <= CROSS_ARM || Math.abs(ny) <= CROSS_ARM;
-    case ArenaShape.Ring: {
-      const d = nx * nx + ny * ny;
-      return d <= 1.04 && d >= RING_HOLE * RING_HOLE;
-    }
     default: return true;
   }
 }
@@ -130,33 +125,15 @@ function keepReachable(mask: Uint8Array, w: number, h: number) {
   }
 }
 
-/**
- * Chebyshev distance to the outside (8-neighbour BFS) minus one: the zone ring of every cell.
- * Only the open countryside around the arena counts as outside: the zone closes in from the outer
- * edge, never from the rim of a hole it walls in (the ring's middle), or it would run out twice
- * as fast.
- */
+/** Chebyshev distance to the outside (8-neighbour BFS) minus one: the zone ring of every cell. */
 function ringDepths(mask: Uint8Array, depth: Uint8Array, w: number, h: number): number {
-  // outside cells connected to beyond the box
-  const outer = new Uint8Array(mask.length);
-  const flood: number[] = [];
-  for (let i = 0; i < mask.length; i++) {
-    const x = i % w, y = (i / w) | 0;
-    if (!mask[i] && (x === 0 || y === 0 || x === w - 1 || y === h - 1)) { outer[i] = 1; flood.push(i); }
-  }
-  for (let q = 0; q < flood.length; q++) {
-    const i = flood[q]!, x = i % w, y = (i / w) | 0;
-    for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1]) {
-      if (j >= 0 && !outer[j] && !mask[j]) { outer[j] = 1; flood.push(j); }
-    }
-  }
   const queue: number[] = [];
   for (let i = 0; i < mask.length; i++) {
     if (!mask[i]) continue;
     const x = i % w, y = (i / w) | 0;
     let edge = x === 0 || y === 0 || x === w - 1 || y === h - 1;
     for (let dy = -1; dy <= 1 && !edge; dy++) for (let dx = -1; dx <= 1 && !edge; dx++) {
-      if (outer[(y + dy) * w + x + dx]) edge = true;
+      if (!mask[(y + dy) * w + x + dx]) edge = true;
     }
     if (edge) { depth[i] = 0; queue.push(i); }
   }

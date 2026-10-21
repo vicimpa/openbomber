@@ -84,27 +84,10 @@ export function shapeClearing(r: Rect, shape: ArenaShape, ox: number, oy: number
     for (let dy = -1; dy <= 1 && !near; dy++) for (let dx = -1; dx <= 1 && !near; dx++) near = inside(x + dx, y + dy);
     if (near) edge.push(x, y);
   }
-  // cells the shape walls in (the ring's middle): a quiet glade, no crates or stones that would
-  // pass for arena blocks
-  const open = new Uint8Array((w + 2) * (h + 2)); // reachable from beyond the box, grid (x + 1, y + 1)
-  const q = [0];
-  open[0] = 1;
-  for (let k = 0; k < q.length; k++) {
-    const i = q[k]!, gx = i % (w + 2), gy = (i / (w + 2)) | 0;
-    for (const [nx, ny] of [[gx - 1, gy], [gx + 1, gy], [gx, gy - 1], [gx, gy + 1]] as const) {
-      if (nx < 0 || ny < 0 || nx >= w + 2 || ny >= h + 2) continue;
-      const j = ny * (w + 2) + nx;
-      if (open[j] || inside(nx - 1, ny - 1)) continue;
-      open[j] = 1;
-      q.push(j);
-    }
-  }
-  const enclosed = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && !inside(x, y) && !open[(y + 1) * (w + 2) + x + 1];
   const dist = (px: number, py: number) => {
     const tx = px / T - ox, ty = py / T - oy;
     const cx = Math.round(tx), cy = Math.round(ty);
     if (inside(cx, cy)) return 0;
-    if (enclosed(cx, cy)) return 1.3;
     let best = 99 * 99;
     for (let i = 0; i < edge.length; i += 2) {
       const dx = Math.max(Math.abs(tx - edge[i]!) - 0.5, 0), dy = Math.max(Math.abs(ty - edge[i + 1]!) - 0.5, 0);
