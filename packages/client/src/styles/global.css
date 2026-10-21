@@ -67,6 +67,14 @@ html, body {
   -webkit-user-select: none;
 }
 html.is-playing, html.is-playing body { position: fixed; inset: 0; }
+/* iOS 26 home-screen app (WebKit bug 301108): while the page is shorter than the screen, the
+   viewport stops a status bar's height above the bottom edge, and nothing is drawn below it (a
+   black band under the bottom pill). A page as tall as the screen gets the full viewport; min()
+   keeps it from scrolling where 100lvh already is the full screen (WebKit bug 316008). */
+@media (display-mode: standalone) {
+  html { min-height: min(100lvh, calc(100% + env(safe-area-inset-top))); }
+  html.is-playing { position: static; }
+}
 #app { height: 100%; }
 
 button, input, select, textarea { font: inherit; color: inherit; }

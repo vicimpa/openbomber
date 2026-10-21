@@ -5,19 +5,7 @@
 import { signal } from '@preact/signals';
 
 const vv = typeof window !== 'undefined' ? window.visualViewport : null;
-/** A web app started from the iOS home screen. */
-const iosApp = typeof navigator !== 'undefined' && (navigator as { standalone?: boolean }).standalone === true;
-
-function height() {
-  const h = vv?.height ?? innerHeight;
-  if (!iosApp) return h;
-  // The app owns the whole screen, yet iOS reports a height short by the status bar, which left
-  // a band of page background at the bottom in portrait. The keyboard takes far more than that.
-  const full = innerWidth > innerHeight ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
-  return full > h && full - h < 80 ? full : h;
-}
-
-const read = () => ({ w: Math.round(vv?.width ?? innerWidth), h: Math.round(height()) });
+const read = () => ({ w: Math.round(vv?.width ?? innerWidth), h: Math.round(vv?.height ?? innerHeight) });
 
 export const viewport = signal(read());
 
