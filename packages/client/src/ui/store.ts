@@ -9,7 +9,8 @@
 //   stage.value: the #stage element of the mounted GameScreen (or use <GameScreen onStageReady>)
 //   uiCapturesInput.value: true while chat / a modal is open → call input.setEnabled(!v)
 import { computed, signal } from '@preact/signals';
-import type { ChatMessage, GameEvent, RoomSettings, WorldState } from '@ob/game';
+import { PickupType, type ChatMessage, type GameEvent, type RoomSettings, type WorldState } from '@ob/game';
+import { lastDevice } from '$/input/device';
 import type { UiSound } from '$/contracts';
 import type { HudSnapshot } from './hud';
 import { t, type I18nKey } from './i18n';
@@ -131,6 +132,38 @@ export function toast(text: string, kind: Toast['kind'] = 'info', ttl = 2800, ic
 }
 export const toastKey = (key: I18nKey, kind?: Toast['kind']) => toast(t(key), kind);
 
+// ---------------------------------------------------------------- power-up hints
+/** Power-ups whose controls aren't obvious without the on-screen buttons. */
+export type HintKind = 'glove' | 'teleport';
+export const HINT_PICKUP: Record<HintKind, PickupType> = { glove: PickupType.Glove, teleport: PickupType.Teleport };
+/** Shown on pickup to keyboard / gamepad players (touch has its own buttons), a few times per kind. */
+export const hint = signal<{ id: number; kind: HintKind } | null>(null);
+const HINT_KEY = 'openbomber.hints.v1';
+const HINT_TIMES = 3;
+const HINT_TTL = 9000;
+let hintSeq = 0;
+let hintTimer: ReturnType<typeof setTimeout> | undefined;
+
+function hintCounts(): Partial<Record<HintKind, number>> {
+  try { return JSON.parse(localStorage.getItem(HINT_KEY) ?? '{}') ?? {}; } catch { return {}; }
+}
+
+function showHint(kind: HintKind) {
+  if (lastDevice.peek() === 'touch') return;
+  const counts = hintCounts();
+  if ((counts[kind] ?? 0) >= HINT_TIMES) return;
+  try { localStorage.setItem(HINT_KEY, JSON.stringify({ ...counts, [kind]: (counts[kind] ?? 0) + 1 })); } catch { /* private mode */ }
+  const id = ++hintSeq;
+  hint.value = { id, kind };
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => { if (hint.peek()?.id === id) hint.value = null; }, HINT_TTL);
+}
+
+/** The player did what the hint explains: it can go. */
+function hintDone(kind: HintKind) {
+  if (hint.peek()?.kind === kind) hint.value = null;
+}
+
 // ---------------------------------------------------------------- events → feed
 /** Turns sim events into kill-feed entries / toasts. Call with every drained event batch. */
 export function handleGameEvents(events: GameEvent[], world: WorldState | null, localId: string) {
@@ -151,7 +184,11 @@ export function handleGameEvents(events: GameEvent[], world: WorldState | null, 
     } else if (e.type === 'curseApplied' && e.player === localId) {
       const c = CURSE_BY_ID.get(e.curse);
       if (c) toast(t('toast.curse', { c: tr(c.name) }), 'bad', undefined, c.icon);
-    }
+    } else if (e.type === 'pickupCollected' && e.by === localId) {
+      if (e.kind === PickupType.Glove) showHint('glove');
+      else if (e.kind === PickupType.Teleport) showHint('teleport');
+    } else if (e.type === 'bombThrown' && e.by === localId) hintDone('glove');
+    else if (e.type === 'playerTeleported' && e.player === localId) hintDone('teleport');
   }
 }
 

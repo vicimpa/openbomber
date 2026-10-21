@@ -326,6 +326,9 @@ img, canvas { image-rendering: pixelated; }
 .banners { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .banner { padding: 6px 14px; background: var(--pill); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); border-radius: 10px; font-size: 15px; text-align: center; white-space: normal; animation: drop-in 0.25s ease-out; }
 .banner small { display: block; font-size: 12px; opacity: 0.8; }
+.hint { position: absolute; left: 50%; bottom: calc(76px + var(--safe-b)); transform: translateX(-50%); display: flex; align-items: center; gap: 10px; width: max-content; max-width: min(92vw, 460px); padding: 8px 14px; background: var(--pill); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); border-radius: 10px; font-size: 14px; line-height: 1.45; animation: drop-in 0.25s ease-out; }
+.hint p { margin: 0; }
+.hint > :first-child { flex: none; }
 .banner--warn { background: rgba(120, 20, 20, 0.6); animation: drop-in 0.25s ease-out, warn 0.8s ease-in-out infinite alternate; }
 .banner--sd { background: rgba(160, 20, 20, 0.75); font-size: 18px; }
 @keyframes warn { to { background: rgba(170, 30, 30, 0.75); } }

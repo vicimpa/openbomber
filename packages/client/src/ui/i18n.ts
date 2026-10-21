@@ -191,6 +191,8 @@ const ru = {
   'toast.gamepad': 'Геймпад подключён',
   'toast.gamepadOff': 'Геймпад отключён',
   'toast.curse': 'Проклятие: {c}',
+  'hint.glove': 'Встань на бомбу или лицом к ней и зажми {key}: бомба в руках, фитиль замер. Отпусти {key} — бросок через стены.',
+  'hint.teleport': 'Жми {key}: прыжок в случайное свободное место. Заряды видны слева.',
 
   'loader.loading': 'Загрузка…',
   'loader.play': 'Играть',
@@ -434,6 +436,8 @@ const en: Record<I18nKey, string> = {
   'toast.gamepad': 'Gamepad connected',
   'toast.gamepadOff': 'Gamepad disconnected',
   'toast.curse': 'Curse: {c}',
+  'hint.glove': 'Stand on a bomb or face it and hold {key}: you carry it and the fuse stops. Release {key} to throw it over walls.',
+  'hint.teleport': 'Press {key} to jump to a random free spot. Your charges are on the left.',
 
   'loader.loading': 'Loading…',
   'loader.play': 'Play',

@@ -17,6 +17,7 @@ import { installPlayGuards } from '$/input/guards';
 import { isTextTarget } from '$/input/keyboard';
 import { TouchControls } from '$/input/TouchControls';
 import { Chat } from './hud/Chat';
+import { Hint } from './hud/Hint';
 import { Banners, BottomPill, Countdown, DebugInfo, KillFeed, RoundResult, Scoreboard, StatsStrip, TopPill } from './hud/Hud';
 import { t } from './i18n';
 import { Icon } from './icons';
@@ -107,6 +108,7 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
             <Countdown h={h} />
             {scoreboardOpen.value && <Scoreboard h={h} onClose={() => { scoreboardOpen.value = false; }} />}
           </>}
+          {playing && !touch && <Hint />}
           <BottomPill h={h} />
         </div>
       )}
