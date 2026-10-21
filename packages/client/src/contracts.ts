@@ -48,7 +48,9 @@ export interface AudioEngine {
   travel?(durationMs: number, pan: number): void;
   /** Optional: teleport sounds (frozen hero beams out / hero drops in on a new map); x, y in tiles. */
   teleport?(kind: 'beamOut' | 'dropIn', x: number, y: number, who: string, crowd?: number): void;
-  setVolume(v: { master?: number; sfx?: number; music?: number }): void; // 0..1
+  /** Optional: thunder of a storm's lightning, `delaySec` from now (power 0..1). */
+  thunder?(delaySec: number, power: number): void;
+  setVolume(v: { master?: number; sfx?: number; music?: number; ambient?: number }): void; // 0..1
   dispose(): void;
 }
 export type CreateAudio = () => AudioEngine;

@@ -44,6 +44,7 @@ export function SettingsSections({ keys = true }: { keys?: boolean }) {
         <h3><Icon name="speaker" /> {t('settings.audio')}</h3>
         <Slider label={t('settings.master')} min={0} max={1} step={0.05} value={s.volume.master} format={pct} onInput={(v) => updateSettings({ volume: { master: v } })} />
         <Slider label={t('settings.sfx')} min={0} max={1} step={0.05} value={s.volume.sfx} format={pct} onInput={(v) => updateSettings({ volume: { sfx: v } })} />
+        <Slider label={t('settings.ambient')} min={0} max={1} step={0.05} value={s.volume.ambient} format={pct} onInput={(v) => updateSettings({ volume: { ambient: v } })} />
       </section>
 
       <section class="settings__group">

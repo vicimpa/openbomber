@@ -51,6 +51,7 @@ export function startSession() {
         renderer = r;
         r.onTravel = (ms, dx) => audio.travel?.(ms, dx); // whoosh while the camera travels between maps
         r.onTeleport = (kind, x, y, who, crowd) => audio.teleport?.(kind, x, y, who, crowd);
+        r.onThunder = (delay, power) => audio.thunder?.(delay, power);
         // the first menu backdrop was warmed up before the renderer existed
         if (source instanceof LocalSource) r.prime(source.takePrimeEvents());
       }),

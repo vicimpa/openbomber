@@ -9,7 +9,7 @@ export type Quality = 'low' | 'high';
 export interface Settings {
   name: string;
   skin: number;                 // 0-based, sprite = assets/heroes/type{skin+1}
-  volume: { master: number; sfx: number; music: number }; // 0..1
+  volume: { master: number; sfx: number; music: number; ambient: number }; // 0..1
   haptics: boolean;
   touch: { size: number; opacity: number; leftHanded: boolean }; // size 0.7..1.4, opacity 0.2..1
   quality: Quality;
@@ -24,7 +24,7 @@ const KEY = 'openbomber.settings.v2';
 export const defaultSettings = (): Settings => ({
   name: randomName(),
   skin: Math.floor(Math.random() * SKIN_COUNT),
-  volume: { master: 0.8, sfx: 0.9, music: 0.6 },
+  volume: { master: 0.8, sfx: 0.9, music: 0.6, ambient: 0.6 },
   haptics: true,
   touch: { size: 1, opacity: 0.8, leftHanded: false },
   quality: matchMedia('(pointer: coarse)').matches ? 'low' : 'high',

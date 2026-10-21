@@ -14,6 +14,7 @@ import { BombView, PickupView } from './items';
 import { PlayerView, type Frozen } from './players';
 import { installFonts } from './text';
 import { makeTextures, type ProcTextures } from './textures';
+import { WeatherFx } from './weather';
 
 const T = 32;
 const MAX_DPR = 2;
@@ -46,6 +47,7 @@ class PixiRenderer implements GameRenderer {
   private ground: Ground;
   private fx: Effects;
   private drops: Drops;
+  private weather: WeatherFx;
   /** Tiles where a sky drop just landed: the bomb / pickup appearing there gets a landing squash. */
   private landed = new Map<number, number>();
   private pickupLayer = new Container();
@@ -89,6 +91,8 @@ class PixiRenderer implements GameRenderer {
   onTravel?: (durationMs: number, dx: number, dy: number) => void;
   /** Optional hook: teleport moments (frozen hero beams out / hero drops in on a new map). */
   set onTeleport(f: ((kind: 'beamOut' | 'dropIn', x: number, y: number, who: string, crowd?: number) => void) | undefined) { this.fx.sound = f; }
+  /** Optional hook: a storm's lightning; the thunder should follow after `delaySec`. */
+  set onThunder(f: ((delaySec: number, power: number) => void) | undefined) { this.weather.onThunder = f; }
   /** prime(): the next new map is already running (no spawn wave); scorch these cells into it. */
   private primed: { x: number; y: number; }[][] | null = null;
 
@@ -99,19 +103,21 @@ class PixiRenderer implements GameRenderer {
     this.arena.onImpact = (x, y) => this.shakeAt(x, y, 0.8);
     this.explosions = new Explosions(a, tx);
     this.drops = new Drops(a);
+    this.weather = new WeatherFx(tx);
     // grounded bombs and pickups always sit under the characters (no y-sorting with players);
     // carried and flying bombs go above them
     this.mapRoot.addChild(
       this.arena.root, this.arena.zoneLayer, this.fx.under, this.arena.fallingShadows, this.drops.shadows, this.pickupLayer, this.bombLayer,
-      this.explosions.root, this.explosions.glow, this.entities, this.airBombs, this.fx.particles.normal, this.arena.fallingRoot, this.drops.air, this.fx.over,
-      this.fx.particles.additive, this.fx.light, this.tags,
+      this.explosions.root, this.explosions.glow, this.entities, this.airBombs, this.fx.particles.normal, this.arena.fallingRoot, this.drops.air,
+      // the night darkens everything above, its lights and the additive glows shine through
+      this.weather.dark, this.fx.over, this.fx.particles.additive, this.fx.light, this.weather.lights, this.tags,
     );
     this.worldRoot.addChild(this.ground.root, this.arena.ghostRoot, this.mapRoot);
     this.arena.fallingRoot.sortableChildren = true;
     this.vignette = new Sprite({ texture: tx.vignette, tint: 0xff1a2a, alpha: 0 });
     this.flashRect = new Sprite({ texture: Texture.WHITE, alpha: 0 });
     this.overlay.addChild(this.vignette, this.flashRect);
-    app.stage.addChild(this.worldRoot, this.overlay);
+    app.stage.addChild(this.worldRoot, this.weather.screen, this.overlay);
     this.setQuality(quality);
 
     // ResizeObserver runs after this frame was drawn, and resizing the canvas wipes its buffer:
@@ -197,6 +203,7 @@ class PixiRenderer implements GameRenderer {
   setQuality(q: 'low' | 'high') {
     this.fx.lowQuality = q === 'low';
     this.fx.particles.max = q === 'low' ? 350 : 1400;
+    this.weather.lowQuality = q === 'low';
     this.explosions.glow.visible = q === 'high';
   }
 
@@ -245,6 +252,9 @@ class PixiRenderer implements GameRenderer {
     this.updateCamera(world, localId, dt);
     const view = this.present();
     this.updateGhost(dt, view);
+    const mx = this.map.ox * T, my = this.map.oy * T;
+    this.weather.update(dt, this.view.cssW, this.view.cssH, this.worldRoot.x, this.worldRoot.y, this.worldRoot.scale.x, world,
+      { x0: view.x0 - mx, y0: view.y0 - my, x1: view.x1 - mx, y1: view.y1 - my });
     this.updateOverlay(dt, world);
     this.app.render();
   }
@@ -296,6 +306,8 @@ class PixiRenderer implements GameRenderer {
     this.bombs.clear(); this.pickups.clear();
     this.fx.clear();
     this.drops.clear();
+    this.weather.set(world);
+    this.fx.weather = this.weather.smoke();
     this.landed.clear();
     this.nextMap = null;
     this.recentBooms.length = 0; this.recentDeaths.length = 0;
@@ -676,6 +688,8 @@ export interface RendererExt extends GameRenderer {
   onTravel?: (durationMs: number, dx: number, dy: number) => void;
   /** Teleport moments for sound: a frozen hero beams out, a hero drops in on a new map (tiles). */
   onTeleport?: (kind: 'beamOut' | 'dropIn', x: number, y: number, who: string, crowd?: number) => void;
+  /** Storm lightning, for the thunder: it should be heard `delaySec` later. */
+  onThunder?: (delaySec: number, power: number) => void;
 }
 
 /** Where the next map goes: a random direction, clear of the old arena by a stretch of countryside,

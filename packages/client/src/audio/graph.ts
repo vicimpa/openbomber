@@ -4,6 +4,7 @@
 //   sfx sends  ─► sfxWet ─► reverb ├─► master ─► pad ─► glue comp ─► limiter ─► trim ─► ½ ─► soft clip ─► out
 //   music ─► duck ─► music ────────┤
 //   music send ─► musicWet ─► reverb
+//   ambience (weather) ─► ambient ─► master
 //
 // The soft clipper's curve tops out at 0.98, so the output can never exceed full scale.
 
@@ -17,6 +18,8 @@ export interface Graph {
   musicWet: GainNode;
   /** music enters here (sidechain-ish ducking) */
   duck: GainNode;
+  /** weather ambience */
+  ambient: GainNode;
 }
 
 export function buildGraph(ctx: Ctx, dest: AudioNode): Graph {
@@ -62,7 +65,10 @@ export function buildGraph(ctx: Ctx, dest: AudioNode): Graph {
   const duck = gain(1);
   duck.connect(music);
 
-  return { master, sfx, sfxWet, music, musicWet, duck };
+  const ambient = gain(1);
+  ambient.connect(master);
+
+  return { master, sfx, sfxWet, music, musicWet, duck, ambient };
 }
 
 /** Brief music dip under big hits. amount 0..1. */

@@ -4,6 +4,7 @@
 import { DropKind, PickupType, type GameEvent, type WorldState } from '@ob/game';
 import type { AudioEngine, CreateAudio, MusicMode, UiSound } from '../contracts';
 import { buildGraph, duckMusic, type Graph } from './graph';
+import { Ambience } from './ambient';
 import { Music } from './music';
 import { renderBank, SfxPlayer, type PlayOpts, type SfxBank, type SfxKey } from './sfx';
 import { clamp, semis } from './synth';
@@ -30,8 +31,9 @@ class Engine implements AudioEngine {
   private g: Graph | null = null;
   private player: SfxPlayer | null = null;
   private music: Music | null = null;
+  private amb: Ambience | null = null;
   private bank: SfxBank = new Map();
-  private vol = { master: 0.9, sfx: 1, music: 0.7 };
+  private vol = { master: 0.9, sfx: 1, music: 0.7, ambient: 0.6 };
   private mode: MusicMode = 'off';
   private timer: ReturnType<typeof setInterval> | 0 = 0;
   private disposed = false;
@@ -72,6 +74,7 @@ class Engine implements AudioEngine {
     this.applyVolume(true);
     this.player = new SfxPlayer(ctx, this.bank, g.sfx, g.sfxWet);
     this.music = new Music(ctx, g.duck, g.musicWet, (Date.now() * 2654435761) >>> 0);
+    this.amb = new Ambience(ctx, g.ambient);
     // iOS: playing a (silent) buffer inside the gesture fully unlocks output
     const silent = ctx.createBufferSource();
     silent.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
@@ -88,6 +91,7 @@ class Engine implements AudioEngine {
     const ctx = this.ctx;
     if (!ctx || ctx.state !== 'running' || !this.music) return;
     try { this.music.schedule(ctx.currentTime + LOOKAHEAD); } catch (e) { console.warn('[audio] music', e); }
+    try { this.amb?.tick(ctx.currentTime); } catch (e) { console.warn('[audio] ambience', e); }
   }
 
   private resumeIfNeeded() {
@@ -118,22 +122,24 @@ class Engine implements AudioEngine {
       }
       document.removeEventListener('visibilitychange', this.onVisibility);
     }
-    try { this.music?.stop(); this.player?.stopAll(); } catch { /* ignore */ }
+    try { this.music?.stop(); this.player?.stopAll(); this.amb?.stop(); } catch { /* ignore */ }
     const ctx = this.ctx;
     this.ctx = null;
     this.g = null;
     this.player = null;
     this.music = null;
+    this.amb = null;
     if (ctx) void ctx.close().catch(() => {});
   }
 
   // ------------------------------------------------------------ volume & music
 
-  setVolume(v: { master?: number; sfx?: number; music?: number }): void {
+  setVolume(v: { master?: number; sfx?: number; music?: number; ambient?: number }): void {
     const ok = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
     if (ok(v.master)) this.vol.master = clamp(v.master, 0, 1);
     if (ok(v.sfx)) this.vol.sfx = clamp(v.sfx, 0, 1);
     if (ok(v.music)) this.vol.music = clamp(v.music, 0, 1);
+    if (ok(v.ambient)) this.vol.ambient = clamp(v.ambient, 0, 1);
     try { this.applyVolume(false); } catch { /* ignore */ }
   }
 
@@ -152,6 +158,7 @@ class Engine implements AudioEngine {
     set(g.sfxWet.gain, this.vol.sfx);
     set(g.music.gain, this.vol.music);
     set(g.musicWet.gain, this.vol.music);
+    set(g.ambient.gain, this.vol.ambient);
   }
 
   setMusic(mode: MusicMode): void {
@@ -218,8 +225,14 @@ class Engine implements AudioEngine {
     return { gain: gain * (who ? 0.85 : 1), pan: clamp(dx / 9, -1, 1) * 0.85, wet: 1 + d / 10 };
   }
 
+  /** Storm: thunder `delaySec` after a lightning flash. */
+  thunder(delaySec: number, power: number): void {
+    try { if (this.live) this.amb?.thunder(delaySec, power); } catch (e) { console.warn('[audio] thunder', e); }
+  }
+
   handleEvents(events: GameEvent[], world: WorldState | null, localId: string): void {
     this.last = { world, localId };
+    if (world && this.amb) this.amb.set(world.weather, world.theme);
     if (!this.live || !events || !events.length) return;
     const ctx = this.ctx!;
     const now = ctx.currentTime;

@@ -5,6 +5,7 @@ import type { GameAssets } from './assets';
 import type { ProcTextures } from './textures';
 import { FONT_TAG } from './text';
 import { LETHAL } from './explosions';
+import type { SmokeWeather } from './weather';
 
 export const T = 32;
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
@@ -121,10 +122,10 @@ export class Particles {
   }
 }
 
-/** Simple timed one-shot animation attached to a display object. */
 /** Live position (world px) of whatever an effect sticks to; null once it's gone. */
 export type Follow = () => { x: number; y: number } | null;
 
+/** Simple timed one-shot animation attached to a display object. */
 interface OneShot { obj: Container; t: number; dur: number; step: (k: number, dt: number) => void }
 
 export class Effects {
@@ -137,6 +138,8 @@ export class Effects {
   private brickBits = new Map<Texture, Map<number, { tex: Texture; ox: number; oy: number }[]>>();
   private labelPool: BitmapText[] = [];
   lowQuality = false;
+  /** The round's weather as it treats smoke: wind (px/s), life and alpha factors, colour. */
+  weather: SmokeWeather = { wx: 10, wy: 0, life: 1, alpha: 1, tint: 0xb8b2c4 };
   /** Sound hook for render-timed moments (teleports); set by the renderer. */
   sound?: (kind: 'beamOut' | 'dropIn', x: number, y: number, who: string, crowd?: number) => void;
 
@@ -231,7 +234,10 @@ export class Effects {
   }
 
   // ---------------------------------------------------------------- composite effects
-  /** Light, sparks, embers and a short smoke tail; snappy, so it ends with the lethal window (LETHAL). */
+  /**
+   * Light, sparks and embers, snappy, so they end with the lethal window (LETHAL); then smoke that
+   * hangs over the blast and drifts off with the wind (rain beats it down, fog keeps it around).
+   */
   explosion(x: number, y: number, cells: { x: number; y: number }[], power: number) {
     const cx = x * T, cy = y * T;
     this.flash(cx, cy, 2.6 + power * 0.3, 0xffb050, LETHAL * 0.7, 0.7);
@@ -255,12 +261,23 @@ export class Effects {
         tex: this.tx.white, x: px + rand(-10, 10), y: py + rand(-10, 10), vx: rand(-25, 25), vy: rand(-25, 25),
         vz: rand(40, 110), gravity: 260, life: rand(0.2, LETHAL), scale: rand(1, 2), tint: 0xffb347, add: true, alphaEnd: 0,
       });
-      this.particles.spawn({
-        tex: this.tx.puff, x: px + rand(-8, 8), y: py + rand(-6, 8), z: rand(0, 6), vx: rand(-8, 8), vy: rand(-4, 4), vz: rand(16, 30),
-        life: rand(0.3, 0.5), delay: LETHAL * rand(0.85, 1), scale: rand(0.8, 1.2), scaleEnd: rand(1.6, 2.2),
-        alpha: 0.45, alphaEnd: 0, tint: 0xb8b2c4, spin: rand(-1, 1), rot: rand(0, 6),
-      });
+      this.smoke(px + rand(-8, 8), py + rand(-6, 8), rand(0.8, 1.2), rand(1.9, 2.6), rand(0.9, 1.6), 0.5);
     }
+    // a thicker plume over the centre
+    for (let i = 0; i < this.q(4 + power); i++) {
+      this.smoke(cx + rand(-10, 10), cy + rand(-8, 8), rand(1.2, 1.6), rand(2.8, 3.8), rand(1.4, 2.4), 0.55, 0.7);
+    }
+  }
+
+  /** One smoke puff of an explosion, carried by the weather's wind. */
+  private smoke(x: number, y: number, scale: number, scaleEnd: number, life: number, alpha: number, shade = 1) {
+    const w = this.weather, carry = rand(0.6, 1.05);
+    const tint = shade === 1 ? w.tint : ((((w.tint >> 16) & 255) * shade) << 16) | ((((w.tint >> 8) & 255) * shade) << 8) | ((w.tint & 255) * shade);
+    this.particles.spawn({
+      tex: this.tx.puff, x, y, z: rand(0, 6), vx: rand(-10, 10) + w.wx * carry, vy: rand(-5, 5) + w.wy * carry, vz: rand(10, 22),
+      drag: 0.25, life: life * w.life, delay: LETHAL * rand(0.8, 1), scale, scaleEnd,
+      alpha: alpha * w.alpha, alphaEnd: 0, hold: 0.25, tint: Math.round(tint), spin: rand(-0.8, 0.8), rot: rand(0, 6),
+    });
   }
 
   /** `tex` cut into n x n fragments (cached per texture). */
