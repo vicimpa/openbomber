@@ -11,7 +11,7 @@
   "display_override": ["fullscreen", "standalone"],
   "orientation": "any",
   "theme_color": "#0d0b1a",
-  "background_color": "#0d0b1a",
+  "background_color": "#839f7c",
   "categories": ["games"],
   "icons": [
     { "src": "logo/logo_96.png", "sizes": "96x96", "type": "image/png", "purpose": "any" },

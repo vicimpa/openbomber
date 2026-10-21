@@ -51,9 +51,9 @@ html, body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  /* the world (canvas, or .stage's grass before it) covers the page; anything that peeks out
-     around it (iOS toolbar bands, rubber-banding) stays dark instead of a green frame */
-  background: #111;
+  /* the countryside's grass, like .stage under the world canvas (index.html paints it first) */
+  background: var(--grass) url('../assets/ui/back.png') center / 64px 64px repeat;
+  image-rendering: pixelated;
   color: var(--ink);
   font-family: var(--font);
   font-size: 16px;
