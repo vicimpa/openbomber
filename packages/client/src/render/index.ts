@@ -19,6 +19,8 @@ const T = 32;
 const MAX_DPR = 2;
 /** Camera trip between two maps (s); the round-start freeze is 1.5 s, heroes land as it ends. */
 const TRAVEL = 1.2;
+/** A trip covers at least this many screens (short side), however far the camera is zoomed out. */
+const TRIP_SCREENS = 5;
 /** Heroes start dropping in this long before the camera arrives. */
 const SPAWN_LEAD = 0.75;
 
@@ -32,7 +34,7 @@ const PICKUP_LABEL: Record<PickupType, [string, number]> = {
   [PickupType.Skull]: ['CURSED!', 0xc58cff], [PickupType.Random]: ['???', 0xffffff], [PickupType.Teleport]: ['TELEPORT', 0xa8f0ff],
 };
 
-interface Known { x: number; y: number; t: number }
+interface Known { x: number; y: number; t: number; }
 
 class PixiRenderer implements GameRenderer {
   private view: CameraView = { cssW: 1, cssH: 1, res: 1 };
@@ -60,15 +62,15 @@ class PixiRenderer implements GameRenderer {
   private bombs = new Map<number, BombView>();
   private pickups = new Map<number, PickupView>();
   /** Last known positions of entities that may already be gone when their event arrives. */
-  private lastPickup = new Map<number, Known & { type: PickupType }>();
+  private lastPickup = new Map<number, Known & { type: PickupType; }>();
   private lastBomb = new Map<number, Known>();
 
   private world: WorldState | null = null;
   private camMode: CameraMode = 'follow';
   private meAlive = false;
   private tightUntil = 0;
-  private recentBooms: { x: number; y: number; t: number }[] = [];
-  private recentDeaths: { x: number; y: number; t: number }[] = [];
+  private recentBooms: { x: number; y: number; t: number; }[] = [];
+  private recentDeaths: { x: number; y: number; t: number; }[] = [];
   private localId = '';
   private time = 0;
   private flash = 0;
@@ -77,7 +79,7 @@ class PixiRenderer implements GameRenderer {
   private ro: ResizeObserver;
   /** Map placement in the endless world: origin (tiles) and size of the current map. */
   private map = { ox: 0, oy: 0, w: 0, h: 0, shown: false, age: 0 };
-  private ghost: { ox: number; oy: number; w: number; h: number; t: number; fade?: number } | null = null;
+  private ghost: { ox: number; oy: number; w: number; h: number; t: number; fade?: number; } | null = null;
   private lastWorld: WorldState | null = null;
   private nextMap: 'travel' | 'snap' | null = null;
   private spawnDelay = -1;
@@ -88,7 +90,7 @@ class PixiRenderer implements GameRenderer {
   /** Optional hook: teleport moments (frozen hero beams out / hero drops in on a new map). */
   set onTeleport(f: ((kind: 'beamOut' | 'dropIn', x: number, y: number, who: string, crowd?: number) => void) | undefined) { this.fx.sound = f; }
   /** prime(): the next new map is already running (no spawn wave); scorch these cells into it. */
-  private primed: { x: number; y: number }[][] | null = null;
+  private primed: { x: number; y: number; }[][] | null = null;
 
   constructor(private app: Application, private parent: HTMLElement, private a: GameAssets, private tx: ProcTextures, quality: 'low' | 'high') {
     this.fx = new Effects(a, tx);
@@ -154,12 +156,12 @@ class PixiRenderer implements GameRenderer {
   }
 
   /** Arena floor (opaque, hides the ground), world px. */
-  private floorRect(m: { ox: number; oy: number; w: number; h: number }): Rect {
+  private floorRect(m: { ox: number; oy: number; w: number; h: number; }): Rect {
     return { x0: (m.ox - 0.5) * T, y0: (m.oy - 0.5) * T, x1: (m.ox + m.w - 0.5) * T, y1: (m.oy + m.h - 0.5) * T };
   }
 
   /** Outer edge of the border wall ring, world px. */
-  private wallRect(m: { ox: number; oy: number; w: number; h: number }): Rect {
+  private wallRect(m: { ox: number; oy: number; w: number; h: number; }): Rect {
     return { x0: (m.ox - 1.5) * T, y0: (m.oy - 1.5) * T, x1: (m.ox + m.w + 0.5) * T, y1: (m.oy + m.h + 0.5) * T };
   }
 
@@ -260,13 +262,13 @@ class PixiRenderer implements GameRenderer {
     let mode: CameraMode = this.camMode;
     if (mode === 'follow' && !playing) mode = 'overview';
     this.camera.mode = mode;
-    let interest: { x: number; y: number }[] = [];
+    let interest: { x: number; y: number; }[] = [];
     if (mode === 'attract') {
       for (const p of world.players.values()) if (p.alive && p.inRound) interest.push(p);
       const recent = this.recentBooms.filter(b => this.time - b.t < 3);
       if (recent.length) interest = interest.concat(recent, recent); // explosions weigh double
     }
-    let action: { x0: number; y0: number; x1: number; y1: number } | null = null;
+    let action: { x0: number; y0: number; x1: number; y1: number; } | null = null;
     if (mode === 'overview' && world.phase !== Phase.RoundOver) {
       let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
       const add = (x: number, y: number) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
@@ -303,7 +305,12 @@ class PixiRenderer implements GameRenderer {
       // the old arena stays where it was; the new one is built a little further across the world
       this.ghost = { ox: m.ox, oy: m.oy, w: m.w, h: m.h, t: 0 };
       this.arena.ghostRoot.position.set(m.ox * T, m.oy * T);
-      const [nx, ny] = nextOrigin(m, world.width, world.height);
+      // as long on screen from the zoomed-out menu view as from a close follow: the stretch of
+      // countryside scales with the tiles the screen shows now and once framed on the new arena
+      const W = this.view.cssW * this.view.res, H = this.view.cssH * this.view.res, short = Math.min(W, H);
+      const fit = Math.min(W / (world.width + 2.6), H / (world.height + 2.6));
+      const shown = Math.max(short / (this.camera.zoom * T), short / fit);
+      const [nx, ny] = nextOrigin(m, world.width, world.height, shown * TRIP_SCREENS);
       const ddx = nx + world.width / 2 - (m.ox + m.w / 2), ddy = ny + world.height / 2 - (m.oy + m.h / 2), dl = Math.hypot(ddx, ddy) || 1;
       try { this.onTravel?.(TRAVEL * 1000, ddx / dl, ddy / dl); } catch (e) { console.warn('[render] onTravel', e); }
       m.ox = nx; m.oy = ny;
@@ -329,7 +336,7 @@ class PixiRenderer implements GameRenderer {
   private freezeMap() {
     const m = this.map;
     const hide = [this.fx.over, this.fx.light, this.fx.particles.normal, this.fx.particles.additive, this.tags, this.entities,
-      this.arena.zoneLayer, this.drops.air, this.arena.fallingRoot];
+    this.arena.zoneLayer, this.drops.air, this.arena.fallingRoot];
     const was = hide.map(c => c.visible);
     hide.forEach(c => { c.visible = false; });
     this.arena.showAll(this.camera.zoom);
@@ -341,7 +348,7 @@ class PixiRenderer implements GameRenderer {
       tex.source.scaleMode = 'nearest';
     } catch (e) { console.warn('[render] snapshot failed', e); }
     hide.forEach((c, i) => { c.visible = was[i]; });
-    const heroes: (Frozen & { local: boolean })[] = [];
+    const heroes: (Frozen & { local: boolean; })[] = [];
     for (const [id, v] of this.players) { const f = v.freeze(); if (f) heroes.push({ ...f, local: id === this.localId }); }
     return { tex, x0, y0, w, h, heroes };
   }
@@ -444,7 +451,7 @@ class PixiRenderer implements GameRenderer {
 
   private syncBombs(world: WorldState, dt: number) {
     for (const v of this.bombs.values()) v.seen = false;
-    let holders: Map<number, { x: number; y: number }> | null = null;
+    let holders: Map<number, { x: number; y: number; }> | null = null;
     for (const b of world.bombs.values()) {
       let v = this.bombs.get(b.id);
       if (!v && b.id >= 0) v = this.adoptPredicted(b);
@@ -454,7 +461,7 @@ class PixiRenderer implements GameRenderer {
         if (this.takeLanded(b.x, b.y)) v.land();
       }
       v.seen = true;
-      let holder: { x: number; y: number } | null = null;
+      let holder: { x: number; y: number; } | null = null;
       if (b.motion === 3) {
         if (!holders) {
           holders = new Map();
@@ -636,7 +643,7 @@ class PixiRenderer implements GameRenderer {
         }
         default: {
           // zone shrink events (being added to the contract): tolerate any field naming
-          const z = e as unknown as { type: string; ring?: number; inset?: number };
+          const z = e as unknown as { type: string; ring?: number; inset?: number; };
           if (z.type === 'zoneWarning') this.arena.setZone(z.ring ?? z.inset ?? this.arena.nextRing());
           else if (z.type === 'zoneCancel') this.arena.setZone(-1);
           else if (z.type === 'zoneShrink') { this.arena.setZone(-1); this.camera.shake(3); }
@@ -666,8 +673,9 @@ export interface RendererExt extends GameRenderer {
   onTeleport?: (kind: 'beamOut' | 'dropIn', x: number, y: number, who: string, crowd?: number) => void;
 }
 
-/** Where the next map goes: a random direction, clear of the old arena by a stretch of countryside. */
-function nextOrigin(m: { ox: number; oy: number; w: number; h: number }, w: number, h: number): [number, number] {
+/** Where the next map goes: a random direction, clear of the old arena by a stretch of countryside,
+ *  centres at least `min` tiles apart. */
+function nextOrigin(m: { ox: number; oy: number; w: number; h: number; }, w: number, h: number, min: number): [number, number] {
   const cx = m.ox + (m.w - 1) / 2, cy = m.oy + (m.h - 1) / 2;
   let ang = Math.random() * Math.PI * 2;
   // don't wander off forever: far from the start, head back roughly towards it
@@ -675,7 +683,7 @@ function nextOrigin(m: { ox: number; oy: number; w: number; h: number }, w: numb
   const dx = Math.cos(ang), dy = Math.sin(ang);
   const gap = 28 + Math.random() * 14;
   const hw = (m.w + w) / 2 + 2 + gap, hh = (m.h + h) / 2 + 2 + gap;
-  const t = Math.min(Math.abs(dx) > 1e-3 ? hw / Math.abs(dx) : Infinity, Math.abs(dy) > 1e-3 ? hh / Math.abs(dy) : Infinity);
+  const t = Math.max(min, Math.min(Math.abs(dx) > 1e-3 ? hw / Math.abs(dx) : Infinity, Math.abs(dy) > 1e-3 ? hh / Math.abs(dy) : Infinity));
   return [Math.round(cx + dx * t - (w - 1) / 2), Math.round(cy + dy * t - (h - 1) / 2)];
 }
 
