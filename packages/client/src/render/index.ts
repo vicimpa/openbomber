@@ -114,7 +114,7 @@ class PixiRenderer implements GameRenderer {
       this.arena.root, this.prints.root, this.arena.zoneLayer, this.fx.under, this.arena.fallingShadows, this.drops.shadows, this.pickupLayer, this.bombLayer,
       this.explosions.root, this.explosions.glow, this.entities, this.airBombs, this.fx.particles.normal, this.arena.fallingRoot, this.drops.air,
       // the night darkens everything above, its lights and the additive glows shine through
-      this.weather.dark, this.fx.over, this.fx.particles.additive, this.fx.light, this.weather.lights, this.tags,
+      this.weather.dark, this.fx.over, this.fx.particles.additive, this.fx.light, this.weather.lights, this.tags, this.fx.labels,
     );
     this.worldRoot.addChild(this.ground.root, this.arena.ghostRoot, this.mapRoot);
     this.arena.fallingRoot.sortableChildren = true;
@@ -364,7 +364,7 @@ class PixiRenderer implements GameRenderer {
     const m = this.map;
     // (the night stays out of it: it covers the whole screen and fades with the weather, not the map)
     const hide = [this.fx.over, this.fx.light, this.fx.particles.normal, this.fx.particles.additive, this.tags, this.entities,
-    this.arena.zoneLayer, this.drops.air, this.arena.fallingRoot, this.weather.dark, this.weather.lights];
+    this.arena.zoneLayer, this.drops.air, this.arena.fallingRoot, this.weather.dark, this.weather.lights, this.fx.labels];
     const was = hide.map(c => c.visible);
     hide.forEach(c => { c.visible = false; });
     this.arena.showAll(this.camera.zoom);
@@ -465,6 +465,7 @@ class PixiRenderer implements GameRenderer {
       const leaving = !fresh && !p.inRound && v.shown ? v.freeze() : null;
       const stagger = delay < 0 ? -1 : delay + Math.random() * (p.id === this.localId ? Math.min(0.15, win * 0.3) : win);
       v.update(p, dt, p.id === this.localId, fresh, p.carrying >= 0 && carried.has(p.carrying), stagger);
+      v.dimTag(this.fx.labelNear(v.tag.x, v.tag.y), dt);
       if (leaving) this.beamAway(leaving);
     }
     for (const [id, v] of this.players) if (!v.seen) {

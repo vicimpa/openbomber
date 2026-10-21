@@ -133,6 +133,7 @@ export class Effects {
   readonly under = new Container();     // ground-level one-shots (scorch flashes, landing rings)
   readonly over = new Container();      // above entities (labels, ghosts, beams)
   readonly light = new Container();     // additive glows
+  readonly labels = new Container();    // floating texts, above the name tags
   private shots: OneShot[] = [];
   /** Brick textures (each crate variant) cut into n x n fragments (4x4 on high, 2x2 on low quality). */
   private brickBits = new Map<Texture, Map<number, { tex: Texture; ox: number; oy: number }[]>>();
@@ -217,12 +218,13 @@ export class Effects {
 
   /** Floating text; with `follow` (world px of whoever it belongs to) it rides along with them. */
   label(x: number, y: number, text: string, color: number, dur = 1.1, follow?: Follow) {
+    if (!text) return;
     const t = this.labelPool.pop() ?? new BitmapText({ text: '', style: { fontFamily: FONT_TAG, fontSize: 8 }, anchor: 0.5 });
     t.label = 'pooled';
     t.text = text;
     t.tint = color;
     t.x = x; t.y = y;
-    this.shot(t, this.over, dur, k => {
+    this.shot(t, this.labels, dur, k => {
       const f = follow?.();
       if (f) { x = f.x; y = f.y - 14; }
       t.x = x;
@@ -231,6 +233,12 @@ export class Effects {
       t.y = y - 6 - 22 * (1 - (1 - k) ** 2);
       t.alpha = k > 0.7 ? 1 - (k - 0.7) / 0.3 : 1;
     });
+  }
+
+  /** Is a floating text playing over this spot (world px)? Name tags there step back. */
+  labelNear(x: number, y: number) {
+    for (const t of this.labels.children) if (t.visible && t.alpha > 0.05 && Math.abs(t.x - x) < 46 && Math.abs(t.y - y) < 26) return true;
+    return false;
   }
 
   // ---------------------------------------------------------------- composite effects

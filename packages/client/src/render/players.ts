@@ -43,6 +43,8 @@ export class PlayerView {
   private stars = new Container({ y: -30 });
   private skull: Sprite;
   readonly tag: Container;
+  /** Name tag brightness, eased (dimmed while a floating text plays over it). */
+  private tagDim = 1;
   private name: BitmapText;
   private marker: Sprite;
 
@@ -84,6 +86,13 @@ export class PlayerView {
     this.name = new BitmapText({ text: '', style: { fontFamily: FONT_TAG, fontSize: 8 }, anchor: { x: 0.5, y: 1 } });
     this.marker = new Sprite({ texture: tx.marker, anchor: { x: 0.5, y: 1 } });
     this.tag.addChild(this.name, this.marker);
+  }
+
+  /** Ease the name tag towards dimmed (a floating text over it) or full; call after update(). */
+  dimTag(dim: boolean, dt: number) {
+    this.tagDim += ((dim ? 0.3 : 1) - this.tagDim) * Math.min(1, dt * 14);
+    this.name.alpha *= this.tagDim;
+    this.marker.alpha = this.tagDim;
   }
 
   /** On screen right now (alive, in the round, not waiting to drop in). */
