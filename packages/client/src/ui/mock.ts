@@ -53,7 +53,7 @@ function makeWorld(bots: number): WorldState {
     players.set(`bot${i}`, makePlayer(`bot${i}`, BOT_NAMES[i % BOT_NAMES.length], (s.skin + 1 + i * 2) % SKIN_COUNT, true, x, y));
   }
   return {
-    tick: 0, seed: 1, phase: Phase.Playing, phaseTicks: 0, round: 1, width, height, tiles,
+    tick: 0, seed: 1, phase: Phase.Playing, phaseTicks: 0, round: 1, width, height, shape: 0, tiles,
     players, bombs: new Map(), flames: new Map(), pickups: new Map(), falling: [], drops: [], winner: '', nextId: 1,
     zoneRing: 0, zoneIn: 0,
   };

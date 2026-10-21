@@ -3,7 +3,7 @@
 import type { ISimulation, MatchConfig, NewPlayer } from '../contract/api';
 import { MAX_PLAYERS } from '../contract/constants';
 import type { GameEvent, InputFrame } from '../contract/protocol';
-import { type PickupState, type PickupType, type PlayerState, type WorldState } from '../contract/types';
+import { ArenaShape, type PickupState, type PickupType, type PlayerState, type WorldState } from '../contract/types';
 import { dropCarried, updateBombs } from './bombs';
 import { emit, type SimCtx } from './context';
 import { tickFlames } from './flames';
@@ -153,6 +153,7 @@ export class Simulation implements ISimulation {
     const ctx = this.ctx;
     w.width = m.width;
     w.height = m.height;
+    w.shape = ArenaShape.Rect;
     w.tiles = m.tiles;
     ctx.hidden = new Int8Array(m.width * m.height).fill(-1);
     ctx.flameGrid = new Int32Array(m.width * m.height);

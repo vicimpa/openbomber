@@ -8,6 +8,9 @@ export enum Tile {
   Brick = 2,    // destructible, may hide a pickup
 }
 
+/** Outline of the playable arena inside its width x height box (see sim/shapes.ts). */
+export enum ArenaShape { Rect = 0, Circle = 1, Diamond = 2, Cross = 3, Ring = 4 }
+
 export enum Dir { Up = 0, Left = 1, Right = 2, Down = 3 }
 
 export const DIR_VEC: Record<Dir, readonly [number, number]> = {
@@ -204,6 +207,8 @@ export interface WorldState {
   round: number;
   width: number;
   height: number;
+  /** Cells outside the shape are walls (shown as the countryside around the arena). */
+  shape: ArenaShape;
   tiles: Uint8Array;     // width * height, index = y * width + x, values = Tile
   players: Map<string, PlayerState>;
   bombs: Map<number, BombState>;

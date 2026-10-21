@@ -47,7 +47,7 @@ export class LocalSource implements GameSource {
   private primeEvents: GameEvent[] = [];
 
   constructor(opts: LocalSourceOptions) {
-    this.sim = new Simulation({ seed: opts.seed ?? (Math.random() * 0x7fffffff) | 0 });
+    this.sim = new Simulation({ seed: opts.seed ?? (Math.random() * 0x7fffffff) | 0, shapes: true });
     this.profile = { name: opts.name ?? 'Игрок', skin: opts.skin ?? 0 };
     const difficulty = opts.difficulty ?? 'normal';
     for (let i = 0; i < opts.bots; i++) {
@@ -135,7 +135,7 @@ export class LocalSource implements GameSource {
     const w = this.sim.state;
     const v = this.view;
     v.tick = w.tick; v.seed = w.seed; v.phase = w.phase; v.phaseTicks = w.phaseTicks; v.round = w.round;
-    v.width = w.width; v.height = w.height; v.tiles = w.tiles; v.winner = w.winner; v.nextId = w.nextId;
+    v.width = w.width; v.height = w.height; v.shape = w.shape; v.tiles = w.tiles; v.winner = w.winner; v.nextId = w.nextId;
     v.flames = w.flames; v.pickups = w.pickups; v.falling = w.falling; v.drops = w.drops;
     v.zoneRing = w.zoneRing; v.zoneIn = w.zoneIn;
     const last = w.tick - 1; // prev entries written right before the newest tick

@@ -15,6 +15,7 @@ import {
   THROW_TIME,
 } from '../contract/constants';
 import { Ability, BombKind, BombMotion, Curse, DropKind, PickupType, Tile, type BombState, type PlayerState, type WorldState } from '../contract/types';
+import { zoneDepth } from '../sim/shapes';
 
 export const INF = 0x3fffffff;
 /** Remote bombs this close to their automatic detonation count as timed bombs. */
@@ -188,20 +189,11 @@ export function analyze(w: WorldState): Analysis {
   }
   // the ring the zone will close next: get out before the warning runs out
   if (w.zoneIn > 0) {
-    const r = w.zoneRing;
-    const x1 = W - 1 - r;
-    const y1 = w.height - 1 - r;
-    const mark = (i: number) => {
+    const depth = zoneDepth(w.shape, W, w.height);
+    for (let i = 0; i < depth.length; i++) {
+      if (depth[i] !== w.zoneRing) continue;
       if (w.zoneIn < dStart[i]!) dStart[i] = w.zoneIn;
       dEnd[i] = INF;
-    };
-    for (let x = r; x <= x1; x++) {
-      mark(r * W + x);
-      mark(y1 * W + x);
-    }
-    for (let y = r; y <= y1; y++) {
-      mark(y * W + r);
-      mark(y * W + x1);
     }
   }
 

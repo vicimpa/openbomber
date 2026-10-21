@@ -551,7 +551,7 @@ export class NetSource implements GameSource {
     if (!this.model.ready) return;
     const v = this.view;
     v.tick = w.tick; v.seed = 0; v.phase = w.phase; v.phaseTicks = w.phaseTicks; v.round = w.round;
-    v.width = w.width; v.height = w.height; v.tiles = w.tiles; v.winner = w.winner;
+    v.width = w.width; v.height = w.height; v.shape = w.shape; v.tiles = w.tiles; v.winner = w.winner;
     v.flames = w.flames; v.pickups = w.pickups; v.falling = w.falling; v.drops = w.drops;
     v.zoneRing = w.zoneRing; v.zoneIn = w.zoneIn;
 

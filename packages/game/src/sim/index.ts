@@ -2,6 +2,7 @@ export { Simulation } from './Simulation';
 export { applyMovement, predictMovement, predictWithProxies, playerSpeed, blockedFor, tileSolidFor, bombBlocksPlayer } from './movement';
 export { cir2cir, cir2sqr, circleTouchesTile, type Vec } from './collision';
 export { calcMap, mapSizeFor, spawnPoints, generateMap, ringTiles, parseMap, isPillar } from './map';
+export { insideShape, maxZoneDepth, shapeMask, shapeRingTiles, zoneDepth } from './shapes';
 export { TIMED_ABILITIES, emptyEffects, syncAbilities } from './effects';
 export { PICKUP_WEIGHTS, rollPickup } from './pickups';
 export { mergeShape } from './flames';

@@ -1,9 +1,10 @@
 // Static arena: floor grass, scorch trails left by explosions (autotiled like new-openbomber's
 // Ruines), walls and bricks,
-// the grey border wall ring. Split into 16x16-tile chunks, each cached as a texture and redrawn
+// the grey border wall ring (along the outline of a shaped arena; the cells beyond it stay empty,
+// so the countryside shows through). Split into 16x16-tile chunks, each cached as a texture and redrawn
 // only when one of its tiles changes; chunks outside the view are culled. Handles 75x75 maps.
 import { Container, Sprite } from 'pixi.js';
-import { Tile, type FallingBlock, type WorldState } from '@ob/game';
+import { ArenaShape, Tile, shapeMask, zoneDepth, type FallingBlock, type WorldState } from '@ob/game';
 
 import type { GameAssets } from './assets';
 import type { Effects } from './fx';
@@ -38,6 +39,8 @@ export class Arena {
   private gw = 0; // grid incl. border ring: (w + 2) x (h + 2), cell (x, y) ↔ grid (x + 1, y + 1)
   private gh = 0;
   private tiles = new Uint8Array(0);
+  private shape = ArenaShape.Rect;
+  private mask: Uint8Array = new Uint8Array(0);
   private round = -1;
   private floor: Sprite[] = [];
   private blocks: (Sprite | null)[] = [];
@@ -87,7 +90,7 @@ export class Arena {
   /** Whether sync() would build a brand new map for this world. */
   willRebuild(world: WorldState, force = false) {
     const { width: w, height: h, tiles } = world;
-    if (force || w !== this.w || h !== this.h || world.round !== this.round) return true;
+    if (force || w !== this.w || h !== this.h || world.round !== this.round || world.shape !== this.shape) return true;
     let changed = 0;
     for (let i = 0; i < tiles.length; i++) if (this.tiles[i] !== tiles[i] && tiles[i] !== Tile.Wall) changed++;
     return changed > Math.max(40, tiles.length * 0.15);
@@ -113,9 +116,10 @@ export class Arena {
         const was = this.tiles[i], now = tiles[i];
         if (was === now) continue;
         const x = i % w, y = (i / w) | 0;
+        this.tiles[i] = now;
+        if (!this.mask[i]) continue;
         if (was === Tile.Brick && now === Tile.Floor) this.fx.brickBreak(x, y, 0, 0, this.blocks[(y + 1) * this.gw + x + 1]?.texture);
         if (now === Tile.Wall) this.impact(x, y, wi++ % every === 0, walls < 4);
-        this.tiles[i] = now;
         this.setBlock(x, y, now);
       }
     }
@@ -145,6 +149,8 @@ export class Arena {
   private build(world: WorldState) {
     const { width: w, height: h, tiles } = world;
     this.w = w; this.h = h; this.round = world.round;
+    this.shape = world.shape ?? ArenaShape.Rect;
+    this.mask = shapeMask(this.shape, w, h);
     this.seed = (Math.random() * 0x7fffffff) | 0;
     this.gw = w + 2; this.gh = h + 2;
     this.tiles = new Uint8Array(tiles);
@@ -178,8 +184,9 @@ export class Arena {
       const gi = gy * this.gw + gx;
       const k = this.chunkIndex(gx, gy);
       const x = gx - 1, y = gy - 1;
-      const border = gx === 0 || gy === 0 || gx === this.gw - 1 || gy === this.gh - 1;
-      if (border) {
+      if (!this.inside(x, y)) {
+        // the border wall runs along the outline; further out it's open countryside
+        if (!this.nearInside(x, y)) continue;
         const s = new Sprite({ texture: this.wallTex(x, y), anchor: 0.5, x: x * T, y: y * T });
         blockLayers[k].addChild(s);
         this.blocks[gi] = s;
@@ -276,31 +283,46 @@ export class Arena {
     return f;
   }
 
+  /** A playable cell of the current map (inside its shape). */
+  private inside(x: number, y: number) {
+    return x >= 0 && y >= 0 && x < this.w && y < this.h && this.mask[y * this.w + x] === 1;
+  }
+
+  private nearInside(x: number, y: number) {
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (this.inside(x + dx, y + dy)) return true;
+    return false;
+  }
+
   // ---------------------------------------------------------------- zone shrink warning
-  /** Highlight ring `ring` (0 = outermost row of the arena); -1 clears. */
+  /** Highlight ring `ring` (0 = outermost ring of the arena, following its shape); -1 clears. */
   setZone(ring: number) {
     if (this.zone) { for (const s of this.zone.strips) s.destroy(); this.zone = null; }
-    if (ring < 0 || ring * 2 >= Math.min(this.w, this.h)) return;
-    const x0 = ring, y0 = ring, x1 = this.w - 1 - ring, y1 = this.h - 1 - ring;
-    const rect = (ax: number, ay: number, bx: number, by: number) => {
-      const s = new Sprite({ texture: this.tx.white, x: ax * T - T / 2, y: ay * T - T / 2, tint: 0xff2a3a });
-      s.width = (bx - ax + 1) * T; s.height = (by - ay + 1) * T;
+    if (ring < 0) return;
+    const depth = zoneDepth(this.shape, this.w, this.h);
+    const strips: Sprite[] = [];
+    // one strip per horizontal run of the ring's cells
+    for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w; x++) {
+      if (depth[y * this.w + x] !== ring) continue;
+      let x1 = x;
+      while (x1 + 1 < this.w && depth[y * this.w + x1 + 1] === ring) x1++;
+      const s = new Sprite({ texture: this.tx.white, x: x * T - T / 2, y: y * T - T / 2, tint: 0xff2a3a });
+      s.width = (x1 - x + 1) * T; s.height = T;
       this.zoneLayer.addChild(s);
-      return s;
-    };
-    const strips = [rect(x0, y0, x1, y0), rect(x0, y1, x1, y1)];
-    if (y1 - 1 >= y0 + 1) strips.push(rect(x0, y0 + 1, x0, y1 - 1), rect(x1, y0 + 1, x1, y1 - 1));
-    this.zone = { ring, t: 0, strips };
+      strips.push(s);
+      x = x1;
+    }
+    if (strips.length) this.zone = { ring, t: 0, strips };
   }
 
   /** Outermost ring that still has non-wall cells (the next one to close). */
   nextRing() {
-    const { w, h } = this;
-    for (let r = 0; r * 2 < Math.min(w, h); r++) {
-      for (let x = r; x < w - r; x++) if (this.tiles[r * w + x] !== Tile.Wall || this.tiles[(h - 1 - r) * w + x] !== Tile.Wall) return r;
-      for (let y = r; y < h - r; y++) if (this.tiles[y * w + r] !== Tile.Wall || this.tiles[y * w + w - 1 - r] !== Tile.Wall) return r;
+    const depth = zoneDepth(this.shape, this.w, this.h);
+    let best = -1;
+    for (let i = 0; i < depth.length; i++) {
+      if (depth[i] === 255 || this.tiles[i] === Tile.Wall) continue;
+      if (best < 0 || depth[i]! < best) best = depth[i]!;
     }
-    return -1;
+    return best;
   }
 
   private updateZone(dt: number) {

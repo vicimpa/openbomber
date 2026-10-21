@@ -209,7 +209,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     roomCreated();
     // Crypto seed + entropy: hidden information (pickups in bricks, crazy bombs, Random rolls)
     // can't be reconstructed from the visible map by a client that runs the same simulation.
-    this.simConfig = { minPlayers: 2, seed: cryptoU32(), entropy: cryptoU32, zone: true, overtime: true };
+    this.simConfig = { minPlayers: 2, seed: cryptoU32(), entropy: cryptoU32, zone: true, overtime: true, shapes: true };
     this.sim = this.game.createSimulation(this.simConfig);
     this.setPatchRate(1000 / PATCH_RATE);
     this.setSimulationInterval((dt) => this.update(dt), TICK_MS);

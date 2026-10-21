@@ -1,7 +1,8 @@
 // Arena generation (canon: legacy core/calcMap.ts + server GameMap.ts) and zone rings.
 
 import { BRICK_FILL, MAP_MARGIN, MAP_PADDING, PICKUP_FILL } from '../contract/constants';
-import { Tile } from '../contract/types';
+import { ArenaShape, Tile } from '../contract/types';
+import { shapeMask } from './shapes';
 import { shuffle, type SeedHolder } from './rng';
 import { rollPickup } from './pickups';
 
@@ -55,8 +56,12 @@ export const isPillar = (x: number, y: number) => (x & 1) === 1 && (y & 1) === 1
 /**
  * Legacy GameMap.generate: pillars on odd/odd tiles, a free plus of radius 2 around every
  * spawn, bricks on BRICK_FILL of the remaining tiles, pickups hidden in PICKUP_FILL of the bricks.
+ * Cells outside `shape` are walls.
  */
-export function generateMap(rng: SeedHolder, width: number, height: number, spawns: Point[], secret: SeedHolder = rng): GeneratedMap {
+export function generateMap(
+  rng: SeedHolder, width: number, height: number, spawns: Point[], secret: SeedHolder = rng, shape = ArenaShape.Rect,
+): GeneratedMap {
+  const mask = shapeMask(shape, width, height);
   const n = width * height;
   const tiles = new Uint8Array(n);
   const hidden = new Int8Array(n).fill(-1);
@@ -71,7 +76,7 @@ export function generateMap(rng: SeedHolder, width: number, height: number, spaw
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const i = y * width + x;
-      if (isPillar(x, y)) tiles[i] = Tile.Wall;
+      if (!mask[i] || isPillar(x, y)) tiles[i] = Tile.Wall;
       else if (!safe[i]) free.push(i);
     }
   }

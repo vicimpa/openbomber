@@ -8,6 +8,7 @@
 // camera (a time budget per frame), LRU-evicted, at a lower resolution when zoomed far out. Purely
 // visual: nothing out here is gameplay.
 import { CanvasSource, Container, Sprite, Texture } from 'pixi.js';
+import { shapeMask, type ArenaShape } from '@ob/game';
 
 import type { GameAssets } from './assets';
 import { makeDecor, type Decor, type DecorSet } from './decor';
@@ -65,7 +66,55 @@ const SPECKLED: Record<number, [string, [string, number, number][]]> = {
 };
 const BASE_OF = (b: number) => (GRASSY[b] ?? SPECKLED[b])[0];
 
-export interface Rect { x0: number; y0: number; x1: number; y1: number } // world px
+export interface Rect {
+  x0: number; y0: number; x1: number; y1: number; // world px
+  /** Shaped arena: distance (tiles) from a world px point to its border wall, instead of to the rect. */
+  dist?: (x: number, y: number) => number;
+  key?: string;
+}
+
+/** Clearing that follows a shaped arena's border wall (the cells just outside its shape). */
+export function shapeClearing(r: Rect, shape: ArenaShape, ox: number, oy: number, w: number, h: number): Rect {
+  const mask = shapeMask(shape, w, h);
+  const inside = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && mask[y * w + x] === 1;
+  const edge: number[] = []; // border wall cells, map coords packed as x, y pairs
+  for (let y = -1; y <= h; y++) for (let x = -1; x <= w; x++) {
+    if (inside(x, y)) continue;
+    let near = false;
+    for (let dy = -1; dy <= 1 && !near; dy++) for (let dx = -1; dx <= 1 && !near; dx++) near = inside(x + dx, y + dy);
+    if (near) edge.push(x, y);
+  }
+  // cells the shape walls in (the ring's middle): a quiet glade, no crates or stones that would
+  // pass for arena blocks
+  const open = new Uint8Array((w + 2) * (h + 2)); // reachable from beyond the box, grid (x + 1, y + 1)
+  const q = [0];
+  open[0] = 1;
+  for (let k = 0; k < q.length; k++) {
+    const i = q[k]!, gx = i % (w + 2), gy = (i / (w + 2)) | 0;
+    for (const [nx, ny] of [[gx - 1, gy], [gx + 1, gy], [gx, gy - 1], [gx, gy + 1]] as const) {
+      if (nx < 0 || ny < 0 || nx >= w + 2 || ny >= h + 2) continue;
+      const j = ny * (w + 2) + nx;
+      if (open[j] || inside(nx - 1, ny - 1)) continue;
+      open[j] = 1;
+      q.push(j);
+    }
+  }
+  const enclosed = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && !inside(x, y) && !open[(y + 1) * (w + 2) + x + 1];
+  const dist = (px: number, py: number) => {
+    const tx = px / T - ox, ty = py / T - oy;
+    const cx = Math.round(tx), cy = Math.round(ty);
+    if (inside(cx, cy)) return 0;
+    if (enclosed(cx, cy)) return 1.3;
+    let best = 99 * 99;
+    for (let i = 0; i < edge.length; i += 2) {
+      const dx = Math.max(Math.abs(tx - edge[i]!) - 0.5, 0), dy = Math.max(Math.abs(ty - edge[i + 1]!) - 0.5, 0);
+      const d = dx * dx + dy * dy;
+      if (d < best) best = d;
+    }
+    return Math.sqrt(best);
+  };
+  return { ...r, dist, key: `${shape}:${ox},${oy}` };
+}
 
 interface ChunkTex { canvas: HTMLCanvasElement; g: CanvasRenderingContext2D; tex: Texture; size: number }
 interface Chunk { cx: number; cy: number; lod: number; ct: ChunkTex; sprite: Sprite; used: number }
@@ -206,7 +255,7 @@ export class Ground {
   // ---------------------------------------------------------------- arenas
   /** Arena rects (outer edge of the border wall, world px): trampled dirt apron around them, no water/trees close by. */
   setClearings(list: Rect[]) {
-    const same = (a: Rect, b: Rect) => a.x0 === b.x0 && a.y0 === b.y0 && a.x1 === b.x1 && a.y1 === b.y1;
+    const same = (a: Rect, b: Rect) => a.x0 === b.x0 && a.y0 === b.y0 && a.x1 === b.x1 && a.y1 === b.y1 && a.key === b.key;
     const fresh = list.filter(r => !this.clearings.some(o => same(o, r)))
       .concat(this.clearings.filter(o => !list.some(r => same(o, r))));
     this.clearings = list.slice();
@@ -361,6 +410,7 @@ export class Ground {
   private clearingDist(x: number, y: number, list: Rect[]) {
     let best = 99;
     for (const r of list) {
+      if (r.dist) { best = Math.min(best, r.dist(x, y)); continue; }
       const dx = Math.max(r.x0 - x, 0, x - r.x1), dy = Math.max(r.y0 - y, 0, y - r.y1);
       const d = Math.sqrt(dx * dx + dy * dy) / T;
       if (d < best) best = d;

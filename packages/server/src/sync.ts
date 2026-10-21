@@ -141,6 +141,7 @@ export function syncWorld(state: BattleState, w: WorldState) {
   set(state, 'round', w.round);
   set(state, 'width', w.width);
   set(state, 'height', w.height);
+  set(state, 'shape', w.shape);
   set(state, 'winner', w.winner);
   set(state, 'zoneRing', w.zoneRing ?? 0);
   set(state, 'zoneAt', at(w.zoneIn ?? 0, tick));

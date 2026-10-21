@@ -37,7 +37,7 @@ export class StubSim implements ISimulation {
     const tiles = new Uint8Array(W * H);
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (x % 2 === 1 && y % 2 === 1) tiles[y * W + x] = Tile.Wall;
     this.state = {
-      tick: 0, seed: 1, phase: Phase.Waiting, phaseTicks: 0, round: 1, width: W, height: H, tiles,
+      tick: 0, seed: 1, phase: Phase.Waiting, phaseTicks: 0, round: 1, width: W, height: H, shape: 0, tiles,
       players: new Map(), bombs: new Map(), flames: new Map(), pickups: new Map(), falling: [], drops: [], winner: '', nextId: 1,
       zoneRing: 0, zoneIn: 0,
     };

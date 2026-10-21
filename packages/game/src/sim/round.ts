@@ -15,9 +15,10 @@ import {
   ZONE_FINAL_TIMEOUT,
   ZONE_FINAL_WIDTH,
 } from '../contract/constants';
-import { Phase, Tile, type PlayerState } from '../contract/types';
+import { ArenaShape, Phase, Tile, type PlayerState } from '../contract/types';
 import { emit, type SimCtx } from './context';
-import { calcMap, generateMap, ringTiles, type Point } from './map';
+import { calcMap, generateMap, type Point } from './map';
+import { maxZoneDepth, pickShape, shapeRingTiles, shapeSize, shapeSpawns } from './shapes';
 import { killPlayer, resetStats, spawnPlayerAt } from './players';
 import { resetOvertime, updateDrops, updateOvertime } from './overtime';
 import { shuffle } from './rng';
@@ -35,9 +36,14 @@ export function newMap(ctx: SimCtx, players: number) {
   let width = m.width;
   let height = m.height;
   let spawns: Point[] = m.spawns;
+  let shape = ArenaShape.Rect;
   const cw = ctx.config.width;
   const ch = ctx.config.height;
-  if (cw && ch) {
+  if (!(cw && ch)) shape = ctx.config.shape ?? (ctx.config.shapes ? pickShape(w) : ArenaShape.Rect);
+  if (shape !== ArenaShape.Rect) {
+    [width, height] = shapeSize(shape, width, height);
+    spawns = shapeSpawns(w, shape, width, height, m.spawns.length);
+  } else if (cw && ch) {
     // custom size: keep the grid spawns that fit, fall back to the corners
     width = cw;
     height = ch;
@@ -56,9 +62,10 @@ export function newMap(ctx: SimCtx, players: number) {
     w.seed = (w.seed ^ fresh()) >>> 0;
     ctx.secret.seed = (ctx.secret.seed ^ fresh()) >>> 0;
   }
-  const g = generateMap(w, width, height, spawns, ctx.secret);
+  const g = generateMap(w, width, height, spawns, ctx.secret, shape);
   w.width = width;
   w.height = height;
+  w.shape = shape;
   w.tiles = g.tiles;
   ctx.hidden = g.hidden;
   ctx.spawns = g.spawns;
@@ -175,18 +182,18 @@ function checkRoundEnd(ctx: SimCtx) {
  * the way, so a round can't stall with survivors walled off from each other between pillars;
  * the last ring's blocks fall in a sweep, so whoever is buried last wins.
  */
+const innermost = (ctx: SimCtx) => maxZoneDepth(ctx.world.shape, ctx.world.width, ctx.world.height);
+
 const canShrink = (ctx: SimCtx) =>
-  ctx.config.zone !== false
-  && ctx.world.players.size >= 2 && ctx.world.zoneRing * 2 < Math.min(ctx.world.width, ctx.world.height);
+  ctx.config.zone !== false && ctx.world.players.size >= 2 && ctx.world.zoneRing <= innermost(ctx);
 
 /** The open middle is narrow: rings come quickly (ZONE_FINAL_*). */
-const endgame = (ctx: SimCtx) =>
-  Math.min(ctx.world.width, ctx.world.height) - 2 * ctx.world.zoneRing <= ZONE_FINAL_WIDTH;
+const endgame = (ctx: SimCtx) => 2 * (innermost(ctx) - ctx.world.zoneRing) + 1 <= ZONE_FINAL_WIDTH;
 
 function closeRing(ctx: SimCtx) {
   const w = ctx.world;
   const ring = ++w.zoneRing;
-  const tiles = ringTiles(w.width, w.height, ring - 1);
+  const tiles = shapeRingTiles(w.shape, w.width, w.height, ring - 1);
   for (let k = 0; k < tiles.length; k++) {
     const i = tiles[k]!;
     if (w.tiles[i] === Tile.Wall) continue;

@@ -11,7 +11,7 @@ const left = (at: number, tick: number) => (at > 0 ? Math.max(0, at - tick) : 0)
 
 export function emptyWorld(): WorldState {
   return {
-    tick: 0, seed: 0, phase: 0, phaseTicks: 0, round: 0, width: 0, height: 0,
+    tick: 0, seed: 0, phase: 0, phaseTicks: 0, round: 0, width: 0, height: 0, shape: 0,
     tiles: new Uint8Array(0),
     players: new Map(), bombs: new Map(), flames: new Map(), pickups: new Map(),
     falling: [], drops: [], winner: '', nextId: 0, zoneRing: 0, zoneIn: 0,
@@ -137,6 +137,7 @@ export class ReadModel {
     w.round = s.round;
     w.width = s.width;
     w.height = s.height;
+    w.shape = s.shape ?? 0;
     w.winner = s.winner;
     w.zoneRing = s.zoneRing ?? 0;
     w.zoneIn = left(s.zoneAt ?? 0, tick);

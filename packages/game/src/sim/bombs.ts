@@ -26,6 +26,7 @@ import { chainBomb, explode } from './flames';
 import { pickupAt } from './pickups';
 import { nextFloat, randInt } from './rng';
 import { bombAtTile, bombIsGrounded } from './world';
+import { insideShape } from './shapes';
 
 /** Punch flight duration. */
 export const PUNCH_FLIGHT = THROW_TIME;
@@ -327,10 +328,10 @@ function fly(ctx: SimCtx, b: BombState) {
   b.y = b.fromY + (b.toY - b.fromY) * b.progress;
   if (bi.flightElapsed < bi.flightTotal) return;
 
-  // landed past the edge of the map: the bomb evaporates (no blast)
+  // landed past the edge of the map (or of its shape): the bomb evaporates (no blast)
   const x = b.toX;
   const y = b.toY;
-  if (x < 0 || y < 0 || x >= w.width || y >= w.height) {
+  if (!insideShape(w.shape, w.width, w.height, x, y)) {
     w.bombs.delete(b.id);
     ctx.bombs.delete(b.id);
     emit(ctx, { type: 'bombVanished', bomb: b.id, x, y });

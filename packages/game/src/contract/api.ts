@@ -1,5 +1,5 @@
 import type { GameEvent, InputFrame } from './protocol';
-import type { PlayerState, WorldState } from './types';
+import type { ArenaShape, PlayerState, WorldState } from './types';
 
 /** Implemented by `Simulation` in ../sim. This is the surface server and client rely on. */
 export interface MatchConfig {
@@ -22,6 +22,10 @@ export interface MatchConfig {
   zone?: boolean;
   /** Overtime rain of pickups / bombs in long rounds (default on). Read live like `zone`. */
   overtime?: boolean;
+  /** Random arena shapes (circle, diamond, cross, ring) for maps sized by the sim; off = always a rectangle. */
+  shapes?: boolean;
+  /** This shape every round instead of a random one (maps sized by the sim only). */
+  shape?: ArenaShape;
 }
 
 export interface NewPlayer {
