@@ -186,7 +186,7 @@ export class Arena {
       const x = gx - 1, y = gy - 1;
       if (!this.inside(x, y)) {
         // the border wall runs along the outline; further out it's open countryside
-        if (!this.nearInside(x, y)) continue;
+        if (!this.borderWall(x, y)) continue;
         const s = new Sprite({ texture: this.wallTex(x, y), anchor: 0.5, x: x * T, y: y * T });
         blockLayers[k].addChild(s);
         this.blocks[gi] = s;
@@ -288,8 +288,25 @@ export class Arena {
     return x >= 0 && y >= 0 && x < this.w && y < this.h && this.mask[y * this.w + x] === 1;
   }
 
-  private nearInside(x: number, y: number) {
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (this.inside(x + dx, y + dy)) return true;
+  /** Outside cell that touches the arena along a side. */
+  private edgeWall(x: number, y: number) {
+    return !this.inside(x, y) && (this.inside(x - 1, y) || this.inside(x + 1, y) || this.inside(x, y - 1) || this.inside(x, y + 1));
+  }
+
+  /**
+   * Cells of the border wall: the ones touching the arena along a side, so a slant is a thin
+   * diagonal chain of blocks; an outer corner is filled only where two straight runs of the wall
+   * meet (the rectangle's corners, the ends of the cross arms), not on every step of a staircase.
+   */
+  private borderWall(x: number, y: number) {
+    if (this.inside(x, y)) return false;
+    if (this.edgeWall(x, y)) return true;
+    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      if (!this.inside(x + sx, y + sy)) continue;
+      let run = true;
+      for (let k = 1; k <= 3 && run; k++) run = this.edgeWall(x + sx * k, y) && this.edgeWall(x, y + sy * k);
+      if (run) return true;
+    }
     return false;
   }
 

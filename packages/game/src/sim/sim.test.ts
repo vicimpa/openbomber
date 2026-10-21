@@ -697,6 +697,21 @@ describe('round flow (canon: continuous, no lobby)', () => {
     expect(next.length).toBeGreaterThan(0);
   });
 
+  test('zone: two heroes buried by one ring both lose, the first one crushed does not hand the win over', () => {
+    const sim = new Simulation({ seed: 9, overtime: false });
+    for (const id of ['a', 'b']) sim.addPlayer({ id, name: id, skin: 0 });
+    until(sim, (e) => e.some((x) => x.type === 'roundStart'));
+    const w = sim.state;
+    // both on the outer ring, at opposite ends of its sweep
+    const pa = w.players.get('a')!, pb = w.players.get('b')!;
+    pa.x = 0; pa.y = 0; pb.x = w.width - 1; pb.y = w.height - 1;
+    for (const [x, y] of [[0, 0], [w.width - 1, w.height - 1]]) w.tiles[y * w.width + x] = Tile.Floor;
+    const out = until(sim, (e) => e.some((x) => x.type === 'roundOver'), WAIT_FOR_LIMIT + ZONE_LIMIT_TIMEOUT + FALL_TIME + 200);
+    const deaths = out.filter((x) => x.type === 'playerDied');
+    expect(deaths.length).toBe(2);
+    expect(out).toContainEqual({ type: 'roundOver', winner: '' });
+  });
+
   test('zone: closes all the way, so walled-off survivors cannot stall a round', () => {
     const sim = new Simulation({ seed: 9 });
     for (const id of ['a', 'b']) sim.addPlayer({ id, name: id, skin: 0 });

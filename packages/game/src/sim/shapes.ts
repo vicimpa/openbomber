@@ -68,14 +68,31 @@ function shapeData(shape: ArenaShape, w: number, h: number): ShapeData {
   if (d) return d;
   const n = w * h;
   const mask = new Uint8Array(n);
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) mask[y * w + x] = rawInside(shape, w, h, x, y) ? 1 : 0;
-  if (shape !== ArenaShape.Rect) keepReachable(mask, w, h);
+  if (shape === ArenaShape.Rect) mask.fill(1);
+  else {
+    gridMask(mask, shape, w, h);
+    keepReachable(mask, w, h);
+  }
   const depth = new Uint8Array(n).fill(255);
   const maxDepth = ringDepths(mask, depth, w, h);
   d = { mask, depth, maxDepth };
   if (cache.size > 16) cache.delete(cache.keys().next().value!);
   cache.set(key, d);
   return d;
+}
+
+/**
+ * The shape follows the pillar grid: it is the union of the 3x3 blocks around every pillar whose
+ * block lies within the outline. So every edge runs along a lane like the rectangle's, a slant is
+ * a staircase of 2-cell steps, and no lone cell or 1-wide spur sticks out of it.
+ */
+function gridMask(mask: Uint8Array, shape: ArenaShape, w: number, h: number) {
+  for (let py = 1; py < h - 1; py += 2) for (let px = 1; px < w - 1; px += 2) {
+    // the block counts when its four lane crossings (corners) are inside the outline
+    if (!rawInside(shape, w, h, px - 1, py - 1) || !rawInside(shape, w, h, px + 1, py - 1)
+      || !rawInside(shape, w, h, px - 1, py + 1) || !rawInside(shape, w, h, px + 1, py + 1)) continue;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) mask[(py + dy) * w + px + dx] = 1;
+  }
 }
 
 /**
@@ -113,15 +130,33 @@ function keepReachable(mask: Uint8Array, w: number, h: number) {
   }
 }
 
-/** Chebyshev distance to the outside (8-neighbour BFS) minus one: the zone ring of every cell. */
+/**
+ * Chebyshev distance to the outside (8-neighbour BFS) minus one: the zone ring of every cell.
+ * Only the open countryside around the arena counts as outside: the zone closes in from the outer
+ * edge, never from the rim of a hole it walls in (the ring's middle), or it would run out twice
+ * as fast.
+ */
 function ringDepths(mask: Uint8Array, depth: Uint8Array, w: number, h: number): number {
+  // outside cells connected to beyond the box
+  const outer = new Uint8Array(mask.length);
+  const flood: number[] = [];
+  for (let i = 0; i < mask.length; i++) {
+    const x = i % w, y = (i / w) | 0;
+    if (!mask[i] && (x === 0 || y === 0 || x === w - 1 || y === h - 1)) { outer[i] = 1; flood.push(i); }
+  }
+  for (let q = 0; q < flood.length; q++) {
+    const i = flood[q]!, x = i % w, y = (i / w) | 0;
+    for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1]) {
+      if (j >= 0 && !outer[j] && !mask[j]) { outer[j] = 1; flood.push(j); }
+    }
+  }
   const queue: number[] = [];
   for (let i = 0; i < mask.length; i++) {
     if (!mask[i]) continue;
     const x = i % w, y = (i / w) | 0;
     let edge = x === 0 || y === 0 || x === w - 1 || y === h - 1;
     for (let dy = -1; dy <= 1 && !edge; dy++) for (let dx = -1; dx <= 1 && !edge; dx++) {
-      if (!mask[(y + dy) * w + x + dx]) edge = true;
+      if (outer[(y + dy) * w + x + dx]) edge = true;
     }
     if (edge) { depth[i] = 0; queue.push(i); }
   }

@@ -48,6 +48,17 @@ describe('arena shapes', () => {
     }
   });
 
+  test('the ring closes from the outside only, not from the rim of its middle', () => {
+    const [w, h] = shapeSize(ArenaShape.Ring, 33, 33);
+    const depth = zoneDepth(ArenaShape.Ring, w, h), mask = shapeMask(ArenaShape.Ring, w, h);
+    const c = ((h - 1) / 2) * w + (w - 1) / 2;
+    expect(mask[c]).toBe(0);
+    // walk right from the middle: the first cell of the arena is its deepest ring there
+    let i = c;
+    while (!mask[i]) i++;
+    expect(depth[i]).toBe(maxZoneDepth(ArenaShape.Ring, w, h));
+  });
+
   test('a rectangle closes the same rings as before', () => {
     for (const [w, h] of [[13, 13], [19, 13], [33, 33], [20, 14]] as const) {
       for (let r = 0; r <= maxZoneDepth(ArenaShape.Rect, w, h); r++) {
@@ -67,8 +78,10 @@ describe('arena shapes', () => {
       if (seen.has(w.shape)) continue;
       seen.add(w.shape);
       // both wait in the innermost ring, so only the very last ring can bury them
-      const depth = zoneDepth(w.shape, w.width, w.height), max = maxZoneDepth(w.shape, w.width, w.height);
-      const mid = [...depth.keys()].filter((i) => depth[i] === max && w.tiles[i] !== Tile.Wall);
+      const depth = zoneDepth(w.shape, w.width, w.height);
+      const free = [...depth.keys()].filter((i) => depth[i] !== 255 && w.tiles[i] !== Tile.Wall);
+      const deepest = Math.max(...free.map((i) => depth[i]!));
+      const mid = free.filter((i) => depth[i] === deepest);
       for (const [k, id] of ['a', 'b'].entries()) {
         const i = mid[k % mid.length]!, p = w.players.get(id)!;
         w.tiles[i] = Tile.Floor;
@@ -76,7 +89,8 @@ describe('arena shapes', () => {
       }
       for (let i = 0; i < 60 * 60 * 15 && !over; i++) over = sim.step().some((e: GameEvent) => e.type === 'roundOver');
       expect(over).toBe(true);
-      expect(w.zoneRing).toBe(maxZoneDepth(w.shape, w.width, w.height) + 1);
+      expect(w.zoneRing).toBeGreaterThanOrEqual(deepest + 1);
+      expect(w.zoneRing).toBeLessThanOrEqual(maxZoneDepth(w.shape, w.width, w.height) + 1);
     }
     expect(seen.size).toBe(5);
   });

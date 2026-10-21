@@ -148,7 +148,9 @@ function hasBricks(ctx: SimCtx): boolean {
 
 /**
  * Legacy rules: the round is decided once at most one player is alive (none when solo) and no
- * bombs or flames are left. Solo (practice) also ends when bricks and pickups run out.
+ * bombs or flames are left. Solo (practice) also ends when bricks and pickups run out. A closing
+ * zone ring lands in full first: whoever it buries is out, so two heroes under one sweep both
+ * lose (a draw) instead of the first one crushed handing the win to the other.
  */
 function checkRoundEnd(ctx: SimCtx) {
   const w = ctx.world;
@@ -167,7 +169,7 @@ function checkRoundEnd(ctx: SimCtx) {
   // someone left before anybody died: no contest any more
   if (ctx.hasWin && inRound < 2 && ctx.roundDeaths === 0) ctx.hasWin = false;
   const solo = w.players.size === 1;
-  const settled = w.bombs.size === 0 && w.flames.size === 0;
+  const settled = w.bombs.size === 0 && w.flames.size === 0 && w.falling.length === 0;
   if (!settled) return;
   const decided = ctx.hasWin && alive <= 1; // a contest with one survivor left (even if the loser left)
   const delay = solo && !decided ? SOLO_RESTART_TIME : ROUND_OVER_TIME;
@@ -180,7 +182,7 @@ function checkRoundEnd(ctx: SimCtx) {
 /**
  * A ring is left to close. Unlike legacy (which stopped at min(w, h) / 2) the zone closes all
  * the way, so a round can't stall with survivors walled off from each other between pillars;
- * the last ring's blocks fall in a sweep, so whoever is buried last wins.
+ * the round is only decided once a ring's blocks have all landed.
  */
 const innermost = (ctx: SimCtx) => maxZoneDepth(ctx.world.shape, ctx.world.width, ctx.world.height);
 
