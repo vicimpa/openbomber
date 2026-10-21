@@ -1,6 +1,8 @@
-// Persisted user settings (localStorage). Read `settings.value`, write with `updateSettings()`.
+// Persisted user settings (../storage: localStorage, or CrazyGames' Data module there). Read
+// `settings.value`, write with `updateSettings()`.
 import { effect, signal } from '@preact/signals';
 import { inputPrefs } from '$/input/prefs';
+import { onStoreChange, readItem, writeItem } from '$/storage';
 import { randomName } from './names';
 
 export type Language = 'ru' | 'en';
@@ -19,7 +21,7 @@ export interface Settings {
 }
 
 export const SKIN_COUNT = 12;
-const KEY = 'openbomber.settings.v2';
+export const SETTINGS_KEY = 'openbomber.settings.v2';
 
 export const defaultSettings = (): Settings => ({
   name: randomName(),
@@ -36,7 +38,7 @@ export const defaultSettings = (): Settings => ({
 function load(): Settings {
   const base = defaultSettings();
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = readItem(SETTINGS_KEY);
     if (!raw) return base;
     const s = JSON.parse(raw) as Partial<Settings>;
     return {
@@ -53,6 +55,8 @@ function load(): Settings {
 }
 
 export const settings = signal<Settings>(load());
+// the saves moved to another store (CrazyGames): the settings are the ones kept there
+onStoreChange(() => { settings.value = load(); });
 
 type Patch = { [K in keyof Settings]?: Settings[K] extends object ? Partial<Settings[K]> : Settings[K] };
 
@@ -71,5 +75,5 @@ effect(() => {
   const s = settings.value;
   inputPrefs.haptics = s.haptics;
   document.documentElement.lang = s.language;
-  try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* private mode */ }
+  writeItem(SETTINGS_KEY, JSON.stringify(s));
 });

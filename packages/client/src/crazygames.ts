@@ -23,6 +23,7 @@ interface CrazySdk {
     settings?: { muteAudio?: boolean };
     addSettingsChangeListener(listener: (s: { muteAudio?: boolean }) => void): void;
   };
+  data?: { getItem(key: string): string | null; setItem(key: string, value: string): void };
 }
 
 let sdk: CrazySdk | null = null;
@@ -76,6 +77,18 @@ export async function crazyInit(): Promise<void> {
   } catch (e) {
     console.warn('[crazygames] sdk', e);
   }
+}
+
+/**
+ * Their Data module, as the game's store (../storage): saves go to the player's CrazyGames
+ * account (kept locally for guests). Null without the SDK or with the module off for this game
+ * (the «Progress Save» option at submission).
+ */
+export function crazyData() {
+  const d = sdk?.data;
+  if (!d) return null;
+  try { d.getItem('openbomber.probe'); } catch (e) { console.warn('[crazygames] data module off', e); return null; }
+  return d;
 }
 
 /** The loader is done: the game shows its menu. */

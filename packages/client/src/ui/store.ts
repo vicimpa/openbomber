@@ -19,6 +19,7 @@ import { CURSE_BY_ID } from './pickups';
 import { tr } from './i18n';
 import { settings, updateSettings, type Settings } from './settings';
 import { discord, inDiscord } from '$/discord';
+import { readItem, writeItem } from '$/storage';
 
 export { settings, updateSettings, type Settings };
 
@@ -138,21 +139,21 @@ export type HintKind = 'glove' | 'teleport';
 export const HINT_PICKUP: Record<HintKind, PickupType> = { glove: PickupType.Glove, teleport: PickupType.Teleport };
 /** Shown on pickup to keyboard / gamepad players (touch has its own buttons), a few times per kind. */
 export const hint = signal<{ id: number; kind: HintKind } | null>(null);
-const HINT_KEY = 'openbomber.hints.v1';
+export const HINT_KEY = 'openbomber.hints.v1';
 const HINT_TIMES = 3;
 const HINT_TTL = 9000;
 let hintSeq = 0;
 let hintTimer: ReturnType<typeof setTimeout> | undefined;
 
 function hintCounts(): Partial<Record<HintKind, number>> {
-  try { return JSON.parse(localStorage.getItem(HINT_KEY) ?? '{}') ?? {}; } catch { return {}; }
+  try { return JSON.parse(readItem(HINT_KEY) ?? '{}') ?? {}; } catch { return {}; }
 }
 
 function showHint(kind: HintKind) {
   if (lastDevice.peek() === 'touch') return;
   const counts = hintCounts();
   if ((counts[kind] ?? 0) >= HINT_TIMES) return;
-  try { localStorage.setItem(HINT_KEY, JSON.stringify({ ...counts, [kind]: (counts[kind] ?? 0) + 1 })); } catch { /* private mode */ }
+  writeItem(HINT_KEY, JSON.stringify({ ...counts, [kind]: (counts[kind] ?? 0) + 1 }));
   const id = ++hintSeq;
   hint.value = { id, kind };
   clearTimeout(hintTimer);
