@@ -1,8 +1,7 @@
-// Persisted user settings (../storage: localStorage, or CrazyGames' Data module there). Read
-// `settings.value`, write with `updateSettings()`.
+// Persisted user settings (../storage). Read `settings.value`, write with `updateSettings()`.
 import { effect, signal } from '@preact/signals';
 import { inputPrefs } from '$/input/prefs';
-import { onStoreChange, readItem, writeItem } from '$/storage';
+import { readItem, writeItem } from '$/storage';
 import { randomName } from './names';
 
 export type Language = 'ru' | 'en';
@@ -55,8 +54,6 @@ function load(): Settings {
 }
 
 export const settings = signal<Settings>(load());
-// the saves moved to another store (CrazyGames): the settings are the ones kept there
-onStoreChange(() => { settings.value = load(); });
 
 type Patch = { [K in keyof Settings]?: Settings[K] extends object ? Partial<Settings[K]> : Settings[K] };
 

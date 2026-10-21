@@ -4,7 +4,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { canFullscreen, isFullscreen, toggleFullscreen } from '$/input/fullscreen';
 import { discord } from '$/discord';
-import { crazyCanLogin, crazyLogin } from '$/crazygames';
 import { Avatar } from './Avatar';
 import { Button, Logo } from './components';
 import { t } from './i18n';
@@ -15,10 +14,6 @@ import { SKIN_COUNT } from './settings';
 import { HeroSprite } from './sprites';
 import { actions, identity, onlineCount, openModal, setName, setSkin, settings } from './store';
 import { OFFLINE } from '$/offline';
-
-/** Why the name can't be changed here: it's the Discord / CrazyGames account's (or a guest's on CrazyGames). */
-export const nameHint = (from: 'discord' | 'crazygames' | null) =>
-  from === 'discord' ? 'discord.nameHint' as const : from === 'crazygames' ? 'crazy.nameHint' as const : 'crazy.guestHint' as const;
 
 function ProfileCard() {
   const { skin, language } = settings.value;
@@ -47,12 +42,9 @@ function ProfileCard() {
       </button>
       <button class="mm__arrow" onClick={() => step(1)} aria-label={t('menu.nextSkin')} title={t('menu.nextSkin')}><Icon name="arrowRight" /></button>
       {id.locked ? (
-        <div class="mm__name mm__name--discord" title={t(nameHint(id.from))}>
+        <div class="mm__name mm__name--discord" title={t('discord.nameHint')}>
           <Avatar url={id.avatar} size={32} />
           <span class="mm__name-input">{name}</span>
-          {!id.from && crazyCanLogin() && (
-            <button class="icon-btn" onClick={() => { actions.uiSound('click'); crazyLogin(); }} aria-label={t('crazy.login')} title={t('crazy.login')}><Icon name="users" /></button>
-          )}
         </div>
       ) : <div class="mm__name">
         <input

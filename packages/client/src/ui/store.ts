@@ -19,7 +19,6 @@ import { CURSE_BY_ID } from './pickups';
 import { tr } from './i18n';
 import { settings, updateSettings, type Settings } from './settings';
 import { discord, inDiscord } from '$/discord';
-import { crazyUser, onCrazyGames } from '$/crazygames';
 import { readItem, writeItem } from '$/storage';
 
 export { settings, updateSettings, type Settings };
@@ -265,21 +264,10 @@ export const actions: Actions = {
 };
 
 // ---------------------------------------------------------------- helpers for UI code
-/**
- * Who the player is: in the Discord activity their Discord name and picture, on CrazyGames their
- * CrazyGames username and picture; neither can be changed in the game (nor a CrazyGames guest's
- * name). Elsewhere the saved name.
- */
+/** Who the player is: in the Discord activity their Discord name and picture (fixed), elsewhere the saved name. */
 export const identity = computed(() => {
   const d = discord.value;
-  const c = crazyUser.value;
-  const account = d ?? c;
-  return {
-    name: account?.name ?? settings.value.name,
-    avatar: account?.avatar,
-    from: d ? 'discord' as const : c ? 'crazygames' as const : null,
-    locked: !!d || onCrazyGames.value,
-  };
+  return { name: d?.name ?? settings.value.name, avatar: d?.avatar, locked: !!d };
 });
 
 export function setName(name: string) {

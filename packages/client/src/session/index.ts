@@ -17,15 +17,12 @@ import { setStageHandler } from '../ui/App';
 import { buildHud } from '../ui/hud';
 import { t } from '../ui/i18n';
 import {
-  avatars, pings, bindActions, connectStatus, fps, handleGameEvents, HINT_KEY, hud, identity, onlineCount, pushChat, registerLoadTask, resetGameState,
-  menuOpen, modals, pendingInvite, room, roomSettings, screen, settings, spectators, toast, uiCapturesInput,
+  avatars, pings, bindActions, connectStatus, fps, handleGameEvents, hud, identity, onlineCount, pushChat, registerLoadTask, resetGameState,
+  pendingInvite, room, roomSettings, screen, settings, spectators, toast, uiCapturesInput,
 } from '../ui/store';
 import { LocalSource } from './LocalSource';
 import { perfAdd, perfFrame, perfNow } from '../perf';
 import { OFFLINE } from '../offline';
-import { crazyData, crazyGameplay, crazyInit, crazyMuted, crazyUser, onCrazyHost } from '../crazygames';
-import { useStore } from '../storage';
-import { SETTINGS_KEY } from '../ui/settings';
 
 type Source = (NetSource | LocalSource) & GameSource;
 
@@ -77,16 +74,8 @@ export function startSession() {
   if (audio.prepare) registerLoadTask(audio.prepare());
   // Discord activity: sign in while the loader runs (the name and the room come from it)
   if (inDiscord) registerLoadTask(discordLogin(toHttpUrl(resolveServerUrl())));
-  // CrazyGames: their SDK, while the loader runs (the loader then goes straight on to the menu)
-  // (and their Data module keeps the settings: synced to the player's CrazyGames account)
-  if (onCrazyHost) registerLoadTask(crazyInit().then(() => { const d = crazyData(); if (d) useStore(d, [SETTINGS_KEY, HINT_KEY]); }));
   effect(() => renderer?.setQuality(settings.value.quality));
-  // a CrazyGames guest logging in mid-game plays on under their username
-  effect(() => { const c = crazyUser.value; if (c) source?.setProfile({ name: c.name }); });
-  // (CrazyGames' «mute audio» setting wins over the game's own volume)
-  effect(() => audio.setVolume(crazyMuted.value ? { ...settings.value.volume, master: 0 } : settings.value.volume));
-  // CrazyGames: being played = in a game with no menu or dialog over it
-  effect(() => crazyGameplay(screen.value === 'game' && !menuOpen.value && !modals.value.length));
+  effect(() => audio.setVolume(settings.value.volume));
   effect(() => input.setEnabled(!uiCapturesInput.value));
   // Desktop main menu: the panel covers the left side, so the spectator camera frames the rest.
   const menuInset = () => {

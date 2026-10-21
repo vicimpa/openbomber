@@ -13,7 +13,6 @@ import { t } from './i18n';
 import { Icon } from './icons';
 import { LINKS, showLinks } from './links';
 import { NAME_MAX, randomName } from './names';
-import { nameHint } from './MainMenu';
 import { HeroSprite } from './sprites';
 import { actions, hud, identity, menuOpen, openModal, players, room, roomSettings, scoreboardOpen, setName, settings } from './store';
 
@@ -56,7 +55,7 @@ function Profile() {
         ) : (
           <span class="nametag nametag--lg">{id.avatar && <Avatar url={id.avatar} size={22} />}{name}</span>
         )}
-        {id.locked && <small class="muted">{id.from === 'discord' && <Icon name="discord" size={12} />} {t(nameHint(id.from))}</small>}
+        {id.locked && <small class="muted"><Icon name="discord" size={12} /> {t('discord.nameHint')}</small>}
         <div class="profile__btns">
           {!editing && !id.locked && <Button size="sm" onClick={() => { setDraft(name); setEditing(true); }}>{t('menu.edit')}</Button>}
           <Button size="sm" onClick={() => openModal('skin')}>{t('menu.avatar')}</Button>

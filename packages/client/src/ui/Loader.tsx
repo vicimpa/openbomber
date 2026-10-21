@@ -1,7 +1,6 @@
 // Loader: logo + progress bar while sprites / fonts (and any registered session tasks) load,
 // then a big "Играть" button. That click is the user gesture that unlocks audio (actions.start).
 import { useEffect, useState } from 'preact/hooks';
-import { crazyLoaded, onCrazyGames, onCrazyHost } from '$/crazygames';
 import { discord, discordError } from '$/discord';
 import { Button, Logo } from './components';
 import { t } from './i18n';
@@ -38,14 +37,12 @@ export function Loader() {
 
   useEffect(() => {
     if (!ready) return;
-    // Discord activity: launching it was the click, go straight into the channel's room;
-    // CrazyGames: the platform's own play button was the click, go straight on to the menu
-    if (discord.peek() || onCrazyGames.peek()) go();
+    // Discord activity: launching it was the click, go straight into the channel's room
+    if (discord.peek()) go();
     else document.querySelector<HTMLElement>('.loader__play')?.focus({ preventScroll: true });
   }, [ready]);
 
   const go = () => {
-    crazyLoaded();
     actions.start();
     // Discord activity: straight into the channel's room
     if (discord.peek()) actions.joinDiscord();
@@ -53,8 +50,6 @@ export function Loader() {
     else screen.value = 'menu';
   };
 
-  // CrazyGames: the platform shows its own loading screen (loadingStart … loadingStop): ours stays out
-  if (onCrazyHost) return null;
   return (
     <div class="loader" data-nav-root>
       <Logo class="loader__logo" />
