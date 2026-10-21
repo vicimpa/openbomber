@@ -35,6 +35,7 @@ export function startSession() {
   let unsub: (() => void)[] = [];
   let started = false;      // loader's «Играть» pressed (audio unlocked)
   let avatarsVersion = -1;  // NetSource.avatarsVersion last copied into the `avatars` signal
+  let cameraMode: 'overview' | 'follow' = 'overview'; // for the source on show (kept until the renderer exists)
 
   // ---------------------------------------------------------------- renderer on #stage
   let resolveStage!: (el: HTMLElement) => void;
@@ -52,7 +53,8 @@ export function startSession() {
         r.onTravel = (ms, dx) => audio.travel?.(ms, dx); // whoosh while the camera travels between maps
         r.onTeleport = (kind, x, y, who, crowd) => audio.teleport?.(kind, x, y, who, crowd);
         r.onThunder = (delay, power) => audio.thunder?.(delay, power);
-        // the first menu backdrop was warmed up before the renderer existed
+        // the first menu backdrop was set up (and warmed up) before the renderer existed
+        r.setCameraMode(cameraMode);
         if (source instanceof LocalSource) r.prime(source.takePrimeEvents());
       }),
   );
@@ -95,7 +97,8 @@ export function startSession() {
     avatars.value = new Map();
     source = next;
     room.value = info;
-    renderer?.setCameraMode(to === 'menu' ? 'overview' : 'follow');
+    cameraMode = to === 'menu' ? 'overview' : 'follow';
+    renderer?.setCameraMode(cameraMode);
     if (started) screen.value = to;
     if (next instanceof NetSource) {
       next.chatLog.forEach(pushChat);
