@@ -24,7 +24,7 @@ import crazyJson from '../assets/effects/crazy.json';
 import crazyPng from '../assets/effects/crazy.png';
 import kickingJson from '../assets/effects/kicking.json';
 import kickingPng from '../assets/effects/kicking.png';
-import monocraftUrl from '../assets/fonts/Monocraft.otf';
+import monocraftUrl from '../assets/fonts/Monocraft/Monocraft.woff2';
 
 import { PickupType } from '@ob/game';
 

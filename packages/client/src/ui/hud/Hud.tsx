@@ -12,7 +12,7 @@ import { HeroSprite, PickupIcon } from '../sprites';
 import { actions, chat, chatOpen, fps, killFeed, menuOpen, room, settings } from '../store';
 import { RoomCode } from './RoomCode';
 
-// ---------------------------------------------------------------- debug (top-left, 8px)
+// ---------------------------------------------------------------- debug (top-left, 9px)
 export function DebugInfo({ ping }: { ping: number }) {
   const s = settings.value;
   if (!s.showFps && !s.showPing) return null;

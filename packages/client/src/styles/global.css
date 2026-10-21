@@ -4,13 +4,8 @@
 
 @font-face {
   font-family: 'BetterVCR';
-  src: url('../assets/fonts/BetterVCR/better-vcr_0.ttf') format('truetype');
+  src: url('../assets/fonts/BetterVCR/better-vcr_0.woff2') format('woff2');
   font-display: block;
-}
-@font-face {
-  font-family: 'PublicPixel';
-  src: url('../assets/fonts/PublicPixel.ttf') format('truetype');
-  font-display: swap;
 }
 
 :root {
@@ -35,7 +30,8 @@
   --white-down: #d7dad7;
 
   --font: 'BetterVCR', ui-monospace, monospace;
-  --font-debug: 'PublicPixel', 'BetterVCR', monospace;
+  /* Monocraft: the name tags' font, registered by the renderer (render/assets.ts); 9px is its grid */
+  --font-debug: 'Monocraft', 'BetterVCR', monospace;
 
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-r: env(safe-area-inset-right, 0px);
@@ -230,7 +226,7 @@ img, canvas { image-rendering: pixelated; }
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font: 8px/1 var(--font-debug);
+  font: 9px/1 var(--font-debug);
   text-shadow: 0 1px 0 #000;
   opacity: 0.9;
 }
