@@ -13,6 +13,7 @@ import { NAME_MAX, randomName } from './names';
 import { SKIN_COUNT } from './settings';
 import { HeroSprite } from './sprites';
 import { actions, onlineCount, openModal, setName, setSkin, settings } from './store';
+import { OFFLINE } from '$/offline';
 
 function ProfileCard() {
   const { skin, language } = settings.value;
@@ -84,18 +85,19 @@ export function MainMenu() {
             variant="white"
             size="xl"
             block
-            data-autofocus={d ? undefined : true}
+            data-autofocus={d || OFFLINE ? undefined : true}
+            disabled={OFFLINE}
             onClick={() => actions.quickPlay()}
-            sub={online === null ? t('mm.onlineHint') : t('mm.onlineCount', { n: online })}
+            sub={OFFLINE ? t('mm.offlineBuild') : online === null ? t('mm.onlineHint') : t('mm.onlineCount', { n: online })}
           >
             {t('mm.online')}
           </Button>
-          <Button variant="white" size="xl" block onClick={() => openModal('bots')} sub={t('mm.soloHint')}>
+          <Button variant="white" size="xl" block data-autofocus={OFFLINE ? true : undefined} onClick={() => openModal('bots')} sub={t('mm.soloHint')}>
             {t('mm.solo')}
           </Button>
           <div class="row2">
-            <Button block icon={<Icon name="lock" />} onClick={() => actions.createPrivate()}>{t('mm.createRoom')}</Button>
-            <Button block icon={<Icon name="key" />} onClick={() => openModal('join')}>{t('menu.joinByCode')}</Button>
+            <Button block disabled={OFFLINE} icon={<Icon name="lock" />} onClick={() => actions.createPrivate()}>{t('mm.createRoom')}</Button>
+            <Button block disabled={OFFLINE} icon={<Icon name="key" />} onClick={() => openModal('join')}>{t('menu.joinByCode')}</Button>
           </div>
           <div class="row3">
             <Button block icon={<Icon name="gear" />} onClick={() => openModal('settings')}>{t('settings.title')}</Button>

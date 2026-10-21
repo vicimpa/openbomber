@@ -7,6 +7,7 @@ import './ui/viewport';
 import { App } from './ui/App';
 import { installMockActions } from './ui/mock';
 import { startSession } from './session';
+import { OFFLINE } from './offline';
 import { actions, parseRoomHash, pendingInvite, room, screen } from './ui/store';
 
 // `?mock` runs the UI against the scripted fake world (no server / renderer needed).
@@ -18,6 +19,7 @@ render(<App />, document.getElementById('app')!);
 // Invite links: #room=CODE. On first load the loader's button becomes «Войти в комнату CODE»
 // (that click is also the audio-unlock gesture); later hash changes join directly.
 const tryInvite = () => {
+  if (OFFLINE) return;
   const code = parseRoomHash();
   if (!code || room.peek()?.code === code) return;
   if (screen.peek() === 'loader') pendingInvite.value = code;

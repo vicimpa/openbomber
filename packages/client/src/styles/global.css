@@ -116,7 +116,8 @@ img, canvas { image-rendering: pixelated; }
 }
 .btn:hover { background: var(--btn-hover); }
 .btn:active { background: var(--btn-active); }
-.btn:disabled { background: var(--btn-disabled); opacity: 0.8; cursor: not-allowed; }
+.btn:disabled { background: var(--btn-disabled); color: var(--dim); opacity: 0.8; cursor: not-allowed; }
+.btn:disabled .btn__icon { filter: grayscale(1); opacity: 0.5; }
 .btn--sm { min-height: 32px; padding: 4px 12px; font-size: 14px; }
 .btn--lg { min-height: 48px; font-size: 18px; }
 .btn--xl { min-height: 70px; padding: 0 28px; font-size: 24px; }

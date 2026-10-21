@@ -22,6 +22,7 @@ import {
 } from '../ui/store';
 import { LocalSource } from './LocalSource';
 import { perfAdd, perfFrame, perfNow } from '../perf';
+import { OFFLINE } from '../offline';
 
 type Source = (NetSource | LocalSource) & GameSource;
 
@@ -173,7 +174,7 @@ export function startSession() {
     }
     setTimeout(pollOnline, 5000);
   };
-  pollOnline();
+  if (!OFFLINE) pollOnline();
 
   bindActions({
     start() {
@@ -196,9 +197,9 @@ export function startSession() {
       }
     },
     // «Играть онлайн»: the shared arena, straight into the round (spectate via «Отключиться»)
-    quickPlay: () => { if (!locked()) return connect('quick', () => connectQuickPlay({ ...profile(), play: true })); },
-    createPrivate: () => { if (!locked()) return connect('private', () => createPrivateRoom({ ...profile(), bots: 0 })); },
-    joinByCode: (code) => { if (!locked()) return connect('join', () => joinRoomByCode(code, { ...profile(), play: true }), code); },
+    quickPlay: () => { if (!locked() && !OFFLINE) return connect('quick', () => connectQuickPlay({ ...profile(), play: true })); },
+    createPrivate: () => { if (!locked() && !OFFLINE) return connect('private', () => createPrivateRoom({ ...profile(), bots: 0 })); },
+    joinByCode: (code) => { if (!locked() && !OFFLINE) return connect('join', () => joinRoomByCode(code, { ...profile(), play: true }), code); },
     joinDiscord,
     playOffline({ bots, difficulty }) {
       if (locked()) return;
