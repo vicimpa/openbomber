@@ -61,6 +61,21 @@ export async function startGameServer(opts: GameServerOptions = {}): Promise<Gam
   await server.listen(opts.port ?? 2567, opts.host);
 
   const http = server.transport.server as HttpServer;
+  // Behind a proxy that reports the client's address in a header of its own (Fly.io:
+  // Fly-Client-IP), only that header counts: the client could send any X-Real-IP /
+  // X-Forwarded-For, and the per-IP limits read those (limits.ts).
+  const ipHeader = process.env.CLIENT_IP_HEADER?.toLowerCase();
+  if (ipHeader) {
+    const trust = (req: IncomingMessage) => {
+      const ip = req.headers[ipHeader];
+      delete req.headers['x-real-ip'];
+      delete req.headers['x-forwarded-for'];
+      delete req.headers['x-client-ip'];
+      if (typeof ip === 'string' && ip) req.headers['x-real-ip'] = ip;
+    };
+    http.prependListener('request', (req: IncomingMessage) => trust(req));
+    http.prependListener('upgrade', (req: IncomingMessage) => trust(req));
+  }
   if (base) {
     // Strip the prefix before Colyseus' own listeners see the request (prepend AFTER
     // listen(), because Colyseus prepends its CORS handler while binding routes).

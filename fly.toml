@@ -13,6 +13,8 @@ primary_region = "ams"
   PORT = "8080"
   HOST = "0.0.0.0"
   BASE_PATH = "/socket.io"
+  # the per-IP limits trust only the address Fly's proxy reports (app.ts)
+  CLIENT_IP_HEADER = "fly-client-ip"
 
 [http_service]
   internal_port = 8080

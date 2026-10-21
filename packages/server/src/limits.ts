@@ -1,7 +1,7 @@
 // Per-IP abuse limits, checked in BattleRoom.onAuth before a seat is reserved.
 // The IP comes from Colyseus' auth context (x-real-ip / x-forwarded-for / peer address), so in
-// production the server must sit behind the nginx proxy that sets X-Real-IP; exposed directly,
-// those headers could be forged.
+// production the server must sit behind a proxy that sets it: nginx with X-Real-IP, or Fly.io
+// with CLIENT_IP_HEADER=fly-client-ip (app.ts); exposed directly, those headers could be forged.
 
 import { TokenBucket } from './util.ts';
 

@@ -15,6 +15,8 @@
 //   MAX_CLIENTS_PER_IP  connections from one IP across all rooms (default 6)
 //   MAX_ROOMS  rooms alive at once (default 300)
 //   DISCORD_CLIENT_ID / DISCORD_CLIENT_SECRET  Discord activity login (see discord.ts); unset = off
+//   CLIENT_IP_HEADER  the header the host's proxy puts the client's address in (Fly.io: fly-client-ip);
+//              set, X-Real-IP / X-Forwarded-For from the client are ignored (they could be forged)
 //
 // At boot the persistent shared world is created: room id 'MAIN' (autoDispose off).
 // Clients join as spectators and send MSG.play true/false to enter / leave the arena.
