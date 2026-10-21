@@ -16,6 +16,7 @@ import { installFonts } from './text';
 import { makeTextures, type ProcTextures } from './textures';
 import { WeatherFx } from './weather';
 import { Footprints } from './prints';
+import { perfAdd, perfNow } from '../perf';
 
 const T = 32;
 const MAX_DPR = 2;
@@ -163,7 +164,9 @@ class PixiRenderer implements GameRenderer {
     if (this.map.shape === ArenaShape.Rect) covers.push(this.floorRect(this.map));
     if (this.ghost?.shape === ArenaShape.Rect) covers.push(this.floorRect(this.ghost));
     this.ground.setCovers(covers);
+    const g0 = perfNow(), made = this.ground.generated;
     this.ground.cover(x0, y0, x1, y1, this.camera.zoom, this.camera.travelling ? 4 : 2);
+    perfAdd('gnd', perfNow() - g0, this.ground.generated - made);
     const mx = this.map.ox * T, my = this.map.oy * T;
     this.arena.cull(x0 - mx - T, y0 - my - T, x1 - mx + T, y1 - my + T, this.camera.zoom);
     return { x0, y0, x1, y1 };
@@ -265,7 +268,9 @@ class PixiRenderer implements GameRenderer {
     this.weather.update(dt, this.view.cssW, this.view.cssH, this.worldRoot.x, this.worldRoot.y, this.worldRoot.scale.x, world,
       { x0: view.x0 - mx, y0: view.y0 - my, x1: view.x1 - mx, y1: view.y1 - my });
     this.updateOverlay(dt, world);
+    const p0 = perfNow();
     this.app.render();
+    perfAdd('pixi', perfNow() - p0);
   }
 
   /** Optional extra beyond GameRenderer: 'follow' (default), 'overview' or 'attract' (menu backdrop). */

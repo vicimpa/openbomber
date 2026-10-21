@@ -21,6 +21,7 @@ import {
   pendingInvite, room, roomSettings, screen, settings, spectators, toast, uiCapturesInput,
 } from '../ui/store';
 import { LocalSource } from './LocalSource';
+import { perfAdd, perfFrame, perfNow } from '../perf';
 
 type Source = (NetSource | LocalSource) & GameSource;
 
@@ -201,11 +202,14 @@ export function startSession() {
     requestAnimationFrame(frame);
     const dt = Math.min(now - last, 250);
     last = now;
+    perfFrame(dt);
 
     const src = source;
     if (src) {
       const s = input.sample();
+      const s0 = perfNow();
       src.update(dt, { dx: s.dx, dy: s.dy, buttons: s.buttons });
+      perfAdd('sim', perfNow() - s0);
       const world = src.world;
       const localId = src.localId;
       const events = src.drainEvents();
