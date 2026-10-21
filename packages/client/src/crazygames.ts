@@ -46,21 +46,33 @@ function loadScript(src: string) {
   });
 }
 
-/** Load and start the SDK (a loader task); resolves either way, the game runs without it. */
+/**
+ * The SDK, started (a loader task); resolves either way, the game runs without it. index.html
+ * loads and starts it from the very first moment and reports loadingStart() right away
+ * (window.__crazyBoot); this only falls back to loading it here.
+ */
 export async function crazyInit(): Promise<void> {
   if (!onCrazyHost) return;
   try {
-    await loadScript(SDK_URL);
-    const s = (window as unknown as { CrazyGames?: { SDK?: CrazySdk } }).CrazyGames?.SDK;
+    const boot = (window as unknown as { __crazyBoot?: Promise<CrazySdk | null> }).__crazyBoot;
+    const timeout = new Promise<null>((done) => setTimeout(() => done(null), INIT_TIMEOUT_MS));
+    let s: CrazySdk | null;
+    if (boot) {
+      s = await Promise.race([boot, timeout]);
+      if (s) loading = true; // loadingStart() went out already
+    } else {
+      await loadScript(SDK_URL);
+      const fresh = (window as unknown as { CrazyGames?: { SDK?: CrazySdk } }).CrazyGames?.SDK;
+      if (!fresh) return;
+      await Promise.race([fresh.init(), timeout]);
+      s = fresh.environment === 'crazygames' || fresh.environment === 'local' ? fresh : null;
+      if (s) { loading = true; call('loadingStart', () => fresh.game.loadingStart()); }
+    }
     if (!s) return;
-    await Promise.race([s.init(), new Promise((_, no) => setTimeout(() => no(new Error('init timeout')), INIT_TIMEOUT_MS))]);
-    if (s.environment !== 'crazygames' && s.environment !== 'local') return;
     sdk = s;
     onCrazyGames.value = true;
     crazyMuted.value = !!s.game.settings?.muteAudio;
     s.game.addSettingsChangeListener((st) => { crazyMuted.value = !!st.muteAudio; });
-    loading = true;
-    call('loadingStart', () => s.game.loadingStart());
   } catch (e) {
     console.warn('[crazygames] sdk', e);
   }

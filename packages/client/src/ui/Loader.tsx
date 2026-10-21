@@ -1,7 +1,7 @@
 // Loader: logo + progress bar while sprites / fonts (and any registered session tasks) load,
 // then a big "Играть" button. That click is the user gesture that unlocks audio (actions.start).
 import { useEffect, useState } from 'preact/hooks';
-import { crazyLoaded, onCrazyGames } from '$/crazygames';
+import { crazyLoaded, onCrazyGames, onCrazyHost } from '$/crazygames';
 import { discord, discordError } from '$/discord';
 import { Button, Logo } from './components';
 import { t } from './i18n';
@@ -53,6 +53,8 @@ export function Loader() {
     else screen.value = 'menu';
   };
 
+  // CrazyGames: the platform shows its own loading screen (loadingStart … loadingStop): ours stays out
+  if (onCrazyHost) return null;
   return (
     <div class="loader" data-nav-root>
       <Logo class="loader__logo" />
