@@ -97,6 +97,8 @@ export class NetSource implements GameSource {
   private readonly playWaiters: ((ok: boolean) => void)[] = [];
   /** Desired arena state (restored after a reconnect if the server lost it). */
   private wantPlay = false;
+  /** Why the last «Подключиться» was turned down (undefined: it wasn't). */
+  playRefusal: PlayReply['reason'];
   private playing = false;
 
   // prediction
@@ -148,7 +150,8 @@ export class NetSource implements GameSource {
       if (rtt >= 0 && rtt < 10_000) this.ping = this.ping ? Math.round(this.ping * 0.7 + rtt * 0.3) : Math.round(rtt);
     });
     room.onMessage(MSG.play, (r: PlayReply) => {
-      if (!r.reason) this.wantPlay = r.playing;
+      this.playRefusal = r.reason;
+      if (!r.reason || r.reason === 'wait') this.wantPlay = r.playing;
       const w = this.playWaiters.shift();
       w?.(r.playing);
     });

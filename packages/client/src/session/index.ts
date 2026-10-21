@@ -162,7 +162,10 @@ export function startSession() {
     async play(enabled) {
       if (!source) return;
       const ok = await source.play(enabled);
-      if (enabled && !ok) toast(t('net.full'), 'bad');
+      if (enabled && !ok) {
+        const why = source instanceof NetSource ? source.playRefusal : undefined;
+        toast(t(why === 'wait' ? 'net.wait' : why === 'rate' ? 'net.rate' : 'net.full'), 'bad');
+      }
     },
     // «Играть онлайн»: the shared arena, straight into the round (spectate via «Отключиться»)
     quickPlay: () => { if (!locked()) return connect('quick', () => connectQuickPlay({ ...profile(), play: true })); },

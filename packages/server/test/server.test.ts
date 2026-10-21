@@ -560,10 +560,21 @@ describe('anti-cheat', () => {
     const h = await join('create', ROOM_NAME, { private: true, name: 'Leaver', skin: 0, bots: 0, play: true });
     const sr = serverRoom(h.roomId);
     await waitFor(() => sr.sim.state.phase === Game.Phase.Playing && sr.sim.state.players.get(h.sessionId)?.inRound, 6000, 'playing');
+    const replies: { playing: boolean; reason?: string }[] = [];
+    h.onMessage(MSG.play, (r: { playing: boolean; reason?: string }) => replies.push(r));
     h.send(MSG.play, false);
     await sleep(300);
     expect(sr.sim.state.players.has(h.sessionId)).toBe(true);
+    // no coming straight back while the hero is still walking out
+    h.send(MSG.play, true);
+    await waitFor(() => replies.length === 2, 1000, 'refusal');
+    expect(replies[1]).toEqual({ playing: false, reason: 'wait' });
     await waitFor(() => !sr.sim.state.players.has(h.sessionId), 4000, 'removed after grace');
+    // once out, the way back is open
+    await sleep(500);
+    h.send(MSG.play, true);
+    await waitFor(() => replies.length === 3, 1000, 'rejoin');
+    expect(replies[2]).toEqual({ playing: true });
     await h.leave();
   }, 15000);
 

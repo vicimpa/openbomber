@@ -159,7 +159,8 @@ export interface RoomMeta {
 /** server -> client reply to MSG.play. */
 export interface PlayReply {
   playing: boolean;
-  reason?: 'full' | 'rate';
+  /** full: no free slot; rate: too many requests; wait: still leaving the arena after «Отключиться». */
+  reason?: 'full' | 'rate' | 'wait';
 }
 
 /** One entry of GET /rooms (public rooms only). */

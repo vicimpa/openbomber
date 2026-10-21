@@ -58,6 +58,7 @@ export const T = {
   zoneWarning: (sec: number) => `Уменьшение размера карты через ${sec} сек`,
   zoneCancel: 'Уменьшение размера карты отменено',
   full: 'Нет свободных мест',
+  wait: 'Герой ещё уходит с арены, подожди пару секунд',
   chatSlow: 'Не так быстро: не больше одного сообщения в 2 секунды',
   newHost: (n: string) => `${n} теперь управляет комнатой`,
   rosterRestart: 'Состав ботов изменён: новый раунд',
@@ -362,11 +363,10 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     const id = client.sessionId;
     const h = this.humans.get(id)!;
     if (enabled && h.leaving) {
-      // changed their mind within the grace period: the hero never left
-      h.leaving.clear();
-      h.leaving = null;
-      h.playing = true;
-      this.reply(client, { playing: true });
+      // still walking out of the arena (LEAVE_GRACE_MS after «Отключиться»): no coming straight
+      // back, or leaving could be used to dodge and then carry on
+      this.whisper(client, T.wait);
+      this.reply(client, { playing: false, reason: 'wait' });
       return;
     }
     if (enabled === h.playing) { this.reply(client, { playing: h.playing }); return; }
