@@ -51,8 +51,9 @@ html, body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: var(--grass) url('../assets/ui/back.png') center / 64px 64px repeat;
-  image-rendering: pixelated;
+  /* the world (canvas, or .stage's grass before it) covers the page; anything that peeks out
+     around it (iOS toolbar bands, rubber-banding) stays dark instead of a green frame */
+  background: #111;
   color: var(--ink);
   font-family: var(--font);
   font-size: 16px;
@@ -197,7 +198,7 @@ img, canvas { image-rendering: pixelated; }
 @keyframes busy { from { left: 0; } to { left: 65%; } }
 
 /* ------------------------------------------------------------ world */
-.world { position: fixed; inset: 0; overflow: hidden; }
+.world { position: fixed; left: 0; right: 0; top: var(--vvt, 0px); height: var(--vvh, 100%); overflow: hidden; }
 .world.is-covered .stage-vignette { opacity: 0; }
 .stage {
   position: absolute;
@@ -808,3 +809,6 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
   .mm__hero { width: 80px; height: 80px; }
   .mm__actions .btn--xl { min-height: 54px; font-size: 20px; }
 }
+
+/* full-screen layers take the same box as the world (see ui/viewport.ts); last, so it wins over their `inset: 0` */
+.mm, .drawer, .drawer-scrim, .modal-layer, .overlay { top: var(--vvt, 0px); bottom: auto; height: var(--vvh, 100%); }

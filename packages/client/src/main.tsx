@@ -3,6 +3,7 @@
 // (or the `stage` signal). Until then the mock (./ui/mock) drives every screen.
 import { render } from 'preact';
 import './styles/global.css';
+import './ui/viewport';
 import { App } from './ui/App';
 import { installMockActions } from './ui/mock';
 import { startSession } from './session';
