@@ -114,13 +114,10 @@ export function startSession() {
     }
   }
 
-  /**
-   * Main menu: a live bot match behind it, watched with the spectator camera. Coming back from a
-   * game it starts mid-round (20-35 s in); `fresh` (right after the loader) starts it from the
-   * countdown, so the camera lands on the drop-in.
-   */
-  function toMenu(fresh = false) {
-    const warmupTicks = fresh ? 0 : sec(20 + Math.random() * 15);
+  /** Main menu: a live bot match behind it, watched with the spectator camera. */
+  function toMenu() {
+    // start the backdrop mid-game (20-35 s in), not on a pristine map
+    const warmupTicks = sec(20 + Math.random() * 15);
     const src = new LocalSource({ bots: ATTRACT_BOTS, difficulty: 'normal', warmupTicks });
     setSource(src, null, 'menu');
     if (renderer) renderer.prime(src.takePrimeEvents());
@@ -164,7 +161,7 @@ export function startSession() {
       audio.setMusic('off');
       // the bot match behind the menu starts now, and the camera flies over to it; an invite link
       // or the Discord room go straight to their own game instead
-      if (!locked() && !pendingInvite.peek()) toMenu(true);
+      if (!locked() && !pendingInvite.peek()) toMenu();
       else screen.value = 'menu';
     },
     async play(enabled) {
