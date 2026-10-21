@@ -159,7 +159,10 @@ bun run build        # packages/client/dist и Node-бандл сервера в
 | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | — | Вход через Discord для активности; без них маршруты `/discord/*` отвечают 503 |
 
 Клиент в проде берёт путь до сервера из `VITE_SERVER_PATH` при сборке (по умолчанию `/api`),
-а id приложения Discord для активности — из `VITE_DISCORD_CLIENT_ID`.
+а id приложения Discord для активности — из `VITE_DISCORD_CLIENT_ID`. Только сайту нужны
+`VITE_WEBMANIFEST=1` (манифест, иконки из `logo/` и `service.js`, который снимает service worker
+первой версии), `VITE_POLICIES=1` (страницы политики конфиденциальности и условий использования)
+и `VITE_CNAME=openbomber.ru` (файл `CNAME` для GitHub Pages); без них этих файлов в сборке нет.
 За nginx нужен `proxy_set_header X-Real-IP $remote_addr;`, на нём держатся лимиты по IP.
 
 </details>

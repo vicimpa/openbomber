@@ -38,10 +38,12 @@
       document.head.appendChild(s);
     })();
   </script>
-  <link rel="manifest" href="./site.webmanifest" />
   <link rel="icon" href="./favicon.ico" sizes="any" />
+  <!-- webmanifest: the site build only (VITE_WEBMANIFEST=1, vite.config.ts drops this block) -->
+  <link rel="manifest" href="./site.webmanifest" />
   <link rel="icon" type="image/png" sizes="96x96" href="./logo/logo_96.png" />
   <link rel="apple-touch-icon" href="./logo/logo_192.png" />
+  <!-- /webmanifest -->
 </head>
 <body>
   <div id="app"></div>

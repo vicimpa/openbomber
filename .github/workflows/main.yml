@@ -45,6 +45,12 @@ jobs:
           VITE_SERVER_PATH: /api
           # Discord activity (packages/client/src/discord.ts); empty = the activity login is off
           VITE_DISCORD_CLIENT_ID: ${{ vars.DISCORD_CLIENT_ID }}
+          # site-only files (packages/client/vite.config.ts): the web manifest with its icons and
+          # the v1 service worker kill switch, the privacy policy / terms pages (the Discord
+          # Developer Portal links to them) and the CNAME
+          VITE_WEBMANIFEST: '1'
+          VITE_POLICIES: '1'
+          VITE_CNAME: openbomber.ru
 
       - name: Upload client for Pages
         uses: actions/upload-pages-artifact@v3
