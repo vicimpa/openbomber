@@ -33,6 +33,8 @@ const MODALS = {
 // Keep #room=CODE in the address bar while in a private online room so the URL is shareable.
 effect(() => {
   const r = room.value;
+  // an invite link: the loader reads #room=CODE from the address (main.tsx), leave it until then
+  if (!r && screen.value === 'loader') return;
   const want = r && !r.offline && r.isPrivate ? `#room=${r.code}` : '';
   if (location.hash !== want && (want || /room=/.test(location.hash)))
     history.replaceState(null, '', want || location.pathname + location.search);
