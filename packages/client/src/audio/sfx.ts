@@ -110,6 +110,24 @@ export const RECIPES = {
     k.noise({ color: 'pink', type: 'lowpass', f: 2000, a: 0.001, d: 0.025, peak: 0.4 });
   } },
 
+  // ------------------------------------------------------------ footsteps (soft: one every stride)
+  step: { dur: 0.12, level: 0.2, vary: 2, reverb: 0, variants: 3, group: 'step', build(k) {
+    k.tone({ type: 'sine', f: 95 + k.r() * 25, to: 55, glide: 0.04, a: 0.002, d: 0.045, peak: 0.6 });
+    k.noise({ color: 'brown', type: 'lowpass', f: 700 + k.r() * 300, a: 0.002, d: 0.04, peak: 0.7 });
+    k.noise({ color: 'pink', type: 'bandpass', f: 2200 + k.r() * 800, q: 1.2, a: 0.001, d: 0.02, peak: 0.12 });
+  } },
+  stepSnow: { dur: 0.16, level: 0.22, vary: 1.5, reverb: 0, variants: 3, group: 'step', build(k) {
+    k.noise({ color: 'brown', type: 'lowpass', f: 500, a: 0.002, d: 0.05, peak: 0.5 });
+    // the crunch: a burst of tiny grains
+    for (let i = 0; i < 7; i++) {
+      k.noise({ color: 'white', type: 'bandpass', f: 1800 + k.r() * 2600, q: 2, a: 0.001, d: 0.008 + k.r() * 0.015, peak: 0.25 + k.r() * 0.3, at: k.r() * 0.07 });
+    }
+  } },
+  stepSand: { dur: 0.16, level: 0.18, vary: 1.5, reverb: 0, variants: 3, group: 'step', build(k) {
+    k.noise({ color: 'brown', type: 'lowpass', f: 450, a: 0.002, d: 0.04, peak: 0.5 });
+    k.noise({ color: 'pink', type: 'highpass', f: 1800 + k.r() * 800, a: 0.01, d: 0.08, peak: 0.35 });
+  } },
+
   // ------------------------------------------------------------ world
   brick: { dur: 0.55, level: 0.45, vary: 1.5, reverb: 0.12, variants: 3, build(k) {
     k.tone({ type: 'sine', f: 150, to: 60, glide: 0.08, a: 0.002, d: 0.12, peak: 0.7 });

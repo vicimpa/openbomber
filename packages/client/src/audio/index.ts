@@ -1,7 +1,7 @@
 // Procedural audio engine: every SFX is synthesised (pre-rendered offline at unlock) and
 // the music is generated live. No sample files. See contracts.ts for the interface.
 
-import { DropKind, PickupType, type GameEvent, type WorldState } from '@ob/game';
+import { DropKind, PickupType, Theme, type GameEvent, type WorldState } from '@ob/game';
 import type { AudioEngine, CreateAudio, MusicMode, UiSound } from '../contracts';
 import { buildGraph, duckMusic, type Graph } from './graph';
 import { Ambience } from './ambient';
@@ -11,6 +11,8 @@ import { clamp, semis } from './synth';
 
 const LOOKAHEAD = 0.15;   // s of music scheduled ahead
 const WAKE_MS = 25;       // scheduler wake-up interval (timing comes from the audio clock)
+/** Tiles walked per footstep. */
+const STRIDE = 0.7;
 
 /** Per-batch caps so a big chain doesn't trigger 40 identical sounds at once. */
 const BATCH_CAP: Partial<Record<SfxKey, number>> = { brick: 4, spawn: 3, burn: 3, blockFall: 2, bounce: 3, land: 3, stop: 2, boom_s: 4, boom_m: 4, boom_l: 4, place: 4 };
@@ -92,6 +94,7 @@ class Engine implements AudioEngine {
     if (!ctx || ctx.state !== 'running' || !this.music) return;
     try { this.music.schedule(ctx.currentTime + LOOKAHEAD); } catch (e) { console.warn('[audio] music', e); }
     try { this.amb?.tick(ctx.currentTime); } catch (e) { console.warn('[audio] ambience', e); }
+    try { this.footsteps(); } catch (e) { console.warn('[audio] steps', e); }
   }
 
   private resumeIfNeeded() {
@@ -223,6 +226,31 @@ class Engine implements AudioEngine {
     const range = me ? 7 : 11;
     const gain = 0.2 + 0.8 / (1 + (d / range) ** 2);
     return { gain: gain * (who ? 0.85 : 1), pan: clamp(dx / 9, -1, 1) * 0.85, wet: 1 + d / 10 };
+  }
+
+  private walked = new Map<string, { x: number; y: number; acc: number }>();
+
+  /** A footstep every STRIDE tiles a hero walks; the ground's sound follows the round's theme. */
+  private footsteps() {
+    const { world, localId } = this.last;
+    if (!world || !this.live) return;
+    const key: SfxKey = world.theme === Theme.Winter ? 'stepSnow' : world.theme === Theme.Desert ? 'stepSand' : 'step';
+    let n = 0;
+    for (const p of world.players.values()) {
+      let s = this.walked.get(p.id);
+      if (!s) { this.walked.set(p.id, { x: p.x, y: p.y, acc: 0 }); continue; }
+      const d = Math.hypot(p.x - s.x, p.y - s.y);
+      s.x = p.x; s.y = p.y;
+      // dead, waiting, or a jump (teleport, respawn, new map): no steps
+      if (!p.alive || !p.inRound || d > 1.5) { s.acc = 0; continue; }
+      s.acc += d;
+      if (s.acc < STRIDE) continue;
+      s.acc = Math.min(s.acc - STRIDE, STRIDE * 0.5);
+      if (n++ >= 4) continue;
+      const o = this.where(world, localId, p.x, p.y);
+      this.play(key, p.id === localId ? { gain: 1, pan: 0, wet: 0 } : { gain: (o.gain ?? 1) * 0.6, pan: o.pan, wet: 0 });
+    }
+    if (this.walked.size > world.players.size + 8) for (const id of this.walked.keys()) if (!world.players.has(id)) this.walked.delete(id);
   }
 
   /** Storm: thunder `delaySec` after a lightning flash. */
