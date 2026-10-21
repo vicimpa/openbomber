@@ -1,6 +1,6 @@
 // Pixi.js v8 renderer for WorldState. See contracts.ts (GameRenderer / CreateRenderer).
 import { Application, Container, Rectangle, Sprite, Texture } from 'pixi.js';
-import { ArenaShape, BombMotion, COUNTDOWN_TIME, DropKind, Phase, PickupType, TICK_RATE, type BombState, type GameEvent, type WorldState } from '@ob/game';
+import { ArenaShape, BombMotion, Theme, COUNTDOWN_TIME, DropKind, Phase, PickupType, TICK_RATE, type BombState, type GameEvent, type WorldState } from '@ob/game';
 
 import type { CreateRenderer, GameRenderer, RendererOptions } from '../contracts';
 import { Arena } from './arena';
@@ -78,8 +78,8 @@ class PixiRenderer implements GameRenderer {
   private sdPulse = 0;
   private ro: ResizeObserver;
   /** Map placement in the endless world: origin (tiles) and size of the current map. */
-  private map = { ox: 0, oy: 0, w: 0, h: 0, shape: ArenaShape.Rect, shown: false, age: 0 };
-  private ghost: { ox: number; oy: number; w: number; h: number; shape: ArenaShape; t: number; fade?: number; } | null = null;
+  private map = { ox: 0, oy: 0, w: 0, h: 0, shape: ArenaShape.Rect, theme: Theme.Meadow, shown: false, age: 0 };
+  private ghost: { ox: number; oy: number; w: number; h: number; shape: ArenaShape; theme: Theme; t: number; fade?: number; } | null = null;
   private lastWorld: WorldState | null = null;
   private nextMap: 'travel' | 'snap' | null = null;
   private spawnDelay = -1;
@@ -163,9 +163,10 @@ class PixiRenderer implements GameRenderer {
   }
 
   /** Outer edge of the border wall ring, world px. */
-  private wallRect(m: { ox: number; oy: number; w: number; h: number; shape?: ArenaShape }): Rect {
-    const r: Rect = { x0: (m.ox - 1.5) * T, y0: (m.oy - 1.5) * T, x1: (m.ox + m.w + 0.5) * T, y1: (m.oy + m.h + 0.5) * T };
-    return m.shape ? shapeClearing(r, m.shape, m.ox, m.oy, m.w, m.h) : r;
+  private wallRect(m: { ox: number; oy: number; w: number; h: number; shape?: ArenaShape; theme?: Theme }): Rect {
+    let r: Rect = { x0: (m.ox - 1.5) * T, y0: (m.oy - 1.5) * T, x1: (m.ox + m.w + 0.5) * T, y1: (m.oy + m.h + 0.5) * T };
+    if (m.shape) r = shapeClearing(r, m.shape, m.ox, m.oy, m.w, m.h);
+    return { ...r, theme: m.theme, key: `${m.shape ?? 0}:${m.theme ?? 0}:${m.ox},${m.oy}` };
   }
 
   /**
@@ -306,7 +307,7 @@ class PixiRenderer implements GameRenderer {
       this.spawnDelay = Math.max(0.05, this.camera.travelLeft - SPAWN_LEAD);
     } else if (travel) {
       // the old arena stays where it was; the new one is built a little further across the world
-      this.ghost = { ox: m.ox, oy: m.oy, w: m.w, h: m.h, shape: m.shape, t: 0 };
+      this.ghost = { ox: m.ox, oy: m.oy, w: m.w, h: m.h, shape: m.shape, theme: m.theme, t: 0 };
       this.arena.ghostRoot.position.set(m.ox * T, m.oy * T);
       // as long on screen from the zoomed-out menu view as from a close follow: the stretch of
       // countryside scales with the tiles the screen shows now and once framed on the new arena
@@ -330,7 +331,7 @@ class PixiRenderer implements GameRenderer {
       this.camera.reset();
       this.spawnDelay = m.shown ? 0.1 : -1; // the very first map simply appears
     }
-    m.w = world.width; m.h = world.height; m.shape = world.shape ?? ArenaShape.Rect; m.shown = true; m.age = 0;
+    m.w = world.width; m.h = world.height; m.shape = world.shape ?? ArenaShape.Rect; m.theme = world.theme ?? Theme.Meadow; m.shown = true; m.age = 0;
     this.mapRoot.position.set(m.ox * T, m.oy * T);
     this.syncClearings();
   }

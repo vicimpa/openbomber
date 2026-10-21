@@ -18,7 +18,7 @@ function mkPlayer(id: string, x: number, y: number): PlayerState {
   };
 }
 const world: WorldState = {
-  tick: 0, seed: 1, phase: Phase.Playing, phaseTicks: 0, round: 1, width: W, height: H, shape: 0,
+  tick: 0, seed: 1, phase: Phase.Playing, phaseTicks: 0, round: 1, width: W, height: H, shape: 0, theme: 0, weather: 0,
   tiles: new Uint8Array(W * H),
   players: new Map([
     ['me', mkPlayer('me', 7, 6)],

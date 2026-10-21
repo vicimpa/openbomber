@@ -4,7 +4,7 @@
 // so the countryside shows through). Split into 16x16-tile chunks, each cached as a texture and redrawn
 // only when one of its tiles changes; chunks outside the view are culled. Handles 75x75 maps.
 import { Container, Sprite } from 'pixi.js';
-import { ArenaShape, Tile, shapeMask, zoneDepth, type FallingBlock, type WorldState } from '@ob/game';
+import { ArenaShape, Theme, Tile, shapeMask, zoneDepth, type FallingBlock, type WorldState } from '@ob/game';
 
 import type { GameAssets } from './assets';
 import type { Effects } from './fx';
@@ -63,11 +63,20 @@ export class Arena {
   onImpact?: (x: number, y: number) => void;
 
   private vars: TileVariants;
+  private varsByTheme = new Map<Theme, TileVariants>();
+  private theme = Theme.Meadow;
   /** Per-map seed for the tile variants. */
   private seed = 1;
 
   constructor(private a: GameAssets, private tx: ProcTextures, private fx: Effects) {
-    this.vars = makeTileVariants(a.world);
+    this.vars = this.variants(Theme.Meadow);
+  }
+
+  /** Floor / wall / crate variants of a theme (made on first use). */
+  private variants(theme: Theme) {
+    let v = this.varsByTheme.get(theme);
+    if (!v) this.varsByTheme.set(theme, (v = makeTileVariants(this.a.world, theme)));
+    return v;
   }
 
   /** Stone block shown for cell (x, y) of the current map (falling / impact blocks match it). */
@@ -90,7 +99,7 @@ export class Arena {
   /** Whether sync() would build a brand new map for this world. */
   willRebuild(world: WorldState, force = false) {
     const { width: w, height: h, tiles } = world;
-    if (force || w !== this.w || h !== this.h || world.round !== this.round || world.shape !== this.shape) return true;
+    if (force || w !== this.w || h !== this.h || world.round !== this.round || world.shape !== this.shape || world.theme !== this.theme) return true;
     let changed = 0;
     for (let i = 0; i < tiles.length; i++) if (this.tiles[i] !== tiles[i] && tiles[i] !== Tile.Wall) changed++;
     return changed > Math.max(40, tiles.length * 0.15);
@@ -151,6 +160,8 @@ export class Arena {
     this.w = w; this.h = h; this.round = world.round;
     this.shape = world.shape ?? ArenaShape.Rect;
     this.mask = shapeMask(this.shape, w, h);
+    this.theme = world.theme ?? Theme.Meadow;
+    this.vars = this.variants(this.theme);
     this.seed = (Math.random() * 0x7fffffff) | 0;
     this.gw = w + 2; this.gh = h + 2;
     this.tiles = new Uint8Array(tiles);

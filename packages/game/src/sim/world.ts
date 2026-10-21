@@ -1,6 +1,6 @@
 // Small helpers over the plain WorldState shared by the sim, prediction and bots.
 
-import { ArenaShape, BombMotion, Phase, Tile, type BombState, type PlayerState, type WorldState } from '../contract/types';
+import { ArenaShape, BombMotion, Phase, Theme, Tile, Weather, type BombState, type PlayerState, type WorldState } from '../contract/types';
 
 export const inBounds = (w: WorldState, x: number, y: number) => x >= 0 && y >= 0 && x < w.width && y < w.height;
 
@@ -31,6 +31,8 @@ export function createWorld(width: number, height: number, seed: number): WorldS
     width,
     height,
     shape: ArenaShape.Rect,
+    theme: Theme.Meadow,
+    weather: Weather.Clear,
     tiles: new Uint8Array(width * height),
     players: new Map(),
     bombs: new Map(),

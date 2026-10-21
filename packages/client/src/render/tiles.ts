@@ -4,6 +4,8 @@
 // edits pixels inside its own tile's palette, so floor / wall / brick stay readable at a glance.
 // Picked deterministically per cell; everything ends up in the cached arena chunks.
 import { CanvasSource, Rectangle, Texture } from 'pixi.js';
+import { Theme } from '@ob/game';
+import { themePixel } from './theme';
 
 const T = 32;
 
@@ -181,6 +183,29 @@ function boxVariants(src: Uint32Array): Tile[] {
   return out;
 }
 
+// ---------------------------------------------------------------- winter
+const SNOW = { top: px32('#f6f9fc'), body: px32('#e2e9f2'), shade: px32('#c3cede'), edge: px32('#a9b6c9') };
+
+/** A snow cap on the top of a block (keeps its outline), a ragged lower edge and a drip or two. */
+function snowCap(t: Tile, seed: number, outline: number) {
+  const r = rng(seed);
+  let depth = 3 + Math.floor(r() * 2);
+  for (let x = 1; x < T - 1; x++) {
+    if (r() < 0.35) depth = Math.max(2, Math.min(6, depth + (r() < 0.5 ? -1 : 1)));
+    for (let y = 1; y <= depth; y++) {
+      if (t.get(x, y) === outline) continue;
+      t.set(x, y, y === 1 ? SNOW.top : y === depth ? SNOW.shade : SNOW.body);
+    }
+    if (t.get(x, depth + 1) !== outline) t.set(x, depth + 1, SNOW.edge);
+    if (r() < 0.06 && x > 3 && x < T - 4) { t.set(x, depth + 2, SNOW.shade); t.set(x, depth + 3, SNOW.edge); }
+  }
+}
+
+function themed(set: Tile[], theme: Theme): Tile[] {
+  if (theme === Theme.Meadow) return set;
+  return set.map(t => { const o = Tile.of(t.p); o.map(c => themePixel(theme, c)); return o; });
+}
+
 function pixelsOf(t: Texture) {
   const c = document.createElement('canvas');
   c.width = c.height = T;
@@ -190,8 +215,13 @@ function pixelsOf(t: Texture) {
   return new Uint32Array(g.getImageData(0, 0, T, T).data.buffer.slice(0));
 }
 
-export function makeTileVariants(world: Record<'grass' | 'box' | 'wall', Texture>) {
-  const sets = [floorVariants(pixelsOf(world.grass)), wallVariants(pixelsOf(world.wall)), boxVariants(pixelsOf(world.box))];
+export function makeTileVariants(world: Record<'grass' | 'box' | 'wall', Texture>, theme = Theme.Meadow) {
+  const sets = [floorVariants(pixelsOf(world.grass)), wallVariants(pixelsOf(world.wall)), boxVariants(pixelsOf(world.box))]
+    .map(set => themed(set, theme));
+  if (theme === Theme.Winter) {
+    sets[1].forEach((t, i) => snowCap(t, 101 + i, W.out));
+    sets[2].forEach((t, i) => snowCap(t, 201 + i, B.out));
+  }
   // one atlas canvas for all of them
   const cols = Math.max(...sets.map(s => s.length));
   const c = document.createElement('canvas');

@@ -8,10 +8,11 @@
 // camera (a time budget per frame), LRU-evicted, at a lower resolution when zoomed far out. Purely
 // visual: nothing out here is gameplay.
 import { CanvasSource, Container, Sprite, Texture } from 'pixi.js';
-import { shapeMask, type ArenaShape } from '@ob/game';
+import { Theme, shapeMask, type ArenaShape } from '@ob/game';
 
 import type { GameAssets } from './assets';
 import { makeDecor, type Decor, type DecorSet } from './decor';
+import { themePixel } from './theme';
 
 const T = 32;
 const CT = 16;             // chunk size, tiles
@@ -23,6 +24,9 @@ const BN = CP / BS;        // blocks per chunk side
 const WATER = 0.655;
 const SEED = 1987;
 const MAX_BYTES = 40 * 1024 * 1024;
+/** An arena's theme covers the countryside up to THEME_FULL tiles out, then dithers away by THEME_FADE. */
+const THEME_FULL = 8;
+const THEME_FADE = 17;
 
 const enum Bi { Grass, Meadow, Dark, Forest, Dry, Dirt, Sand, Apron }
 const N_BI = 8;
@@ -70,6 +74,8 @@ export interface Rect {
   x0: number; y0: number; x1: number; y1: number; // world px
   /** Shaped arena: distance (tiles) from a world px point to its border wall, instead of to the rect. */
   dist?: (x: number, y: number) => number;
+  /** The arena's theme, spread over the countryside around it. */
+  theme?: Theme;
   key?: string;
 }
 
@@ -145,6 +151,7 @@ export class Ground {
   private wat = new Uint8Array(FN * FN);
   private tbi = new Uint8Array(FN * FN);    // biome at tile centre
   private bbi = new Uint8Array(BN * BN);    // biome per block
+  private bth = new Uint8Array(BN * BN);    // theme per block (255: plain meadow)
 
   constructor(a: GameAssets) {
     this.base = new Sprite({ texture: Texture.WHITE, tint: hex(GRASS) });
@@ -243,7 +250,7 @@ export class Ground {
       .concat(this.clearings.filter(o => !list.some(r => same(o, r))));
     this.clearings = list.slice();
     if (!fresh.length) return;
-    const reach = 9 * T;
+    const reach = (THEME_FADE + 1) * T;
     for (const map of this.cache) for (const [k, ch] of map) {
       const x0 = ch.cx * CP - T / 2, y0 = ch.cy * CP - T / 2;
       if (fresh.some(r => r.x0 - reach < x0 + CP && r.x1 + reach > x0 && r.y0 - reach < y0 + CP && r.y1 + reach > y0)) this.drop(map, k, ch);
@@ -390,13 +397,21 @@ export class Ground {
     return Bi.Grass;
   }
 
-  private clearingDist(x: number, y: number, list: Rect[]) {
+  private clearingDist(x: number, y: number, list: Rect[]) { return this.clearingNear(x, y, list); }
+
+  /** Distance (tiles) to the nearest clearing; `this.nearest` is left pointing at it. */
+  private nearest: Rect | null = null;
+  private clearingNear(x: number, y: number, list: Rect[]) {
     let best = 99;
+    this.nearest = null;
     for (const r of list) {
-      if (r.dist) { best = Math.min(best, r.dist(x, y)); continue; }
-      const dx = Math.max(r.x0 - x, 0, x - r.x1), dy = Math.max(r.y0 - y, 0, y - r.y1);
-      const d = Math.sqrt(dx * dx + dy * dy) / T;
-      if (d < best) best = d;
+      let d: number;
+      if (r.dist) d = r.dist(x, y);
+      else {
+        const dx = Math.max(r.x0 - x, 0, x - r.x1), dy = Math.max(r.y0 - y, 0, y - r.y1);
+        d = Math.sqrt(dx * dx + dy * dy) / T;
+      }
+      if (d < best) { best = d; this.nearest = r; }
     }
     return best;
   }
@@ -404,9 +419,10 @@ export class Ground {
   private draw(ct: ChunkTex, cx: number, cy: number, lod: number) {
     const gx0 = cx * CT, gy0 = cy * CT;
     const px0 = cx * CP - T / 2, py0 = cy * CP - T / 2; // chunk origin, world px
-    const reach = 12 * T;
+    const reach = Math.max(12, THEME_FADE + 1) * T;
     const clear = this.clearings.filter(r => r.x0 - reach < px0 + CP && r.x1 + reach > px0 && r.y0 - reach < py0 + CP && r.y1 + reach > py0);
-    const { fm, fv, fs, ff, fe, fw, fc, wraw, wat, tbi, bbi } = this;
+    const { fm, fv, fs, ff, fe, fw, fc, wraw, wat, tbi, bbi, bth } = this;
+    bth.fill(255);
 
     // ---- fields at tile centres (with margin)
     for (let j = 0; j < FN; j++) for (let i = 0; i < FN; i++) {
@@ -439,7 +455,10 @@ export class Ground {
         const a = (1 - fx) * (1 - fy), b = fx * (1 - fy), c = (1 - fx) * fy, d = fx * fy;
         const lerp = (f: Float32Array) => f[k] * a + f[k + 1] * b + f[k + FN] * c + f[k + FN + 1] * d;
         const wx = px0 + bx * BS + BS / 2;
-        const dist = clear.length ? this.clearingDist(wx, wy, clear) : 99;
+        const dist = clear.length ? this.clearingNear(wx, wy, clear) : 99;
+        const th = this.nearest?.theme ?? Theme.Meadow;
+        const tw = Math.min(1, Math.max(0, (THEME_FADE - dist) / (THEME_FADE - THEME_FULL)));
+        bth[by * BN + bx] = th !== Theme.Meadow && hash2(gx0 * 8 + bx, gy0 * 8 + by, SEED + 7) < tw ? th : 255;
         const jit = (hash2(gx0 * 8 + bx, gy0 * 8 + by, SEED + 3) - 0.5) * 0.012;
         bbi[by * BN + bx] = this.classify(lerp(fm), lerp(fv), lerp(fs), lerp(ff), lerp(fe), lerp(fw), dist, jit);
       }
@@ -577,6 +596,31 @@ export class Ground {
           break;
       }
     }
+    this.applyTheme(ct, lod);
+  }
+
+  /** Recolour the blocks near a themed arena (ground, water and decorations alike). */
+  private applyTheme(ct: ChunkTex, lod: number) {
+    const { bth } = this;
+    let any = false;
+    for (let i = 0; i < bth.length && !any; i++) any = bth[i] !== 255;
+    if (!any) return;
+    const size = ct.size, g = ct.g;
+    const id = g.getImageData(0, 0, size, size);
+    const u = new Uint32Array(id.data.buffer);
+    const per = BS * lod; // canvas px per block
+    let lastIn = 0, lastOut = 0, lastTh = -1;
+    for (let oy = 0; oy < size; oy++) {
+      const row = Math.min(BN - 1, Math.floor(oy / per)) * BN;
+      for (let ox = 0; ox < size; ox++) {
+        const th = bth[row + Math.min(BN - 1, Math.floor(ox / per))];
+        if (th === 255) continue;
+        const i = oy * size + ox, c = u[i];
+        if (c !== lastIn || th !== lastTh) { lastIn = c; lastTh = th; lastOut = themePixel(th as Theme, c); }
+        u[i] = lastOut;
+      }
+    }
+    g.putImageData(id, 0, 0);
   }
 }
 

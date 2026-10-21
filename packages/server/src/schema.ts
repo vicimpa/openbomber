@@ -112,6 +112,9 @@ export const BattleState = schema({
   height: t.uint8().default(0),
   /** ArenaShape: cells outside it are walls drawn as countryside. */
   shape: t.uint8().default(0),
+  /** Theme / Weather of the round (cosmetic). */
+  theme: t.uint8().default(0),
+  weather: t.uint8().default(0),
   winner: t.string().default(''),
   /** Zone shrink: rings already closed. */
   zoneRing: t.uint8().default(0),

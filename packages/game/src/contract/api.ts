@@ -1,5 +1,5 @@
 import type { GameEvent, InputFrame } from './protocol';
-import type { ArenaShape, PlayerState, WorldState } from './types';
+import type { ArenaShape, PlayerState, Theme, Weather, WorldState } from './types';
 
 /** Implemented by `Simulation` in ../sim. This is the surface server and client rely on. */
 export interface MatchConfig {
@@ -26,6 +26,11 @@ export interface MatchConfig {
   shapes?: boolean;
   /** This shape every round instead of a random one (maps sized by the sim only). */
   shape?: ArenaShape;
+  /** Random theme and weather every round (cosmetic); off = a clear meadow. */
+  scenery?: boolean;
+  /** This theme / weather every round instead of a random one. */
+  theme?: Theme;
+  weather?: Weather;
 }
 
 export interface NewPlayer {

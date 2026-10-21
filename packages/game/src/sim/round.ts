@@ -15,10 +15,11 @@ import {
   ZONE_FINAL_TIMEOUT,
   ZONE_FINAL_WIDTH,
 } from '../contract/constants';
-import { ArenaShape, Phase, Tile, type PlayerState } from '../contract/types';
+import { ArenaShape, Phase, Theme, Tile, Weather, type PlayerState } from '../contract/types';
 import { emit, type SimCtx } from './context';
 import { calcMap, generateMap, type Point } from './map';
 import { maxZoneDepth, pickShape, shapeRingTiles, shapeSize, shapeSpawns } from './shapes';
+import { pickTheme, pickWeather } from './scenery';
 import { killPlayer, resetStats, spawnPlayerAt } from './players';
 import { resetOvertime, updateDrops, updateOvertime } from './overtime';
 import { shuffle } from './rng';
@@ -66,6 +67,9 @@ export function newMap(ctx: SimCtx, players: number) {
   w.width = width;
   w.height = height;
   w.shape = shape;
+  const scenery = ctx.config.scenery;
+  w.theme = ctx.config.theme ?? (scenery ? pickTheme(w) : Theme.Meadow);
+  w.weather = ctx.config.weather ?? (scenery ? pickWeather(w, w.theme) : Weather.Clear);
   w.tiles = g.tiles;
   ctx.hidden = g.hidden;
   ctx.spawns = g.spawns;

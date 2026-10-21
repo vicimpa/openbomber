@@ -11,6 +11,12 @@ export enum Tile {
 /** Outline of the playable arena inside its width x height box (see sim/shapes.ts). */
 export enum ArenaShape { Rect = 0, Circle = 1, Diamond = 2, Cross = 3 }
 
+/** Look of the arena and the countryside around it (cosmetic, see sim/scenery.ts). */
+export enum Theme { Meadow = 0, Autumn = 1, Winter = 2, Desert = 3 }
+
+/** Weather over the arena (cosmetic). */
+export enum Weather { Clear = 0, Rain = 1, Storm = 2, Snow = 3, Fog = 4, Wind = 5, Night = 6 }
+
 export enum Dir { Up = 0, Left = 1, Right = 2, Down = 3 }
 
 export const DIR_VEC: Record<Dir, readonly [number, number]> = {
@@ -209,6 +215,8 @@ export interface WorldState {
   height: number;
   /** Cells outside the shape are walls (shown as the countryside around the arena). */
   shape: ArenaShape;
+  theme: Theme;
+  weather: Weather;
   tiles: Uint8Array;     // width * height, index = y * width + x, values = Tile
   players: Map<string, PlayerState>;
   bombs: Map<number, BombState>;

@@ -5,6 +5,7 @@
 //   6 abilities w/o remote   Q quality   V spectate   C camera mode   P pause   R new round   N next map
 //   ?attract  starts as a menu backdrop (localId '' + attract camera)
 //   ?shape=N  always arena shape N (0 rect, 1 circle, 2 diamond, 3 cross)
+//   ?theme=N / ?weather=N  always that Theme / Weather
 import {
   Ability, Bot, Button, Curse, Phase, PickupType, ROUND_TIME, STUN_TIME, Simulation, TICK_MS, Tile, sec,
   type GameEvent,
@@ -17,10 +18,11 @@ const LOCAL = 'me';
 let quality: 'low' | 'high' = params.get('quality') === 'low' ? 'low' : 'high';
 
 // ?shape=0..3 : always that ArenaShape (rect, circle, diamond, cross); random otherwise
-const shape = params.get('shape');
+// ?theme=0..3 (meadow, autumn, winter, desert) / ?weather=0..6 (clear, rain, storm, snow, fog, wind, night)
+const num = (k: string) => (params.get(k) === null ? undefined : Number(params.get(k)));
 const sim = new Simulation({
-  minPlayers: Number(params.get('min') ?? 2), seed: (Date.now() & 0xffff) || 1, shapes: true,
-  shape: shape === null ? undefined : Number(shape),
+  minPlayers: Number(params.get('min') ?? 2), seed: (Date.now() & 0xffff) || 1, shapes: true, scenery: true,
+  shape: num('shape'), theme: num('theme'), weather: num('weather'),
 });
 sim.addPlayer({ id: LOCAL, name: params.get('name') ?? 'You', skin: Number(params.get('skin') ?? 0) });
 const NAMES = ['Bob', 'Алиса', 'Zed', 'Mia', 'Kotik', 'Rex', 'Lou', 'Ника', 'Dex', 'Ivy', 'Gus', 'Oz', 'Pip', 'Tom', 'Uma'];
