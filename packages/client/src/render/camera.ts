@@ -205,7 +205,7 @@ function quantize(z: number, round: (v: number) => number) {
  * Smooth zoom + pan (van Wijk & Nuij 2003, as d3.interpolateZoom): from centre (x0, y0) seeing w0
  * world px to (x1, y1) seeing w1, at path parameter e in [0, 1]. Zooms out on long trips.
  */
-function zoomPath(x0: number, y0: number, w0: number, x1: number, y1: number, w1: number, e: number): [number, number, number] {
+export function zoomPath(x0: number, y0: number, w0: number, x1: number, y1: number, w1: number, e: number): [number, number, number] {
   const rho = 1.3, rho2 = rho * rho, rho4 = rho2 * rho2;
   const dx = x1 - x0, dy = y1 - y0, d2 = dx * dx + dy * dy;
   if (d2 < 1e-6) {

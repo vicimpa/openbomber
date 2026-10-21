@@ -135,6 +135,12 @@ export class Ground {
   private img: ImageData | null = null;
   /** Chunks to make ahead of time (full resolution), e.g. around a travel's destination. */
   private wanted: [number, number][] = [];
+  /** Chunks a coming view needs (plan() / prepare()), and those made for it: not evicted until release(). */
+  private ahead: [number, number, number][] = [];
+  private aheadKeys = new Set<string>();
+  private kept = new Set<Chunk>();
+  /** Called with the texture of every chunk prepare() makes, e.g. to put it on the GPU right away. */
+  onPrepared?: (tex: Texture) => void;
   /** Last generation cost (ms), for the perf readout. */
   genMs = 0;
   generated = 0;
@@ -265,11 +271,52 @@ export class Ground {
     for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) this.wanted.push([cx, cy]);
   }
 
+  /** Queue the chunks a coming view will show: a world rect (px) at `zoom` device px per world px. */
+  plan(x0: number, y0: number, x1: number, y1: number, zoom: number) {
+    const li = lodLevel(zoom);
+    const cx0 = Math.floor((x0 + T / 2) / CP), cx1 = Math.floor((x1 + T / 2) / CP);
+    const cy0 = Math.floor((y0 + T / 2) / CP), cy1 = Math.floor((y1 + T / 2) / CP);
+    for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) {
+      const k = li + ':' + cx + ',' + cy;
+      if (this.aheadKeys.has(k) || this.cache[li].has(cx + ',' + cy)) continue;
+      this.aheadKeys.add(k);
+      this.ahead.push([cx, cy, li]);
+    }
+  }
+
+  /** Planned chunks not made yet. */
+  get pending() { return this.ahead.length; }
+
+  /** Make planned chunks for up to `budgetMs`; true once none are left. */
+  prepare(budgetMs: number) {
+    const t0 = performance.now();
+    while (this.ahead.length && performance.now() - t0 < budgetMs) {
+      const [cx, cy, li] = this.ahead.shift()!;
+      if (this.cache[li].has(cx + ',' + cy)) continue;
+      const ch = this.make(cx, cy, li);
+      ch.used = this.frame;
+      this.kept.add(ch);
+      this.generated++;
+      this.onPrepared?.(ch.ct.tex);
+    }
+    return this.ahead.length === 0;
+  }
+
+  /** The prepared view has been reached: the trip's zoomed-out chunks go now, the rest age out
+   *  like any others. */
+  release() {
+    for (const map of this.cache.slice(1)) for (const [k, ch] of map) if (this.kept.has(ch) && ch.used < this.frame) this.drop(map, k, ch);
+    this.kept.clear();
+    this.ahead.length = 0;
+    this.aheadKeys.clear();
+  }
+
   /** Rects that fully hide the ground (arena floors): chunks under them are not drawn at all. */
   setCovers(list: Rect[]) { this.covers = list.slice(); }
 
   private drop(map: Map<string, Chunk>, k: string, ch: Chunk) {
     map.delete(k);
+    this.kept.delete(ch);
     ch.sprite.visible = false;
     this.sprites.push(ch.sprite);
     (this.pool.get(ch.ct.size) ?? this.pool.set(ch.ct.size, []).get(ch.ct.size)!).push(ch.ct);
@@ -287,7 +334,7 @@ export class Ground {
       this.smooth = smooth;
       for (const map of this.cache) for (const ch of map.values()) ch.ct.tex.source.scaleMode = smooth ? 'linear' : 'nearest';
     }
-    const li = zoom >= 0.75 ? 0 : zoom >= 0.375 ? 1 : 2;
+    const li = lodLevel(zoom);
     const cx0 = Math.floor((x0 + T / 2) / CP), cx1 = Math.floor((x1 + T / 2) / CP);
     const cy0 = Math.floor((y0 + T / 2) / CP), cy1 = Math.floor((y1 + T / 2) / CP);
     for (const ch of this.shown) ch.sprite.visible = false;
@@ -346,12 +393,15 @@ export class Ground {
   }
 
   private evict() {
-    if (this.bytes <= MAX_BYTES) return;
+    // chunks kept for a coming view don't count against the others' budget
+    let limit = MAX_BYTES;
+    for (const ch of this.kept) limit += ch.ct.size * ch.ct.size * 4;
+    if (this.bytes <= limit) return;
     const all: [Map<string, Chunk>, string, Chunk][] = [];
-    for (const map of this.cache) for (const [k, ch] of map) if (ch.used < this.frame) all.push([map, k, ch]);
+    for (const map of this.cache) for (const [k, ch] of map) if (ch.used < this.frame && !this.kept.has(ch)) all.push([map, k, ch]);
     all.sort((a, b) => a[2].used - b[2].used);
     for (const [map, k, ch] of all) {
-      if (this.bytes <= MAX_BYTES) break;
+      if (this.bytes <= limit) break;
       this.drop(map, k, ch);
     }
     // keep the pools small: free what is not needed any more
@@ -623,6 +673,9 @@ export class Ground {
     g.putImageData(id, 0, 0);
   }
 }
+
+/** Chunk level of detail for a zoom (device px per world px): full, half or quarter resolution. */
+const lodLevel = (zoom: number) => (zoom >= 0.75 ? 0 : zoom >= 0.375 ? 1 : 2);
 
 function canvas(w: number, h: number) {
   const c = document.createElement('canvas');

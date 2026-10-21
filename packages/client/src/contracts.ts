@@ -41,6 +41,8 @@ export type UiSound = 'hover' | 'click' | 'back' | 'join' | 'chat' | 'error' | '
 export interface AudioEngine {
   /** Must be called from a user gesture (AudioContext unlock). Safe to call repeatedly. */
   unlock(): void;
+  /** Optional: get ready before the gesture (render the sound effects while the loader runs). */
+  prepare?(): Promise<void>;
   handleEvents(events: GameEvent[], world: WorldState | null, localId: string): void;
   setMusic(mode: MusicMode): void;
   ui(sound: UiSound): void;

@@ -1,4 +1,5 @@
-// Procedural audio engine: every SFX is synthesised (pre-rendered offline at unlock) and
+// Procedural audio engine: every SFX is synthesised (pre-rendered offline while the loader runs,
+// or at unlock) and
 // the music is generated live. No sample files. See contracts.ts for the interface.
 
 import { DropKind, PickupType, Theme, type GameEvent, type WorldState } from '@ob/game';
@@ -11,6 +12,9 @@ import { clamp, semis } from './synth';
 
 const LOOKAHEAD = 0.15;   // s of music scheduled ahead
 const WAKE_MS = 25;       // scheduler wake-up interval (timing comes from the audio clock)
+/** Sample rate of the SFX bank when there is no AudioContext to ask (phones run at 48 kHz; any other
+ *  rate just resamples on playback). */
+const PREPARE_RATE = 48000;
 /** Tiles walked per footstep. */
 const STRIDE = 0.7;
 
@@ -35,6 +39,7 @@ class Engine implements AudioEngine {
   private music: Music | null = null;
   private amb: Ambience | null = null;
   private bank: SfxBank = new Map();
+  private bankJob: Promise<void> | null = null;
   private vol = { master: 0.9, sfx: 1, music: 0.7, ambient: 0.6 };
   private mode: MusicMode = 'off';
   private timer: ReturnType<typeof setInterval> | 0 = 0;
@@ -59,16 +64,19 @@ class Engine implements AudioEngine {
   unlock(): void {
     if (this.disposed) return;
     try {
-      if (!this.ctx) this.init();
+      if (!this.timer) this.init();
       else this.resumeIfNeeded();
     } catch (e) {
       console.warn('[audio] unlock failed', e);
     }
   }
 
-  private init() {
+  /** The context and the mixer. Made ahead by prepare() (a context made before any gesture just
+   *  stays suspended until unlock()), or at unlock. */
+  private setup() {
+    if (this.ctx) return this.ctx;
     const AC = typeof window !== 'undefined' ? window.AudioContext : undefined;
-    if (!AC) return;
+    if (!AC) return null;
     const ctx = new AC({ latencyHint: 'interactive' });
     this.ctx = ctx;
     const g = buildGraph(ctx, ctx.destination);
@@ -77,16 +85,34 @@ class Engine implements AudioEngine {
     this.player = new SfxPlayer(ctx, this.bank, g.sfx, g.sfxWet);
     this.music = new Music(ctx, g.duck, g.musicWet, (Date.now() * 2654435761) >>> 0);
     this.amb = new Ambience(ctx, g.ambient);
+    ctx.addEventListener('statechange', () => { if (ctx.state === 'running' && this.music) this.music.schedule(ctx.currentTime + LOOKAHEAD); });
+    return ctx;
+  }
+
+  private init() {
+    const ctx = this.setup();
+    if (!ctx) return;
     // iOS: playing a (silent) buffer inside the gesture fully unlocks output
     const silent = ctx.createBufferSource();
     silent.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
     silent.connect(ctx.destination);
     silent.start();
     void ctx.resume().catch(() => {});
-    ctx.addEventListener('statechange', () => { if (ctx.state === 'running' && this.music) this.music.schedule(ctx.currentTime + LOOKAHEAD); });
-    renderBank(ctx.sampleRate, this.bank, () => this.disposed).catch((e) => console.warn('[audio] render failed', e));
+    void this.renderSfx(ctx.sampleRate);
     this.timer = setInterval(() => this.pump(), WAKE_MS);
-    if (this.mode !== 'off') this.music.setMode(this.mode);
+    if (this.mode !== 'off') this.music?.setMode(this.mode);
+  }
+
+  /** Before the first gesture: the context and the mixer, and the SFX bank synthesised (offline
+   *  contexts need no unlock), so unlock() only has to start the output. */
+  prepare(): Promise<void> {
+    let rate = PREPARE_RATE;
+    try { rate = this.setup()?.sampleRate ?? rate; } catch (e) { console.warn('[audio] setup failed', e); }
+    return this.renderSfx(rate);
+  }
+
+  private renderSfx(rate: number) {
+    return (this.bankJob ??= renderBank(rate, this.bank, () => this.disposed).catch((e) => console.warn('[audio] render failed', e)));
   }
 
   private pump() {

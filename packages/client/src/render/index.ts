@@ -1,11 +1,11 @@
 // Pixi.js v8 renderer for WorldState. See contracts.ts (GameRenderer / CreateRenderer).
-import { Application, Container, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Application, Container, Rectangle, Sprite, Texture, TextureSource } from 'pixi.js';
 import { ArenaShape, BombMotion, Theme, COUNTDOWN_TIME, DropKind, Phase, PickupType, TICK_RATE, type BombState, type GameEvent, type WorldState } from '@ob/game';
 
 import type { CreateRenderer, GameRenderer, RendererOptions } from '../contracts';
 import { Arena } from './arena';
 import { loadAssets, type GameAssets } from './assets';
-import { Camera, type CameraMode, type CameraView } from './camera';
+import { Camera, zoomPath, type CameraMode, type CameraView } from './camera';
 import { Effects } from './fx';
 import { Explosions } from './explosions';
 import { Drops } from './drops';
@@ -26,6 +26,8 @@ const TRAVEL = 1.2;
 const TRIP_SCREENS = 5;
 /** The loader's countryside view drifts this way (world px/s); the first map lies further along it. */
 const DRIFT = { x: 10, y: 4 };
+/** preload() works in slices of this long (ms), so the loader keeps animating. */
+const SLICE_MS = 8;
 /** Heroes drop in no sooner than this long after the camera has arrived on the new map... */
 const SPAWN_AFTER = 0.15;
 /** ...and not before the countdown says «1» (this long before control starts), so it ticks evenly. */
@@ -100,6 +102,10 @@ class PixiRenderer implements GameRenderer {
   set onTeleport(f: ((kind: 'beamOut' | 'dropIn', x: number, y: number, who: string, crowd?: number) => void) | undefined) { this.fx.sound = f; }
   /** Optional hook: a storm's lightning; the thunder should follow after `delaySec`. */
   set onThunder(f: ((delaySec: number, power: number) => void) | undefined) { this.weather.onThunder = f; }
+  /** preload(): where the first map after the loader goes (its countryside is drawn already). */
+  private planned: { ox: number; oy: number; w: number; h: number; } | null = null;
+  /** The countryside preload() drew stays cached until the camera has arrived. */
+  private releaseAfterTrip = false;
   /** prime(): the next new map is already running (no spawn wave); scorch these cells into it. */
   private primed: { x: number; y: number; }[][] | null = null;
 
@@ -260,6 +266,7 @@ class PixiRenderer implements GameRenderer {
     this.explosions.update(dt);
     this.fx.update(dt);
     this.gc();
+    if (this.releaseAfterTrip && !this.camera.travelling) { this.releaseAfterTrip = false; this.ground.release(); }
 
     this.updateCamera(world, localId, dt);
     const view = this.present();
@@ -358,13 +365,12 @@ class PixiRenderer implements GameRenderer {
         this.arena.ghostRoot.position.set(m.ox * T, m.oy * T);
       }
       const from = travel ? m : { ox: Math.round(this.camera.x / T), oy: Math.round(this.camera.y / T), w: 1, h: 1 };
-      // as long on screen from the zoomed-out menu view as from a close follow: the stretch of
-      // countryside scales with the tiles the screen shows now and once framed on the new arena
-      const W = this.view.cssW * this.view.res, H = this.view.cssH * this.view.res, short = Math.min(W, H);
-      const fit = Math.min(W / (world.width + 2.6), H / (world.height + 2.6));
-      const shown = Math.max(short / (this.camera.zoom * T), short / fit);
-      // (from the countryside: straight on, the way the view was already drifting)
-      const [nx, ny] = nextOrigin(from, world.width, world.height, shown * TRIP_SCREENS, travel ? undefined : Math.atan2(DRIFT.y, DRIFT.x));
+      // (from the countryside: straight on, the way the view was already drifting; preload() may
+      // have placed it already)
+      const p = this.planned;
+      const [nx, ny] = !travel && p && p.w === world.width && p.h === world.height
+        ? [p.ox, p.oy] : this.tripTo(from, world, travel ? undefined : Math.atan2(DRIFT.y, DRIFT.x));
+      if (!travel && p) { this.planned = null; this.releaseAfterTrip = true; }
       const ddx = nx + world.width / 2 - (from.ox + from.w / 2), ddy = ny + world.height / 2 - (from.oy + from.h / 2), dl = Math.hypot(ddx, ddy) || 1;
       try { this.onTravel?.(TRAVEL * 1000, ddx / dl, ddy / dl); } catch (e) { console.warn('[render] onTravel', e); }
       m.ox = nx; m.oy = ny;
@@ -384,6 +390,67 @@ class PixiRenderer implements GameRenderer {
     m.w = world.width; m.h = world.height; m.shape = world.shape ?? ArenaShape.Rect; m.theme = world.theme ?? Theme.Meadow; m.shown = true; m.age = 0;
     this.mapRoot.position.set(m.ox * T, m.oy * T);
     this.syncClearings();
+  }
+
+  /** Where a new map goes when the camera travels to it from `from`. The stretch of countryside is as
+   *  long on screen from the zoomed-out menu view as from a close follow: it scales with the tiles
+   *  the screen shows now and once framed on the new arena. */
+  private tripTo(from: { ox: number; oy: number; w: number; h: number; }, world: WorldState, heading?: number) {
+    const W = this.view.cssW * this.view.res, H = this.view.cssH * this.view.res, short = Math.min(W, H);
+    const fit = Math.min(W / (world.width + 2.6), H / (world.height + 2.6));
+    const shown = Math.max(short / (this.camera.zoom * T), short / fit);
+    return nextOrigin(from, world.width, world.height, shown * TRIP_SCREENS, heading);
+  }
+
+  /**
+   * While the loader still runs: put every texture on the GPU and, for the world the loader opens
+   * on, place its map now and draw the countryside the camera flies over on the way there (kept
+   * cached until it has arrived), so pressing «Играть» has none of it left to do. The work goes in
+   * slices, the loader keeps animating; `onProgress` gets the share done (0..1).
+   */
+  async preload(world: WorldState | null, onProgress?: (done: number) => void) {
+    const gl = (this.app.renderer as unknown as { texture: { initSource(s: TextureSource): void; }; }).texture;
+    const upload = (s: TextureSource) => { try { gl.initSource(s); } catch (e) { console.warn('[render] upload', e); } };
+    const slice = () => new Promise<void>((r) => { requestAnimationFrame(() => r()); setTimeout(r, 50); });
+    const sources = [...textureSources([this.a, this.tx])];
+    const texShare = world ? 0.2 : 1;
+    let t0 = performance.now();
+    for (let i = 0; i < sources.length; i++) {
+      upload(sources[i]);
+      if (performance.now() - t0 > SLICE_MS) { onProgress?.((texShare * i) / sources.length); await slice(); t0 = performance.now(); }
+    }
+    await slice(); // the countryside view has been framed (camera zoom) by now
+    if (!world || this.map.shown) return;
+    this.planFirstMap(world);
+    this.ground.onPrepared = (tex) => upload(tex.source);
+    const total = this.ground.pending || 1;
+    while (!this.ground.prepare(SLICE_MS)) {
+      onProgress?.(texShare + (1 - texShare) * (1 - this.ground.pending / total));
+      await slice();
+    }
+    this.ground.onPrepared = undefined;
+  }
+
+  /** The first map after the loader: placed straight on along the drift, its clearing set (so the
+   *  chunks made now aren't redrawn when it appears), the trip's chunks queued back to front. */
+  private planFirstMap(world: WorldState) {
+    const c = this.camera, w = world.width, h = world.height;
+    const [ox, oy] = this.tripTo({ ox: Math.round(c.x / T), oy: Math.round(c.y / T), w: 1, h: 1 }, world, Math.atan2(DRIFT.y, DRIFT.x));
+    this.planned = { ox, oy, w, h };
+    this.ground.setClearings([this.wallRect({ ox, oy, w, h, shape: world.shape ?? ArenaShape.Rect, theme: world.theme ?? Theme.Meadow })]);
+    const W = this.view.cssW * this.view.res, H = this.view.cssH * this.view.res, S = Math.min(W, H);
+    const fit = Math.min(W / ((w + 2.6) * T), H / ((h + 2.6) * T));
+    // (half a chunk of margin: the views between the samples, and a camera that drifted on meanwhile)
+    const m = 8 * T;
+    const view = (x: number, y: number, z: number) => this.ground.plan(x - W / z / 2 - m, y - H / z / 2 - m, x + W / z / 2 + m, y + H / z / 2 + m, z);
+    // the arena's surroundings first (the camera stays there), as onNewMap() queues them
+    const pad = 14 * T, x1 = (ox + (w - 1) / 2) * T, y1 = (oy + (h - 1) / 2) * T;
+    view(x1, y1, fit);
+    this.ground.plan((ox - 1.5) * T - pad, (oy - 1.5) * T - pad, (ox + w + 0.5) * T + pad, (oy + h + 0.5) * T + pad, 1);
+    for (let i = 48; i >= 0; i--) {
+      const [x, y, vw] = zoomPath(c.x, c.y, S / c.zoom, x1, y1, S / fit, i / 48);
+      view(x, y, S / vw);
+    }
   }
 
   /** Seconds until the round's countdown reaches «1» (0 when it isn't counting down). */
@@ -729,12 +796,30 @@ export interface RendererExt extends GameRenderer {
   setViewInset(left: number): void;
   transition(kind?: 'travel' | 'snap'): void;
   prime(events: GameEvent[]): void;
+  /** While the loader runs: textures onto the GPU, and the first map's trip drawn ahead (see PixiRenderer). */
+  preload(world: WorldState | null, onProgress?: (done: number) => void): Promise<void>;
   /** Called when a camera travel to a new map starts: duration and unit direction (world). */
   onTravel?: (durationMs: number, dx: number, dy: number) => void;
   /** Teleport moments for sound: a frozen hero beams out, a hero drops in on a new map (tiles). */
   onTeleport?: (kind: 'beamOut' | 'dropIn', x: number, y: number, who: string, crowd?: number) => void;
   /** Storm lightning, for the thunder: it should be heard `delaySec` later. */
   onThunder?: (delaySec: number, power: number) => void;
+}
+
+/** Every texture source reachable from these objects (asset sheets, procedural textures). */
+function textureSources(roots: unknown[]) {
+  const out = new Set<TextureSource>();
+  const seen = new Set<object>();
+  const walk = (v: unknown) => {
+    if (!v || typeof v !== 'object' || seen.has(v)) return;
+    seen.add(v);
+    if (v instanceof Texture) { out.add(v.source); return; }
+    if (v instanceof TextureSource) { out.add(v); return; }
+    if (v instanceof Container || ArrayBuffer.isView(v) || v instanceof Node) return;
+    for (const x of v instanceof Map ? v.values() : Array.isArray(v) ? v : Object.values(v)) walk(x);
+  };
+  roots.forEach(walk);
+  return out;
 }
 
 /** Where the next map goes: a random direction (or `heading`), clear of the old arena by a stretch of

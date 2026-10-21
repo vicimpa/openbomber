@@ -37,6 +37,7 @@ export function startSession() {
   let started = false;      // loader's «Играть» pressed (audio unlocked)
   let avatarsVersion = -1;  // NetSource.avatarsVersion last copied into the `avatars` signal
   let cameraMode: 'overview' | 'follow' = 'overview'; // for the source on show (kept until the renderer exists)
+  let ready: LocalSource | null = null; // the first menu match, made (and warmed up) while the loader runs
 
   // ---------------------------------------------------------------- renderer on #stage
   let resolveStage!: (el: HTMLElement) => void;
@@ -46,6 +47,9 @@ export function startSession() {
     const unguard = installPlayGuards(el);
     return () => unguard();
   });
+  // preload() is the long part of the loading: ten steps of the loader's bar, so it keeps moving
+  const steps = Array.from({ length: 10 }, () => { let done!: () => void; registerLoadTask(new Promise<void>((r) => (done = r))); return done; });
+  const preloaded = (share: number) => steps.forEach((done, i) => { if (share >= (i + 1) / steps.length) done(); });
   registerLoadTask(
     stageReady
       .then((el) => createRenderer({ parent: el, quality: settings.peek().quality }))
@@ -57,8 +61,15 @@ export function startSession() {
         // the first menu backdrop was set up (and warmed up) before the renderer existed
         r.setCameraMode(cameraMode);
         if (source instanceof LocalSource) r.prime(source.takePrimeEvents());
-      }),
+        // the loader opens on the menu match unless it's the Discord activity or an invite link:
+        // make that match now, and its map's trip with it
+        if (!inDiscord && !pendingInvite.peek()) ready = menuMatch();
+        return r.preload(ready?.world ?? null, preloaded);
+      })
+      .finally(() => preloaded(1)),
   );
+  // the sound effects too (no AudioContext needed for that)
+  if (audio.prepare) registerLoadTask(audio.prepare());
   // Discord activity: sign in while the loader runs (the name and the room come from it)
   if (inDiscord) registerLoadTask(discordLogin(toHttpUrl(resolveServerUrl())));
   effect(() => renderer?.setQuality(settings.value.quality));
@@ -115,11 +126,13 @@ export function startSession() {
     }
   }
 
+  /** The bot match behind the main menu, started mid-game (20-35 s in), not on a pristine map. */
+  const menuMatch = () => new LocalSource({ bots: ATTRACT_BOTS, difficulty: 'normal', warmupTicks: sec(20 + Math.random() * 15) });
+
   /** Main menu: a live bot match behind it, watched with the spectator camera. */
   function toMenu() {
-    // start the backdrop mid-game (20-35 s in), not on a pristine map
-    const warmupTicks = sec(20 + Math.random() * 15);
-    const src = new LocalSource({ bots: ATTRACT_BOTS, difficulty: 'normal', warmupTicks });
+    const src = ready ?? menuMatch();
+    ready = null;
     setSource(src, null, 'menu');
     if (renderer) renderer.prime(src.takePrimeEvents());
   }
