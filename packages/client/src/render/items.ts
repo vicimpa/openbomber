@@ -24,6 +24,8 @@ export class BombView {
   private sprite: Anim;
   private glow: Sprite;
   private led: Sprite;
+  /** Crazy bombs crackle with the same sparks as a crazy hero. */
+  private sparks: Anim | null = null;
   private phase = Math.random() * 6;
   private squash = 0;
   private motion: BombMotion = BombMotion.Idle;
@@ -42,6 +44,11 @@ export class BombView {
     this.glow.tint = b.kind === BombKind.Pierce ? 0xff5a20 : b.kind === BombKind.Crazy ? 0xff40c0 : 0xff6a30;
     this.led = new Sprite({ texture: tx.glow, anchor: 0.5, x: 9, y: -17, blendMode: 'add', scale: 0.22, tint: 0xff2030, visible: b.kind === BombKind.Remote });
     this.body.addChild(this.sprite, this.glow, this.led);
+    if (b.kind === BombKind.Crazy) {
+      this.sparks = new Anim(a.crazy, 10, { y: -4, scale: 2 });
+      this.sparks.time = Math.random();
+      this.body.addChild(this.sparks);
+    }
     this.root.addChild(this.shadow, this.body);
     this.motion = b.motion;
     this.squash = 1; // placement pop
@@ -114,6 +121,7 @@ export class BombView {
     }
     this.body.scale.set(sx, sy);
     this.sprite.tick(dt);
+    this.sparks?.tick(dt);
 
     const lastSecond = b.fuse >= 0 && b.fuse < TICK_RATE * 0.6;
     const flick = lastSecond && Math.sin(this.phase * 2) > 0;
