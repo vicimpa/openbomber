@@ -18,7 +18,7 @@ import { isTextTarget } from '$/input/keyboard';
 import { TouchControls } from '$/input/TouchControls';
 import { Chat } from './hud/Chat';
 import { Hint } from './hud/Hint';
-import { Banners, BottomPill, Countdown, DebugInfo, KillFeed, RoundResult, Scoreboard, StatsStrip, TopPill } from './hud/Hud';
+import { Banners, BottomPill, CornerButtons, Countdown, DebugInfo, KillFeed, RoundResult, Scoreboard, StatsStrip, TopPill } from './hud/Hud';
 import { t } from './i18n';
 import { Icon } from './icons';
 import { MenuDrawer } from './MenuDrawer';
@@ -76,12 +76,14 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
   const touch = lastDevice.value === 'touch';
   const me = h?.me;
   const playing = !!me && !me.spectating;
+  // touch: «Отключиться» lives in the menu, so a player in the arena has no bottom pill at all
+  const pill = !(touch && h?.connected);
   const showTouch = inWorld && touch && playing && !chatOpen.value && !menuOpen.value && !modals.value.length;
   // Short screens (a phone on its side) get smaller sticks and buttons, so the arena isn't hidden.
   const tc = s.touch.size * Math.max(0.7, Math.min(1, viewport.value.h / 440));
 
   return (
-    <div ref={rootRef} class={`world ${touch ? 'is-touch' : ''} ${playing ? 'is-playing-round' : ''} ${inWorld ? '' : 'is-covered'}`}>
+    <div ref={rootRef} class={`world ${touch ? 'is-touch' : ''} ${playing ? 'is-playing-round' : ''} ${pill ? '' : 'no-pill'} ${inWorld ? '' : 'is-covered'}`}>
       <div id="stage" class="stage" ref={stageRef} />
       <div class="stage-vignette" aria-hidden="true" />
 
@@ -112,7 +114,8 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
             {scoreboardOpen.value && <Scoreboard h={h} onClose={() => { scoreboardOpen.value = false; }} />}
           </>}
           {playing && !touch && <Hint />}
-          <BottomPill h={h} />
+          {touch && <CornerButtons />}
+          {pill && <BottomPill h={h} touch={touch} />}
         </div>
       )}
       {inWorld && <Chat />}

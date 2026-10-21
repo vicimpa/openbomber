@@ -1,6 +1,7 @@
-// The menu: a drawer over the live world (menu button in the bottom pill, Esc, gamepad Start).
-// Tabs: «Игра» (profile, how to play, fullscreen, room code, back to the main menu, links), «Игроки»
-// (player list, spectators) and «Настройки» (volume + device settings).
+// The menu: a drawer over the live world (menu button in the bottom pill, Esc, gamepad Start):
+// profile, settings (the main menu's modal), players (the scoreboard Tab holds, for touch and
+// gamepad too), how to play, fullscreen, room code, «Отключиться» (on touch the only one: the
+// bottom pill shows just «Подключиться»), back to the main menu, links.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { canFullscreen, isFullscreen, toggleFullscreen } from '$/input/fullscreen';
 import { discord, discordInvite } from '$/discord';
@@ -13,12 +14,8 @@ import { Icon } from './icons';
 import { LINKS, showLinks } from './links';
 import { NAME_MAX, randomName } from './names';
 import { nameHint } from './MainMenu';
-import { SettingsSections } from './SettingsModal';
 import { HeroSprite } from './sprites';
-import { actions, hud, identity, menuOpen, openModal, players, room, roomSettings, setName, settings, spectators } from './store';
-
-type Tab = 'game' | 'players' | 'settings';
-let lastTab: Tab = 'game';
+import { actions, hud, identity, menuOpen, openModal, players, room, roomSettings, scoreboardOpen, setName, settings } from './store';
 
 function Profile() {
   const { skin, language } = settings.value;
@@ -70,11 +67,15 @@ function Profile() {
   );
 }
 
-function GameTab() {
+function MenuBody() {
   const r = room.value;
   return (
     <>
       <Profile />
+      <div class="row2">
+        <Button block icon={<Icon name="gear" />} onClick={() => openModal('settings')}>{t('settings.title')}</Button>
+        <Button block icon={<Icon name="users" />} onClick={() => { menuOpen.value = false; scoreboardOpen.value = true; }}>{t('menu.players')} {players.value.length}</Button>
+      </div>
       <div class="row2">
         <Button block icon={<Icon name="question" />} onClick={() => openModal('howto')}>{t('menu.howTo2')}</Button>
         {canFullscreen && <Button block  icon={<Icon name="fullscreen" />} onClick={() => toggleFullscreen()} aria-pressed={isFullscreen.value}>{t('menu.fullscreen')}</Button>}
@@ -93,6 +94,8 @@ function GameTab() {
       )}
 
       {r && r.isPrivate && !r.offline && <RoomSettingsCard />}
+
+      {hud.value?.connected && <Button block onClick={() => { menuOpen.value = false; actions.uiSound('back'); actions.play(false); }}>{t('hud.disconnect')}</Button>}
 
       {!discord.value && <Button block variant="white" icon={<Icon name="home" />} onClick={() => { menuOpen.value = false; actions.leave(); }}>{t('menu.toMainMenu')}</Button>}
 
@@ -149,43 +152,16 @@ function RoomSettingsCard() {
   );
 }
 
-export function PlayerList() {
-  const list = players.value;
-  const spect = spectators.value.length + list.filter((p) => !p.inRound).length;
-  return (
-    <>
-      <section class="card">
-        <h3>{t('menu.playerList')}</h3>
-        {list.length ? (
-          <ul class="plist">
-            {list.map((p) => (
-              <li key={p.id} class={`${p.isLocal ? 'is-me' : ''}`} data-state={!p.inRound ? 'wait' : p.alive || p.respawning ? 'alive' : 'dead'}>
-                <HeroSprite skin={p.skin} scale={0.9} still={!p.alive} />
-                <Avatar id={p.id} size={20} />
-                <span class="plist__name">{p.name}{p.isBot && <small> · {t('hud.bot')}</small>}</span>
-                <span class="plist__stats"><span><Icon name="crown" /> {p.wins}</span><span><Icon name="gun" /> {p.kills}</span><span><Icon name="skull" /> {p.deaths}</span></span>
-              </li>
-            ))}
-          </ul>
-        ) : <p class="muted">—</p>}
-      </section>
-      <p class="spectators">{t('menu.spectators', { n: spect })}</p>
-    </>
-  );
-}
-
 export function MenuDrawer() {
-  const [tab, setTab] = useState<Tab>(lastTab);
   const open = menuOpen.value;
   const ref = useRef<HTMLElement>(null);
-  const pick = (t2: Tab) => { lastTab = t2; actions.uiSound('click'); setTab(t2); };
 
   useEffect(() => {
     if (!open) return;
     const prev = document.activeElement as HTMLElement | null;
-    // Keyboard / gamepad users land on the active tab; pointer users keep focus where it was.
+    // Keyboard / gamepad users land on the first control; pointer users keep focus where it was.
     if (document.documentElement.hasAttribute('data-kbd'))
-      ref.current?.querySelector<HTMLElement>('.tabs button[aria-selected="true"]')?.focus({ preventScroll: true });
+      ref.current?.querySelector<HTMLElement>('.drawer__body button')?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !document.querySelector('[data-modal-open]')) { e.preventDefault(); menuOpen.value = false; }
     };
@@ -193,7 +169,6 @@ export function MenuDrawer() {
     return () => { window.removeEventListener('keydown', onKey); if (prev && document.contains(prev)) prev.focus({ preventScroll: true }); };
   }, [open]);
 
-  const h = hud.value;
   return (
     <>
       {open && <div class="drawer-scrim" onPointerDown={() => { menuOpen.value = false; }} />}
@@ -209,17 +184,8 @@ export function MenuDrawer() {
           <Logo class="drawer__logo" />
           <button class="icon-btn" onClick={() => { actions.uiSound('back'); menuOpen.value = false; }} aria-label={t('common.close')} title={t('common.close')}><Icon name="close" /></button>
         </header>
-        <div class="tabs" role="tablist">
-          {(['game', 'players', 'settings'] as Tab[]).map((id) => (
-            <button role="tab" aria-selected={tab === id} class={tab === id ? 'is-on' : ''} onClick={() => pick(id)}>
-              {id === 'game' ? <><Icon name="gamepad" /> {t('menu.tabGame')}</> : id === 'players' ? <><Icon name="users" /> {t('menu.tabPlayers')} {h ? h.players.length : 0}</> : <><Icon name="gear" /> {t('settings.title')}</>}
-            </button>
-          ))}
-        </div>
         <div class="drawer__body" data-scrollable>
-          {tab === 'game' && <GameTab />}
-          {tab === 'players' && <PlayerList />}
-          {tab === 'settings' && <SettingsSections />}
+          <MenuBody />
         </div>
       </aside>
     </>

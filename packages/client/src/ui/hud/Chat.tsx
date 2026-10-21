@@ -1,17 +1,20 @@
 // Minecraft-style chat over the game, bottom-left.
-// Closed: the newest lines show up on dark strips and fade out after a few seconds.
+// Closed: the newest lines show up on dark strips and fade out after a few seconds (on touch
+// fewer, shorter-lived and clamped to two rows, so a busy chat doesn't cover the arena).
 // Open (Enter / T, or the chat button): the whole history scrolls above an input line;
 // Enter sends (an empty line closes), Esc closes, ↑ / ↓ walk through what you sent before.
 // Messages with `from === ''` or a name starting with '@' (e.g. @server) are system messages.
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { isTouchDevice } from '$/input/device';
+import { isTouchDevice, lastDevice } from '$/input/device';
 import { t } from '../i18n';
 import { Avatar } from '../Avatar';
 import { Icon } from '../icons';
-import { actions, chat, chatOpen, hud } from '../store';
+import { actions, chat, chatOpen, hud, scoreboardOpen } from '../store';
 
 const SHOW_MS = 10_000;   // a closed chat keeps a line this long (fades out over the end)
 const CLOSED_LINES = 10;
+const TOUCH_SHOW_MS = 6_000;
+const TOUCH_CLOSED_LINES = 3;
 const MAX_LEN = 100;
 
 const isSystem = (m: { from: string; name: string }) => !m.from || m.name.startsWith('@');
@@ -38,8 +41,10 @@ export function Chat() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // a closed chat lets lines expire; tick only while there is something to expire
-  const recent = open ? [] : msgs.slice(-CLOSED_LINES).filter((m) => now - m.at < SHOW_MS);
+  const touch = lastDevice.value === 'touch';
+  const showMs = touch ? TOUCH_SHOW_MS : SHOW_MS;
+  // a closed chat lets lines expire (and steps aside for the scoreboard); tick only while there is something to expire
+  const recent = open || scoreboardOpen.value ? [] : msgs.slice(-(touch ? TOUCH_CLOSED_LINES : CLOSED_LINES)).filter((m) => now - m.at < showMs);
   useEffect(() => {
     if (open || !recent.length) return;
     const id = setInterval(() => setNow(Date.now()), 500);
@@ -94,7 +99,7 @@ export function Chat() {
       ) : (
         <div class="mc-chat__list" aria-hidden="true">
           {recent.map((m) => (
-            <div key={m.id} style={{ opacity: Math.min(1, (SHOW_MS - (now - m.at)) / 1500) }}><Line m={m} meId={meId} /></div>
+            <div key={m.id} style={{ opacity: Math.min(1, (showMs - (now - m.at)) / 1500) }}><Line m={m} meId={meId} /></div>
           ))}
         </div>
       )}

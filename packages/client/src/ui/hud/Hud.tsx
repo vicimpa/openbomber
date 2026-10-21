@@ -9,7 +9,7 @@ import { ABILITY_PICKUP, CURSE_BY_ID, PICKUP_BY_TYPE } from '../pickups';
 import { Icon, type IconName } from '../icons';
 import { Avatar } from '../Avatar';
 import { HeroSprite, PickupIcon } from '../sprites';
-import { actions, chat, chatOpen, fps, killFeed, menuOpen, pings, room, settings } from '../store';
+import { actions, chat, chatOpen, fps, killFeed, menuOpen, pings, room, scoreboardOpen, settings, spectators } from '../store';
 import { RoomCode } from './RoomCode';
 
 // ---------------------------------------------------------------- debug (top-left, 9px)
@@ -55,20 +55,13 @@ export function TopPill({ h }: { h: HudSnapshot | null }) {
 }
 
 // ---------------------------------------------------------------- bottom pill (core loop)
-export function BottomPill({ h }: { h: HudSnapshot | null }) {
+// Touch: only «Подключиться» stays at the bottom (GameScreen hides the pill in the arena, the menu
+// has «Отключиться»), the rest goes to the top-right corner.
+export function BottomPill({ h, touch }: { h: HudSnapshot | null; touch: boolean }) {
   const connected = !!h?.connected;
-  const unread = useUnread();
   return (
     <div class="pill pill--bottom bottom-pill">
-      <button
-        class="pill-btn"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={() => { actions.uiSound('click'); menuOpen.value = true; }}
-        aria-label={t('hud.menu')}
-        title={t('hud.menu')}
-      >
-        <Icon name="menu" />
-      </button>
+      {!touch && <MenuButton />}
       <button
         class={`btn btn--white btn--lg bottom-pill__main ${connected ? 'is-connected' : ''}`}
         onMouseDown={(e) => e.preventDefault()}
@@ -76,18 +69,58 @@ export function BottomPill({ h }: { h: HudSnapshot | null }) {
       >
         {connected ? t('hud.disconnect') : t('hud.connect')}
       </button>
+      {!touch && <ChatButton />}
+    </div>
+  );
+}
+
+/** Touch: chat, scoreboard (there's no Tab to hold) and menu in the top-right corner, clear of the controls. */
+export function CornerButtons() {
+  return (
+    <div class="corner-btns">
+      <ChatButton />
       <button
         class="pill-btn"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={() => { actions.uiSound('click'); chatOpen.value = !chatOpen.value; }}
-        aria-label={t('hud.chat')}
-        title={`${t('hud.chat')} (T)`}
-        aria-pressed={chatOpen.value}
+        onClick={() => { actions.uiSound('click'); scoreboardOpen.value = !scoreboardOpen.value; }}
+        aria-label={t('hud.scoreboard')}
+        title={t('hud.scoreboard')}
+        aria-pressed={scoreboardOpen.value}
       >
-        <Icon name="chat" />
-        {unread > 0 && <i class="badge">{unread > 9 ? '9+' : unread}</i>}
+        <Icon name="trophy" />
       </button>
+      <MenuButton />
     </div>
+  );
+}
+
+function MenuButton() {
+  return (
+    <button
+      class="pill-btn"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={() => { actions.uiSound('click'); menuOpen.value = true; }}
+      aria-label={t('hud.menu')}
+      title={t('hud.menu')}
+    >
+      <Icon name="menu" />
+    </button>
+  );
+}
+
+function ChatButton() {
+  const unread = useUnread();
+  return (
+    <button
+      class="pill-btn"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={() => { actions.uiSound('click'); chatOpen.value = !chatOpen.value; }}
+      aria-label={t('hud.chat')}
+      title={`${t('hud.chat')} (T)`}
+      aria-pressed={chatOpen.value}
+    >
+      <Icon name="chat" />
+      {unread > 0 && <i class="badge">{unread > 9 ? '9+' : unread}</i>}
+    </button>
   );
 }
 
@@ -242,6 +275,7 @@ export function RoundResult({ h }: { h: HudSnapshot }) {
 // ---------------------------------------------------------------- scoreboard (hold Tab)
 export function Scoreboard({ h, onClose }: { h: HudSnapshot; onClose: () => void }) {
   const r = room.value;
+  const spect = spectators.value.length + h.players.filter((p) => !p.inRound).length;
   return (
     <div class="scoreboard-wrap" onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div class="scoreboard box" role="dialog" aria-label={t('hud.scoreboard')}>
@@ -259,6 +293,7 @@ export function Scoreboard({ h, onClose }: { h: HudSnapshot; onClose: () => void
             </tbody>
           </table>
         </div>
+        <p class="spectators">{t('menu.spectators', { n: spect })}</p>
       </div>
     </div>
   );

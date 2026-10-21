@@ -360,9 +360,9 @@ img, canvas { image-rendering: pixelated; }
 .scoreboard .l { text-align: left; }
 .scoreboard tbody tr { background: rgba(0, 0, 0, 0.2); border-top: 4px solid transparent; }
 .scoreboard tr.is-me { background: rgba(255, 255, 255, 0.1); }
-tr[data-state='alive'] .who__name, li[data-state='alive'] .plist__name { color: var(--alive); }
-tr[data-state='dead'] .who__name, li[data-state='dead'] .plist__name { color: var(--dead); }
-tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: var(--muted); }
+tr[data-state='alive'] .who__name { color: var(--alive); }
+tr[data-state='dead'] .who__name { color: var(--dead); }
+tr[data-state='wait'] .who__name { color: var(--muted); }
 .scoreboard .dim { color: var(--dim); }
 .who { display: flex; align-items: center; gap: 6px; }
 .who__name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
@@ -398,9 +398,6 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
 
 .drawer__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: calc(12px + var(--safe-t)) 12px 8px 16px; }
 .drawer__logo { width: 180px; }
-.tabs { display: flex; gap: 2px; padding: 0 12px; }
-.tabs button { flex: 1; min-height: 40px; border: 0; background: rgba(0, 0, 0, 0.3); color: var(--muted); font-size: 14px; padding: 0 6px; white-space: nowrap; }
-.tabs button.is-on { background: var(--btn); color: #fff; box-shadow: inset 0 -3px 0 #fff; }
 .drawer__body { flex: 1; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 12px 12px calc(16px + var(--safe-b)); display: flex; flex-direction: column; gap: 10px; }
 
 .card { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: rgba(0, 0, 0, 0.3); }
@@ -430,13 +427,8 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
 .links a:hover { background: rgba(255, 255, 255, 0.06); }
 .links__icon { display: block; }
 
-.plist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.plist li { display: flex; align-items: center; gap: 8px; padding: 2px 10px 2px 2px; border-radius: 10px; background: rgba(0, 0, 0, 0.2); }
-.plist li.is-me { background: rgba(255, 255, 255, 0.1); }
-.plist__name { flex: 1; min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.plist__name small { color: var(--dim); }
-.plist__stats { display: flex; gap: 8px; font-size: 12px; color: #fff; }
 .spectators { font-size: 14px; padding: 0 4px; }
+.scoreboard .spectators { padding: 6px 8px 0; }
 
 /* chat (Minecraft style, bottom-left over the game) */
 .mc-chat {
@@ -481,6 +473,20 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
 }
 .mc-chat__input::placeholder { color: #9a9a9a; }
 .mc-chat__send { width: 34px; height: 34px; }
+/* touch: the chat hangs from the top under the stats strip (the bottom is the controls', and the
+   on-screen keyboard comes up from there too) */
+.is-touch .mc-chat { top: calc(92px + var(--safe-t)); bottom: auto; }
+/* touch, closed: a narrower, smaller strip of at most two rows a line (Chat.tsx keeps 3 lines) */
+.is-touch .mc-chat:not(.is-open) { width: min(360px, 60vw); }
+.is-touch .mc-chat:not(.is-open) .mc-chat__line {
+  font-size: 12px;
+  line-height: 15px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
 
 .input {
   min-width: 0;
@@ -622,12 +628,20 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
 .is-touch .counters__x { display: none; }
 .is-touch .pill__tag { font-size: 12px; padding: 0 6px; }
 .is-touch .pill--bottom { padding: 6px 6px calc(6px + var(--safe-b)); gap: 6px; }
+/* menu / scoreboard / chat: small blurred squares in the top-right corner (BottomPill keeps only
+   «Подключиться»); the kill feed goes under them, the scoreboard leaves them reachable */
+.corner-btns { position: absolute; z-index: 7; top: calc(4px + var(--safe-t)); right: calc(8px + var(--safe-r)); display: flex; gap: 4px; }
+.corner-btns .pill-btn { min-width: 40px; width: 40px; height: 40px; padding: 0; border-radius: 10px; background: var(--pill); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+.corner-btns .pill-btn:active, .corner-btns .pill-btn[aria-pressed='true'] { background: rgba(255, 255, 255, 0.25); }
+.is-touch .hud__right { top: calc(50px + var(--safe-t)); }
+.is-touch .scoreboard-wrap { padding-top: calc(48px + var(--safe-t)); }
 .is-touch .hud__left { top: calc(34px + var(--safe-t)); }
 .is-touch .stat, .is-touch .fx { height: 26px; font-size: 13px; padding: 0 6px 0 3px; gap: 3px; }
 .is-touch .fx__time { font-size: 12px; }
 .is-touch .fx__name { font-size: 11px; }
 .is-touch .hud__left { max-width: min(40vw, 420px); }
 .world.is-touch { --pill-h: 56px; }
+.world.is-touch.no-pill { --pill-h: 0px; }
 .is-touch .pill-btn { min-width: 48px; height: 44px; }
 .is-touch .bottom-pill__main { height: 44px; min-height: 44px; min-width: 180px; font-size: 18px; }
 /* Touch controls sit above the bottom pill (TouchControls.module.css reads --tc-lift). */
@@ -643,8 +657,11 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
   .bottom-pill__main { min-width: 0; flex: 1; }
   .pill--bottom { left: 0; right: 0; transform: none; max-width: none; margin: 0 auto; width: min(420px, 100vw); }
   .row2 { grid-template-columns: 1fr; }
+  /* scoreboard: the name column takes what's left and ellipsises, so every column fits */
+  .scoreboard th, .scoreboard td { padding-inline: 5px; }
+  .scoreboard .l { width: 100%; max-width: 0; }
+  .who, .who__name { min-width: 0; }
   .modal__body { padding: 8px 14px 14px; }
-  .tabs button { font-size: 12px; padding: 0 2px; }
   .banner { font-size: 13px; padding: 5px 10px; }
   .hud__center { max-width: calc(100vw - 24px); }
   /* the counters pill takes the whole top edge: Ping/FPS move above the bottom pill */
@@ -653,6 +670,13 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
   .is-playing-round .hud__center { top: calc(112px + var(--safe-t)); }
   .is-playing-round .hud__right { top: calc(156px + var(--safe-t)); }
   .hud__right { top: calc(48px + var(--safe-t)); }
+  /* touch: the counters pill spans the top edge, the corner buttons go right under it */
+  .is-touch .corner-btns { top: calc(38px + var(--safe-t)); }
+  .is-touch .mc-chat { top: calc(104px + var(--safe-t)); }
+  .is-touch .hud__left { max-width: calc(100vw - 16px - 136px); }
+  .is-touch .hud__right { top: calc(84px + var(--safe-t)); }
+  .is-touch.is-playing-round .hud__right { top: calc(156px + var(--safe-t)); }
+  .is-touch .scoreboard-wrap { padding-top: calc(84px + var(--safe-t)); }
   .hud__center { top: calc(48px + var(--safe-t)); }
   /* portrait touch: messages float above the joystick / buttons */
   .is-touch.is-playing-round .ticker { top: auto; bottom: calc(var(--tc-lift) + 200px + var(--safe-b)); width: calc(100vw - 16px); }
@@ -676,13 +700,17 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
      drop to the bottom corners instead of stacking above it; Ping/FPS go on one line in the
      top-left corner with the stats strip under them */
   .world.is-touch { --pill-h: 46px; --tc-lift: 8px; }
+  .world.is-touch.no-pill { --pill-h: 0px; }
+  .is-touch .mc-chat { top: calc(76px + var(--safe-t)); }
   .is-touch .pill--top { font-size: 13px; padding-block: calc(2px + var(--safe-t)) 2px; }
   .is-touch .pill--bottom { left: 50%; right: auto; width: auto; transform: translateX(-50%); padding: 4px 4px max(4px, calc(var(--safe-b) - 10px)); gap: 4px; }
   .is-touch .pill-btn { min-width: 44px; height: 38px; }
   .is-touch .bottom-pill__main { flex: none; height: 38px; min-height: 38px; min-width: 150px; font-size: 16px; padding: 0 14px; }
   .is-touch .debug { top: calc(4px + var(--safe-t)); bottom: auto; left: calc(10px + var(--safe-l)); flex-direction: row; gap: 8px; }
   .is-touch .hud__left { top: calc(18px + var(--safe-t)); left: calc(8px + var(--safe-l)); max-width: calc(50vw - 150px - var(--safe-l)); }
-  .is-touch .hud__right { top: calc(4px + var(--safe-t)); right: calc(8px + var(--safe-r)); }
+  .is-touch .corner-btns .pill-btn { min-width: 36px; width: 36px; height: 36px; }
+  .is-touch .hud__right { top: calc(44px + var(--safe-t)); right: calc(8px + var(--safe-r)); }
+  .is-touch .scoreboard-wrap { padding-top: calc(44px + var(--safe-t)); }
   .is-touch .kill { font-size: 12px; }
   /* banners / round result: a slim line under the counters pill, clear of the controls */
   .is-touch .hud__center { top: calc(30px + var(--safe-t)); bottom: auto; max-width: 56vw; }
