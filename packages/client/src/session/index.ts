@@ -17,13 +17,13 @@ import { setStageHandler } from '../ui/App';
 import { buildHud } from '../ui/hud';
 import { t } from '../ui/i18n';
 import {
-  avatars, bindActions, connectStatus, fps, handleGameEvents, HINT_KEY, hud, onlineCount, pushChat, registerLoadTask, resetGameState,
+  avatars, bindActions, connectStatus, fps, handleGameEvents, HINT_KEY, hud, identity, onlineCount, pushChat, registerLoadTask, resetGameState,
   menuOpen, modals, pendingInvite, room, roomSettings, screen, settings, spectators, toast, uiCapturesInput,
 } from '../ui/store';
 import { LocalSource } from './LocalSource';
 import { perfAdd, perfFrame, perfNow } from '../perf';
 import { OFFLINE } from '../offline';
-import { crazyData, crazyGameplay, crazyInit, crazyMuted, onCrazyHost } from '../crazygames';
+import { crazyData, crazyGameplay, crazyInit, crazyMuted, crazyUser, onCrazyHost } from '../crazygames';
 import { useStore } from '../storage';
 import { SETTINGS_KEY } from '../ui/settings';
 
@@ -80,6 +80,8 @@ export function startSession() {
   // (and their Data module keeps the settings: synced to the player's CrazyGames account)
   if (onCrazyHost) registerLoadTask(crazyInit().then(() => { const d = crazyData(); if (d) useStore(d, [SETTINGS_KEY, HINT_KEY]); }));
   effect(() => renderer?.setQuality(settings.value.quality));
+  // a CrazyGames guest logging in mid-game plays on under their username
+  effect(() => { const c = crazyUser.value; if (c) source?.setProfile({ name: c.name }); });
   // (CrazyGames' «mute audio» setting wins over the game's own volume)
   effect(() => audio.setVolume(crazyMuted.value ? { ...settings.value.volume, master: 0 } : settings.value.volume));
   // CrazyGames: being played = in a game with no menu or dialog over it
@@ -107,7 +109,7 @@ export function startSession() {
 
   const profile = () => {
     const d = discord.peek();
-    return { name: d?.name ?? settings.peek().name, skin: settings.peek().skin, discord: d?.token };
+    return { name: identity.peek().name, skin: settings.peek().skin, discord: d?.token };
   };
 
   function setSource(next: Source, info: { code: string; isPrivate: boolean; offline: boolean } | null, to: 'menu' | 'game') {

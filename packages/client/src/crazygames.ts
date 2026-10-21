@@ -2,7 +2,8 @@
 // while the loader runs; the loader then goes straight on to the menu (the platform has its own play
 // button, no «Играть» click), the platform hears when the game is loading and when it is being
 // played (loadingStart / loadingStop, gameplayStart / gameplayStop), and its «mute audio» setting
-// is honoured. Anywhere else none of this loads. `?useLocalSdk=true` tries the SDK locally.
+// is honoured, and the player's name is their CrazyGames username (with their picture), not
+// editable here. Anywhere else none of this loads. `?useLocalSdk=true` tries the SDK locally.
 import { signal } from '@preact/signals';
 
 const SDK_URL = 'https://sdk.crazygames.com/crazygames-sdk-v3.js';
@@ -24,7 +25,15 @@ interface CrazySdk {
     addSettingsChangeListener(listener: (s: { muteAudio?: boolean }) => void): void;
   };
   data?: { getItem(key: string): string | null; setItem(key: string, value: string): void };
+  user?: {
+    isUserAccountAvailable: boolean;
+    getUser(): Promise<CrazyUser | null>;
+    addAuthListener(listener: (u: CrazyUser | null) => void): void;
+    showAuthPrompt(): Promise<CrazyUser | null>;
+  };
 }
+
+interface CrazyUser { username: string; profilePictureUrl?: string }
 
 let sdk: CrazySdk | null = null;
 let playing = false;
@@ -34,6 +43,8 @@ let loading = false;
 export const onCrazyGames = signal(false);
 /** The platform's «mute audio» setting (wins over the game's own volume). */
 export const crazyMuted = signal(false);
+/** The logged-in CrazyGames player (null for guests): their username is the name in the game. */
+export const crazyUser = signal<{ name: string; avatar?: string } | null>(null);
 
 const call = (what: string, f: () => void) => { try { f(); } catch (e) { console.warn(`[crazygames] ${what}`, e); } };
 
@@ -74,6 +85,11 @@ export async function crazyInit(): Promise<void> {
     onCrazyGames.value = true;
     crazyMuted.value = !!s.game.settings?.muteAudio;
     s.game.addSettingsChangeListener((st) => { crazyMuted.value = !!st.muteAudio; });
+    const u = s.user;
+    if (u?.isUserAccountAvailable) {
+      u.addAuthListener(setUser);
+      setUser(await Promise.race([u.getUser(), new Promise<null>((done) => setTimeout(() => done(null), 3000))]));
+    }
   } catch (e) {
     console.warn('[crazygames] sdk', e);
   }
@@ -89,6 +105,18 @@ export function crazyData() {
   if (!d) return null;
   try { d.getItem('openbomber.probe'); } catch (e) { console.warn('[crazygames] data module off', e); return null; }
   return d;
+}
+
+function setUser(u: CrazyUser | null) {
+  if (u?.username) crazyUser.value = { name: u.username, avatar: u.profilePictureUrl || undefined };
+}
+
+/** Accounts work here (not on sites that embed the game): a guest can log in for their own name. */
+export const crazyCanLogin = () => !!sdk?.user?.isUserAccountAvailable;
+
+/** Their log in / sign up popup; the name follows through the auth listener. */
+export function crazyLogin() {
+  sdk?.user?.showAuthPrompt().then(setUser, (e) => console.warn('[crazygames] auth', e));
 }
 
 /** The loader is done: the game shows its menu. */

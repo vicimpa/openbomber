@@ -12,17 +12,18 @@ import { t } from './i18n';
 import { Icon } from './icons';
 import { LINKS, showLinks } from './links';
 import { NAME_MAX, randomName } from './names';
+import { nameHint } from './MainMenu';
 import { SettingsSections } from './SettingsModal';
 import { HeroSprite } from './sprites';
-import { actions, hud, menuOpen, openModal, players, room, roomSettings, setName, settings, spectators } from './store';
+import { actions, hud, identity, menuOpen, openModal, players, room, roomSettings, setName, settings, spectators } from './store';
 
 type Tab = 'game' | 'players' | 'settings';
 let lastTab: Tab = 'game';
 
 function Profile() {
   const { skin, language } = settings.value;
-  const d = discord.value;
-  const name = d?.name ?? settings.value.name;
+  const id = identity.value;
+  const name = id.name;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
   const input = useRef<HTMLInputElement>(null);
@@ -56,13 +57,13 @@ function Profile() {
             <Button type="submit" size="sm">OK</Button>
           </form>
         ) : (
-          <span class="nametag nametag--lg">{d && <Avatar url={d.avatar} size={22} />}{name}</span>
+          <span class="nametag nametag--lg">{id.avatar && <Avatar url={id.avatar} size={22} />}{name}</span>
         )}
-        {d && <small class="muted"><Icon name="discord" size={12} /> {t('discord.nameHint')}</small>}
+        {id.locked && <small class="muted">{id.from === 'discord' && <Icon name="discord" size={12} />} {t(nameHint(id.from))}</small>}
         <div class="profile__btns">
-          {!editing && !d && <Button size="sm" onClick={() => { setDraft(name); setEditing(true); }}>{t('menu.edit')}</Button>}
+          {!editing && !id.locked && <Button size="sm" onClick={() => { setDraft(name); setEditing(true); }}>{t('menu.edit')}</Button>}
           <Button size="sm" onClick={() => openModal('skin')}>{t('menu.avatar')}</Button>
-          {!d && <Button size="sm" onClick={() => setName(randomName(language))} title={t('menu.randomName')} aria-label={t('menu.randomName')}><Icon name="dice" /></Button>}
+          {!id.locked && <Button size="sm" onClick={() => setName(randomName(language))} title={t('menu.randomName')} aria-label={t('menu.randomName')}><Icon name="dice" /></Button>}
         </div>
       </div>
     </section>
