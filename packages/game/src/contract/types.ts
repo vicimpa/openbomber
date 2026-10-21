@@ -144,6 +144,9 @@ export interface PlayerState {
   deaths: number;
   /** Last input seq applied by the authoritative sim (for client reconciliation). */
   ackSeq: number;
+  /** Ticks the sim has run on a guess since ackSeq (the player's next frames are late: its last
+   *  input repeated). The position includes those guesses until the real frames settle them. */
+  guessed: number;
 }
 
 export interface BombState {

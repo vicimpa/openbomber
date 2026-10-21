@@ -18,6 +18,15 @@ export interface PlayerInternal {
   curseImmune: number;
   spawnX: number;
   spawnY: number;
+  /** Ticks run on a guess (the last frame repeated: the next ones were late), not settled yet. */
+  guesses: number;
+  /** Ring of the state before each guessed tick (x, y, dir, moving, stun), oldest at guessHead. */
+  guessLog: Float64Array;
+  guessHead: number;
+  /** Round the guesses were made in (a new round can't be rewound into). */
+  guessRound: number;
+  /** Ticks that ran none of this player's frames (rewound guesses, a long stall): their frames run at once. */
+  owed: number;
 }
 
 export interface BombInternal {

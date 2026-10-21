@@ -20,7 +20,7 @@ import { emit, type SimCtx } from './context';
 import { calcMap, generateMap, type Point } from './map';
 import { maxZoneDepth, pickShape, shapeRingTiles, shapeSize, shapeSpawns } from './shapes';
 import { pickTheme, pickWeather } from './scenery';
-import { killPlayer, resetStats, spawnPlayerAt } from './players';
+import { dropGuesses, killPlayer, resetStats, spawnPlayerAt } from './players';
 import { resetOvertime, updateDrops, updateOvertime } from './overtime';
 import { shuffle } from './rng';
 import { bombIsGrounded } from './world';
@@ -99,6 +99,7 @@ function placeAll(ctx: SimCtx) {
     pi.spawnY = s.y;
     resetStats(ctx, p);
     p.inRound = true;
+    dropGuesses(ctx, p);
     spawnPlayerAt(p, s.x, s.y, 0);
   }
 }

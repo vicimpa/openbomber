@@ -46,6 +46,7 @@ function syncPlayer(s: PlayerSchema, p: PlayerState, tick: number) {
   set(s, 'kills', p.kills);
   set(s, 'deaths', p.deaths);
   set(s, 'ackSeq', p.ackSeq);
+  set(s, 'guessed', Math.min(255, p.guessed));
 }
 
 function syncBomb(s: BombSchema, b: BombState, tick: number) {

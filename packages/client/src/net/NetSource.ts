@@ -5,15 +5,15 @@
 
 import type { Room } from '@colyseus/sdk';
 import {
-  Ability, BOMB_FUSE, BombKind, BombMotion, Button, Curse, MSG, Phase, PLAYER_RADIUS, TICK_MS, Tile, packAxis,
-  BOT_DIFFICULTIES, predictMovement, predictWithProxies, unpackAxis, type RoomSettings,
+  Ability, BOMB_FUSE, BombKind, BombMotion, Button, Curse, DIR_VEC, MSG, Phase, PLAYER_RADIUS, TICK_MS, Tile, packAxis,
+  BOT_DIFFICULTIES, playerSpeed, predictMovement, predictWithProxies, unpackAxis, type RoomSettings,
   type BombState, type ChatMessage, type GameEvent, type InputFrame, type PlayerState, type PredictMovement,
   type WorldState,
 } from '@ob/game';
 import type { GameSource } from '../contracts.ts';
 import type { BattleState, PlayReply } from '../../../server/src/schema.ts';
 import { ReadModel, copyBomb, copyPlayer, emptyWorld, newBomb, newPlayer } from './readModel.ts';
-import { BombTrack, INTERP_DELAY_TICKS, ServerClock, Track } from './interp.ts';
+import { BombTrack, JitterBuffer, MAX_EXTRAPOLATE_TICKS, Playout, ServerClock, TELEPORT_DIST, Track } from './interp.ts';
 
 export type NetStatus = 'connected' | 'reconnecting' | 'disconnected';
 
@@ -45,6 +45,14 @@ const CONTACT = 2 * PLAYER_RADIUS + 0.15;
 const CONTACT_EASE_MS = 90;
 /** Local player moved farther than this in one tick (respawn, push-out): don't interpolate. */
 const TICK_TELEPORT = 0.5;
+/**
+ * A remote hero is never drawn moving faster than this many times its own speed, plus
+ * REMOTE_CATCH_UP_MS for a big gap: a correction (late data after extrapolating, a server
+ * rewind of its guessed input) becomes a quick glide instead of a jump. Farther than
+ * TELEPORT_DIST still snaps (respawn, teleport, new round).
+ */
+const REMOTE_MAX_SPEED = 1.75;
+const REMOTE_CATCH_UP_MS = 400;
 
 type Listener<T> = (v: T) => void;
 
@@ -89,7 +97,15 @@ export class NetSource implements GameSource {
   private readonly model = new ReadModel();
   private readonly view: WorldState = emptyWorld();
   private readonly clock = new ServerClock();
+  private readonly jitter = new JitterBuffer();
+  private readonly playout = new Playout();
+  /** Server tick remote heroes and bombs are drawn at this frame (NaN before the first frame). */
+  renderTick = NaN;
   private readonly tracks = new Map<string, Track>();
+  /** Per remote hero: where it was drawn last frame (before contact easing), see REMOTE_MAX_SPEED. */
+  private readonly drawn = new Map<string, { x: number; y: number }>();
+  /** Per remote hero: its path past the newest snapshot, walked with the movement code. */
+  private readonly extrap = new Map<string, { tick: number; p: PlayerState; xs: number[]; ys: number[] }>();
   private readonly bombTracks = new Map<number, BombTrack>();
   private events: GameEvent[] = [];
   private readonly chatListeners = new Set<Listener<ChatMessage>>();
@@ -161,6 +177,8 @@ export class NetSource implements GameSource {
       this.unsent = [];
       this.acc = 0;
       this.clock.reset();
+      this.jitter.reset();
+      this.playout.reset();
       this.setStatus('connected');
       // The server keeps a dropped player in the arena; re-enter if it did not.
       setTimeout(() => {
@@ -442,7 +460,7 @@ export class NetSource implements GameSource {
     if (!model.ready) return;
     const w = model.world;
     const now = performance.now();
-    this.clock.onSnapshot(w.tick, now);
+    this.jitter.add(this.clock.onSnapshot(w.tick, now));
 
     const playing = w.players.has(this.sessionId);
     if (playing !== this.playing) {
@@ -464,7 +482,9 @@ export class NetSource implements GameSource {
       t.push(w.tick, p.x, p.y, p.dir, p.moving);
     }
     if (this.tracks.size >= w.players.size) {
-      for (const id of this.tracks.keys()) if (!w.players.has(id)) this.tracks.delete(id);
+      for (const id of this.tracks.keys()) {
+        if (!w.players.has(id)) { this.tracks.delete(id); this.drawn.delete(id); this.extrap.delete(id); }
+      }
     }
 
     // view players: copy authoritative fields (positions are filled per frame)
@@ -506,6 +526,18 @@ export class NetSource implements GameSource {
     let drop = 0;
     while (drop < pending.length && pending[drop]!.seq <= auth.ackSeq) drop++;
     if (drop) pending.splice(0, drop);
+
+    if (this.pred && auth.guessed > 0 && auth.alive && auth.inRound && this.predict) {
+      // Our frames reached the server late: it ran some ticks on a guess (our last input again),
+      // which its position includes. Replaying our frames on top would count those ticks twice,
+      // so keep the prediction; the server settles the guesses (rewinding a wrong one) as soon
+      // as the frames come, and the next settled state lines up with it.
+      const pred = this.pred;
+      const x = pred.x, y = pred.y, dir = pred.dir, moving = pred.moving, stun = pred.effects.stun;
+      copyPlayer(auth, pred);
+      pred.x = x; pred.y = y; pred.dir = dir; pred.moving = moving; pred.effects.stun = stun;
+      return;
+    }
 
     const pred = this.pred ?? (this.pred = newPlayer(auth.id));
     copyPlayer(auth, pred);
@@ -558,7 +590,8 @@ export class NetSource implements GameSource {
     v.flames = w.flames; v.pickups = w.pickups; v.falling = w.falling; v.drops = w.drops;
     v.zoneRing = w.zoneRing; v.zoneIn = w.zoneIn;
 
-    const renderTick = this.clock.now(nowMs) - INTERP_DELAY_TICKS;
+    const renderTick = this.playout.advance(this.clock.now(nowMs), this.jitter.delay, dtMs, w.tick);
+    this.renderTick = renderTick;
     const k = Math.exp(-Math.max(0, dtMs) / SMOOTH_TAU_MS);
     this.errX *= k; this.errY *= k;
     if (Math.abs(this.errX) < 1e-4) this.errX = 0;
@@ -573,12 +606,56 @@ export class NetSource implements GameSource {
         p.x = this.lerpX + this.errX; p.y = this.lerpY + this.errY; p.dir = src.dir; p.moving = src.moving;
         this.visX = p.x; this.visY = p.y;
       } else {
-        this.tracks.get(id)?.sample(renderTick, p);
+        const t = this.tracks.get(id);
+        if (t && renderTick > t.newestTick && this.predict) this.extrapolate(id, renderTick - t.newestTick, p);
+        else t?.sample(renderTick, p);
+        this.limitSpeed(id, p, dtMs);
         this.drawContact(id, p, dtMs);
       }
     }
 
     for (const [id, b] of v.bombs) if (id >= 0) this.placeBomb(id, b, renderTick);
+  }
+
+  /**
+   * No snapshot for the render tick yet (late packets): keep the hero walking the way it was
+   * going, with the real movement code (walls, bombs, corner assist), for a few ticks.
+   */
+  private extrapolate(id: string, ahead: number, out: PlayerState) {
+    const auth = this.model.world.players.get(id); // the newest snapshot
+    if (!auth) return;
+    out.x = auth.x; out.y = auth.y; out.dir = auth.dir; out.moving = auth.moving;
+    if (!auth.moving || !auth.alive || !auth.inRound) return;
+    let c = this.extrap.get(id);
+    if (!c) { c = { tick: NaN, p: newPlayer(id), xs: [], ys: [] }; this.extrap.set(id, c); }
+    if (c.tick !== this.model.world.tick) {
+      c.tick = this.model.world.tick;
+      copyPlayer(auth, c.p);
+      c.xs.length = 0; c.ys.length = 0;
+      c.xs.push(auth.x); c.ys.push(auth.y);
+    }
+    const a = Math.min(ahead, MAX_EXTRAPOLATE_TICKS);
+    const i = Math.floor(a), f = a - i;
+    const [dx, dy] = DIR_VEC[auth.dir];
+    while (c.xs.length < i + 2) {
+      predictMovement(this.model.world, c.p, { seq: 0, dx, dy, buttons: 0 });
+      c.xs.push(c.p.x); c.ys.push(c.p.y);
+    }
+    out.x = c.xs[i]! + (c.xs[i + 1]! - c.xs[i]!) * f;
+    out.y = c.ys[i]! + (c.ys[i + 1]! - c.ys[i]!) * f;
+  }
+
+  /** See REMOTE_MAX_SPEED. */
+  private limitSpeed(id: string, p: PlayerState, dtMs: number) {
+    const d = this.drawn.get(id);
+    if (!d) { this.drawn.set(id, { x: p.x, y: p.y }); return; }
+    const dx = p.x - d.x, dy = p.y - d.y;
+    const dist = Math.hypot(dx, dy);
+    const dt = Math.max(0, dtMs);
+    const max = REMOTE_MAX_SPEED * playerSpeed(p) * dt / TICK_MS + dist * dt / REMOTE_CATCH_UP_MS;
+    if (dist <= max || dist > TELEPORT_DIST || !p.alive) { d.x = p.x; d.y = p.y; return; }
+    d.x += (dx / dist) * max; d.y += (dy / dist) * max;
+    p.x = d.x; p.y = d.y;
   }
 
   /**

@@ -3,6 +3,7 @@
 
 import {
   BOMB_FUSE,
+  BOMB_RELEASE_DISTANCE,
   FLAME_TIME,
   PLAYER_RADIUS,
   RESPAWN_DELAY,
@@ -11,7 +12,7 @@ import {
   START_RADIUS,
 } from '../contract/constants';
 import type { NewPlayer } from '../contract/api';
-import { Button, type DeathCause } from '../contract/protocol';
+import { Button, type DeathCause, type InputFrame } from '../contract/protocol';
 import { Ability, Curse, Dir, DIR_VEC, Phase, Tile, type PlayerState } from '../contract/types';
 import { circleTouchesTile } from './collision';
 import { emptyEffects, syncAbilities, TIMED_ABILITIES } from './effects';
@@ -37,6 +38,11 @@ const FLAME_HIT_RADIUS = 0.6 * PLAYER_RADIUS;
 // players push each other apart to exactly 2R, so contact means within a hair of that
 const TOUCH2 = (2 * PLAYER_RADIUS + 0.06) ** 2;
 const MAX_QUEUE = 6;
+/** Ticks a player may run on a guessed input (its last frame repeated) while its next frames are late. */
+export const MAX_GUESS = 30;
+/** Ticks without any input (guesses used up) whose frames still run when they come. */
+const MAX_OWED = 60;
+const GUESS_FIELDS = 5; // x, y, dir, moving, stun before the guessed tick
 
 export const gameplayPhase = (ph: Phase) => ph === Phase.Playing || ph === Phase.SuddenDeath;
 
@@ -66,12 +72,16 @@ export function createPlayer(np: NewPlayer): PlayerState {
     kills: 0,
     deaths: 0,
     ackSeq: 0,
+    guessed: 0,
   };
   return p;
 }
 
 export function createInternal(): PlayerInternal {
-  return { queue: [], last: EMPTY_INPUT, lastSeq: 0, prevButtons: 0, collected: [], curseImmune: 0, spawnX: 0, spawnY: 0 };
+  return {
+    queue: [], last: EMPTY_INPUT, lastSeq: 0, prevButtons: 0, collected: [], curseImmune: 0, spawnX: 0, spawnY: 0,
+    guesses: 0, guessHead: 0, guessRound: -1, guessLog: new Float64Array(MAX_GUESS * GUESS_FIELDS), owed: 0,
+  };
 }
 
 function clearEffects(p: PlayerState) {
@@ -105,15 +115,97 @@ export function queueInput(ctx: SimCtx, id: string, dx: number, dy: number, butt
   if (!pi || !(seq > pi.lastSeq)) return;
   pi.lastSeq = seq;
   pi.queue.push({ seq, dx, dy, buttons: buttons | 0 });
-  if (pi.queue.length > MAX_QUEUE) pi.queue.splice(0, pi.queue.length - MAX_QUEUE);
+  // frames that settle guessed / owed ticks don't count against the queue
+  const max = MAX_QUEUE + pi.guesses + pi.owed;
+  if (pi.queue.length > max) pi.queue.splice(0, pi.queue.length - max);
 }
 
-/** Apply at most one queued input (or repeat the last one), move, then act. */
+const sameInput = (a: InputFrame, b: InputFrame) => a.dx === b.dx && a.dy === b.dy && a.buttons === b.buttons;
+
+/**
+ * Late frames arrived for ticks that ran on a guess (the last frame repeated). Matching
+ * ones confirm their guess; at the first wrong one the hero goes back to where it stood
+ * before that guess, and the real frames of the rewound ticks run right away (`owed`).
+ * So the hero ends up exactly where the client predicted, however late its frames came.
+ */
+function settleGuesses(ctx: SimCtx, p: PlayerState, pi: PlayerInternal) {
+  if (pi.guesses === 0 || pi.queue.length === 0) return;
+  if (!p.alive || !p.inRound || pi.guessRound !== ctx.world.round) { dropGuesses(ctx, p); return; }
+  while (pi.guesses > 0 && pi.queue.length > 0) {
+    const f = pi.queue[0]!;
+    if (!sameInput(f, pi.last)) {
+      const g = pi.guessLog, i = pi.guessHead * GUESS_FIELDS;
+      p.x = g[i]!; p.y = g[i + 1]!; p.dir = g[i + 2]! as Dir; p.moving = g[i + 3] === 1; p.effects.stun = g[i + 4]!;
+      pi.owed += pi.guesses;
+      pi.guesses = 0;
+      pi.guessHead = 0;
+      // standing on a bomb dropped meanwhile (its passers were settled without us): walk off it
+      for (const b of ctx.world.bombs.values()) {
+        const dx = p.x - b.x, dy = p.y - b.y;
+        if (dx * dx + dy * dy < BOMB_RELEASE_DISTANCE ** 2 && !b.passers.includes(p.id)) b.passers.push(p.id);
+      }
+      return;
+    }
+    // the guess was right
+    pi.queue.shift();
+    pi.last = f;
+    pi.prevButtons = f.buttons;
+    p.ackSeq = f.seq;
+    pi.guessHead = (pi.guessHead + 1) % MAX_GUESS;
+    pi.guesses--;
+  }
+}
+
+/**
+ * One tick of a player: its next queued frame (plus the frames of ticks it is owed after a
+ * rewind or a long stall); with nothing queued, a guess (the last frame again) that the
+ * real frame settles later, see settleGuesses.
+ */
 export function updatePlayer(ctx: SimCtx, p: PlayerState) {
   const pi = ctx.players.get(p.id)!;
-  const frame = pi.queue.length > 0 ? pi.queue.shift()! : pi.last;
-  pi.last = frame;
-  p.ackSeq = frame.seq;
+  settleGuesses(ctx, p, pi);
+  // on time (no backlog): ticks still owed from long ago lapse, they can't be saved up for a dash
+  if (pi.owed > 0 && pi.guesses === 0 && pi.queue.length <= 1) pi.owed--;
+  let ran = 0;
+  while (pi.queue.length > 0 && ran <= pi.owed) { runFrame(ctx, p, pi, pi.queue.shift()!); ran++; }
+  if (ran > 0) {
+    pi.owed -= ran - 1;
+  } else if (!p.alive || !p.inRound || pi.lastSeq === 0) {
+    // dead, spectating, or no frames ever sent (nothing to guess from): the last input holds
+    runFrame(ctx, p, pi, pi.last);
+  } else if (pi.guesses < MAX_GUESS) {
+    const g = pi.guessLog, i = ((pi.guessHead + pi.guesses) % MAX_GUESS) * GUESS_FIELDS;
+    g[i] = p.x; g[i + 1] = p.y; g[i + 2] = p.dir; g[i + 3] = p.moving ? 1 : 0; g[i + 4] = p.effects.stun;
+    if (pi.guesses === 0) pi.guessRound = ctx.world.round;
+    pi.guesses++;
+    runFrame(ctx, p, pi, pi.last, true);
+  } else {
+    // out of guesses: the hero waits, its frames catch up when they come
+    pi.owed = Math.min(pi.owed + 1, MAX_OWED);
+    p.moving = false;
+  }
+  p.guessed = pi.guesses;
+}
+
+/**
+ * The sim put the hero somewhere itself (spawn, respawn, teleport, death...): its guesses can't
+ * be rewound any more. They stand; the real frames of those ticks run when they come (owed).
+ */
+export function dropGuesses(ctx: SimCtx, p: PlayerState) {
+  const pi = ctx.players.get(p.id);
+  if (!pi || pi.guesses === 0) return;
+  pi.owed = Math.min(pi.owed + pi.guesses, MAX_OWED);
+  pi.guesses = 0;
+  pi.guessHead = 0;
+  p.guessed = 0;
+}
+
+/** Apply one input frame: move, then act. `guess`: a speculative repeat of the last frame (no ack). */
+function runFrame(ctx: SimCtx, p: PlayerState, pi: PlayerInternal, frame: InputFrame, guess = false) {
+  if (!guess) {
+    pi.last = frame;
+    p.ackSeq = frame.seq;
+  }
   const held = frame.buttons;
   const pressed = held & ~pi.prevButtons;
   const released = pi.prevButtons & ~held;
@@ -173,6 +265,7 @@ function teleport(ctx: SimCtx, p: PlayerState) {
   }
   if (spots.length === 0) return;
   const i = spots[randInt(ctx.secret, spots.length)]!;
+  dropGuesses(ctx, p);
   p.x = i % W;
   p.y = (i / W) | 0;
   p.teleports--;
@@ -334,6 +427,7 @@ export function spawnPlayerAt(p: PlayerState, x: number, y: number, invulnerable
 }
 
 function respawn(ctx: SimCtx, p: PlayerState) {
+  dropGuesses(ctx, p);
   const t = findSafeTile(ctx, p, -1, -1);
   spawnPlayerAt(p, t.x, t.y, SPAWN_INVULNERABLE);
   emit(ctx, { type: 'playerRespawned', player: p.id, x: t.x, y: t.y });
@@ -354,6 +448,7 @@ function pushOutOfBricks(ctx: SimCtx, p: PlayerState) {
     const x = i % w.width;
     const y = (i / w.width) | 0;
     if (at(x, y) === Tile.Floor && !bombAtTile(w, x, y)) {
+      dropGuesses(ctx, p);
       p.x = x;
       p.y = y;
       return;

@@ -43,6 +43,9 @@ export const PlayerSchema = schema({
   kills: t.uint16().default(0),
   deaths: t.uint16().default(0),
   ackSeq: t.uint32().default(0),
+  /** Ticks run on a guessed input since ackSeq (PlayerState.guessed): the owner's client keeps its
+   *  own prediction instead of replaying from this position until the guesses are settled. */
+  guessed: t.uint8().default(0),
 }, 'Player');
 export type PlayerSchema = SchemaType<typeof PlayerSchema>;
 

@@ -876,12 +876,58 @@ describe('input handling', () => {
     expect(sim.state.bombs.size).toBe(1);
     sim.step();
     sim.step();
-    sim.step(); // queue empty: frame 3 repeats
-    expect(p.ackSeq).toBe(3);
+    sim.step(); // queue empty: frame 3 repeats (a guess, not acked)
+    expect([p.ackSeq, p.guessed]).toEqual([3, 1]);
     expect(sim.state.bombs.size).toBe(1); // Bomb held the whole time -> one press
+    // a flood beyond the guessed tick: only the newest 6 (+1 for the guess) are kept; the guess
+    // was wrong (Bomb released), so it is rewound and its tick runs the first kept frame too
     for (let s = 4; s <= 20; s++) sim.pushInput('a', { seq: s, dx: 0, dy: 0, buttons: 0 });
     sim.step();
-    expect(p.ackSeq).toBe(15); // only the newest 6 are kept
+    expect([p.ackSeq, p.guessed]).toEqual([15, 0]);
+  });
+
+  test('late frames: the sim guesses the last input and settles it, ending exactly where the frames lead', () => {
+    // the same frames on time (ref) and with stalls (late): positions must match tick for tick
+    // once the late frames are in, whatever was guessed meanwhile
+    const mk = () => {
+      const sim = new Simulation({ seed: 7 });
+      sim.addPlayer({ id: 'a', name: 'a', skin: 0 });
+      until(sim, (e) => e.some((x) => x.type === 'roundStart'));
+      sim.holdRound = true;
+      const w = sim.state;
+      for (let i = 0; i < w.tiles.length; i++) if (w.tiles[i] === Tile.Brick) w.tiles[i] = Tile.Floor;
+      const p = w.players.get('a')!;
+      p.x = Math.floor(w.width / 2); p.y = Math.floor(w.height / 2);
+      return sim;
+    };
+    const ref = mk(), late = mk();
+    const dirs: [number, number][] = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+    const frame = (s: number) => {
+      const [dx, dy] = dirs[Math.floor(s / 17) % 4]!; // a turn every 17 frames
+      return { seq: s, dx, dy, buttons: 0 };
+    };
+    // stalls (frames withheld, then all at once): within a straight run (all guesses right),
+    // across a turn (rewind), and longer than the guess budget (the hero waits, then catches up)
+    const withheld = new Set<number>();
+    for (const [a, b] of [[3, 12], [28, 40], [60, 120]] as const) for (let s = a; s <= b; s++) withheld.add(s);
+    const held: number[] = [];
+    const pa = ref.state.players.get('a')!, pb = late.state.players.get('a')!;
+    let guessedMax = 0;
+    for (let s = 1; s <= 160; s++) {
+      ref.pushInput('a', frame(s));
+      ref.step();
+      if (withheld.has(s)) held.push(s);
+      else { for (const h of held.splice(0)) late.pushInput('a', frame(h)); late.pushInput('a', frame(s)); }
+      late.step();
+      guessedMax = Math.max(guessedMax, pb.guessed);
+      if (held.length === 0) {
+        expect([pb.ackSeq, pb.guessed]).toEqual([s, 0]);
+        expect([pb.x, pb.y]).toEqual([pa.x, pa.y]);
+      } else {
+        expect(pb.ackSeq).toBeLessThan(held[0]!);
+      }
+    }
+    expect(guessedMax).toBe(30); // MAX_GUESS: the long stall used them all up
   });
 
   test('crossing flames merge into a Center piece', () => {

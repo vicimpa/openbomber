@@ -52,7 +52,7 @@ export class StubSim implements ISimulation {
         shield: 0, ghost: 0, crazy: 0, fire: 0, curse: 0, invulnerable: 120, stun: 0, speed: 0,
         kick: 0, glove: 0, punch: 0, remote: 0, pierce: 0, lineBomb: 0, bombPass: 0,
       },
-      carrying: -1, respawnIn: 0, wins: 0, kills: 0, deaths: 0, ackSeq: 0,
+      carrying: -1, respawnIn: 0, wins: 0, kills: 0, deaths: 0, ackSeq: 0, guessed: 0,
     };
     this.state.players.set(p.id, p);
     this.queues.set(p.id, []);

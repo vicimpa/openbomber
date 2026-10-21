@@ -244,7 +244,10 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
       connected: true,
       lastChat: 0,
       lastSlowHint: 0,
-      inputs: new TokenBucket(TICK_RATE / 2, TICK_RATE * 1.25),
+      // a burst of up to 1.5 s of frames: what piles up behind a stalled connection (Discord's
+      // proxy holds packets back for 0.3-0.5 s at times) must all get through, or the sim
+      // misses frames the client already predicted with
+      inputs: new TokenBucket(TICK_RATE * 1.5, TICK_RATE * 1.25),
       profile: new TokenBucket(3, 0.5),
       pings: new TokenBucket(5, 2),
       plays: new TokenBucket(4, 1),

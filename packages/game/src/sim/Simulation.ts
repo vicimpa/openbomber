@@ -168,6 +168,9 @@ export class Simulation implements ISimulation {
     w.falling.length = 0;
     w.zoneRing = 0;
     w.zoneIn = 0;
+    // heroes get placed on the new map by hand: nothing from before to rewind into or catch up
+    for (const pi of ctx.players.values()) { pi.guesses = 0; pi.guessHead = 0; pi.owed = 0; }
+    for (const p of w.players.values()) p.guessed = 0;
   }
 
   /** Hide a pickup inside the brick at (x, y). */

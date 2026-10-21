@@ -36,7 +36,7 @@ export function newPlayer(id: string): PlayerState {
   return {
     id, name: '', skin: 0, isBot: false, x: 0, y: 0, dir: 0, moving: false, alive: false, inRound: false,
     lives: 0, teleports: 0, bombs: 0, radius: 0, speedLevel: 0, abilities: 0, curse: 0, effects: emptyEffects(),
-    carrying: -1, respawnIn: 0, wins: 0, kills: 0, deaths: 0, ackSeq: 0,
+    carrying: -1, respawnIn: 0, wins: 0, kills: 0, deaths: 0, ackSeq: 0, guessed: 0,
   };
 }
 
@@ -47,7 +47,7 @@ export function copyPlayer(src: PlayerState, dst: PlayerState) {
   dst.radius = src.radius; dst.speedLevel = src.speedLevel; dst.abilities = src.abilities; dst.curse = src.curse;
   copyEffects(src.effects, dst.effects);
   dst.carrying = src.carrying; dst.respawnIn = src.respawnIn; dst.wins = src.wins;
-  dst.kills = src.kills; dst.deaths = src.deaths; dst.ackSeq = src.ackSeq;
+  dst.kills = src.kills; dst.deaths = src.deaths; dst.ackSeq = src.ackSeq; dst.guessed = src.guessed;
 }
 
 function readEffects(s: PlayerSchema['effects'] | undefined, e: TimedEffects, tick: number) {
@@ -61,7 +61,7 @@ function readPlayer(s: PlayerSchema, p: PlayerState, tick: number) {
   p.radius = s.radius; p.speedLevel = s.speedLevel; p.abilities = s.abilities; p.curse = s.curse;
   readEffects(s.effects, p.effects, tick);
   p.carrying = s.carrying; p.respawnIn = left(s.respawnAt, tick);
-  p.wins = s.wins; p.kills = s.kills; p.deaths = s.deaths; p.ackSeq = s.ackSeq;
+  p.wins = s.wins; p.kills = s.kills; p.deaths = s.deaths; p.ackSeq = s.ackSeq; p.guessed = s.guessed ?? 0;
 }
 
 function readBomb(s: BombSchema, b: BombState, tick: number) {
