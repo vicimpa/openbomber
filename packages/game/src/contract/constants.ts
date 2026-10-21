@@ -63,7 +63,7 @@ export const SPAWN_INVULNERABLE = sec(2);
 export const RESPAWN_DELAY = sec(1.5);        // when the player has an extra life
 
 // --- round flow (canon: continuous rounds, no lobby)
-export const COUNTDOWN_TIME = sec(1.5);       // short "get ready" freeze at round start
+export const COUNTDOWN_TIME = sec(3);         // "get ready" at round start: «3, 2» while the camera flies to the new map, heroes drop in on «1»
 export const ROUND_OVER_TIME = sec(5);        // restart delay once the round is decided
 export const SOLO_RESTART_TIME = sec(1);      // practice mode (1 player) restarts quickly
 export const WAIT_FOR_LIMIT = sec(15);        // zone: quiet time after round start / last shrink

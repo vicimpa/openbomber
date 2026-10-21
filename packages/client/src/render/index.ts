@@ -19,12 +19,14 @@ import { Footprints } from './prints';
 
 const T = 32;
 const MAX_DPR = 2;
-/** Camera trip between two maps (s); the round-start freeze is 1.5 s, heroes land as it ends. */
+/** Camera trip between two maps (s); the round-start freeze (COUNTDOWN_TIME) is longer: heroes land before it ends. */
 const TRAVEL = 1.2;
 /** A trip covers at least this many screens (short side), however far the camera is zoomed out. */
 const TRIP_SCREENS = 5;
-/** Heroes start dropping in this long before the camera arrives. */
-const SPAWN_LEAD = 0.75;
+/** Heroes drop in no sooner than this long after the camera has arrived on the new map... */
+const SPAWN_AFTER = 0.15;
+/** ...and not before the countdown says «1» (this long before control starts), so it ticks evenly. */
+const SPAWN_ON_ONE = 1;
 
 const PICKUP_LABEL: Record<PickupType, [string, number]> = {
   [PickupType.BombUp]: ['+1 BOMB', 0x8fe3ff], [PickupType.FireUp]: ['+1 FIRE', 0xffb35c],
@@ -320,7 +322,7 @@ class PixiRenderer implements GameRenderer {
       // same spot (centred), the trip keeps going
       m.ox = Math.round(m.ox + (m.w - world.width) / 2); m.oy = Math.round(m.oy + (m.h - world.height) / 2);
       this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
-      this.spawnDelay = Math.max(0.05, this.camera.travelLeft - SPAWN_LEAD);
+      this.spawnDelay = Math.max(this.camera.travelLeft + SPAWN_AFTER, this.untilOne(world));
     } else if (travel) {
       // the old arena stays where it was; the new one is built a little further across the world
       this.ghost = { ox: m.ox, oy: m.oy, w: m.w, h: m.h, shape: m.shape, theme: m.theme, t: 0 };
@@ -339,7 +341,7 @@ class PixiRenderer implements GameRenderer {
       // get the countryside around the destination ready while the camera is on its way
       const pad = 14 * T;
       this.ground.want((m.ox - 1.5) * T - pad, (m.oy - 1.5) * T - pad, (m.ox + world.width + 0.5) * T + pad, (m.oy + world.height + 0.5) * T + pad);
-      this.spawnDelay = TRAVEL - SPAWN_LEAD;
+      this.spawnDelay = Math.max(TRAVEL + SPAWN_AFTER, this.untilOne(world));
     } else {
       this.arena.clearGhost();
       this.ghost = null;
@@ -350,6 +352,11 @@ class PixiRenderer implements GameRenderer {
     m.w = world.width; m.h = world.height; m.shape = world.shape ?? ArenaShape.Rect; m.theme = world.theme ?? Theme.Meadow; m.shown = true; m.age = 0;
     this.mapRoot.position.set(m.ox * T, m.oy * T);
     this.syncClearings();
+  }
+
+  /** Seconds until the round's countdown reaches «1» (0 when it isn't counting down). */
+  private untilOne(world: WorldState) {
+    return world.phase === Phase.Countdown ? Math.max(0, world.phaseTicks / TICK_RATE - SPAWN_ON_ONE) : 0;
   }
 
   /** Snapshot of the current map (still at its origin) and still copies of its heroes. */

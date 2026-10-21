@@ -648,14 +648,15 @@ describe('round flow (canon: continuous, no lobby)', () => {
     const sim = new Simulation({ seed: 7 });
     expect(phaseOf(sim)).toBe(Phase.Waiting);
     sim.addPlayer({ id: 'a', name: 'A', skin: 0 });
-    expect(sim.step()).toContainEqual({ type: 'countdown', seconds: 2 });
+    expect(sim.step()).toContainEqual({ type: 'countdown', seconds: Math.ceil(COUNTDOWN_TIME / TICK_RATE) });
     expect(phaseOf(sim)).toBe(Phase.Countdown);
     expect([sim.state.width, sim.state.height]).toEqual([13, 13]);
     const a = sim.state.players.get('a')!;
     const x0 = a.x;
     sim.pushInput('a', { seq: 1, dx: 1, dy: 0, buttons: 0 });
     const started = until(sim, (e) => e.some((x) => x.type === 'roundStart'));
-    expect(started.filter((e) => e.type === 'countdown')).toEqual([{ type: 'countdown', seconds: 1 }]);
+    const ticks = started.filter((e) => e.type === 'countdown');
+    expect(ticks[ticks.length - 1]).toEqual({ type: 'countdown', seconds: 1 });
     expect(a.x).toBe(x0); // frozen during the countdown
     sim.pushInput('a', { seq: 2, dx: 0, dy: 0, buttons: 0 });
 

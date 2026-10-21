@@ -234,7 +234,7 @@ describe('matchmaking', () => {
     const b1 = bot();
     if (at && b1?.alive) expect({ x: b1.x, y: b1.y }).toEqual(at); // stands still while the hero's grace runs
     await waitFor(() => sr.botCount === 0, BOTS_LINGER_MS + 1000, 'the bot leaves after the player');
-  });
+  }, 20000);
 
   test('arena capacity: extra clients stay spectators ("Нет свободных мест")', async () => {
     const h = await join('create', ROOM_NAME, { private: true, name: 'H', skin: 0, bots: 0, maxPlayers: 2, play: true });
@@ -559,13 +559,13 @@ describe('anti-cheat', () => {
   test('«Отключиться» mid-round keeps the hero in the arena for a moment', async () => {
     const h = await join('create', ROOM_NAME, { private: true, name: 'Leaver', skin: 0, bots: 0, play: true });
     const sr = serverRoom(h.roomId);
-    await waitFor(() => sr.sim.state.phase === Game.Phase.Playing && sr.sim.state.players.get(h.sessionId)?.inRound, 4000, 'playing');
+    await waitFor(() => sr.sim.state.phase === Game.Phase.Playing && sr.sim.state.players.get(h.sessionId)?.inRound, 6000, 'playing');
     h.send(MSG.play, false);
     await sleep(300);
     expect(sr.sim.state.players.has(h.sessionId)).toBe(true);
     await waitFor(() => !sr.sim.state.players.has(h.sessionId), 4000, 'removed after grace');
     await h.leave();
-  });
+  }, 15000);
 
   test('names: reserved prefixes are refused, duplicates get a suffix', async () => {
     const a = await join('create', ROOM_NAME, { private: true, name: '@server', skin: 0, bots: 0, play: true });
