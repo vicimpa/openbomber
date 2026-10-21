@@ -1,6 +1,6 @@
-# Game server on Fly.io for the Discord activity: Discord's proxy runs on Cloudflare's edge, so a
-# server next to it (Amsterdam) saves the round trip to the server in Russia. The machine stops
-# when nobody is connected and starts on the next connection (billing is per second it runs).
+# The game server, on Fly.io in Amsterdam: for the site (the client is on GitHub Pages) and for the
+# Discord activity, whose proxy runs on Cloudflare's edge right next to it. The machine stops when
+# nobody is connected and starts on the next connection (billing is per second it runs).
 # Deploy: fly deploy   (secrets: fly secrets set DISCORD_CLIENT_ID=... DISCORD_CLIENT_SECRET=...)
 app = "openbomber-eu"
 primary_region = "ams"

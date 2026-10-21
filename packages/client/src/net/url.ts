@@ -1,8 +1,8 @@
 // Server endpoint resolution:
 //   0. inside a Discord activity: always the page's own host (Discord's proxy maps the path to the
 //      server; its CSP allows nothing else), whatever VITE_SERVER_URL says
-//   1. VITE_SERVER_URL (e.g. "wss://ru.openbomber.ru/socket.io": the client is served from GitHub
-//      Pages, the game server lives on its own host)
+//   1. VITE_SERVER_URL (e.g. "wss://openbomber-eu.fly.dev/socket.io": the client is served from
+//      GitHub Pages, the game server lives on its own host)
 //   2. dev (vite serve): ws(s)://<page hostname>:2567, or through vite's /api proxy inside a
 //      Discord activity (the tunnel exposes only the vite port)
 //   3. prod: ws(s)://<page host><VITE_SERVER_PATH>, default "/api" (the path nginx proxies to the
