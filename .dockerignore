@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+.git
+.github
+images
+legacy
+screen
+packages/client
+!packages/client/package.json

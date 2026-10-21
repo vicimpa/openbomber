@@ -7,12 +7,23 @@ on:
       - 'packages/**'
       - 'package.json'
       - 'bun.lock'
+      - 'Dockerfile'
+      - 'fly.toml'
       - '.github/workflows/main.yml'
+
+# The client is served by GitHub Pages (openbomber.ru); the game runs on ru.openbomber.ru (the
+# server in Russia, nginx → pm2) for the site, and on Fly.io in Amsterdam (openbomber-eu) for the
+# Discord activity, next to Discord's proxy.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
 
 jobs:
   build:
     name: Test, build, deploy
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -28,11 +39,12 @@ jobs:
       - name: Test
         run: bun run test
 
-      # nginx on the game host already proxies /socket.io/ to 127.0.0.1:3001 (v1 socket.io),
-      # so v2 reuses that location: the client connects to wss://<host>/socket.io.
+      # The site connects to the server in Russia; inside Discord the client ignores
+      # VITE_SERVER_URL and goes through Discord's proxy to <host>/socket.io (→ Fly.io).
       - name: Build client
         run: bun run --filter '@ob/client' build
         env:
+          VITE_SERVER_URL: wss://ru.openbomber.ru/socket.io
           VITE_SERVER_PATH: /socket.io
           # Discord activity (packages/client/src/discord.ts); empty = the activity login is off
           VITE_DISCORD_CLIENT_ID: ${{ vars.DISCORD_CLIENT_ID }}
@@ -94,14 +106,39 @@ jobs:
             fi
             pm2 save || true
 
-      - name: Deploy client
-        uses: appleboy/scp-action@v0.1.7
+      - name: Upload client for Pages
+        uses: actions/upload-pages-artifact@v3
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          source: "packages/client/dist/*"
-          target: "/var/www/openbomber"
-          strip_components: 3
-          rm: true
+          path: packages/client/dist
+
+  pages:
+    name: Deploy client (GitHub Pages)
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  fly:
+    name: Deploy Discord server (Fly.io)
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Secrets and deploy
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          DISCORD_CLIENT_ID: ${{ vars.DISCORD_CLIENT_ID }}
+          DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
+        run: |
+          flyctl secrets set --stage DISCORD_CLIENT_ID="$DISCORD_CLIENT_ID" DISCORD_CLIENT_SECRET="$DISCORD_CLIENT_SECRET"
+          flyctl deploy --remote-only --ha=false

@@ -1,0 +1,37 @@
+# Game server on Fly.io for the Discord activity: Discord's proxy runs on Cloudflare's edge, so a
+# server next to it (Amsterdam) saves the round trip to the server in Russia. The machine stops
+# when nobody is connected and starts on the next connection (billing is per second it runs).
+# Deploy: fly deploy   (secrets: fly secrets set DISCORD_CLIENT_ID=... DISCORD_CLIENT_SECRET=...)
+app = "openbomber-eu"
+primary_region = "ams"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  HOST = "0.0.0.0"
+  BASE_PATH = "/socket.io"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "connections"
+    soft_limit = 200
+    hard_limit = 250
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    path = "/socket.io/health"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
