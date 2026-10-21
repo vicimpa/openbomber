@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test';
-import { BOMB_FUSE, CHAIN_DELAY, CRAZY_FUSE_MAX, CRAZY_FUSE_MIN, DROP_FALL_TIME, SKY_BOMB_FUSE, TICK_RATE, sec } from '../contract/constants';
+import { BOMB_FUSE, CHAIN_DELAY, CRAZY_FUSE_MAX, CRAZY_FUSE_MIN, DROP_FALL_TIME, MAX_RADIUS, SKY_BOMB_FUSE, START_RADIUS, TICK_RATE, sec } from '../contract/constants';
 import { Button, type GameEvent } from '../contract/protocol';
 import { Curse, DropKind, Phase, PickupType, Tile, type WorldState } from '../contract/types';
 import { Simulation } from '../sim/Simulation';
 import { Harness, ev } from '../sim/testkit';
 import { Bot, type BotDifficulty } from './Bot';
-import { analyze, INF } from './danger';
+import { analyze, DEFAULT_SIGHT, INF, type Sight } from './danger';
 
 const DIFFS: BotDifficulty[] = ['easy', 'normal', 'hard'];
 
@@ -123,7 +123,7 @@ describe('bots', () => {
     h.tap('a', Button.Bomb);
     a.x = 8;
     a.y = 0;
-    const d = analyze(h.state as WorldState);
+    const d = analyze(h.state as WorldState, DEFAULT_SIGHT, 'a'); // as 'a' sees it: own bombs are exact
     const W = h.state.width;
     const first = d.dStart[1 * W + 1]!;
     // the second bomb (placed ~60 ticks later) goes off CHAIN_DELAY after the first
@@ -339,7 +339,7 @@ describe('bots use what they hold', () => {
       h.tap('a', Button.Bomb);
       h.p('a').y = 1;
       h.p('a').x = 8;
-      const d = analyze(h.state as WorldState);
+      const d = analyze(h.state as WorldState, DEFAULT_SIGHT, 'a');
       for (const x of [1, 2, 3, 4, 5]) {
         if (remote) expect(d.soft[x]).toBe(1);
         else expect(d.dStart[x]).toBeLessThan(INF);
@@ -468,5 +468,112 @@ describe('bots use what they hold', () => {
     const events = drive(h, [bot], BOMB_FUSE + 40);
     expect(ev(events, 'playerTeleported').length).toBe(0);
     expect(h.p('bot').alive).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------- what bots know about blasts
+
+describe('bots guess the blast of other players\' bombs', () => {
+  const ROW = '.....................'; // 21 wide
+  const W = ROW.length;
+  const sight: Sight = { margin: 1, pickups: true };
+  /** Tiles to the right of a bomb at x = 0 that an analysis expects to burn. */
+  const reach = (h: Harness, s: Sight, self: string) => {
+    const d = analyze(h.state as WorldState, s, self);
+    let n = 0;
+    while (n + 1 < W && d.dStart[n + 1]! < INF) n++;
+    return n;
+  };
+  /** z lays a bomb at (0, 0) and steps out of its way; the analysis is updated every tick, like bots do. */
+  const lay = (h: Harness) => {
+    const z = h.p('z');
+    z.x = 0;
+    z.y = 0;
+    h.tap('z', Button.Bomb);
+    z.x = 12;
+    z.y = 2;
+    analyze(h.state as WorldState, sight, 'bot');
+  };
+  const watch = (h: Harness, n: number) => {
+    for (let i = 0; i < n; i++) {
+      h.step();
+      analyze(h.state as WorldState, sight, 'bot');
+    }
+  };
+  const fresh = () => {
+    const h = new Harness([ROW, ROW, ROW], [['bot', 20, 2], ['z', 0, 2]]);
+    analyze(h.state as WorldState, sight, 'bot');
+    return h;
+  };
+
+  test('never seen a blast of theirs: the starting radius plus the margin; the owner knows the real one', () => {
+    const h = fresh();
+    h.p('z').radius = 6; // unseen: set behind everybody's back
+    lay(h);
+    expect(reach(h, sight, 'bot')).toBe(START_RADIUS + 1);
+    expect(reach(h, { margin: 2, pickups: true }, 'bot')).toBe(START_RADIUS + 2);
+    expect(reach(h, sight, 'z')).toBe(6);
+  });
+
+  test('a long flame seen once makes their next bomb count that far (plus the margin)', () => {
+    const h = fresh();
+    h.p('z').radius = 6;
+    lay(h);
+    watch(h, BOMB_FUSE + 30);
+    expect(ev(h.events, 'explosion').length).toBe(1);
+    lay(h);
+    expect(reach(h, sight, 'bot')).toBe(7);
+    expect(reach(h, { margin: 1, pickups: false }, 'bot')).toBe(7); // flames count for every sight
+    // a new round: stats reset, and so does what was seen
+    h.state.round++;
+    watch(h, 1);
+    expect(reach(h, sight, 'bot')).toBe(START_RADIUS + 1);
+  });
+
+  test('fire pickups seen collected count; a FullFire means the biggest blast', () => {
+    const h = fresh();
+    const z = h.p('z');
+    for (const [kind, x] of [[PickupType.FireUp, 4], [PickupType.FireUp, 6]] as const) {
+      h.sim.spawnPickup(x, 2, kind);
+      watch(h, 1);
+      z.x = x;
+      watch(h, 2);
+    }
+    expect(z.radius).toBe(3);
+    lay(h);
+    expect(reach(h, sight, 'bot')).toBe(4);
+    expect(reach(h, { margin: 1, pickups: false }, 'bot')).toBe(START_RADIUS + 1); // sloppy: only flames count
+    watch(h, BOMB_FUSE + 30);
+    h.sim.spawnPickup(8, 2, PickupType.FullFire);
+    watch(h, 1);
+    z.x = 8;
+    watch(h, 2);
+    expect(z.radius).toBe(MAX_RADIUS);
+    lay(h);
+    expect(reach(h, sight, 'bot')).toBe(MAX_RADIUS);
+  });
+
+  test('a pickup burned next to nobody counts for nobody', () => {
+    const h = fresh();
+    h.sim.spawnPickup(2, 0, PickupType.FullFire);
+    watch(h, 1);
+    h.p('z').radius = 2;
+    lay(h);
+    watch(h, BOMB_FUSE + 30);
+    expect(h.state.pickups.size).toBe(0);
+    lay(h);
+    expect(reach(h, sight, 'bot')).toBe(3); // the flame seen (2) + 1, not MAX
+  });
+
+  test('a bot with a bomb of its own out plans it exactly while sharing the public view of the rest', () => {
+    const h = fresh();
+    const z = h.p('z');
+    z.radius = 4;
+    lay(h);
+    const pub = analyze(h.state as WorldState, sight, 'bot');
+    const own = analyze(h.state as WorldState, sight, 'z');
+    expect(own).not.toBe(pub);
+    expect(reach(h, sight, 'z')).toBe(4);
+    expect(analyze(h.state as WorldState, sight, 'nobody')).toBe(pub);
   });
 });

@@ -28,7 +28,6 @@ import {
 import { Button, type InputFrame } from '../contract/protocol';
 import {
   Ability,
-  BombKind,
   BombMotion,
   Curse,
   Dir,
@@ -46,6 +45,7 @@ import { MAX_LIVES } from '../sim/pickups';
 import { hashString, Rng } from '../sim/rng';
 import {
   analyze,
+  blastRadius,
   bombPierces,
   crazyRadius,
   inBlast,
@@ -57,6 +57,7 @@ import {
   slideStop,
   withExtraBomb,
   type Analysis,
+  type Sight,
 } from './danger';
 
 export type BotDifficulty = 'easy' | 'normal' | 'hard';
@@ -86,20 +87,25 @@ interface Tuning {
   carry: number;
   /** Safe tiles that must be reachable before dropping a bomb (fewer = easier to trap). */
   minSafe: number;
+  /** How the radius of other players' bombs is guessed (our own is known). See danger.ts. */
+  sight: Sight;
 }
 
 const TUNING: Record<BotDifficulty, Tuning> = {
   easy: {
     replan: 14, margin: 4, sloppy: 0.45, aggression: 0.4, skill: 0.35, teleport: 0.5, notice: sec(2),
     remoteDelay: sec(2.5), remoteTrap: sec(5), remoteReact: 18, carry: sec(1), minSafe: 1,
+    sight: { margin: 1, pickups: false },
   },
   normal: {
     replan: 7, margin: 7, sloppy: 0.15, aggression: 1, skill: 0.7, teleport: 0.85, notice: sec(0.8),
     remoteDelay: sec(1.2), remoteTrap: sec(4), remoteReact: 6, carry: sec(2), minSafe: 3,
+    sight: { margin: 1, pickups: true },
   },
   hard: {
     replan: 3, margin: 9, sloppy: 0, aggression: 1.6, skill: 1, teleport: 1, notice: 0,
     remoteDelay: sec(0.5), remoteTrap: sec(3.5), remoteReact: 0, carry: sec(3), minSafe: 4,
+    sight: { margin: 1, pickups: true },
   },
 };
 
@@ -471,7 +477,7 @@ export class Bot implements IBot {
     this.now = world.tick;
     this.reverse = p.curse === Curse.Reverse;
     this.notice(p);
-    const a = analyze(world);
+    const a = analyze(world, this.tune.sight, this.id);
     ensure(a.width * a.height);
     const W = a.width;
     const cx = Math.round(p.x);
@@ -975,7 +981,7 @@ export class Bot implements IBot {
     const W = a.width;
     const bx = Math.round(b.x);
     const by = Math.round(b.y);
-    const radius = b.kind === BombKind.Crazy ? crazyRadius(w.players.get(b.owner)) : b.radius;
+    const radius = blastRadius(a, b, this.id);
     const pierce = bombPierces(w, b);
     let bricks = 0;
     bMark[by * W + bx] = stamp;
@@ -1084,7 +1090,7 @@ export class Bot implements IBot {
     let fuseAfter = b.fuse > 0 ? Math.max(1, b.fuse - delay) : b.fuse < 0 ? (b.owner === p.id ? INF : 30) : 1;
     // coming down in (or next to) a blast: it chains and goes off early
     if (a.dStart[at]! < INF && (b.fuse <= 0 || a.dStart[at]! < b.fuse)) fuseAfter = Math.min(fuseAfter, Math.max(1, a.dStart[at]! - delay) + CHAIN_DELAY);
-    const radius = b.kind === BombKind.Crazy ? crazyRadius(w.players.get(b.owner)) : b.radius;
+    const radius = blastRadius(a, b, p.id);
     const pierce = bombPierces(w, b);
     if (fuseAfter < SAFE_FUSE && inBlast(a, lx, ly, radius, pierce, ox, oy)) return -INF;
     let score = 1;
@@ -1177,7 +1183,7 @@ export class Bot implements IBot {
       a.bomb[from] = saved;
       if (s === -INF || (aim && this.hits === 0)) continue;
       // trapped (no aim): only worth it if the bomb's blast no longer reaches us
-      if (!aim && at >= 0 && inBlast(a, at % W, (at / W) | 0, b.radius, bombPierces(a.world, b), x, y)) continue;
+      if (!aim && at >= 0 && inBlast(a, at % W, (at / W) | 0, blastRadius(a, b, p.id), bombPierces(a.world, b), x, y)) continue;
       this.tried(b);
       return [[dx, dy, Button.Action], [0, 0, 0]];
     }
@@ -1218,7 +1224,7 @@ export class Bot implements IBot {
       a.bomb[from] = saved;
       if (s === -INF || (aim && this.hits === 0)) continue;
       if (b.fuse > 0 && b.fuse < slideTicks + 5) continue;
-      if (!aim && inBlast(a, stop % W, (stop / W) | 0, b.radius, bombPierces(a.world, b), x, y)) continue;
+      if (!aim && inBlast(a, stop % W, (stop / W) | 0, blastRadius(a, b, p.id), bombPierces(a.world, b), x, y)) continue;
       this.tried(b);
       const along = Math.abs(dx !== 0 ? b.x - p.x : b.y - p.y);
       const n = Math.max(2, Math.ceil((along - 0.62) / speed) + 2);
