@@ -408,7 +408,12 @@ export class Bot implements IBot {
   /** Since when the bot has been walled into a pocket it can't bomb its way out of (-1: it isn't). */
   private trappedSince = -1;
   private trapCheck = 0;
+  /** Size of the pocket we're walled into (0: we aren't), re-checked every 15 ticks. */
+  private pocket = 0;
   private suicide = false;
+  /** Walled into a single tile: twitching, a new direction every few ticks. */
+  private twitchDir = 0;
+  private twitchAt = 0;
   private stuckX = 0;
   private stuckY = 0;
   private stuckTick = 0;
@@ -458,6 +463,8 @@ export class Bot implements IBot {
       this.wantBomb = false;
       this.reverse = false;
       this.trappedSince = -1;
+      this.trapCheck = 0;
+      this.pocket = 0;
       this.suicide = false;
       return this.out(0, 0, 0);
     }
@@ -494,6 +501,15 @@ export class Bot implements IBot {
       this.suicide = true;
       const bombHere = a.bomb[cur]! > 0;
       return this.out(0, 0, bombHere || this.held & Button.Bomb ? 0 : Button.Bomb);
+    }
+    // walled into a single tile: twitch, facing every way in turn
+    if (this.pocket === 1) {
+      if (this.now >= this.twitchAt) {
+        this.twitchDir = (this.twitchDir + 1 + this.rng.int(3)) & 3;
+        this.twitchAt = this.now + 2 + this.rng.int(4);
+      }
+      const [dx, dy] = DIR_VEC[STEP_DIRS[this.twitchDir]!];
+      return this.out(dx, dy, 0);
     }
 
     // scripted tricks (grab / punch / kick / line) run uninterrupted unless fire is imminent
@@ -1353,16 +1369,22 @@ export class Bot implements IBot {
 
   /**
    * Walled into a pocket of at most TRAP_CELLS cells with no brick to bomb through, nothing to
-   * pick up and nobody to fight, for TRAP_WAIT, holding a spare life (Heart) and able to bomb:
-   * time to blow up.
+   * pick up and nobody to fight (`pocket`, `trappedSince`). True when it's time to blow up:
+   * trapped for TRAP_WAIT, holding a spare life (Heart) and able to bomb.
    */
   private trapped(world: WorldState, p: PlayerState, cur: number): boolean {
-    if (p.lives <= 0 || p.bombs <= 0 || p.curse === Curse.Constipation || p.effects.invulnerable > 0) {
-      this.trappedSince = -1;
-      return false;
+    if (this.now >= this.trapCheck) {
+      this.trapCheck = this.now + 15;
+      this.pocket = this.pocketAround(world, p, cur);
+      if (!this.pocket) this.trappedSince = -1;
+      else if (this.trappedSince < 0) this.trappedSince = this.now;
     }
-    if (this.now < this.trapCheck) return this.trappedSince >= 0 && this.now - this.trappedSince >= TRAP_WAIT;
-    this.trapCheck = this.now + 15;
+    if (!this.pocket || p.lives <= 0 || p.bombs <= 0 || p.curse === Curse.Constipation || p.effects.invulnerable > 0) return false;
+    return this.now - this.trappedSince >= TRAP_WAIT;
+  }
+
+  /** Cells of the closed pocket around `cur`, or 0 when there's a way out (or a reason to stay). */
+  private pocketAround(world: WorldState, p: PlayerState, cur: number): number {
     const W = world.width, H = world.height, t = world.tiles;
     const seen = new Set<number>([cur]);
     const queue = [cur];
@@ -1383,9 +1405,7 @@ export class Bot implements IBot {
     if (!open) for (const q of world.players.values()) {
       if (q.id !== p.id && q.alive && q.inRound && seen.has(Math.round(q.y) * W + Math.round(q.x))) { open = true; break; }
     }
-    if (open) { this.trappedSince = -1; return false; }
-    if (this.trappedSince < 0) this.trappedSince = this.now;
-    return this.now - this.trappedSince >= TRAP_WAIT;
+    return open ? 0 : seen.size;
   }
 
   /** No progress for a second while trying to move: take a random safe step and replan. */

@@ -401,6 +401,15 @@ describe('bots use what they hold', () => {
     expect(ev(out, 'bombPlaced').length).toBeGreaterThan(0); // it goes on bombing at the enemy
   });
 
+  test('trapped: walled into a single tile, a bot twitches, turning every which way', () => {
+    const h = new Harness(['.#.......', '##.......', '.........'], [['bot', 0, 0], ['z', 8, 2]]);
+    const bot = new Bot('bot', 'normal');
+    let turns = 0, last = h.p('bot').dir;
+    drive(h, [bot], sec(1), () => { if (h.p('bot').dir !== last) { turns++; last = h.p('bot').dir; } });
+    expect(turns).toBeGreaterThanOrEqual(5);
+    expect(h.p('bot').alive).toBe(true);
+  });
+
   test('trapped: walled into a pocket, a bot with a spare life blows up and comes back; without one it waits', () => {
     for (const lives of [1, 0]) {
       const h = new Harness(['..#......', '###......', '.........'], [['bot', 0, 0], ['z', 8, 2]]);
