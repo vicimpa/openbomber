@@ -193,9 +193,12 @@ export function analyze(w: WorldState): Analysis {
     if (f.ttl < dStart[i]!) dStart[i] = f.ttl;
     dEnd[i] = INF;
   }
-  // the ring the zone will close next: get out before the warning runs out
-  if (w.zoneIn > 0 && w.zoneIn <= ZONE_HEED) {
-    const depth = zoneDepth(w.shape, W, w.height);
+  // the ring the zone will close next: get out before the warning runs out. When nothing
+  // deeper is left open, there is no way out: it's no danger to flee, the fight goes on.
+  const depth = w.zoneIn > 0 && w.zoneIn <= ZONE_HEED ? zoneDepth(w.shape, W, w.height) : null;
+  let escape = false;
+  if (depth) for (let i = 0; i < depth.length && !escape; i++) escape = depth[i] !== 255 && depth[i]! > w.zoneRing && w.tiles[i] !== Tile.Wall;
+  if (depth && escape) {
     for (let i = 0; i < depth.length; i++) {
       if (depth[i] !== w.zoneRing) continue;
       if (w.zoneIn < dStart[i]!) dStart[i] = w.zoneIn;
