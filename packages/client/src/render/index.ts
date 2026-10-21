@@ -293,6 +293,9 @@ class PixiRenderer implements GameRenderer {
       const add = (x: number, y: number) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
       for (const p of world.players.values()) if (p.alive && p.inRound) add(p.x, p.y);
       for (const d of this.recentDeaths) if (this.time - d.t < 3) add(d.x, d.y);
+      // a shaped arena: heroes on two of its tips would frame the empty countryside between them,
+      // so its middle is always in the shot
+      if (x0 <= x1 && world.shape !== ArenaShape.Rect) add((world.width - 1) / 2, (world.height - 1) / 2);
       if (x0 <= x1) action = { x0, y0, x1, y1 };
     }
     this.camera.update(dt, this.view, {
