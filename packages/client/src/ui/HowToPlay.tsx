@@ -1,3 +1,4 @@
+import { discord } from '$/discord';
 import { Button, Modal } from './components';
 import { t, tr } from './i18n';
 import { Icon } from './icons';
@@ -24,6 +25,7 @@ export function HowToPlayModal() {
         <section class="howto__goal">
           <h3><Icon name="target" /> {t('howto.goal')}</h3>
           <p>{t('howto.goalText')}</p>
+          <p>{t(discord.value ? 'howto.modeDiscord' : 'howto.modeSite')}</p>
         </section>
 
         <section>

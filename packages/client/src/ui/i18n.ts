@@ -94,7 +94,9 @@ const ru = {
 
   'howto.title': 'Как играть',
   'howto.goal': 'Цель',
-  'howto.goalText': 'Один общий мир: заходишь и сразу видишь живую арену. «Подключиться» вводит в игру, «Отключиться» возвращает в наблюдатели. Ставь бомбы, ломай кирпичи, собирай бусты. Огонь сжигает бусты и летит дальше, а игрок или бомба на пути принимают взрыв на себя. Последний выживший побеждает. Когда игроков больше одного, карта сужается: «Уменьшение размера карты через 15 сек». Внизу слева кнопка меню, справа — чат.',
+  'howto.goalText': 'Ставь бомбы, ломай кирпичи, собирай бусты и останься последним живым. Огонь сжигает бусты и летит дальше, а игрок или бомба на пути принимают взрыв на себя. Если раунд затягивается, края арены по очереди засыпает стенами: перед этим они подсвечиваются красным. Каждый раунд арена новая: другая форма, тема и погода. Внизу слева кнопка меню, справа — чат.',
+  'howto.modeSite': '«Играть онлайн» — общая арена со всеми, кто сейчас на сайте. «Одиночная игра» — против ботов, работает без интернета. «Своя комната» — для друзей, по коду или ссылке. Во время игры «Отключиться» переводит в наблюдатели, «Подключиться» возвращает в раунд.',
+  'howto.modeDiscord': 'Все, кто запустил игру в этом канале Discord, играют в одной комнате. Позвать друзей можно кнопкой «Позвать из Discord» в меню. «Отключиться» переводит в наблюдатели, «Подключиться» возвращает в раунд.',
   'howto.controls': 'Управление',
   'howto.action': 'Кнопка «Действие» зависит от бонусов: схватить и бросить бомбу (Перчатка), ударить бомбу (Кулак), взорвать свою бомбу (Пульт).',
   'howto.pickups': 'Бонусы',
@@ -340,7 +342,9 @@ const en: Record<I18nKey, string> = {
 
   'howto.title': 'How to play',
   'howto.goal': 'Goal',
-  'howto.goalText': 'One shared world: you land straight in a live arena. «Connect» puts you in the game, «Disconnect» makes you a spectator again. Drop bombs, blast bricks, grab boosts. Fire burns boosts and keeps going, but a player or a bomb in its path takes the blast. The last one standing wins. With two or more players the map shrinks every so often. The bottom-left button opens the menu, the bottom-right one the chat.',
+  'howto.goalText': 'Drop bombs, blast bricks, grab boosts and be the last one standing. Fire burns boosts and keeps going, but a player or a bomb in its path takes the blast. When a round drags on, the edges of the arena turn into walls one ring at a time; a ring glows red before it closes. Every round the arena is new: another shape, theme and weather. The bottom-left button opens the menu, the bottom-right one the chat.',
+  'howto.modeSite': '«Play online» is the shared arena with everyone on the site. «Single player» is you against bots and works offline. «Own room» is for friends, by code or link. In a game «Disconnect» makes you a spectator and «Connect» puts you back in the round.',
+  'howto.modeDiscord': 'Everyone who launched the game in this Discord channel plays in one room. Invite friends with «Invite from Discord» in the menu. «Disconnect» makes you a spectator and «Connect» puts you back in the round.',
   'howto.controls': 'Controls',
   'howto.action': 'The Action button depends on your power-ups: grab and throw a bomb (Glove), punch a bomb (Punch), detonate your bomb (Remote).',
   'howto.pickups': 'Power-ups',
