@@ -18,7 +18,7 @@ import { buildHud } from '../ui/hud';
 import { t } from '../ui/i18n';
 import {
   avatars, bindActions, connectStatus, fps, handleGameEvents, hud, onlineCount, pushChat, registerLoadTask, resetGameState,
-  room, roomSettings, screen, settings, spectators, toast, uiCapturesInput,
+  pendingInvite, room, roomSettings, screen, settings, spectators, toast, uiCapturesInput,
 } from '../ui/store';
 import { LocalSource } from './LocalSource';
 
@@ -114,10 +114,13 @@ export function startSession() {
     }
   }
 
-  /** Main menu: a live bot match behind it, watched with the spectator camera. */
-  function toMenu() {
-    // start the backdrop mid-game (20-35 s in), not on a pristine map
-    const warmupTicks = sec(20 + Math.random() * 15);
+  /**
+   * Main menu: a live bot match behind it, watched with the spectator camera. Coming back from a
+   * game it starts mid-round (20-35 s in); `fresh` (right after the loader) starts it from the
+   * countdown, so the camera lands on the drop-in.
+   */
+  function toMenu(fresh = false) {
+    const warmupTicks = fresh ? 0 : sec(20 + Math.random() * 15);
     const src = new LocalSource({ bots: ATTRACT_BOTS, difficulty: 'normal', warmupTicks });
     setSource(src, null, 'menu');
     if (renderer) renderer.prime(src.takePrimeEvents());
@@ -135,8 +138,7 @@ export function startSession() {
     }
   }
 
-  toMenu();
-  
+  // no game behind the loader: only the countryside (the renderer draws it while there's no source)
 
   // Shared arena head count for the menu («общая арена · игроков: N»).
   const pollOnline = async () => {
@@ -160,7 +162,10 @@ export function startSession() {
       // started without a gesture (Discord activity): the first input wakes the audio up
       for (const type of ['pointerdown', 'keydown'] as const) addEventListener(type, () => audio.unlock(), { once: true, capture: true });
       audio.setMusic('off');
-      screen.value = 'menu';
+      // the bot match behind the menu starts now, and the camera flies over to it; an invite link
+      // or the Discord room go straight to their own game instead
+      if (!locked() && !pendingInvite.peek()) toMenu(true);
+      else screen.value = 'menu';
     },
     async play(enabled) {
       if (!source) return;

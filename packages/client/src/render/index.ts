@@ -218,12 +218,14 @@ class PixiRenderer implements GameRenderer {
     this.world = world;
     this.localId = localId;
     if (!world) {
-      this.worldRoot.visible = false;
+      this.landscape(dt);
       this.updateOverlay(dt, null);
       this.app.render();
       return;
     }
     this.worldRoot.visible = true;
+    // the first map after the loader's countryside: the camera flies over to it
+    const flyIn = !this.map.shown && this.landscapeShown;
 
     // a new GameSource brings its own world object: always a new map
     const swapped = world !== this.lastWorld && this.lastWorld !== null;
@@ -237,7 +239,7 @@ class PixiRenderer implements GameRenderer {
     // leaving a map for good: freeze it as it looks now (tiles, scorch, graves, pickups, bombs, heroes)
     const frozen = travel && !young && this.arena.willRebuild(world, force) ? this.freezeMap() : null;
     const fresh = this.arena.sync(world, dt, force);
-    if (fresh) this.onNewMap(world, travel, travel && young);
+    if (fresh) this.onNewMap(world, travel, travel && young, flyIn);
     if (fresh && frozen) this.placeFrozen(frozen);
     if (fresh && this.primed) {
       for (const cells of this.primed) this.arena.scorch(cells);
@@ -307,7 +309,22 @@ class PixiRenderer implements GameRenderer {
     });
   }
 
-  private onNewMap(world: WorldState, travel: boolean, retarget: boolean) {
+  /** No game yet (the loader) or between sources: the endless countryside, the camera drifting slowly over it. */
+  private landscape(dt: number) {
+    const c = this.camera;
+    this.worldRoot.visible = true;
+    if (!this.landscapeShown && !this.map.shown) {
+      const short = Math.min(this.view.cssW, this.view.cssH) * this.view.res;
+      c.zoom = Math.max(1, Math.round((short / (14 * T)) * 2) / 2);
+      c.x = 0; c.y = 0;
+    }
+    this.landscapeShown = true;
+    c.x += 10 * dt; c.y += 4 * dt;
+    this.present();
+  }
+  private landscapeShown = false;
+
+  private onNewMap(world: WorldState, travel: boolean, retarget: boolean, flyIn = false) {
     for (const v of this.bombs.values()) v.destroy();
     for (const v of this.pickups.values()) v.destroy();
     this.explosions.clear();
@@ -342,6 +359,19 @@ class PixiRenderer implements GameRenderer {
       this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
       this.camera.travel(TRAVEL);
       // get the countryside around the destination ready while the camera is on its way
+      const pad = 14 * T;
+      this.ground.want((m.ox - 1.5) * T - pad, (m.oy - 1.5) * T - pad, (m.ox + world.width + 0.5) * T + pad, (m.oy + world.height + 0.5) * T + pad);
+      this.spawnDelay = Math.max(TRAVEL + SPAWN_AFTER, this.untilOne(world));
+    } else if (flyIn) {
+      // from wherever the countryside view drifted to, a few screens away in a random direction
+      const W = this.view.cssW * this.view.res, H = this.view.cssH * this.view.res, short = Math.min(W, H);
+      const dist = (short / (this.camera.zoom * T)) * 2.5 + Math.max(world.width, world.height) / 2;
+      const a = Math.random() * Math.PI * 2, dx = Math.cos(a), dy = Math.sin(a);
+      m.ox = Math.round(this.camera.x / T + dx * dist - (world.width - 1) / 2);
+      m.oy = Math.round(this.camera.y / T + dy * dist - (world.height - 1) / 2);
+      try { this.onTravel?.(TRAVEL * 1000, dx, dy); } catch (e) { console.warn('[render] onTravel', e); }
+      this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
+      this.camera.travel(TRAVEL);
       const pad = 14 * T;
       this.ground.want((m.ox - 1.5) * T - pad, (m.oy - 1.5) * T - pad, (m.ox + world.width + 0.5) * T + pad, (m.oy + world.height + 0.5) * T + pad);
       this.spawnDelay = Math.max(TRAVEL + SPAWN_AFTER, this.untilOne(world));
@@ -732,7 +762,7 @@ export const createRenderer = async (opts: RendererOptions): Promise<RendererExt
     autoDensity: true,
     antialias: false,
     roundPixels: true,
-    background: 0x17121f,
+    background: 0x839f7c, // the countryside's grass: no dark frame before the ground is drawn
     autoStart: false,
     sharedTicker: false,
     preference: 'webgl',
@@ -745,11 +775,18 @@ export const createRenderer = async (opts: RendererOptions): Promise<RendererExt
   canvas.style.height = '100%';
   canvas.style.imageRendering = 'pixelated';
   canvas.style.touchAction = 'none';
-  parent.appendChild(canvas);
+  // the canvas goes in only once there's something to draw: until then the stage's own grass
+  // background shows (no black box while the textures load)
   const assets = await loadAssets();
   installFonts();
   const tx = makeTextures();
-  return new PixiRenderer(app, parent, assets, tx, quality);
+  const renderer = new PixiRenderer(app, parent, assets, tx, quality);
+  // and it fades in a moment later, once the nearest countryside chunks have been drawn
+  canvas.style.opacity = '0';
+  canvas.style.transition = 'opacity 0.8s ease-out';
+  parent.appendChild(canvas);
+  setTimeout(() => { canvas.style.opacity = '1'; }, 250);
+  return renderer;
 };
 
 export default createRenderer;
