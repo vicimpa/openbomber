@@ -15,6 +15,7 @@ import { PlayerView, type Frozen } from './players';
 import { installFonts } from './text';
 import { makeTextures, type ProcTextures } from './textures';
 import { WeatherFx } from './weather';
+import { Footprints } from './prints';
 
 const T = 32;
 const MAX_DPR = 2;
@@ -48,6 +49,7 @@ class PixiRenderer implements GameRenderer {
   private fx: Effects;
   private drops: Drops;
   private weather: WeatherFx;
+  private prints = new Footprints();
   /** Tiles where a sky drop just landed: the bomb / pickup appearing there gets a landing squash. */
   private landed = new Map<number, number>();
   private pickupLayer = new Container();
@@ -107,7 +109,7 @@ class PixiRenderer implements GameRenderer {
     // grounded bombs and pickups always sit under the characters (no y-sorting with players);
     // carried and flying bombs go above them
     this.mapRoot.addChild(
-      this.arena.root, this.arena.zoneLayer, this.fx.under, this.arena.fallingShadows, this.drops.shadows, this.pickupLayer, this.bombLayer,
+      this.arena.root, this.prints.root, this.arena.zoneLayer, this.fx.under, this.arena.fallingShadows, this.drops.shadows, this.pickupLayer, this.bombLayer,
       this.explosions.root, this.explosions.glow, this.entities, this.airBombs, this.fx.particles.normal, this.arena.fallingRoot, this.drops.air,
       // the night darkens everything above, its lights and the additive glows shine through
       this.weather.dark, this.fx.over, this.fx.particles.additive, this.fx.light, this.weather.lights, this.tags,
@@ -242,6 +244,7 @@ class PixiRenderer implements GameRenderer {
     }
 
     this.syncPlayers(world, dt, fresh);
+    this.prints.update(world, dt);
     this.syncBombs(world, dt);
     this.syncPickups(world, dt);
     this.drops.sync(world.drops ?? [], dt);
@@ -307,6 +310,7 @@ class PixiRenderer implements GameRenderer {
     this.fx.clear();
     this.drops.clear();
     this.weather.set(world);
+    this.prints.clear();
     this.fx.weather = this.weather.smoke();
     this.landed.clear();
     this.nextMap = null;
