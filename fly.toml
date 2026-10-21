@@ -1,6 +1,7 @@
 # The game server, on Fly.io in Amsterdam: for the site (the client is on GitHub Pages) and for the
-# Discord activity, whose proxy runs on Cloudflare's edge right next to it. The machine stops when
-# nobody is connected and starts on the next connection (billing is per second it runs).
+# Discord activity, whose proxy runs on Cloudflare's edge right next to it. With nobody connected
+# the machine is suspended (its memory snapshotted: the shared arena survives) and resumes on the
+# next connection in a fraction of a second; billing is per second it runs.
 # Deploy: fly deploy   (secrets: fly secrets set DISCORD_CLIENT_ID=... DISCORD_CLIENT_SECRET=...)
 app = "openbomber-eu"
 primary_region = "ams"
@@ -16,7 +17,7 @@ primary_region = "ams"
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
+  auto_stop_machines = "suspend"
   auto_start_machines = true
   min_machines_running = 0
 
