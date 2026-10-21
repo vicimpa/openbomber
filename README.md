@@ -163,6 +163,8 @@ bun run build        # packages/client/dist и Node-бандл сервера в
 `VITE_WEBMANIFEST=1` (манифест, иконки из `logo/` и `service.js`, который снимает service worker
 первой версии), `VITE_POLICIES=1` (страницы политики конфиденциальности и условий использования)
 и `VITE_CNAME=openbomber.ru` (файл `CNAME` для GitHub Pages); без них этих файлов в сборке нет.
+`VITE_OFFLINE=1` собирает игру без сервера (только против ботов), `VITE_SINGLEFILE=1` — всю игру
+одним `index.html` (скрипты, стили, шрифты и картинки внутри; открывается и прямо с диска).
 За nginx нужен `proxy_set_header X-Real-IP $remote_addr;`, на нём держатся лимиты по IP.
 
 </details>
