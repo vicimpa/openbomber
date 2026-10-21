@@ -34,11 +34,15 @@ export function pickShape(rng: SeedHolder): ArenaShape {
   return ArenaShape.Rect;
 }
 
-/** Bounding box for `shape` around a rectangle of w x h (both odd, like the canon sizes). */
+/**
+ * Bounding box for `shape` around a rectangle of w x h: 4k + 1 on both sides, so the middle row
+ * and column are lanes (no pillars on the central axes) and the zone closes on a crossing in the
+ * centre instead of a 1-wide strip between two pillar rows.
+ */
 export function shapeSize(shape: ArenaShape, w: number, h: number): [number, number] {
   const k = SHAPE_SCALE[shape] ?? 1;
-  const odd = (n: number) => Math.min(255, 2 * Math.round((n * k - 1) / 2) + 1);
-  return [odd(w), odd(h)];
+  const size = (n: number) => Math.min(253, 4 * Math.max(2, Math.round((n * k - 1) / 4)) + 1);
+  return [size(w), size(h)];
 }
 
 const pillar = (x: number, y: number) => (x & 1) === 1 && (y & 1) === 1;

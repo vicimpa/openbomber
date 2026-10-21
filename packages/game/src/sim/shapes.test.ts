@@ -28,6 +28,11 @@ describe('arena shapes', () => {
       for (const players of [1, 2, 4, 9, 16, 32]) {
         const m = calcMap(players);
         const [w, h] = shapeSize(shape, m.width, m.height);
+        // lanes on the central axes, never pillars
+        expect(((w - 1) / 2) % 2).toBe(0);
+        expect(((h - 1) / 2) % 2).toBe(0);
+        const mid = ((h - 1) / 2) * w + (w - 1) / 2;
+        expect(zoneDepth(shape, w, h)[mid]).toBe(maxZoneDepth(shape, w, h));
         const rng = { seed: players * 31 + shape };
         const spawns = shapeSpawns(rng, shape, w, h, m.spawns.length);
         expect(spawns.length).toBeGreaterThanOrEqual(players);
