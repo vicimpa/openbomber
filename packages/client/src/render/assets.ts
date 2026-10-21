@@ -113,7 +113,7 @@ export async function loadAssets() {
     frameList(ruinesJson, ruinesPng),
   ]);
   const heroes: Tags[] = [];
-  for (let i = 1; i <= 11; i++) {
+  for (let i = 1; i <= Object.keys(heroJson).length; i++) {
     const key = `../assets/heroes/type${i}`;
     heroes.push(tags(await sheet(heroJson[key + '.json'], heroPng[key + '.png'])));
   }

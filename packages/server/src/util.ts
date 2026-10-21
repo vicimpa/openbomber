@@ -3,8 +3,8 @@
 export const NAME_MAX = 18;
 export const CHAT_MAX = 100;
 export const CHAT_COOLDOWN_MS = 2000;
-/** Number of hero skins (client assets heroes/type1..type11). */
-export const SKIN_COUNT = 11;
+/** Number of hero skins (client assets heroes/type1..type12). */
+export const SKIN_COUNT = 12;
 
 // C0/C1 control chars, zero-width & bidi overrides (prevent invisible / spoofed names).
 // eslint-disable-next-line no-control-regex

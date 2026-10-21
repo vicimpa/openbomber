@@ -13,7 +13,7 @@ import { limits, resetLimits } from '../src/limits.ts';
 import { startGameServer, type GameServer } from '../src/app.ts';
 import { BattleRoom, BOTS_LINGER_MS, MAIN_SPARRING } from '../src/BattleRoom.ts';
 import { setGameImpl } from '../src/game.ts';
-import { CODE_ALPHABET } from '../src/util.ts';
+import { CODE_ALPHABET, SKIN_COUNT } from '../src/util.ts';
 import { BattleState, type RoomListing } from '../src/schema.ts';
 import { syncWorld } from '../src/sync.ts';
 import { discordApi, resetDiscord } from '../src/discord.ts';
@@ -109,7 +109,7 @@ describe('room', () => {
     expect(a.roomId).toMatch(new RegExp(`^[${CODE_ALPHABET}]{5}$`));
     const me = await waitFor(() => a.state.width > 0 && a.state.players?.get(a.sessionId), 2000, 'state');
     expect(me.name).toBe('Alice');
-    expect(me.skin).toBe(10);
+    expect(me.skin).toBe(SKIN_COUNT - 1);
     expect(a.state.tiles.length).toBe(a.state.width * a.state.height);
     expect(a.state.maxPlayers).toBe(32);
     expect(me.effects.size).toBeGreaterThanOrEqual(15); // generic TimedEffects map

@@ -7,6 +7,7 @@ import {
 } from '@ob/game';
 import type { GameSource } from '../contracts';
 import { copyBomb, copyPlayer, emptyWorld, newBomb, newPlayer } from '../net/readModel';
+import { SKIN_COUNT } from '../ui/settings';
 
 const LOCAL_ID = 'local';
 const BOT_NAMES = ['Бабах', 'Фитиль', 'Сапёр', 'Искра', 'Пороховой', 'Динамит', 'Шашка', 'Хлопушка', 'Петарда', 'Запал', 'Тротил'];
@@ -51,7 +52,7 @@ export class LocalSource implements GameSource {
     const difficulty = opts.difficulty ?? 'normal';
     for (let i = 0; i < opts.bots; i++) {
       const id = `bot${i}`;
-      this.sim.addPlayer({ id, name: BOT_NAMES[i % BOT_NAMES.length], skin: (i * 3 + 1) % 11, isBot: true });
+      this.sim.addPlayer({ id, name: BOT_NAMES[i % BOT_NAMES.length], skin: (i * 3 + 1) % SKIN_COUNT, isBot: true });
       this.bots.push(new Bot(id, difficulty));
     }
     if (opts.play) this.play(true);

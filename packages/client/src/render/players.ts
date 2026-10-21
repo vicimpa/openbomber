@@ -140,7 +140,7 @@ export class PlayerView {
   update(p: PlayerState, dt: number, local: boolean, fresh: boolean, carriedBomb: boolean, spawnDelay = -1) {
     this.time += dt;
     const x = p.x * T, y = p.y * T;
-    this.ownSkin = ((p.skin % 11) + 11) % 11;
+    this.ownSkin = wrapSkin(p.skin, this.a.heroes.length);
     if (this.hold > 0) this.hold -= dt;
     if (!p.alive) {
       this.hold = 0;
@@ -206,7 +206,7 @@ export class PlayerView {
     }
 
     // ---- skin + animation tag (Left = mirrored Right)
-    const skin = ((p.skin % 11) + 11) % 11;
+    const skin = wrapSkin(p.skin, this.a.heroes.length);
     const src = this.a.heroes[skin];
     const moving = p.moving && p.effects.stun <= 0;
     const tagName = `${moving ? 'Run' : 'Idle'}${DIR_NAME[p.dir]}${carriedBomb ? 'Bomb' : ''}`;
@@ -309,6 +309,11 @@ export class PlayerView {
     this.root.destroy({ children: true });
     this.tag.destroy({ children: true });
   }
+}
+
+/** Any skin index onto the loaded hero sheets (an older client / bad input never gets an empty sprite). */
+function wrapSkin(skin: number, n: number) {
+  return ((skin % n) + n) % n;
 }
 
 function lerpColor(a: number, b: number, k: number) {

@@ -36,7 +36,7 @@ function instrument(room: Room) {
 }
 
 for (let i = 0; i < PLAYERS; i++) {
-  const r = await new Client(url).joinById('MAIN', { name: `load${i}`, skin: i % 11, play: true });
+  const r = await new Client(url).joinById('MAIN', { name: `load${i}`, skin: i % 12, play: true });
   players.push(r);
   instrument(r);
 }

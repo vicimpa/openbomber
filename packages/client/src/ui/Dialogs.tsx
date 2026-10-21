@@ -99,7 +99,7 @@ export function BotsModal() {
           </div>
           <div class="bots__row" aria-hidden="true">
             {Array.from({ length: 7 }, (_, i) => (
-              <span class={i < bots ? 'is-on' : ''}><HeroSprite skin={(i * 3 + 1) % 11} anim="IdleDown" scale={1} still={i >= bots} /></span>
+              <span class={i < bots ? 'is-on' : ''}><HeroSprite skin={(i * 3 + 1) % SKIN_COUNT} anim="IdleDown" scale={1} still={i >= bots} /></span>
             ))}
           </div>
         </div>

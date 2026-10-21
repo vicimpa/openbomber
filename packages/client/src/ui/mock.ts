@@ -16,6 +16,7 @@ import {
   bindActions, connectStatus, fps, handleGameEvents, hud, pushChat, resetGameState, room, screen,
   settings, spectators, stage, uiCapturesInput,
 } from './store';
+import { SKIN_COUNT } from './settings';
 
 const LOCAL = 'me';
 const BOT_NAMES = ['Бабах', 'Фитиль', 'Сапёр', 'Тротил', 'Пончик', 'Енот', 'Кактус'];
@@ -49,7 +50,7 @@ function makeWorld(bots: number): WorldState {
   const spawns = [[18, 12], [18, 0], [0, 12], [9, 0], [9, 12], [0, 6], [18, 6]];
   for (let i = 0; i < bots; i++) {
     const [x, y] = spawns[i % spawns.length];
-    players.set(`bot${i}`, makePlayer(`bot${i}`, BOT_NAMES[i % BOT_NAMES.length], (s.skin + 1 + i * 2) % 11, true, x, y));
+    players.set(`bot${i}`, makePlayer(`bot${i}`, BOT_NAMES[i % BOT_NAMES.length], (s.skin + 1 + i * 2) % SKIN_COUNT, true, x, y));
   }
   return {
     tick: 0, seed: 1, phase: Phase.Playing, phaseTicks: 0, round: 1, width, height, tiles,

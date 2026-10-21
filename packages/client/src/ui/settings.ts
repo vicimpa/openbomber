@@ -18,7 +18,7 @@ export interface Settings {
   showPing: boolean;
 }
 
-export const SKIN_COUNT = 11;
+export const SKIN_COUNT = 12;
 const KEY = 'openbomber.settings.v2';
 
 export const defaultSettings = (): Settings => ({
