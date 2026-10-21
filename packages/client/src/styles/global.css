@@ -272,7 +272,7 @@ img, canvas { image-rendering: pixelated; }
 .pill-btn:active { background: var(--btn-active); }
 .pill-btn[aria-pressed='true'] { background: #666; }
 .badge { position: absolute; top: 3px; right: 3px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 8px; background: var(--red); color: #fff; font: 10px/16px var(--font); font-style: normal; text-align: center; }
-.bottom-pill__main { min-width: 210px; height: 48px; min-height: 48px; font-size: 20px; padding: 0 24px; }
+.bottom-pill__main { min-width: 210px; height: 48px; min-height: 48px; font-size: 20px; padding: 0 24px; transition: none; } /* white ⇄ dark at once: no white-on-white frame */
 .bottom-pill__main.is-connected { background: #444; color: #fff; border-color: #555 #2a2a2a #2a2a2a #555; text-transform: none; }
 .bottom-pill__main.is-connected:hover { background: #555; }
 

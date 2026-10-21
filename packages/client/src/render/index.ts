@@ -5,7 +5,7 @@ import { ArenaShape, BombMotion, Theme, COUNTDOWN_TIME, DropKind, Phase, PickupT
 import type { CreateRenderer, GameRenderer, RendererOptions } from '../contracts';
 import { Arena } from './arena';
 import { loadAssets, type GameAssets } from './assets';
-import { Camera, zoomPath, type CameraMode, type CameraView } from './camera';
+import { Camera, zoomPath, type CameraMode, type CameraView, type Motion } from './camera';
 import { Effects } from './fx';
 import { Explosions } from './explosions';
 import { Drops } from './drops';
@@ -114,7 +114,7 @@ class PixiRenderer implements GameRenderer {
   /** The countryside preload() drew stays cached until the camera has arrived. */
   private releaseAfterTrip = false;
   /** depart(): the map on show was left before the next world came; the camera cruises off (`ang`). */
-  private departed: { ang: number; t: number; zoom: number; } | null = null;
+  private departed: { ang: number; t: number; zoom: number; v: Motion; } | null = null;
   /** Where the trip away from the map on show will head (drawn ahead, see planAhead()). */
   private ahead: { key: string; dir: TripDir; planned: boolean } | null = null;
   /** Seconds since the camera arrived on the map on show. */
@@ -408,7 +408,8 @@ class PixiRenderer implements GameRenderer {
       try { this.onTravel?.(TRAVEL * 1000, ddx / dl, ddy / dl); } catch (e) { console.warn('[render] onTravel', e); }
       m.ox = nx; m.oy = ny;
       this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
-      this.camera.travel(TRAVEL);
+      // (after depart(): the camera is cruising already, the trip carries its motion on)
+      this.camera.travel(TRAVEL, false, departed ? departed.v : null);
       // get the countryside around the destination ready while the camera is on its way
       const pad = 14 * T;
       this.ground.want((m.ox - 1.5) * T - pad, (m.oy - 1.5) * T - pad, (m.ox + world.width + 0.5) * T + pad, (m.oy + world.height + 0.5) * T + pad);
@@ -451,20 +452,25 @@ class PixiRenderer implements GameRenderer {
     try { this.onTravel?.(TRAVEL * 1000, Math.cos(ang), Math.sin(ang)); } catch (e) { console.warn('[render] onTravel', e); }
     // the live arena, its heroes and effects are the old world's: hidden until the next one
     this.mapRoot.visible = false;
-    this.departed = { ang, t: 0, zoom: this.camera.zoom };
+    this.departed = { ang, t: 0, zoom: this.camera.zoom, v: { x: 0, y: 0, z: 0 } };
   }
 
-  /** Between depart() and the next world: the camera speeds up along its way, zooming out a bit. */
+  /**
+   * Between depart() and the next world: the camera eases into a cruise along its way (about a
+   * screen a second) while zooming out to half, both starting and settling without a jolt. Its
+   * motion is kept for the trip to the next map, which carries it on (Camera.travel).
+   */
   private flyOn(dt: number) {
     const c = this.camera, d = this.departed!;
     this.worldRoot.visible = true;
     d.t += dt;
     const S = Math.min(this.view.cssW, this.view.cssH) * this.view.res;
-    c.zoom += (d.zoom * 0.5 - c.zoom) * (1 - Math.exp(-dt * 2.5));
-    // up to about one screen (short side) a second, eased in over the first half second
-    const speed = (S / c.zoom) * Math.min(1, d.t / 0.5) ** 2;
-    c.x += Math.cos(d.ang) * speed * dt;
-    c.y += Math.sin(d.ang) * speed * dt;
+    const z = d.zoom * Math.pow(0.5, smooth(d.t / 1.5));
+    const speed = (S / z) * smooth(d.t / 0.8);
+    d.v = { x: Math.cos(d.ang) * speed, y: Math.sin(d.ang) * speed, z: dt > 0 ? Math.log(z / c.zoom) / dt : 0 };
+    c.zoom = z;
+    c.x += d.v.x * dt;
+    c.y += d.v.y * dt;
     const view = this.present();
     this.updateGhost(dt, view);
   }
@@ -966,6 +972,9 @@ function tripDir(m: { ox: number; oy: number; w: number; h: number; }): TripDir 
   const ang = Math.hypot(cx, cy) > 400 ? Math.atan2(-cy, -cx) + (Math.random() - 0.5) * 1.6 : Math.random() * Math.PI * 2;
   return { ang, gap: 28 + Math.random() * 14 };
 }
+
+/** 0..1 with zero slope at both ends (smoothstep), clamped. */
+const smooth = (t: number) => { const k = Math.max(0, Math.min(1, t)); return k * k * (3 - 2 * k); };
 
 /** Where the next map goes: the way `dir` from the old one, clear of it by a stretch of countryside,
  *  centres at least `min` tiles apart. */

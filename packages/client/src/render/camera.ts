@@ -15,6 +15,8 @@ import type { Container } from 'pixi.js';
 const T = 32;
 
 export type CameraMode = 'follow' | 'overview' | 'attract';
+/** The camera's motion: world px/s, and the zoom's log per second. */
+export interface Motion { x: number; y: number; z: number }
 export interface CameraView { cssW: number; cssH: number; res: number }
 export interface CameraInput {
   aw: number; ah: number;                 // arena size in tiles
@@ -38,7 +40,12 @@ export class Camera {
   x = 0; y = 0; zoom = 1;
   /** World px of the current map's (0, 0) tile centre. */
   ox = 0; oy = 0;
-  private trip: { t: number; dur: number; x: number; y: number; w: number; flat: boolean } | null = null;
+  private trip: {
+    t: number; dur: number; x: number; y: number; w: number; flat: boolean; v: Motion | null;
+    /** the target, eased like the camera itself when not travelling: it moves mid-trip (the hero
+     *  spawns, the framing switches) without a jump, and the hand-over at the end is seamless */
+    tx: number; ty: number; tz: number;
+  } | null = null;
   /** targets */
   private cx = 0; private cy = 0;
   private shakes = new Set<{ time: number; amp: number }>();
@@ -55,9 +62,13 @@ export class Camera {
   reset() { this.snap = true; this.trip = null; }
 
   /** Glide from the current view to the next target over `dur` seconds instead of snapping. */
-  travel(dur: number, flat = false) {
+  /**
+   * `v`: the camera is already moving (world px/s, and log-zoom/s): the trip carries that motion
+   * on and settles on the target, instead of setting off from a standstill.
+   */
+  travel(dur: number, flat = false, v: Motion | null = null) {
     this.snap = false;
-    this.trip = { t: 0, dur, x: this.x, y: this.y, w: 0, flat };
+    this.trip = { t: 0, dur, x: this.x, y: this.y, w: 0, flat, v, tx: NaN, ty: 0, tz: 1 };
     this.attract.t = 0;
   }
 
@@ -133,15 +144,28 @@ export class Camera {
       const tr = this.trip;
       const S = Math.min(W, H);
       if (!tr.w) tr.w = S / this.zoom;
+      if (Number.isNaN(tr.tx)) { tr.tx = this.cx; tr.ty = this.cy; tr.tz = needScale; }
+      const kp = lerpK(posK, dt), kz = lerpK(zoomK, dt);
+      tr.tx += (this.cx - tr.tx) * kp; tr.ty += (this.cy - tr.ty) * kp; tr.tz += (needScale - tr.tz) * kz;
+      const tw = S / tr.tz;
       tr.t += dt;
       const k = Math.min(1, tr.t / tr.dur);
-      const e = k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2;
+      let e = k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2;
+      if (tr.v && !tr.flat) {
+        // already moving: the path sets off at the camera's speed (a cubic in the path's progress
+        // with that slope at the start, at rest at the end), so the motion never stops and restarts
+        const [qx, qy] = zoomPath(tr.x, tr.y, tr.w, tr.tx, tr.ty, tw, 0.001);
+        const perE = Math.hypot(qx - tr.x, qy - tr.y) / 0.001; // world px per unit of progress, at the start
+        const s0 = perE > 0 ? Math.min(2.5, (Math.hypot(tr.v.x, tr.v.y) * tr.dur) / perE) : 0;
+        e = (k * k * k - 2 * k * k + k) * s0 + (3 * k * k - 2 * k * k * k);
+      }
       // flat: a quick eased pan at the same zoom (teleport), otherwise the zoom-out trip between maps
       const [px, py, pw] = tr.flat
-        ? [tr.x + (this.cx - tr.x) * e, tr.y + (this.cy - tr.y) * e, tr.w + (S / needScale - tr.w) * e]
-        : zoomPath(tr.x, tr.y, tr.w, this.cx, this.cy, S / needScale, e);
+        ? [tr.x + (tr.tx - tr.x) * e, tr.y + (tr.ty - tr.y) * e, tr.w + (tw - tr.w) * e]
+        : zoomPath(tr.x, tr.y, tr.w, tr.tx, tr.ty, tw, e);
       this.x = px; this.y = py; this.zoom = S / pw;
-      if (k >= 1) { this.trip = null; this.x = this.cx; this.y = this.cy; this.zoom = needScale; }
+      // (ends on the eased target: the usual smoothing takes it from there)
+      if (k >= 1) { this.trip = null; this.x = tr.tx; this.y = tr.ty; this.zoom = tr.tz; }
     } else if (this.snap) {
       // first frame of a map: start zoomed out over the arena, then ease into the target
       this.snap = false;
