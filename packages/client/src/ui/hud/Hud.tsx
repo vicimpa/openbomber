@@ -42,9 +42,9 @@ export function TopPill({ h }: { h: HudSnapshot | null }) {
       {playing && me ? (
         <span class="counters">
           <span title={t('hud.alive')}><Icon name="users" /> {h!.alive} / {h!.total}</span>
-          <span title={t('hud.wins')}><Icon name="crown" /> × {me.wins}</span>
-          <span title={t('hud.kills')}><Icon name="gun" /> × {me.kills}</span>
-          <span title={t('hud.deaths')}><Icon name="skull" /> × {me.deaths}</span>
+          <span title={t('hud.wins')}><Icon name="crown" /><i class="counters__x"> ×</i> {me.wins}</span>
+          <span title={t('hud.kills')}><Icon name="gun" /><i class="counters__x"> ×</i> {me.kills}</span>
+          <span title={t('hud.deaths')}><Icon name="skull" /><i class="counters__x"> ×</i> {me.deaths}</span>
         </span>
       ) : (
         <span>{t('hud.spectating')}</span>

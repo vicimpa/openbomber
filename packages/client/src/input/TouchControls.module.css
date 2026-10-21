@@ -21,8 +21,8 @@
 
 .base {
   position: absolute;
-  left: calc(env(safe-area-inset-left, 0px) + 24px + 70 * var(--u));
-  top: calc(100% - env(safe-area-inset-bottom, 0px) - var(--lift) - 70 * var(--u));
+  left: calc(var(--safe-l) + 24px + 70 * var(--u));
+  top: calc(100% - var(--safe-b) - var(--lift) - 70 * var(--u));
   width: calc(140 * var(--u));
   height: calc(140 * var(--u));
   margin: calc(-70 * var(--u)) 0 0 calc(-70 * var(--u));
@@ -35,7 +35,7 @@
   pointer-events: none;
   transition: opacity 0.15s, border-width 0.1s;
 }
-.root[data-left] .base { left: auto; right: calc(env(safe-area-inset-right, 0px) + 24px); margin: calc(-70 * var(--u)) 0 0 0; transform: translateX(50%); }
+.root[data-left] .base { left: auto; right: calc(var(--safe-r) + 24px); margin: calc(-70 * var(--u)) 0 0 0; transform: translateX(50%); }
 .root[data-left] .base[data-active] { right: auto; transform: none; margin: calc(-70 * var(--u)) 0 0 calc(-70 * var(--u)); }
 .base[data-active] { opacity: 1; border-width: 6px; transition: none; }
 
@@ -70,26 +70,26 @@
 .bomb {
   width: calc(110 * var(--u));
   height: calc(110 * var(--u));
-  right: calc(env(safe-area-inset-right, 0px) + 20px);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--lift));
+  right: calc(var(--safe-r) + 20px);
+  bottom: calc(var(--safe-b) + var(--lift));
   font-size: calc(46 * var(--u));
 }
 .action {
   width: calc(76 * var(--u));
   height: calc(76 * var(--u));
-  right: calc(env(safe-area-inset-right, 0px) + 20px + 116 * var(--u));
-  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--lift) + 66 * var(--u));
+  right: calc(var(--safe-r) + 20px + 116 * var(--u));
+  bottom: calc(var(--safe-b) + var(--lift) + 66 * var(--u));
   font-size: calc(32 * var(--u));
 }
-.root[data-left] .bomb { right: auto; left: calc(env(safe-area-inset-left, 0px) + 20px); }
-.root[data-left] .action { right: auto; left: calc(env(safe-area-inset-left, 0px) + 20px + 116 * var(--u)); }
+.root[data-left] .bomb { right: auto; left: calc(var(--safe-l) + 20px); }
+.root[data-left] .action { right: auto; left: calc(var(--safe-l) + 20px + 116 * var(--u)); }
 .teleport {
   width: calc(64 * var(--u));
   height: calc(64 * var(--u));
-  right: calc(env(safe-area-inset-right, 0px) + 20px + 23 * var(--u));
-  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--lift) + 124 * var(--u));
+  right: calc(var(--safe-r) + 20px + 23 * var(--u));
+  bottom: calc(var(--safe-b) + var(--lift) + 124 * var(--u));
   font-size: calc(26 * var(--u));
   border-color: #a8f0ff;
 }
 .teleport[hidden] { display: none; }
-.root[data-left] .teleport { right: auto; left: calc(env(safe-area-inset-left, 0px) + 20px + 23 * var(--u)); }
+.root[data-left] .teleport { right: auto; left: calc(var(--safe-l) + 20px + 23 * var(--u)); }

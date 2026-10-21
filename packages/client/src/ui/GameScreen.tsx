@@ -23,6 +23,7 @@ import { t } from './i18n';
 import { Icon } from './icons';
 import { MenuDrawer } from './MenuDrawer';
 import { chatOpen, hud, menuOpen, modals, scoreboardOpen, screen, settings, stage } from './store';
+import { viewport } from './viewport';
 
 export interface GameScreenProps {
   /** Called once with the #stage element after mount; may return a cleanup. */
@@ -76,6 +77,8 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
   const me = h?.me;
   const playing = !!me && !me.spectating;
   const showTouch = inWorld && touch && playing && !chatOpen.value && !menuOpen.value && !modals.value.length;
+  // Short screens (a phone on its side) get smaller sticks and buttons, so the arena isn't hidden.
+  const tc = s.touch.size * Math.max(0.7, Math.min(1, viewport.value.h / 440));
 
   return (
     <div ref={rootRef} class={`world ${touch ? 'is-touch' : ''} ${playing ? 'is-playing-round' : ''} ${inWorld ? '' : 'is-covered'}`}>
@@ -84,14 +87,14 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
 
       {showTouch && (
         <TouchControls
-          size={s.touch.size}
+          size={tc}
           opacity={s.touch.opacity}
           leftHanded={s.touch.leftHanded}
-          bombLabel={<Icon name="bomb" size={50 * s.touch.size} />}
-          actionLabel={<Icon name="hand" size={34 * s.touch.size} />}
+          bombLabel={<Icon name="bomb" size={50 * tc} />}
+          actionLabel={<Icon name="hand" size={34 * tc} />}
           bombTitle={t('bind.bomb')}
           actionTitle={t('bind.action')}
-          teleportLabel={<Icon name="sparkle" size={26 * s.touch.size} />}
+          teleportLabel={<Icon name="sparkle" size={26 * tc} />}
           teleportTitle={t('bind.teleport')}
           showTeleport={(h?.me?.teleports ?? 0) > 0}
         />

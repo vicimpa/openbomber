@@ -252,6 +252,7 @@ img, canvas { image-rendering: pixelated; }
 .pill--top { top: 0; padding: calc(8px + var(--safe-t)) 18px 8px; border-radius: 0 0 10px 10px; font-size: 18px; z-index: 3; }
 .pill--bottom { bottom: 0; padding: 8px 8px calc(8px + var(--safe-b)); border-radius: 10px 10px 0 0; gap: 8px; z-index: 3; }
 .counters { display: flex; gap: 18px; }
+.counters__x { font-style: normal; }
 .pill__tag { font-size: 13px; padding: 2px 8px; background: rgba(255, 255, 255, 0.12); }
 .pill-btn {
   position: relative;
@@ -618,13 +619,20 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
 .toast--bad { box-shadow: inset 3px 0 0 var(--dead); }
 
 /* ------------------------------------------------------------ touch / phones */
+/* phones: a slim counters pill and a lower bottom pill, so the arena gets the screen */
+.is-touch .pill--top { font-size: 14px; gap: 10px; padding: calc(4px + var(--safe-t)) 12px 4px; }
+.is-touch .counters { gap: 12px; }
+.is-touch .counters__x { display: none; }
+.is-touch .pill__tag { font-size: 12px; padding: 0 6px; }
+.is-touch .pill--bottom { padding: 6px 6px calc(6px + var(--safe-b)); gap: 6px; }
+.is-touch .hud__left { top: calc(34px + var(--safe-t)); }
 .is-touch .stat, .is-touch .fx { height: 26px; font-size: 13px; padding: 0 6px 0 3px; gap: 3px; }
 .is-touch .fx__time { font-size: 12px; }
 .is-touch .fx__name { font-size: 11px; }
 .is-touch .hud__left { max-width: min(40vw, 420px); }
-.world.is-touch { --pill-h: 72px; }
-.is-touch .pill-btn { min-width: 52px; height: 52px; }
-.is-touch .bottom-pill__main { height: 52px; min-height: 52px; min-width: 190px; }
+.world.is-touch { --pill-h: 56px; }
+.is-touch .pill-btn { min-width: 48px; height: 44px; }
+.is-touch .bottom-pill__main { height: 44px; min-height: 44px; min-width: 180px; font-size: 18px; }
 /* Touch controls sit above the bottom pill (TouchControls.module.css reads --tc-lift). */
 .world.is-touch { --tc-lift: calc(var(--pill-h) + 12px); }
 .is-touch.is-playing-round .ticker { bottom: auto; top: calc(110px + var(--safe-t)); width: min(300px, 40vw); }
@@ -667,6 +675,23 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
   .ticker__msg:nth-last-child(n + 3) { display: none; }
   .round-result { padding: 6px 12px; }
   .round-result__text b { font-size: 16px; }
+  /* landscape phones: the bottom pill shrinks and sits between the stick and the buttons, which
+     drop to the bottom corners instead of stacking above it; Ping/FPS go on one line in the
+     top-left corner with the stats strip under them */
+  .world.is-touch { --pill-h: 46px; --tc-lift: 8px; }
+  .is-touch .pill--top { font-size: 13px; padding-block: calc(2px + var(--safe-t)) 2px; }
+  .is-touch .pill--bottom { left: 50%; right: auto; width: auto; transform: translateX(-50%); padding: 4px 4px max(4px, calc(var(--safe-b) - 10px)); gap: 4px; }
+  .is-touch .pill-btn { min-width: 44px; height: 38px; }
+  .is-touch .bottom-pill__main { flex: none; height: 38px; min-height: 38px; min-width: 150px; font-size: 16px; padding: 0 14px; }
+  .is-touch .debug { top: calc(4px + var(--safe-t)); bottom: auto; left: calc(10px + var(--safe-l)); flex-direction: row; gap: 8px; }
+  .is-touch .hud__left { top: calc(18px + var(--safe-t)); left: calc(8px + var(--safe-l)); max-width: calc(50vw - 150px - var(--safe-l)); }
+  .is-touch .hud__right { top: calc(4px + var(--safe-t)); right: calc(8px + var(--safe-r)); }
+  .is-touch .kill { font-size: 12px; }
+  /* banners / round result: a slim line under the counters pill, clear of the controls */
+  .is-touch .hud__center { top: calc(30px + var(--safe-t)); bottom: auto; max-width: 56vw; }
+  .is-touch .banner { font-size: 12px; padding: 3px 10px; white-space: nowrap; }
+  .is-touch .banner--sd { font-size: 14px; }
+  .is-touch .banner .icon { width: 10px; height: 10px; --icon: 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -808,6 +833,21 @@ tr[data-state='wait'] .who__name, li[data-state='wait'] .plist__name { color: va
   .mm__links { grid-area: links; }
   .mm__hero { width: 80px; height: 80px; }
   .mm__actions .btn--xl { min-height: 54px; font-size: 20px; }
+}
+@media (max-height: 400px) and (orientation: landscape) {
+  /* Safari on a small phone on its side leaves ~320px: everything a notch smaller */
+  .mm__panel { gap: 6px 14px; padding: 10px 12px; }
+  .mm__logo { width: min(100%, 260px); justify-self: center; }
+  .mm__profile { grid-template-columns: 36px 1fr 36px; gap: 4px 6px; }
+  .mm__arrow, .mm__name .icon-btn { width: 36px; height: 36px; }
+  .mm__name-input { height: 36px; font-size: 18px; }
+  .mm__hero { width: 64px; height: 64px; }
+  .mm__actions { gap: 6px; }
+  .mm__actions .btn--xl { min-height: 46px; font-size: 18px; }
+  .mm__actions .btn--xl .btn__sub { font-size: 11px; }
+  .mm__actions .btn { min-height: 34px; font-size: 13px; }
+  .row3 .btn__icon { display: none; }
+  .mm__links a { padding: 2px; }
 }
 
 /* full-screen layers take the same box as the world (see ui/viewport.ts); last, so it wins over their `inset: 0` */
