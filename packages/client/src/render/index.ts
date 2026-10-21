@@ -23,6 +23,8 @@ const MAX_DPR = 2;
 const TRAVEL = 1.2;
 /** A trip covers at least this many screens (short side), however far the camera is zoomed out. */
 const TRIP_SCREENS = 5;
+/** The loader's countryside view drifts this way (world px/s); the first map lies further along it. */
+const DRIFT = { x: 10, y: 4 };
 /** Heroes drop in no sooner than this long after the camera has arrived on the new map... */
 const SPAWN_AFTER = 0.15;
 /** ...and not before the countdown says «1» (this long before control starts), so it ticks evenly. */
@@ -319,7 +321,7 @@ class PixiRenderer implements GameRenderer {
       c.x = 0; c.y = 0;
     }
     this.landscapeShown = true;
-    c.x += 10 * dt; c.y += 4 * dt;
+    c.x += DRIFT.x * dt; c.y += DRIFT.y * dt;
     this.present();
   }
   private landscapeShown = false;
@@ -343,35 +345,27 @@ class PixiRenderer implements GameRenderer {
       m.ox = Math.round(m.ox + (m.w - world.width) / 2); m.oy = Math.round(m.oy + (m.h - world.height) / 2);
       this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
       this.spawnDelay = Math.max(this.camera.travelLeft + SPAWN_AFTER, this.untilOne(world));
-    } else if (travel) {
-      // the old arena stays where it was; the new one is built a little further across the world
-      this.ghost = { ox: m.ox, oy: m.oy, w: m.w, h: m.h, shape: m.shape, theme: m.theme, t: 0 };
-      this.arena.ghostRoot.position.set(m.ox * T, m.oy * T);
+    } else if (travel || flyIn) {
+      // a trip to the new map: from the old arena, which stays where it was, or (the first map,
+      // after the loader) from the spot of countryside the view drifted to
+      if (travel) {
+        this.ghost = { ox: m.ox, oy: m.oy, w: m.w, h: m.h, shape: m.shape, theme: m.theme, t: 0 };
+        this.arena.ghostRoot.position.set(m.ox * T, m.oy * T);
+      }
+      const from = travel ? m : { ox: Math.round(this.camera.x / T), oy: Math.round(this.camera.y / T), w: 1, h: 1 };
       // as long on screen from the zoomed-out menu view as from a close follow: the stretch of
       // countryside scales with the tiles the screen shows now and once framed on the new arena
       const W = this.view.cssW * this.view.res, H = this.view.cssH * this.view.res, short = Math.min(W, H);
       const fit = Math.min(W / (world.width + 2.6), H / (world.height + 2.6));
       const shown = Math.max(short / (this.camera.zoom * T), short / fit);
-      const [nx, ny] = nextOrigin(m, world.width, world.height, shown * TRIP_SCREENS);
-      const ddx = nx + world.width / 2 - (m.ox + m.w / 2), ddy = ny + world.height / 2 - (m.oy + m.h / 2), dl = Math.hypot(ddx, ddy) || 1;
+      // (from the countryside: straight on, the way the view was already drifting)
+      const [nx, ny] = nextOrigin(from, world.width, world.height, shown * TRIP_SCREENS, travel ? undefined : Math.atan2(DRIFT.y, DRIFT.x));
+      const ddx = nx + world.width / 2 - (from.ox + from.w / 2), ddy = ny + world.height / 2 - (from.oy + from.h / 2), dl = Math.hypot(ddx, ddy) || 1;
       try { this.onTravel?.(TRAVEL * 1000, ddx / dl, ddy / dl); } catch (e) { console.warn('[render] onTravel', e); }
       m.ox = nx; m.oy = ny;
       this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
       this.camera.travel(TRAVEL);
       // get the countryside around the destination ready while the camera is on its way
-      const pad = 14 * T;
-      this.ground.want((m.ox - 1.5) * T - pad, (m.oy - 1.5) * T - pad, (m.ox + world.width + 0.5) * T + pad, (m.oy + world.height + 0.5) * T + pad);
-      this.spawnDelay = Math.max(TRAVEL + SPAWN_AFTER, this.untilOne(world));
-    } else if (flyIn) {
-      // from wherever the countryside view drifted to, a few screens away in a random direction
-      const W = this.view.cssW * this.view.res, H = this.view.cssH * this.view.res, short = Math.min(W, H);
-      const dist = (short / (this.camera.zoom * T)) * 2.5 + Math.max(world.width, world.height) / 2;
-      const a = Math.random() * Math.PI * 2, dx = Math.cos(a), dy = Math.sin(a);
-      m.ox = Math.round(this.camera.x / T + dx * dist - (world.width - 1) / 2);
-      m.oy = Math.round(this.camera.y / T + dy * dist - (world.height - 1) / 2);
-      try { this.onTravel?.(TRAVEL * 1000, dx, dy); } catch (e) { console.warn('[render] onTravel', e); }
-      this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
-      this.camera.travel(TRAVEL);
       const pad = 14 * T;
       this.ground.want((m.ox - 1.5) * T - pad, (m.oy - 1.5) * T - pad, (m.ox + world.width + 0.5) * T + pad, (m.oy + world.height + 0.5) * T + pad);
       this.spawnDelay = Math.max(TRAVEL + SPAWN_AFTER, this.untilOne(world));
@@ -738,13 +732,13 @@ export interface RendererExt extends GameRenderer {
   onThunder?: (delaySec: number, power: number) => void;
 }
 
-/** Where the next map goes: a random direction, clear of the old arena by a stretch of countryside,
- *  centres at least `min` tiles apart. */
-function nextOrigin(m: { ox: number; oy: number; w: number; h: number; }, w: number, h: number, min: number): [number, number] {
+/** Where the next map goes: a random direction (or `heading`), clear of the old arena by a stretch of
+ *  countryside, centres at least `min` tiles apart. */
+function nextOrigin(m: { ox: number; oy: number; w: number; h: number; }, w: number, h: number, min: number, heading?: number): [number, number] {
   const cx = m.ox + (m.w - 1) / 2, cy = m.oy + (m.h - 1) / 2;
-  let ang = Math.random() * Math.PI * 2;
+  let ang = heading ?? Math.random() * Math.PI * 2;
   // don't wander off forever: far from the start, head back roughly towards it
-  if (Math.hypot(cx, cy) > 400) ang = Math.atan2(-cy, -cx) + (Math.random() - 0.5) * 1.6;
+  if (heading === undefined && Math.hypot(cx, cy) > 400) ang = Math.atan2(-cy, -cx) + (Math.random() - 0.5) * 1.6;
   const dx = Math.cos(ang), dy = Math.sin(ang);
   const gap = 28 + Math.random() * 14;
   const hw = (m.w + w) / 2 + 2 + gap, hh = (m.h + h) / 2 + 2 + gap;
