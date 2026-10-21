@@ -386,6 +386,23 @@ function buildBombGrid(ctx: SimCtx) {
   }
 }
 
+/**
+ * A bomb flying over a burning tile drops into the fire there and chains like any bomb on the
+ * ground (the check below), instead of sailing through the blast.
+ */
+function hitInFlight(ctx: SimCtx, b: BombState): boolean {
+  const w = ctx.world;
+  const x = Math.round(b.x), y = Math.round(b.y);
+  if (x < 0 || y < 0 || x >= w.width || y >= w.height || !ctx.flameGrid[y * w.width + x]) return false;
+  b.motion = BombMotion.Idle;
+  b.x = x;
+  b.y = y;
+  b.passers.length = 0;
+  addOverlappingPassers(ctx, b);
+  emit(ctx, { type: 'bombLanded', bomb: b.id, x, y });
+  return true;
+}
+
 /** Move bombs, burn fuses, detonate. */
 export function updateBombs(ctx: SimCtx) {
   const w = ctx.world;
@@ -395,7 +412,7 @@ export function updateBombs(ctx: SimCtx) {
     if (b.motion === BombMotion.Sliding) slide(ctx, b);
     else if (b.motion === BombMotion.Flying) {
       fly(ctx, b);
-      if (b.motion === BombMotion.Flying) {
+      if (b.motion === BombMotion.Flying && !hitInFlight(ctx, b)) {
         if (b.fuse > 1) b.fuse--; // can't go off mid-air
         continue;
       }

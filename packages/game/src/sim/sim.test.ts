@@ -348,6 +348,24 @@ describe('bombs', () => {
     expect(onlyBomb(h).motion).toBe(BombMotion.Idle);
   });
 
+  test('glove: a bomb thrown across a blast drops into the fire and goes off there', () => {
+    const h = new Harness(['.........', '.........', '.........'], [['a', 1, 1]]);
+    const a = h.p('a');
+    h.give('a', ['glove']);
+    h.tap('a', Button.Bomb);
+    // fire burning on the bomb's way (as if another blast just went off there)
+    const fid = h.state.nextId++;
+    h.state.flames.set(fid, { id: fid, x: 2, y: 1, shape: FlameShape.Center, owner: 'z', ttl: 120 });
+    h.sim.ctx.flameGrid[1 * h.state.width + 2] = fid;
+    a.dir = Dir.Right;
+    h.set('a', 0, 0, Button.Action);
+    h.step();
+    h.set('a', 0, 0, 0);
+    expect(ev(h.step(), 'bombThrown')[0]).toMatchObject({ toX: 4, toY: 1 });
+    h.until((e) => ev(e, 'explosion').length > 0, 60);
+    expect(ev(h.events, 'explosion')[0]).toMatchObject({ x: 2, y: 1 });
+  });
+
   test('glove: a bomb thrown off the map evaporates without a blast', () => {
     const h = new Harness(['.........', '.........', '.........'], [['a', 7, 1]]);
     const a = h.p('a');
