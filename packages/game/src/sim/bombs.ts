@@ -75,23 +75,25 @@ export function createSkyBomb(ctx: SimCtx, x: number, y: number, radius: number,
 export function createBomb(ctx: SimCtx, p: PlayerState, x: number, y: number): BombState {
   const w = ctx.world;
   const crazy = p.effects.crazy > 0;
-  const remote = !crazy && (p.abilities & Ability.Remote) !== 0;
+  const remote = (p.abilities & Ability.Remote) !== 0;
   const pierce = (p.abilities & Ability.Pierce) !== 0;
   let radius = p.curse === Curse.TinyFlame ? 1 : p.radius;
   let fuse = remote ? -REMOTE_BOMB_MAX_FUSE : BOMB_FUSE;
   let dud = false;
   if (crazy) {
-    // hidden information: secret generator (the real fuse / radius are not sent to clients)
+    // hidden information: secret generator (the real fuse / radius are not sent to clients).
+    // With Remote as well it stays a remote bomb (goes off on the button, never a dud) and only
+    // the blast is crazy.
     const s = ctx.secret;
-    fuse = CRAZY_FUSE_MIN + randInt(s, CRAZY_FUSE_MAX - CRAZY_FUSE_MIN + 1);
+    if (!remote) fuse = CRAZY_FUSE_MIN + randInt(s, CRAZY_FUSE_MAX - CRAZY_FUSE_MIN + 1);
     const maxR = Math.min(MAX_RADIUS, radius * CRAZY_RADIUS_MULT);
     radius += randInt(s, maxR - radius + 1);
-    dud = nextFloat(s) < CRAZY_DUD_CHANCE;
+    dud = !remote && nextFloat(s) < CRAZY_DUD_CHANCE;
   }
   const b: BombState = {
     id: w.nextId++,
     owner: p.id,
-    kind: crazy ? BombKind.Crazy : remote ? BombKind.Remote : pierce ? BombKind.Pierce : BombKind.Normal,
+    kind: remote ? BombKind.Remote : crazy ? BombKind.Crazy : pierce ? BombKind.Pierce : BombKind.Normal,
     x,
     y,
     radius,

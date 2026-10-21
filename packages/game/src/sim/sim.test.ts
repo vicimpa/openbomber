@@ -477,6 +477,25 @@ describe('bombs', () => {
     expect(b.radius).toBeGreaterThanOrEqual(2);
     expect(b.radius).toBeLessThanOrEqual(10); // up to x CRAZY_RADIUS_MULT
   });
+
+  test('crazy + remote: still a remote bomb that waits for the button, with a crazy blast', () => {
+    const h = new Harness(['.........', '.........', '.........'], [['a', 1, 1]]);
+    const a = h.p('a');
+    a.effects.crazy = 1000;
+    h.give('a', ['remote']);
+    a.radius = 2;
+    h.tap('a', Button.Bomb);
+    const b = onlyBomb(h);
+    expect(b.kind).toBe(BombKind.Remote);
+    expect(b.fuse).toBeLessThan(0); // waits for Action
+    expect(b.dud).toBe(false);
+    expect(b.radius).toBeGreaterThanOrEqual(2);
+    h.step(CRAZY_FUSE_MAX + 5);
+    expect(h.state.bombs.size).toBe(1); // a crazy fuse would have gone off by now
+    h.tap('a', Button.Action);
+    h.until((e) => ev(e, 'explosion').length > 0, 30);
+    expect(ev(h.events, 'explosion').length).toBe(1);
+  });
 });
 
 describe('players & effects', () => {
