@@ -10,7 +10,7 @@ import { Button, Logo, Segmented, Toggle } from './components';
 import { copyRoom, shareRoom } from './hud/RoomCode';
 import { t } from './i18n';
 import { Icon } from './icons';
-import { LINKS } from './links';
+import { LINKS, showLinks } from './links';
 import { NAME_MAX, randomName } from './names';
 import { SettingsSections } from './SettingsModal';
 import { HeroSprite } from './sprites';
@@ -95,14 +95,14 @@ function GameTab() {
 
       {!discord.value && <Button block variant="white" icon={<Icon name="home" />} onClick={() => { menuOpen.value = false; actions.leave(); }}>{t('menu.toMainMenu')}</Button>}
 
-      <section class="card">
+      {showLinks && <section class="card">
         <h3>{t('menu.links')}:</h3>
         <ul class="links">
           {LINKS.map((l) => (
             <li><a href={l.href} target="_blank" rel="noopener"><Icon name={l.icon} class="links__icon" />{t(l.key)}</a></li>
           ))}
         </ul>
-      </section>
+      </section>}
     </>
   );
 }

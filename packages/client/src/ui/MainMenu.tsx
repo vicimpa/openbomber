@@ -8,7 +8,7 @@ import { Avatar } from './Avatar';
 import { Button, Logo } from './components';
 import { t } from './i18n';
 import { Icon } from './icons';
-import { LINKS } from './links';
+import { LINKS, showLinks } from './links';
 import { NAME_MAX, randomName } from './names';
 import { SKIN_COUNT } from './settings';
 import { HeroSprite } from './sprites';
@@ -108,13 +108,13 @@ export function MainMenu() {
           </div>
         </div>
 
-        <nav class="mm__links" aria-label={t('menu.links')}>
+        {showLinks && <nav class="mm__links" aria-label={t('menu.links')}>
           {LINKS.map((l) => (
             <a href={l.href} target="_blank" rel="noopener" title={t(l.key)} aria-label={t(l.key)}>
               <Icon name={l.icon} size={30} class="links__icon" />
             </a>
           ))}
-        </nav>
+        </nav>}
       </div>
     </div>
   );
