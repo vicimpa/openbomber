@@ -32,6 +32,13 @@ const SLICE_MS = 8;
 const SPAWN_AFTER = 0.15;
 /** ...and not before the countdown says «1» (this long before control starts), so it ticks evenly. */
 const SPAWN_ON_ONE = 1;
+/** The next trip's countryside is made ahead in frames that can spare this long (ms)... */
+const AHEAD_MS = 2;
+/** ...once the camera has been on the map this long (s), its own surroundings done first. */
+const AHEAD_AFTER = 2;
+/** A frame that has spent this long (ms) by the time the countryside is covered (a new map built,
+ *  the old one frozen) makes no chunk that can wait. */
+const HEAVY_MS = 6;
 
 const PICKUP_LABEL: Record<PickupType, [string, number]> = {
   [PickupType.BombUp]: ['+1 BOMB', 0x8fe3ff], [PickupType.FireUp]: ['+1 FIRE', 0xffb35c],
@@ -106,12 +113,19 @@ class PixiRenderer implements GameRenderer {
   private planned: { ox: number; oy: number; w: number; h: number; } | null = null;
   /** The countryside preload() drew stays cached until the camera has arrived. */
   private releaseAfterTrip = false;
+  /** Where the trip away from the map on show will head (drawn ahead, see planAhead()). */
+  private ahead: { key: string; dir: TripDir; planned: boolean } | null = null;
+  /** Seconds since the camera arrived on the map on show. */
+  private settled = 0;
   /** prime(): the next new map is already running (no spawn wave); scorch these cells into it. */
   private primed: { x: number; y: number; }[][] | null = null;
 
   constructor(private app: Application, private parent: HTMLElement, private a: GameAssets, private tx: ProcTextures, quality: 'low' | 'high') {
     this.fx = new Effects(a, tx);
     this.ground = new Ground(a);
+    // chunks made ahead go onto the GPU right away, not in the frame that first shows them
+    const gl = (app.renderer as unknown as { texture: { initSource(s: TextureSource): void; }; }).texture;
+    this.ground.onPrepared = (tex) => { try { gl.initSource(tex.source); } catch (e) { console.warn('[render] upload', e); } };
     this.arena = new Arena(a, tx, this.fx);
     this.arena.onImpact = (x, y) => this.shakeAt(x, y, 0.8);
     this.explosions = new Explosions(a, tx);
@@ -171,7 +185,8 @@ class PixiRenderer implements GameRenderer {
     if (this.ghost?.shape === ArenaShape.Rect) covers.push(this.floorRect(this.ghost));
     this.ground.setCovers(covers);
     const g0 = perfNow(), made = this.ground.generated;
-    this.ground.cover(x0, y0, x1, y1, this.camera.zoom, this.camera.travelling ? 4 : 2);
+    const heavy = performance.now() - this.frameStart > HEAVY_MS;
+    this.ground.cover(x0, y0, x1, y1, this.camera.zoom, heavy ? 0 : this.camera.travelling ? 4 : 2);
     perfAdd('gnd', perfNow() - g0, this.ground.generated - made);
     const mx = this.map.ox * T, my = this.map.oy * T;
     this.arena.cull(x0 - mx - T, y0 - my - T, x1 - mx + T, y1 - my + T, this.camera.zoom);
@@ -224,6 +239,7 @@ class PixiRenderer implements GameRenderer {
 
   // ---------------------------------------------------------------- frame
   render(world: WorldState | null, localId: string, dtMs: number) {
+    this.frameStart = performance.now();
     const dt = Math.min(0.1, Math.max(0, dtMs / 1000));
     this.time += dt;
     this.world = world;
@@ -267,6 +283,8 @@ class PixiRenderer implements GameRenderer {
     this.fx.update(dt);
     this.gc();
     if (this.releaseAfterTrip && !this.camera.travelling) { this.releaseAfterTrip = false; this.ground.release(); }
+    this.settled = this.camera.travelling ? 0 : this.settled + dt;
+    this.planAhead(world);
 
     this.updateCamera(world, localId, dt);
     const view = this.present();
@@ -337,6 +355,8 @@ class PixiRenderer implements GameRenderer {
     this.present();
   }
   private landscapeShown = false;
+  /** When the current render() began (performance.now()). */
+  private frameStart = 0;
 
   private onNewMap(world: WorldState, travel: boolean, retarget: boolean, flyIn = false) {
     for (const v of this.bombs.values()) v.destroy();
@@ -368,9 +388,14 @@ class PixiRenderer implements GameRenderer {
       // (from the countryside: straight on, the way the view was already drifting; preload() may
       // have placed it already)
       const p = this.planned;
+      // (between maps: the way drawn ahead, whose countryside may be made already)
+      const ahead = travel && this.ahead?.key === mapKey(m) ? this.ahead : null;
+      const dir = ahead?.dir ?? (travel ? tripDir(m) : { ang: Math.atan2(DRIFT.y, DRIFT.x), gap: 28 + Math.random() * 14 });
       const [nx, ny] = !travel && p && p.w === world.width && p.h === world.height
-        ? [p.ox, p.oy] : this.tripTo(from, world, travel ? undefined : Math.atan2(DRIFT.y, DRIFT.x));
+        ? [p.ox, p.oy] : this.tripTo(from, world.width, world.height, dir);
       if (!travel && p) { this.planned = null; this.releaseAfterTrip = true; }
+      if (ahead?.planned) this.releaseAfterTrip = true;
+      this.ahead = null;
       const ddx = nx + world.width / 2 - (from.ox + from.w / 2), ddy = ny + world.height / 2 - (from.oy + from.h / 2), dl = Math.hypot(ddx, ddy) || 1;
       try { this.onTravel?.(TRAVEL * 1000, ddx / dl, ddy / dl); } catch (e) { console.warn('[render] onTravel', e); }
       m.ox = nx; m.oy = ny;
@@ -381,6 +406,8 @@ class PixiRenderer implements GameRenderer {
       this.ground.want((m.ox - 1.5) * T - pad, (m.oy - 1.5) * T - pad, (m.ox + world.width + 0.5) * T + pad, (m.oy + world.height + 0.5) * T + pad);
       this.spawnDelay = Math.max(TRAVEL + SPAWN_AFTER, this.untilOne(world));
     } else {
+      if (this.ahead?.planned) this.ground.release();
+      this.ahead = null;
       this.arena.clearGhost();
       this.ghost = null;
       this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
@@ -395,11 +422,47 @@ class PixiRenderer implements GameRenderer {
   /** Where a new map goes when the camera travels to it from `from`. The stretch of countryside is as
    *  long on screen from the zoomed-out menu view as from a close follow: it scales with the tiles
    *  the screen shows now and once framed on the new arena. */
-  private tripTo(from: { ox: number; oy: number; w: number; h: number; }, world: WorldState, heading?: number) {
+  private tripTo(from: { ox: number; oy: number; w: number; h: number; }, w: number, h: number, dir: TripDir, zoom = this.camera.zoom) {
     const W = this.view.cssW * this.view.res, H = this.view.cssH * this.view.res, short = Math.min(W, H);
-    const fit = Math.min(W / (world.width + 2.6), H / (world.height + 2.6));
-    const shown = Math.max(short / (this.camera.zoom * T), short / fit);
-    return nextOrigin(from, world.width, world.height, shown * TRIP_SCREENS, heading);
+    const fit = Math.min(W / (w + 2.6), H / (h + 2.6));
+    const shown = Math.max(short / (zoom * T), short / fit);
+    return nextOrigin(from, w, h, shown * TRIP_SCREENS, dir);
+  }
+
+  /**
+   * While a map is on show: draw where the trip away from it will head, and make the countryside
+   * the camera will fly over (the zoomed-out views of the way) in frames that can spare the time:
+   * while the round is decided, or our hero isn't playing (menu, spectating). The next map's size
+   * isn't known yet, so it's placed as if it were this one's; its surroundings are left for the
+   * trip itself (they depend on the arena's clearing and theme).
+   */
+  private planAhead(world: WorldState) {
+    const m = this.map;
+    if (!m.shown || this.camera.travelling || this.ghost || this.planned || this.releaseAfterTrip || this.settled < AHEAD_AFTER) return;
+    const key = mapKey(m);
+    if (this.ahead?.key !== key) this.ahead = { key, dir: tripDir(m), planned: false };
+    if (!this.ahead.planned) {
+      this.ahead.planned = true;
+      const W = this.view.cssW * this.view.res, H = this.view.cssH * this.view.res, S = Math.min(W, H);
+      const fit = Math.min(W / ((m.w + 2.6) * T), H / ((m.h + 2.6) * T));
+      // (the camera leaves from the arena overview, as when a round is over)
+      const [ox, oy] = this.tripTo(m, m.w, m.h, this.ahead.dir, fit);
+      const x0 = (m.ox + (m.w - 1) / 2) * T, y0 = (m.oy + (m.h - 1) / 2) * T;
+      const x1 = (ox + (m.w - 1) / 2) * T, y1 = (oy + (m.h - 1) / 2) * T;
+      // the destination's surroundings are redrawn once its clearing is known: not those
+      const slack = 4 * T, dest = this.wallRect({ ox, oy, w: m.w, h: m.h });
+      const avoid: Rect = { x0: dest.x0 - slack, y0: dest.y0 - slack, x1: dest.x1 + slack, y1: dest.y1 + slack };
+      // (half a chunk of margin: the views between the samples; the zoom changes fastest near the
+      // ends, where the samples are denser)
+      const mg = 8 * T, N = 96;
+      for (let i = 0; i <= N; i++) {
+        const e = (1 - Math.cos((i / N) * Math.PI)) / 2;
+        const [x, y, vw] = zoomPath(x0, y0, S / fit, x1, y1, S / fit, e), z = S / vw;
+        this.ground.plan(x - W / z / 2 - mg, y - H / z / 2 - mg, x + W / z / 2 + mg, y + H / z / 2 + mg, z, avoid);
+      }
+    }
+    const idle = world.phase === Phase.RoundOver || !this.meAlive;
+    if (idle && this.ground.pending) this.ground.prepare(AHEAD_MS);
   }
 
   /**
@@ -412,7 +475,7 @@ class PixiRenderer implements GameRenderer {
     const gl = (this.app.renderer as unknown as { texture: { initSource(s: TextureSource): void; }; }).texture;
     const upload = (s: TextureSource) => { try { gl.initSource(s); } catch (e) { console.warn('[render] upload', e); } };
     const slice = () => new Promise<void>((r) => { requestAnimationFrame(() => r()); setTimeout(r, 50); });
-    const sources = [...textureSources([this.a, this.tx])];
+    const sources = [...textureSources([this.a, this.tx, this.arena.prewarm()])];
     const texShare = world ? 0.2 : 1;
     let t0 = performance.now();
     for (let i = 0; i < sources.length; i++) {
@@ -420,22 +483,22 @@ class PixiRenderer implements GameRenderer {
       if (performance.now() - t0 > SLICE_MS) { onProgress?.((texShare * i) / sources.length); await slice(); t0 = performance.now(); }
     }
     await slice(); // the countryside view has been framed (camera zoom) by now
+    this.ground.warmUp();
+    await slice();
     if (!world || this.map.shown) return;
     this.planFirstMap(world);
-    this.ground.onPrepared = (tex) => upload(tex.source);
     const total = this.ground.pending || 1;
     while (!this.ground.prepare(SLICE_MS)) {
       onProgress?.(texShare + (1 - texShare) * (1 - this.ground.pending / total));
       await slice();
     }
-    this.ground.onPrepared = undefined;
   }
 
   /** The first map after the loader: placed straight on along the drift, its clearing set (so the
    *  chunks made now aren't redrawn when it appears), the trip's chunks queued back to front. */
   private planFirstMap(world: WorldState) {
     const c = this.camera, w = world.width, h = world.height;
-    const [ox, oy] = this.tripTo({ ox: Math.round(c.x / T), oy: Math.round(c.y / T), w: 1, h: 1 }, world, Math.atan2(DRIFT.y, DRIFT.x));
+    const [ox, oy] = this.tripTo({ ox: Math.round(c.x / T), oy: Math.round(c.y / T), w: 1, h: 1 }, w, h, { ang: Math.atan2(DRIFT.y, DRIFT.x), gap: 28 + Math.random() * 14 });
     this.planned = { ox, oy, w, h };
     this.ground.setClearings([this.wallRect({ ox, oy, w, h, shape: world.shape ?? ArenaShape.Rect, theme: world.theme ?? Theme.Meadow })]);
     const W = this.view.cssW * this.view.res, H = this.view.cssH * this.view.res, S = Math.min(W, H);
@@ -447,8 +510,8 @@ class PixiRenderer implements GameRenderer {
     const pad = 14 * T, x1 = (ox + (w - 1) / 2) * T, y1 = (oy + (h - 1) / 2) * T;
     view(x1, y1, fit);
     this.ground.plan((ox - 1.5) * T - pad, (oy - 1.5) * T - pad, (ox + w + 0.5) * T + pad, (oy + h + 0.5) * T + pad, 1);
-    for (let i = 48; i >= 0; i--) {
-      const [x, y, vw] = zoomPath(c.x, c.y, S / c.zoom, x1, y1, S / fit, i / 48);
+    for (let i = 96; i >= 0; i--) {
+      const [x, y, vw] = zoomPath(c.x, c.y, S / c.zoom, x1, y1, S / fit, (1 - Math.cos((i / 96) * Math.PI)) / 2);
       view(x, y, S / vw);
     }
   }
@@ -822,15 +885,24 @@ function textureSources(roots: unknown[]) {
   return out;
 }
 
-/** Where the next map goes: a random direction (or `heading`), clear of the old arena by a stretch of
- *  countryside, centres at least `min` tiles apart. */
-function nextOrigin(m: { ox: number; oy: number; w: number; h: number; }, w: number, h: number, min: number, heading?: number): [number, number] {
+/** A trip's direction (radians) and the stretch of countryside (tiles) it keeps clear at least. */
+interface TripDir { ang: number; gap: number }
+
+const mapKey = (m: { ox: number; oy: number; w: number; h: number; }) => `${m.ox},${m.oy},${m.w},${m.h}`;
+
+/** A random direction away from map `m`; far from the start, roughly back towards it (no wandering off forever). */
+function tripDir(m: { ox: number; oy: number; w: number; h: number; }): TripDir {
   const cx = m.ox + (m.w - 1) / 2, cy = m.oy + (m.h - 1) / 2;
-  let ang = heading ?? Math.random() * Math.PI * 2;
-  // don't wander off forever: far from the start, head back roughly towards it
-  if (heading === undefined && Math.hypot(cx, cy) > 400) ang = Math.atan2(-cy, -cx) + (Math.random() - 0.5) * 1.6;
-  const dx = Math.cos(ang), dy = Math.sin(ang);
-  const gap = 28 + Math.random() * 14;
+  const ang = Math.hypot(cx, cy) > 400 ? Math.atan2(-cy, -cx) + (Math.random() - 0.5) * 1.6 : Math.random() * Math.PI * 2;
+  return { ang, gap: 28 + Math.random() * 14 };
+}
+
+/** Where the next map goes: the way `dir` from the old one, clear of it by a stretch of countryside,
+ *  centres at least `min` tiles apart. */
+function nextOrigin(m: { ox: number; oy: number; w: number; h: number; }, w: number, h: number, min: number, dir: TripDir): [number, number] {
+  const cx = m.ox + (m.w - 1) / 2, cy = m.oy + (m.h - 1) / 2;
+  const dx = Math.cos(dir.ang), dy = Math.sin(dir.ang);
+  const gap = dir.gap;
   const hw = (m.w + w) / 2 + 2 + gap, hh = (m.h + h) / 2 + 2 + gap;
   const t = Math.max(min, Math.min(Math.abs(dx) > 1e-3 ? hw / Math.abs(dx) : Infinity, Math.abs(dy) > 1e-3 ? hh / Math.abs(dy) : Infinity));
   return [Math.round(cx + dx * t - (w - 1) / 2), Math.round(cy + dy * t - (h - 1) / 2)];

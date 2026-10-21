@@ -50,6 +50,11 @@ export class Arena {
   private ruinFrames = new Map<number, number[]>(); // mask → frame indices
   private chunks: Chunk[] = [];
   private chunkCols = 0;
+  /** Floor sprites of earlier maps, reused by the next one (a new map is built in the frame its trip
+   *  starts, which has plenty to do already)... */
+  private spare: Sprite[] = [];
+  /** ...and their chunks, taken apart one a frame afterwards. */
+  private trash: Container[] = [];
   private smooth = false;
 
   /** Live falling blocks (dynamic). */
@@ -70,6 +75,12 @@ export class Arena {
 
   constructor(private a: GameAssets, private tx: ProcTextures, private fx: Effects) {
     this.vars = this.variants(Theme.Meadow);
+  }
+
+  /** Every theme's tile variants made now (their textures, to be put on the GPU), not when a map
+   *  of that theme first comes up, in the frame its trip starts. */
+  prewarm() {
+    return [Theme.Meadow, Theme.Autumn, Theme.Winter, Theme.Desert].map(t => this.variants(t));
   }
 
   /** Floor / wall / crate variants of a theme (made on first use). */
@@ -140,6 +151,7 @@ export class Arena {
 
   /** Cull chunks against the visible world rect (px) and refresh dirty caches. */
   cull(x0: number, y0: number, x1: number, y1: number, zoom: number) {
+    this.trash.pop()?.destroy({ children: true });
     const smooth = zoom < 0.8;
     const remode = smooth !== this.smooth;
     this.smooth = smooth;
@@ -165,7 +177,11 @@ export class Arena {
     this.seed = (Math.random() * 0x7fffffff) | 0;
     this.gw = w + 2; this.gh = h + 2;
     this.tiles = new Uint8Array(tiles);
-    for (const ch of this.chunks) ch.c.destroy({ children: true });
+    for (const ch of this.chunks) {
+      const floor = ch.c.children[0];
+      if (floor) for (const f of floor.removeChildren()) if (this.spare.length < 6000) this.spare.push(f as Sprite); else f.destroy();
+      this.trash.push(ch.c);
+    }
     this.root.removeChildren();
     this.chunks = [];
     this.chunkCols = Math.ceil(this.gw / CH);
@@ -203,7 +219,10 @@ export class Arena {
         this.blocks[gi] = s;
         continue;
       }
-      const f = new Sprite({ texture: this.vars.floorAt(x, y, this.seed), anchor: 0.5, x: x * T, y: y * T, tint: this.floorTint(x, y) });
+      const f = this.spare.pop() ?? new Sprite({ anchor: 0.5 });
+      f.texture = this.vars.floorAt(x, y, this.seed);
+      f.position.set(x * T, y * T);
+      f.tint = this.floorTint(x, y);
       floorLayers[k].addChild(f);
       this.floor[gi] = f;
       this.setBlock(x, y, tiles[y * w + x]);
