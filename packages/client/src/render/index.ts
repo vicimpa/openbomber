@@ -362,8 +362,9 @@ class PixiRenderer implements GameRenderer {
   /** Snapshot of the current map (still at its origin) and still copies of its heroes. */
   private freezeMap() {
     const m = this.map;
+    // (the night stays out of it: it covers the whole screen and fades with the weather, not the map)
     const hide = [this.fx.over, this.fx.light, this.fx.particles.normal, this.fx.particles.additive, this.tags, this.entities,
-    this.arena.zoneLayer, this.drops.air, this.arena.fallingRoot];
+    this.arena.zoneLayer, this.drops.air, this.arena.fallingRoot, this.weather.dark, this.weather.lights];
     const was = hide.map(c => c.visible);
     hide.forEach(c => { c.visible = false; });
     this.arena.showAll(this.camera.zoom);
