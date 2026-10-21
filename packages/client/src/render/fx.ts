@@ -122,6 +122,9 @@ export class Particles {
 }
 
 /** Simple timed one-shot animation attached to a display object. */
+/** Live position (world px) of whatever an effect sticks to; null once it's gone. */
+export type Follow = () => { x: number; y: number } | null;
+
 interface OneShot { obj: Container; t: number; dur: number; step: (k: number, dt: number) => void }
 
 export class Effects {
@@ -209,13 +212,17 @@ export class Effects {
     });
   }
 
-  label(x: number, y: number, text: string, color: number, dur = 1.1) {
+  /** Floating text; with `follow` (world px of whoever it belongs to) it rides along with them. */
+  label(x: number, y: number, text: string, color: number, dur = 1.1, follow?: Follow) {
     const t = this.labelPool.pop() ?? new BitmapText({ text: '', style: { fontFamily: FONT_TAG, fontSize: 8 }, anchor: 0.5 });
     t.label = 'pooled';
     t.text = text;
     t.tint = color;
     t.x = x; t.y = y;
     this.shot(t, this.over, dur, k => {
+      const f = follow?.();
+      if (f) { x = f.x; y = f.y - 14; }
+      t.x = x;
       const pop = k < 0.12 ? k / 0.12 : 1;
       t.scale.set(0.6 + 0.4 * bounce(Math.min(1, pop)) + (k < 0.12 ? 0.2 : 0));
       t.y = y - 6 - 22 * (1 - (1 - k) ** 2);
@@ -359,11 +366,19 @@ export class Effects {
     this.label(px, py - 10, 'pfff', 0xc8c4d8, 0.9);
   }
 
-  /** Pickup collected: icon flips up and away (new-openbomber Give) + sparkle ring + label. */
-  collect(x: number, y: number, icon: Texture, text: string, color: number, good = true) {
+  /**
+   * Pickup collected: icon flips up and away (new-openbomber Give) + sparkle ring + label. With
+   * `follow` (world px of the hero who took it) the icon and the label ride along with that hero.
+   */
+  collect(x: number, y: number, icon: Texture, text: string, color: number, good = true, follow?: Follow) {
     const px = x * T, py = y * T;
     const s = new Sprite({ texture: icon, anchor: 0.5, x: px, y: py });
     this.shot(s, this.over, 0.8, k => {
+      const f = follow?.();
+      // slide from the pickup's tile onto the hero in the first moment, then stay on them
+      const glue = Math.min(1, k * 8);
+      const bx = f ? px + (f.x - px) * glue : px, by = f ? py + (f.y - py) * glue : py;
+      s.x = bx;
       const t = k * 4;
       const rot = clamp(t - 1, 0, 2) / 2;
       const fly = clamp(t, 0, 1) ** 3 + clamp(t - 3, 0, 1) ** 3;
@@ -371,7 +386,7 @@ export class Effects {
       sc *= 1 - clamp(t, 0, 0.3);
       s.alpha = 0.2 + sc;
       s.scale.set(Math.cos(rot * Math.PI * 3) * sc, sc);
-      s.y = py - fly * 32;
+      s.y = by - fly * 32;
     });
     this.flash(px, py, 1.5, good ? 0xfff2a0 : 0xb070ff, 0.3, 0.7);
     this.shockwave(px, py, 0.9, good ? 0xffffff : 0xc080ff, 0.3, 0.8);
@@ -383,7 +398,7 @@ export class Effects {
         life: rand(0.35, 0.6), scale: rand(0.5, 1), scaleEnd: 0, tint: good ? 0xfff6c0 : 0xd0a0ff, add: true, alphaEnd: 1,
       });
     }
-    this.label(px, py - 14, text, color);
+    this.label(px, py - 14, text, color, 1.1, follow);
   }
 
   private whites = new Map<Texture, Texture>();

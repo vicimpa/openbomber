@@ -606,7 +606,8 @@ class PixiRenderer implements GameRenderer {
           const [text, color] = PICKUP_LABEL[kind] ?? ['', 0xffffff];
           const mine = e.by === localId;
           const icon = this.a.pickupIcon[(k?.type ?? kind) as PickupType] ?? Texture.EMPTY;
-          this.fx.collect(pos.x, pos.y, icon, mine ? text : '', color, kind !== PickupType.Skull);
+          const follow = () => { const h = this.playerPos(e.by); return h ? { x: h.x * T, y: h.y * T } : null; };
+          this.fx.collect(pos.x, pos.y, icon, mine ? text : '', color, kind !== PickupType.Skull, follow);
           break;
         }
         case 'pickupBurned': {
