@@ -113,8 +113,8 @@ class PixiRenderer implements GameRenderer {
   private planned: { ox: number; oy: number; w: number; h: number; } | null = null;
   /** The countryside preload() drew stays cached until the camera has arrived. */
   private releaseAfterTrip = false;
-  /** depart(): the map on show was left before the next world came; it lands where the trip ends. */
-  private departed = false;
+  /** depart(): the map on show was left before the next world came; the camera cruises off (`ang`). */
+  private departed: { ang: number; t: number; zoom: number; } | null = null;
   /** Where the trip away from the map on show will head (drawn ahead, see planAhead()). */
   private ahead: { key: string; dir: TripDir; planned: boolean } | null = null;
   /** Seconds since the camera arrived on the map on show. */
@@ -265,11 +265,13 @@ class PixiRenderer implements GameRenderer {
     const young = this.map.age < 0.75;
     const travel = this.map.shown && this.nextMap !== 'snap' && (!young || this.camera.travelling);
     // (after depart(): the old map is frozen already, the new one lands where the trip goes)
-    const force = swapped || this.nextMap !== null || this.departed;
+    const departed = this.departed !== null;
+    const force = swapped || this.nextMap !== null || departed;
     // leaving a map for good: freeze it as it looks now (tiles, scorch, graves, pickups, bombs, heroes)
-    const frozen = travel && !young && !this.departed && this.arena.willRebuild(world, force) ? this.freezeMap() : null;
+    const frozen = travel && !young && !departed && this.arena.willRebuild(world, force) ? this.freezeMap() : null;
     const fresh = this.arena.sync(world, dt, force);
-    if (fresh) this.onNewMap(world, travel, this.departed || (travel && young), flyIn);
+    // (after depart(): the old map is frozen already; the new one appears off-screen ahead, flown to)
+    if (fresh) this.onNewMap(world, travel && !departed, travel && young && !departed, flyIn || departed);
     if (fresh && frozen) this.placeFrozen(frozen);
     if (fresh && this.primed) {
       for (const cells of this.primed) this.arena.scorch(cells);
@@ -375,7 +377,8 @@ class PixiRenderer implements GameRenderer {
     this.nextMap = null;
     this.recentBooms.length = 0; this.recentDeaths.length = 0;
     const m = this.map;
-    this.departed = false;
+    const departed = this.departed;
+    this.departed = null;
     this.mapRoot.visible = true;
     if (retarget) {
       // same spot (centred), the trip keeps going
@@ -392,12 +395,12 @@ class PixiRenderer implements GameRenderer {
       const from = travel ? m : { ox: Math.round(this.camera.x / T), oy: Math.round(this.camera.y / T), w: 1, h: 1 };
       // (from the countryside: straight on, the way the view was already drifting; preload() may
       // have placed it already)
-      const p = this.planned;
+      const p = departed ? null : this.planned;
       // (between maps: the way drawn ahead, whose countryside may be made already)
       const ahead = travel && this.ahead?.key === mapKey(m) ? this.ahead : null;
-      const dir = ahead?.dir ?? (travel ? tripDir(m) : { ang: Math.atan2(DRIFT.y, DRIFT.x), gap: 28 + Math.random() * 14 });
-      const [nx, ny] = !travel && p && p.w === world.width && p.h === world.height
-        ? [p.ox, p.oy] : this.tripTo(from, world.width, world.height, dir);
+      const dir = ahead?.dir ?? (travel ? tripDir(m) : { ang: departed ? departed.ang : Math.atan2(DRIFT.y, DRIFT.x), gap: 28 + Math.random() * 14 });
+      const [nx, ny] = departed ? this.justOffScreen(from, world.width, world.height, departed.ang)
+        : !travel && p && p.w === world.width && p.h === world.height ? [p.ox, p.oy] : this.tripTo(from, world.width, world.height, dir);
       if (!travel && p) { this.planned = null; this.releaseAfterTrip = true; }
       if (ahead?.planned) this.releaseAfterTrip = true;
       this.ahead = null;
@@ -429,9 +432,9 @@ class PixiRenderer implements GameRenderer {
    *  the screen shows now and once framed on the new arena. */
   /**
    * Optional extra: leave the map on show right away (connecting to a game): it freezes where it
-   * is, like at the end of a round, and the camera sets off along the trip drawn ahead into the
-   * countryside. The next world, whenever it comes (the server may take a moment), lands at the
-   * far end of that trip and the flight just goes on there; until then render(null) flies on.
+   * is, like at the end of a round, and the camera cruises off into the countryside, nowhere in
+   * particular, until the next world comes (the server may take a moment). Its map then appears
+   * just off-screen ahead and the camera flies over to it (onNewMap).
    */
   depart() {
     const m = this.map;
@@ -440,31 +443,36 @@ class PixiRenderer implements GameRenderer {
     this.ghost = { ox: m.ox, oy: m.oy, w: m.w, h: m.h, shape: m.shape, theme: m.theme, t: 0 };
     this.arena.ghostRoot.position.set(m.ox * T, m.oy * T);
     this.placeFrozen(frozen);
-    // the next map's size isn't known yet: it's placed as if it were this one's
+    // the way drawn ahead (its countryside may be made already), else a fresh one
     const ahead = this.ahead?.key === mapKey(m) ? this.ahead : null;
-    const [nx, ny] = this.tripTo(m, m.w, m.h, ahead?.dir ?? tripDir(m));
+    const ang = (ahead?.dir ?? tripDir(m)).ang;
     if (ahead?.planned) this.releaseAfterTrip = true;
     this.ahead = null;
-    const ddx = nx - m.ox, ddy = ny - m.oy, dl = Math.hypot(ddx, ddy) || 1;
-    try { this.onTravel?.(TRAVEL * 1000, ddx / dl, ddy / dl); } catch (e) { console.warn('[render] onTravel', e); }
-    m.ox = nx; m.oy = ny; m.age = 0;
-    this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
-    this.camera.mode = 'overview';
-    this.camera.travel(TRAVEL);
-    const pad = 14 * T;
-    this.ground.want((m.ox - 1.5) * T - pad, (m.oy - 1.5) * T - pad, (m.ox + m.w + 0.5) * T + pad, (m.oy + m.h + 0.5) * T + pad);
+    try { this.onTravel?.(TRAVEL * 1000, Math.cos(ang), Math.sin(ang)); } catch (e) { console.warn('[render] onTravel', e); }
     // the live arena, its heroes and effects are the old world's: hidden until the next one
     this.mapRoot.visible = false;
-    this.departed = true;
+    this.departed = { ang, t: 0, zoom: this.camera.zoom };
   }
 
-  /** Between depart() and the next world: the camera goes on to the spot the next map lands on. */
+  /** Between depart() and the next world: the camera speeds up along its way, zooming out a bit. */
   private flyOn(dt: number) {
-    const m = this.map;
+    const c = this.camera, d = this.departed!;
     this.worldRoot.visible = true;
-    this.camera.update(dt, this.view, { aw: m.w, ah: m.h, focus: null, tight: false, interest: [], action: null });
+    d.t += dt;
+    const S = Math.min(this.view.cssW, this.view.cssH) * this.view.res;
+    c.zoom += (d.zoom * 0.5 - c.zoom) * (1 - Math.exp(-dt * 2.5));
+    // up to about one screen (short side) a second, eased in over the first half second
+    const speed = (S / c.zoom) * Math.min(1, d.t / 0.5) ** 2;
+    c.x += Math.cos(d.ang) * speed * dt;
+    c.y += Math.sin(d.ang) * speed * dt;
     const view = this.present();
     this.updateGhost(dt, view);
+  }
+
+  /** A spot for a w×h map just past the edge of the screen from `from`, the way the camera heads. */
+  private justOffScreen(from: { ox: number; oy: number; w: number; h: number; }, w: number, h: number, ang: number): [number, number] {
+    const long = Math.max(this.view.cssW, this.view.cssH) * this.view.res / (this.camera.zoom * T);
+    return nextOrigin(from, w, h, long / 2 + Math.max(w, h) / 2 + 4, { ang, gap: 0 });
   }
 
   /**
