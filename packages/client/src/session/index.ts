@@ -140,6 +140,15 @@ export function startSession() {
   async function connect(kind: 'quick' | 'private' | 'join' | 'discord', job: () => Promise<NetSource>, code?: string) {
     connectStatus.value = { kind, code };
     screen.value = 'connecting';
+    // leave the map on show right away: the camera heads out into the countryside while the
+    // server answers, and the game it joins lands at the end of that trip
+    if (source && renderer) {
+      renderer.depart();
+      source.dispose();
+      source = null;
+      unsub.forEach((u) => u());
+      unsub = [];
+    }
     try {
       const net = await job();
       setSource(net, { code: net.roomId, isPrivate: net.roomId !== MAIN_ROOM_ID, offline: false }, 'game');
@@ -228,6 +237,7 @@ export function startSession() {
       const events = src.drainEvents();
       if (events.length) react(events, world, localId);
       renderer?.render(world, localId, dt);
+      audio.setListener?.(renderer?.listener() ?? null);
 
       hudAcc += dt;
       if (world && hudAcc >= HUD_INTERVAL_MS) {

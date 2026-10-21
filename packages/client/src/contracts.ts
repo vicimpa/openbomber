@@ -50,6 +50,9 @@ export interface AudioEngine {
   travel?(durationMs: number, pan: number): void;
   /** Optional: teleport sounds (frozen hero beams out / hero drops in on a new map); x, y in tiles. */
   teleport?(kind: 'beamOut' | 'dropIn', x: number, y: number, who: string, crowd?: number): void;
+  /** Optional: where the game is heard from — the camera, not the hero: its centre in the current
+   *  map's tiles and how much it is at that map (presence 0..1, low mid-trip); null: no map. */
+  setListener?(l: { x: number; y: number; presence: number } | null): void;
   /** Optional: thunder of a storm's lightning, `delaySec` from now (power 0..1). */
   thunder?(delaySec: number, power: number): void;
   setVolume(v: { master?: number; sfx?: number; music?: number; ambient?: number }): void; // 0..1

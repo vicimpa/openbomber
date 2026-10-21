@@ -210,6 +210,13 @@ class Engine implements AudioEngine {
   }
 
   private last: { world: WorldState | null; localId: string } = { world: null, localId: '' };
+  /** The camera (see setListener): sounds are placed around it, and fade while it's away from the map. */
+  private ear: { x: number; y: number; presence: number } | null = null;
+
+  setListener(l: { x: number; y: number; presence: number } | null): void { this.ear = l; }
+
+  /** How much of the game is heard: 1 with the camera on the map, down to 0 mid-trip. */
+  private get presence() { return this.ear ? this.ear.presence : 1; }
 
   /**
    * Teleport sounds from the renderer. beamOut: a frozen old-arena hero beams away (not
@@ -222,7 +229,8 @@ class Engine implements AudioEngine {
     const { world, localId } = this.last;
     const o = who && who === localId ? this.where(world, localId, x, y, who) : this.where(world, localId, x, y);
     if (who !== localId) o.gain = (o.gain ?? 1) * 0.6;
-    this.play('dropIn', o);
+    o.gain = (o.gain ?? 1) * this.presence;
+    if (o.gain > 0.02) this.play('dropIn', o);
   }
 
   /** Camera travel to a new map: a soft whoosh, panned towards where the camera heads. */
@@ -236,7 +244,7 @@ class Engine implements AudioEngine {
     this.play(`ui_${sound}` as SfxKey);
   }
 
-  /** Spatial placement relative to the local player. */
+  /** Spatial placement relative to the camera (the local player when there's no camera to ask). */
   private where(world: WorldState | null, localId: string, x?: number, y?: number, who?: string): PlayOpts {
     if (who && localId && who === localId) return { gain: 1.2, pan: 0, wet: 0.8 };
     if (world && who && (x === undefined || y === undefined)) {
@@ -245,8 +253,9 @@ class Engine implements AudioEngine {
     }
     if (!world || x === undefined || y === undefined) return { gain: 1, pan: 0 };
     const me = localId ? world.players.get(localId) : undefined;
-    const lx = me ? me.x : (world.width - 1) / 2;
-    const ly = me ? me.y : (world.height - 1) / 2;
+    const ear = this.ear;
+    const lx = ear ? ear.x : me ? me.x : (world.width - 1) / 2;
+    const ly = ear ? ear.y : me ? me.y : (world.height - 1) / 2;
     const dx = x - lx, dy = y - ly;
     const d = Math.hypot(dx, dy);
     const range = me ? 7 : 11;
@@ -274,7 +283,8 @@ class Engine implements AudioEngine {
       s.acc = Math.min(s.acc - STRIDE, STRIDE * 0.5);
       if (n++ >= 4) continue;
       const o = this.where(world, localId, p.x, p.y);
-      this.play(key, p.id === localId ? { gain: 1, pan: 0, wet: 0 } : { gain: (o.gain ?? 1) * 0.6, pan: o.pan, wet: 0 });
+      const gain = (p.id === localId ? 1 : (o.gain ?? 1) * 0.6) * this.presence;
+      if (gain > 0.02) this.play(key, p.id === localId ? { gain, pan: 0, wet: 0 } : { gain, pan: o.pan, wet: 0 });
     }
     if (this.walked.size > world.players.size + 8) for (const id of this.walked.keys()) if (!world.players.has(id)) this.walked.delete(id);
   }
@@ -295,6 +305,10 @@ class Engine implements AudioEngine {
       const n = count.get(key) ?? 0;
       const cap = BATCH_CAP[key];
       if (cap !== undefined && n >= cap) return;
+      // the camera still on its way (or already gone): the map is heard from afar
+      const gain = (o.gain ?? 1) * this.presence;
+      if (gain < 0.02) return;
+      o = { ...o, gain };
       count.set(key, n + 1);
       // spread repeats inside one batch by a few ms so they don't phase
       this.play(key, { ...o, when: now + n * 0.012 });

@@ -113,6 +113,8 @@ class PixiRenderer implements GameRenderer {
   private planned: { ox: number; oy: number; w: number; h: number; } | null = null;
   /** The countryside preload() drew stays cached until the camera has arrived. */
   private releaseAfterTrip = false;
+  /** depart(): the map on show was left before the next world came; it lands where the trip ends. */
+  private departed = false;
   /** Where the trip away from the map on show will head (drawn ahead, see planAhead()). */
   private ahead: { key: string; dir: TripDir; planned: boolean } | null = null;
   /** Seconds since the camera arrived on the map on show. */
@@ -245,7 +247,7 @@ class PixiRenderer implements GameRenderer {
     this.world = world;
     this.localId = localId;
     if (!world) {
-      this.landscape(dt);
+      if (this.departed) this.flyOn(dt); else this.landscape(dt);
       this.updateOverlay(dt, null);
       this.app.render();
       return;
@@ -262,11 +264,12 @@ class PixiRenderer implements GameRenderer {
     this.map.age += dt;
     const young = this.map.age < 0.75;
     const travel = this.map.shown && this.nextMap !== 'snap' && (!young || this.camera.travelling);
-    const force = swapped || this.nextMap !== null;
+    // (after depart(): the old map is frozen already, the new one lands where the trip goes)
+    const force = swapped || this.nextMap !== null || this.departed;
     // leaving a map for good: freeze it as it looks now (tiles, scorch, graves, pickups, bombs, heroes)
-    const frozen = travel && !young && this.arena.willRebuild(world, force) ? this.freezeMap() : null;
+    const frozen = travel && !young && !this.departed && this.arena.willRebuild(world, force) ? this.freezeMap() : null;
     const fresh = this.arena.sync(world, dt, force);
-    if (fresh) this.onNewMap(world, travel, travel && young, flyIn);
+    if (fresh) this.onNewMap(world, travel, this.departed || (travel && young), flyIn);
     if (fresh && frozen) this.placeFrozen(frozen);
     if (fresh && this.primed) {
       for (const cells of this.primed) this.arena.scorch(cells);
@@ -372,6 +375,8 @@ class PixiRenderer implements GameRenderer {
     this.nextMap = null;
     this.recentBooms.length = 0; this.recentDeaths.length = 0;
     const m = this.map;
+    this.departed = false;
+    this.mapRoot.visible = true;
     if (retarget) {
       // same spot (centred), the trip keeps going
       m.ox = Math.round(m.ox + (m.w - world.width) / 2); m.oy = Math.round(m.oy + (m.h - world.height) / 2);
@@ -422,6 +427,59 @@ class PixiRenderer implements GameRenderer {
   /** Where a new map goes when the camera travels to it from `from`. The stretch of countryside is as
    *  long on screen from the zoomed-out menu view as from a close follow: it scales with the tiles
    *  the screen shows now and once framed on the new arena. */
+  /**
+   * Optional extra: leave the map on show right away (connecting to a game): it freezes where it
+   * is, like at the end of a round, and the camera sets off along the trip drawn ahead into the
+   * countryside. The next world, whenever it comes (the server may take a moment), lands at the
+   * far end of that trip and the flight just goes on there; until then render(null) flies on.
+   */
+  depart() {
+    const m = this.map;
+    if (!m.shown || this.departed) return;
+    const frozen = this.freezeMap();
+    this.ghost = { ox: m.ox, oy: m.oy, w: m.w, h: m.h, shape: m.shape, theme: m.theme, t: 0 };
+    this.arena.ghostRoot.position.set(m.ox * T, m.oy * T);
+    this.placeFrozen(frozen);
+    // the next map's size isn't known yet: it's placed as if it were this one's
+    const ahead = this.ahead?.key === mapKey(m) ? this.ahead : null;
+    const [nx, ny] = this.tripTo(m, m.w, m.h, ahead?.dir ?? tripDir(m));
+    if (ahead?.planned) this.releaseAfterTrip = true;
+    this.ahead = null;
+    const ddx = nx - m.ox, ddy = ny - m.oy, dl = Math.hypot(ddx, ddy) || 1;
+    try { this.onTravel?.(TRAVEL * 1000, ddx / dl, ddy / dl); } catch (e) { console.warn('[render] onTravel', e); }
+    m.ox = nx; m.oy = ny; m.age = 0;
+    this.camera.ox = m.ox * T; this.camera.oy = m.oy * T;
+    this.camera.mode = 'overview';
+    this.camera.travel(TRAVEL);
+    const pad = 14 * T;
+    this.ground.want((m.ox - 1.5) * T - pad, (m.oy - 1.5) * T - pad, (m.ox + m.w + 0.5) * T + pad, (m.oy + m.h + 0.5) * T + pad);
+    // the live arena, its heroes and effects are the old world's: hidden until the next one
+    this.mapRoot.visible = false;
+    this.departed = true;
+  }
+
+  /** Between depart() and the next world: the camera goes on to the spot the next map lands on. */
+  private flyOn(dt: number) {
+    const m = this.map;
+    this.worldRoot.visible = true;
+    this.camera.update(dt, this.view, { aw: m.w, ah: m.h, focus: null, tight: false, interest: [], action: null });
+    const view = this.present();
+    this.updateGhost(dt, view);
+  }
+
+  /**
+   * Where the sound is heard from: the camera's centre in the current map's tiles, and how much
+   * the camera is at that map (1 framing it .. 0 a screen and more away, e.g. mid-trip).
+   */
+  listener(): { x: number; y: number; presence: number; } | null {
+    const m = this.map;
+    if (!m.shown || this.departed) return null;
+    const c = this.camera, x = (c.x - m.ox * T) / T, y = (c.y - m.oy * T) / T;
+    const outX = Math.max(0, -1 - x, x - m.w), outY = Math.max(0, -1 - y, y - m.h);
+    const half = Math.min(this.view.cssW, this.view.cssH) * this.view.res / c.zoom / T / 2;
+    return { x, y, presence: Math.max(0, Math.min(1, 1 - Math.hypot(outX, outY) / Math.max(4, half * 2))) };
+  }
+
   private tripTo(from: { ox: number; oy: number; w: number; h: number; }, w: number, h: number, dir: TripDir, zoom = this.camera.zoom) {
     const W = this.view.cssW * this.view.res, H = this.view.cssH * this.view.res, short = Math.min(W, H);
     const fit = Math.min(W / (w + 2.6), H / (h + 2.6));
@@ -859,6 +917,10 @@ export interface RendererExt extends GameRenderer {
   setViewInset(left: number): void;
   transition(kind?: 'travel' | 'snap'): void;
   prime(events: GameEvent[]): void;
+  /** Leave the map on show now (connecting): the camera sets off into the countryside, see PixiRenderer. */
+  depart(): void;
+  /** Where the sound is heard from (camera centre in the current map's tiles, presence 0..1). */
+  listener(): { x: number; y: number; presence: number; } | null;
   /** While the loader runs: textures onto the GPU, and the first map's trip drawn ahead (see PixiRenderer). */
   preload(world: WorldState | null, onProgress?: (done: number) => void): Promise<void>;
   /** Called when a camera travel to a new map starts: duration and unit direction (world). */
