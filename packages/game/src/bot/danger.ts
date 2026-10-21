@@ -13,11 +13,17 @@ import {
   SKY_BOMB_FUSE,
   SKY_BOMB_RADIUS,
   THROW_TIME,
+  sec,
 } from '../contract/constants';
 import { Ability, BombKind, BombMotion, Curse, DropKind, PickupType, Tile, type BombState, type PlayerState, type WorldState } from '../contract/types';
 import { zoneDepth } from '../sim/shapes';
 
 export const INF = 0x3fffffff;
+/**
+ * The ring the zone is about to close only counts as danger this close to closing: long enough
+ * to walk out of it, short enough that a pickup or a brick there is still worth the trip.
+ */
+export const ZONE_HEED = sec(4);
 /** Remote bombs this close to their automatic detonation count as timed bombs. */
 const REMOTE_TIMED = 90;
 
@@ -188,7 +194,7 @@ export function analyze(w: WorldState): Analysis {
     dEnd[i] = INF;
   }
   // the ring the zone will close next: get out before the warning runs out
-  if (w.zoneIn > 0) {
+  if (w.zoneIn > 0 && w.zoneIn <= ZONE_HEED) {
     const depth = zoneDepth(w.shape, W, w.height);
     for (let i = 0; i < depth.length; i++) {
       if (depth[i] !== w.zoneRing) continue;

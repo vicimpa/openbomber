@@ -379,6 +379,30 @@ describe('bots use what they hold', () => {
     expect(h.p('bot').bombs).toBe(2);
   });
 
+  test('zone: goes for a pickup on the ring that is about to close while there is time, and is out when it closes', () => {
+    const h = new Harness(['.........', '.#.#.#.#.', '.........', '.#.#.#.#.', '.........'], [['bot', 4, 2], ['z', 4, 4]]);
+    h.sim.spawnPickup(0, 2, PickupType.BombUp);
+    h.state.zoneIn = sec(9); // the outer ring (0) closes in 9 s
+    const bot = new Bot('bot', 'hard');
+    drive(h, [bot], sec(6), () => h.p('bot').bombs > 1);
+    expect(h.p('bot').bombs).toBe(2);
+    // and then it leaves the ring before it is too late
+    drive(h, [bot], h.state.zoneIn);
+    const p = h.p('bot'), x = Math.round(p.x), y = Math.round(p.y);
+    expect(x === 0 || y === 0 || x === 8 || y === 4).toBe(false);
+  });
+
+  test('trapped: walled into a pocket, a bot with a spare life blows up and comes back; without one it waits', () => {
+    for (const lives of [1, 0]) {
+      const h = new Harness(['..#......', '###......', '.........'], [['bot', 0, 0], ['z', 8, 2]]);
+      h.p('bot').lives = lives;
+      const bot = new Bot('bot', 'normal');
+      const ev2 = drive(h, [bot], sec(8), () => ev(h.events, 'playerRespawned').length > 0);
+      expect(ev(ev2, 'playerDied').length).toBe(lives);
+      if (lives) expect(ev(ev2, 'playerRespawned')[0]).toMatchObject({ player: 'bot' });
+    }
+  });
+
   test('teleport: trapped between two bombs, a bot with charges jumps out; without charges it never presses', () => {
     const rows = ['#########', '##...####', '#########', '.........', '.........'];
     for (const charges of [2, 0]) {

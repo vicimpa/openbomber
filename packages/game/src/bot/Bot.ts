@@ -124,6 +124,9 @@ const DX = [0, -1, 1, 0];
 const DY = [-1, 0, 0, 1];
 /** Fire this close (ticks) cancels scripted tricks. */
 const IMMINENT = 45;
+/** A pocket this small with no way out counts as a trap (see Bot.trapped). */
+const TRAP_CELLS = 4;
+const TRAP_WAIT = sec(3);
 /** Only the nearest few opponents steer target scoring (keeps 32-bot maps cheap). */
 const NEAREST_ENEMIES = 4;
 /** Planning horizon in steps: keeps a replan bounded on 75x75 maps (far goals come from the enemy drift). */
@@ -402,6 +405,10 @@ export class Bot implements IBot {
   private remoteSeen = new Map<number, number>();
   /** Consecutive ticks an enemy stood in our remote blast. */
   private remoteHit = 0;
+  /** Since when the bot has been walled into a pocket it can't bomb its way out of (-1: it isn't). */
+  private trappedSince = -1;
+  private trapCheck = 0;
+  private suicide = false;
   private stuckX = 0;
   private stuckY = 0;
   private stuckTick = 0;
@@ -450,6 +457,8 @@ export class Bot implements IBot {
       this.script.length = 0;
       this.wantBomb = false;
       this.reverse = false;
+      this.trappedSince = -1;
+      this.suicide = false;
       return this.out(0, 0, 0);
     }
     this.now = world.tick;
@@ -479,6 +488,13 @@ export class Bot implements IBot {
     }
 
     if (this.shouldTeleport(a, p, cur)) return this.out(0, 0, Button.Teleport);
+
+    // walled in for good with a spare life: blow up on the spot and come back elsewhere
+    if (this.suicide || this.trapped(world, p, cur)) {
+      this.suicide = true;
+      const bombHere = a.bomb[cur]! > 0;
+      return this.out(0, 0, bombHere || this.held & Button.Bomb ? 0 : Button.Bomb);
+    }
 
     // scripted tricks (grab / punch / kick / line) run uninterrupted unless fire is imminent
     if (this.script.length && imminent) this.script.length = 0;
@@ -1333,6 +1349,43 @@ export class Bot implements IBot {
     const oy = Math.round(p.y) - p.y;
     if (Math.abs(ox) + Math.abs(oy) < 0.08) return [0, 0];
     return Math.abs(ox) > Math.abs(oy) ? [Math.sign(ox), 0] : [0, Math.sign(oy)];
+  }
+
+  /**
+   * Walled into a pocket of at most TRAP_CELLS cells with no brick to bomb through, nothing to
+   * pick up and nobody to fight, for TRAP_WAIT, holding a spare life (Heart) and able to bomb:
+   * time to blow up.
+   */
+  private trapped(world: WorldState, p: PlayerState, cur: number): boolean {
+    if (p.lives <= 0 || p.bombs <= 0 || p.curse === Curse.Constipation || p.effects.invulnerable > 0) {
+      this.trappedSince = -1;
+      return false;
+    }
+    if (this.now < this.trapCheck) return this.trappedSince >= 0 && this.now - this.trappedSince >= TRAP_WAIT;
+    this.trapCheck = this.now + 15;
+    const W = world.width, H = world.height, t = world.tiles;
+    const seen = new Set<number>([cur]);
+    const queue = [cur];
+    let open = false;
+    for (let q = 0; q < queue.length && !open; q++) {
+      const i = queue[q]!, x = i % W, y = (i / W) | 0;
+      for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, y > 0 ? i - W : -1, y < H - 1 ? i + W : -1]) {
+        if (j < 0 || seen.has(j)) continue;
+        if (t[j] === Tile.Brick) { open = true; break; } // a way out through a brick
+        if (t[j] === Tile.Wall) continue;
+        seen.add(j);
+        queue.push(j);
+        if (queue.length > TRAP_CELLS) { open = true; break; }
+      }
+    }
+    if (!open) for (const k of world.pickups.values()) if (seen.has(k.y * W + k.x)) { open = true; break; }
+    // an enemy in the same pocket: that's a fight, not a trap
+    if (!open) for (const q of world.players.values()) {
+      if (q.id !== p.id && q.alive && q.inRound && seen.has(Math.round(q.y) * W + Math.round(q.x))) { open = true; break; }
+    }
+    if (open) { this.trappedSince = -1; return false; }
+    if (this.trappedSince < 0) this.trappedSince = this.now;
+    return this.now - this.trappedSince >= TRAP_WAIT;
   }
 
   /** No progress for a second while trying to move: take a random safe step and replan. */
