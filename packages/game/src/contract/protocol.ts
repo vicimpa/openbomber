@@ -82,7 +82,8 @@ export const MSG = {
   profile: 'p',
   /** client -> server: string ; server -> client: ChatMessage */
   chat: 'c',
-  /** client -> server: number (client time) ; server -> client: { t: number } echo for RTT */
+  /** client -> server: [client time, own smoothed RTT in ms] (a bare number from older clients);
+   *  server -> client: { t: number } echo for RTT. The RTT goes to the room state (`pings`) for the scoreboard. */
   ping: 'ping',
   /** server -> client: GameEvent[] emitted during the last patch interval */
   events: 'e',

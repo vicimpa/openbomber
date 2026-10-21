@@ -17,7 +17,7 @@ import { setStageHandler } from '../ui/App';
 import { buildHud } from '../ui/hud';
 import { t } from '../ui/i18n';
 import {
-  avatars, bindActions, connectStatus, fps, handleGameEvents, HINT_KEY, hud, identity, onlineCount, pushChat, registerLoadTask, resetGameState,
+  avatars, pings, bindActions, connectStatus, fps, handleGameEvents, HINT_KEY, hud, identity, onlineCount, pushChat, registerLoadTask, resetGameState,
   menuOpen, modals, pendingInvite, room, roomSettings, screen, settings, spectators, toast, uiCapturesInput,
 } from '../ui/store';
 import { LocalSource } from './LocalSource';
@@ -40,6 +40,7 @@ export function startSession() {
   let unsub: (() => void)[] = [];
   let started = false;      // loader's «Играть» pressed (audio unlocked)
   let avatarsVersion = -1;  // NetSource.avatarsVersion last copied into the `avatars` signal
+  let pingsVersion = -1;    // the same for `pings`
   let cameraMode: 'overview' | 'follow' = 'overview'; // for the source on show (kept until the renderer exists)
   let ready: LocalSource | null = null; // the first menu match, made (and warmed up) while the loader runs
 
@@ -119,6 +120,8 @@ export function startSession() {
     resetGameState();
     avatarsVersion = -1;
     avatars.value = new Map();
+    pingsVersion = -1;
+    pings.value = new Map();
     source = next;
     room.value = info;
     cameraMode = to === 'menu' ? 'overview' : 'follow';
@@ -257,6 +260,7 @@ export function startSession() {
         hud.value = buildHud(world, localId, src.ping);
         if (src instanceof NetSource) {
           if (src.avatarsVersion !== avatarsVersion) { avatarsVersion = src.avatarsVersion; avatars.value = new Map(src.avatars); }
+          if (src.pingsVersion !== pingsVersion) { pingsVersion = src.pingsVersion; pings.value = new Map(src.pings); }
           if (spectators.peek().length !== src.spectators)
             spectators.value = Array.from({ length: src.spectators }, (_, i) => ({ id: `s${i}`, name: '' }));
           // own rooms: settings panel (re-render only when something changed)
@@ -267,6 +271,7 @@ export function startSession() {
             || rs.isHost !== cur.isHost))) roomSettings.value = rs;
         } else {
           if (avatars.peek().size) { avatarsVersion = -1; avatars.value = new Map(); }
+          if (pings.peek().size) { pingsVersion = -1; pings.value = new Map(); }
           if (spectators.peek().length) spectators.value = [];
           if (roomSettings.peek()) roomSettings.value = null;
         }

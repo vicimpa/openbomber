@@ -9,7 +9,7 @@ import { ABILITY_PICKUP, CURSE_BY_ID, PICKUP_BY_TYPE } from '../pickups';
 import { Icon, type IconName } from '../icons';
 import { Avatar } from '../Avatar';
 import { HeroSprite, PickupIcon } from '../sprites';
-import { actions, chat, chatOpen, fps, killFeed, menuOpen, room, settings } from '../store';
+import { actions, chat, chatOpen, fps, killFeed, menuOpen, pings, room, settings } from '../store';
 import { RoomCode } from './RoomCode';
 
 // ---------------------------------------------------------------- debug (top-left, 9px)
@@ -278,7 +278,7 @@ function ScoreRow({ p, ping, offline }: { p: HudPlayer; ping: number; offline: b
       <td>{p.wins}</td>
       <td>{p.kills}</td>
       <td>{p.deaths}</td>
-      <td class="dim">{p.isBot ? '—' : p.isLocal ? (offline ? '—' : Math.round(ping)) : '·'}</td>
+      <td class="dim">{p.isBot || offline ? '—' : p.isLocal ? Math.round(ping) : (pings.value.get(p.id) ?? '·')}</td>
     </tr>
   );
 }

@@ -96,6 +96,8 @@ export interface SpectatorInfo { id: string; name: string }
 export const spectators = signal<SpectatorInfo[]>([]);
 /** Session id → avatar url of the players who came from the Discord activity. Session sets it. */
 export const avatars = signal<ReadonlyMap<string, string>>(new Map());
+/** Session id → ping (ms) each client of the room reports (scoreboard). Session sets it. */
+export const pings = signal<ReadonlyMap<string, number>>(new Map());
 
 export const chat = signal<(ChatMessage & { id: number })[]>([]);
 let chatSeq = 0;

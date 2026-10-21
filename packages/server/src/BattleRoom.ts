@@ -222,8 +222,14 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     this.onMessage(MSG.settings, (client, msg: unknown) => this.handleSettings(client, msg));
     this.onMessage(MSG.ping, (client, msg: unknown) => {
       const h = this.humans.get(client.sessionId);
-      if (!h || typeof msg !== 'number' || !Number.isFinite(msg) || !h.pings.take()) return;
-      client.send(MSG.ping, { t: msg });
+      const [t, rtt] = Array.isArray(msg) ? msg : [msg];
+      if (!h || typeof t !== 'number' || !Number.isFinite(t) || !h.pings.take()) return;
+      client.send(MSG.ping, { t });
+      // the client's own measurement: cosmetic (scoreboard), so it's trusted, only clamped
+      if (typeof rtt === 'number' && Number.isFinite(rtt) && rtt > 0) {
+        const ms = Math.min(9999, Math.round(rtt));
+        if (this.state.pings.get(client.sessionId) !== ms) this.state.pings.set(client.sessionId, ms);
+      }
     });
     this.updateMeta();
   }
@@ -293,6 +299,7 @@ export class BattleRoom extends Room<{ state: BattleState; metadata: RoomMeta }>
     if (h.playing || h.leaving) this.leaveArena(id, h, true);
     this.humans.delete(id);
     this.state.avatars.delete(id);
+    this.state.pings.delete(id);
     clientLeft(h.ip);
     this.handOver(id);
     this.reconcileBots();

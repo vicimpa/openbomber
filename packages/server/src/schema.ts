@@ -136,6 +136,8 @@ export const BattleState = schema({
   events: t.boolean().default(true),
   /** Session id → avatar url, for players who joined from the Discord activity (spectators too). */
   avatars: t.map('string'),
+  /** Session id → the ping (ms) that client last reported (scoreboard; spectators too). */
+  pings: t.map('uint16'),
   /** width * height Tile values, index = y * width + x; patched per index. */
   tiles: t.array('uint8'),
   players: t.map(PlayerSchema),

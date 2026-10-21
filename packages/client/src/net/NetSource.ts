@@ -64,6 +64,16 @@ interface DocumentLike {
 }
 const doc = (globalThis as { document?: DocumentLike }).document;
 
+/** Copy a state map into `dst` when it differs; true if it changed. */
+function copyMap<V>(src: { size: number; forEach(cb: (v: V, k: string) => void): void } | undefined, dst: Map<string, V>): boolean {
+  let changed = (src?.size ?? 0) !== dst.size;
+  src?.forEach((v, k) => { if (dst.get(k) !== v) changed = true; });
+  if (!changed) return false;
+  dst.clear();
+  src?.forEach((v, k) => dst.set(k, v));
+  return true;
+}
+
 export class NetSource implements GameSource {
   readonly roomId: string;
   /** This connection's Colyseus session id (= player id while playing). */
@@ -83,6 +93,9 @@ export class NetSource implements GameSource {
   /** Session id → avatar url (players from the Discord activity); `avatarsVersion` bumps on change. */
   readonly avatars = new Map<string, string>();
   avatarsVersion = 0;
+  /** Session id → the ping each client reports (scoreboard); `pingsVersion` bumps on change. */
+  readonly pings = new Map<string, number>();
+  pingsVersion = 0;
 
   private readonly room: Room<any, BattleState>;
   private readonly predict: PredictMovement | null;
@@ -325,7 +338,7 @@ export class NetSource implements GameSource {
   }
 
   private sendPing() {
-    if (this.status === 'connected') this.room.send(MSG.ping, performance.now());
+    if (this.status === 'connected') this.room.send(MSG.ping, [performance.now(), this.ping]);
   }
 
   private sendNeutral() {
@@ -434,14 +447,9 @@ export class NetSource implements GameSource {
     this.room.send(MSG.input, wire);
   }
 
-  private readAvatars(s: BattleState) {
-    const src = s.avatars;
-    let changed = (src?.size ?? 0) !== this.avatars.size;
-    src?.forEach((url, id) => { if (this.avatars.get(id) !== url) changed = true; });
-    if (!changed) return;
-    this.avatars.clear();
-    src?.forEach((url, id) => this.avatars.set(id, url));
-    this.avatarsVersion++;
+  private readMaps(s: BattleState) {
+    if (copyMap(s.avatars, this.avatars)) this.avatarsVersion++;
+    if (copyMap(s.pings, this.pings)) this.pingsVersion++; // absent on an older server
   }
 
   private onPatch(s: BattleState) {
@@ -456,7 +464,7 @@ export class NetSource implements GameSource {
     rs.maxPlayers = this.maxPlayers;
     rs.zone = s.zone ?? true;
     rs.events = s.events ?? true;
-    this.readAvatars(s);
+    this.readMaps(s);
     if (!model.ready) return;
     const w = model.world;
     const now = performance.now();
