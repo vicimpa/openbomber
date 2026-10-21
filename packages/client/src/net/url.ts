@@ -5,8 +5,8 @@
 //      GitHub Pages, the game server lives on its own host)
 //   2. dev (vite serve): ws(s)://<page hostname>:2567, or through vite's /api proxy inside a
 //      Discord activity (the tunnel exposes only the vite port)
-//   3. prod: ws(s)://<page host><VITE_SERVER_PATH>, default "/api" (the path nginx proxies to the
-//      game server; openbomber.ru builds with VITE_SERVER_PATH=/socket.io, its existing location)
+//   3. prod: ws(s)://<page host><VITE_SERVER_PATH>, default "/api" (inside Discord: the path its
+//      proxy maps to the game server, see the Developer Portal's URL mappings)
 
 interface LocationLike { protocol: string; host: string; hostname: string }
 

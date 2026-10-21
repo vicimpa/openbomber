@@ -36,12 +36,13 @@ jobs:
         run: bun run test
 
       # The site connects to Fly.io directly; inside Discord the client ignores VITE_SERVER_URL
-      # and goes through Discord's proxy to <host>/socket.io (mapped to the same server).
+      # and goes through Discord's proxy to <host>/api, mapped in the Developer Portal to the same
+      # server (a mapping prefix can't contain a dot, so not /socket.io; the server takes both).
       - name: Build client
         run: bun run --filter '@ob/client' build
         env:
           VITE_SERVER_URL: wss://openbomber-eu.fly.dev/socket.io
-          VITE_SERVER_PATH: /socket.io
+          VITE_SERVER_PATH: /api
           # Discord activity (packages/client/src/discord.ts); empty = the activity login is off
           VITE_DISCORD_CLIENT_ID: ${{ vars.DISCORD_CLIENT_ID }}
 
