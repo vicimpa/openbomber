@@ -348,7 +348,12 @@ class Engine implements AudioEngine {
             if (this.g) duckMusic(this.g, now, 0.15 * Math.min(1, o.gain ?? 1));
             break;
           }
-          case 'roundOver': fire(e.winner && e.winner === localId ? 'victory' : 'defeat', {}); break;
+          case 'roundOver': {
+            // a win / a loss only for someone who played the round; the rest hear it end
+            const me = localId ? world?.players.get(localId) : undefined;
+            fire(!me?.inRound ? 'roundEnd' : e.winner === localId ? 'victory' : 'defeat', {});
+            break;
+          }
         }
       } catch (err) {
         console.warn('[audio] event', e.type, err);

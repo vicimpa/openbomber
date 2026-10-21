@@ -233,10 +233,13 @@ export const RECIPES = {
       k.tone({ type: 'sine', f: i % 2 ? 2200 : 2700, to: i % 2 ? 2600 : 2300, glide: 0.08, a: 0.005, d: 0.08, peak: 0.25, at: 0.12 + i * 0.13, vib: { rate: 30, depth: 50 } });
     }
   } },
-  death: { dur: 1.2, level: 0.58, vary: 0.5, reverb: 0.25, build(k) {
-    k.tone({ type: 'square', f: 740, to: 110, glide: 0.7, a: 0.005, hold: 0.1, d: 0.6, peak: 0.35, lp: 2400, lpTo: 500, vib: { rate: 11, depth: 45 } });
-    k.tone({ type: 'triangle', f: 370, to: 55, glide: 0.7, a: 0.005, hold: 0.1, d: 0.6, peak: 0.4 });
-    k.noise({ color: 'pink', type: 'lowpass', f: 2000, to: 200, sweep: 0.4, a: 0.003, d: 0.35, peak: 0.4 });
+  // short and dry: a body hit, a quick drop, then the ghost slipping away upwards (soft and airy)
+  death: { dur: 0.9, level: 0.55, vary: 0.4, reverb: 0.2, build(k) {
+    k.tone({ type: 'sine', f: 150, to: 50, glide: 0.12, a: 0.002, d: 0.16, peak: 0.9 });
+    k.noise({ color: 'brown', type: 'lowpass', f: 1400, to: 300, sweep: 0.12, a: 0.002, d: 0.12, peak: 0.6 });
+    k.tone({ type: 'triangle', f: 620, to: 180, glide: 0.18, a: 0.003, d: 0.2, peak: 0.45, lp: 2600 });
+    k.tone({ type: 'sine', f: 520, to: 1250, glide: 0.45, a: 0.08, hold: 0.05, d: 0.35, peak: 0.16, at: 0.16, vib: { rate: 7, depth: 12 } });
+    k.noise({ color: 'pink', type: 'bandpass', f: 1800, to: 4200, sweep: 0.45, q: 1.5, a: 0.08, d: 0.3, peak: 0.12, at: 0.16 });
   } },
   respawn: { dur: 0.9, level: 0.45, vary: 0, reverb: 0.3, build(k) {
     k.noise({ type: 'bandpass', f: 800, to: 6000, sweep: 0.5, q: 3, a: 0.4, d: 0.2, peak: 0.25 });
@@ -284,6 +287,12 @@ export const RECIPES = {
     }
     k.tone({ type: 'triangle', f: mtof(57), a: 0.01, hold: 0.4, d: 0.6, peak: 0.4, at: 0.38 });
     k.noise({ type: 'highpass', f: 6000, a: 0.002, d: 0.6, peak: 0.18, at: 0.38 });
+  } },
+  // the round is over and we weren't in it (spectating, menu backdrop): a calm two-bell close
+  roundEnd: { dur: 1.4, level: 0.4, vary: 0, reverb: 0.35, build(k) {
+    k.bell(mtof(76), 0, 0.9, 0.35);
+    k.bell(mtof(69), 0.22, 1.1, 0.3);
+    k.tone({ type: 'triangle', f: mtof(45), a: 0.02, hold: 0.2, d: 0.7, peak: 0.25, at: 0.22 });
   } },
   defeat: { dur: 1.9, level: 0.55, vary: 0, reverb: 0.3, build(k) {
     [[67, 0], [66, 0.3], [65, 0.6]].forEach(([m, at]) =>
