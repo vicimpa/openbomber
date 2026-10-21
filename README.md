@@ -16,7 +16,7 @@
   &nbsp;·&nbsp; <a href="https://boosty.to/vic_dev">Boosty</a>
 </p>
 
-![Главное меню](screen/v2/menu.png)
+![Главное меню](screen/menu.png)
 
 ## Об игре
 
@@ -42,15 +42,15 @@
 а звуки окружения меняются вместе с погодой.
 
 <p align="center">
-  <img src="screen/v2/shape-circle.png" width="49%" alt="Круглая арена зимой, снег">
-  <img src="screen/v2/shape-cross.png" width="49%" alt="Арена-крест осенью, ветер">
-  <img src="screen/v2/arena-night.png" width="49%" alt="Ночь">
-  <img src="screen/v2/arena-storm.png" width="49%" alt="Гроза">
-  <img src="screen/v2/shape-diamond.png" width="49%" alt="Арена-ромб в пустыне">
-  <img src="screen/v2/arena-winter.png" width="49%" alt="Следы на снегу">
+  <img src="screen/shape-circle.png" width="49%" alt="Круглая арена зимой, снег">
+  <img src="screen/shape-cross.png" width="49%" alt="Арена-крест осенью, ветер">
+  <img src="screen/arena-night.png" width="49%" alt="Ночь">
+  <img src="screen/arena-storm.png" width="49%" alt="Гроза">
+  <img src="screen/shape-diamond.png" width="49%" alt="Арена-ромб в пустыне">
+  <img src="screen/arena-winter.png" width="49%" alt="Следы на снегу">
 </p>
 
-![Взрывы](screen/v2/explosions.png)
+![Взрывы](screen/explosions.png)
 
 ## Управление
 
@@ -74,50 +74,42 @@
 
 | | Буст | Что делает | Время |
 |:---:|---|---|:---:|
-| <img src="screen/v2/boosts/BombUp.png" width="40"> | **+бомба** | Можно поставить на одну бомбу больше | до конца раунда |
-| <img src="screen/v2/boosts/FireUp.png" width="40"> | **+радиус** | Взрыв на клетку дальше | до конца раунда |
-| <img src="screen/v2/boosts/FullFire.png" width="40"> | **Максимум огня** | Сразу максимальный радиус | до конца раунда |
-| <img src="screen/v2/boosts/SpeedUp.png" width="40"> | **+скорость** | Бег ×1.5, гасит «огонь» | 25 с |
-| <img src="screen/v2/boosts/Fire.png" width="40"> | **Огонь** | Медленнее (×0.7), но касание убивает соперника | 25 с |
-| <img src="screen/v2/boosts/Shield.png" width="40"> | **Щит** | Спасает от одного взрыва | 50 с |
-| <img src="screen/v2/boosts/Crazy.png" width="40"> | **Шальная бомба** | Фитиль от 0.5 до 5 с, радиус до ×5, шанс 10% не взорваться. С детонатором бомба ждёт кнопку, но взрыв всё равно шальной | 30 с |
-| <img src="screen/v2/boosts/Kick.png" width="40"> | **Пинок** | Бомба катится, пока не упрётся | 35 с |
-| <img src="screen/v2/boosts/Glove.png" width="40"> | **Перчатка** | Схватить бомбу и перебросить через стены и кирпичи | 35 с |
-| <img src="screen/v2/boosts/Punch.png" width="40"> | **Удар** | Отбить бомбу перед собой на 3 клетки | 35 с |
-| <img src="screen/v2/boosts/Remote.png" width="40"> | **Детонатор** | Свои бомбы взрываются по кнопке «Действие» | 30 с |
-| <img src="screen/v2/boosts/Pierce.png" width="40"> | **Пробивной огонь** | Огонь проходит сквозь кирпичи | 30 с |
-| <img src="screen/v2/boosts/LineBomb.png" width="40"> | **Линия бомб** | Встань на свою бомбу и нажми «Бомба»: все остальные лягут в ряд | 35 с |
-| <img src="screen/v2/boosts/BombPass.png" width="40"> | **Сквозь бомбы** | Ходишь сквозь бомбы | 30 с |
-| <img src="screen/v2/boosts/Ghost.png" width="40"> | **Призрак** | Ходишь сквозь кирпичи | 30 с |
-| <img src="screen/v2/boosts/Heart.png" width="40"> | **Сердце** | Дополнительная жизнь | до конца раунда |
-| <img src="screen/v2/boosts/Skull.png" width="40"> | **Череп** | Случайное проклятие, которое передаётся касанием | 15 с |
-| <img src="screen/v2/boosts/Teleport.png" width="40"> | **Телепорт** | +2 заряда (до 5): прыжок в случайное свободное место | заряды |
-| <img src="screen/v2/boosts/Random.png" width="40"> | **Случайный** | Любой буст из списка | — |
+| <img src="screen/boosts/BombUp.png" width="40"> | **+бомба** | Можно поставить на одну бомбу больше | до конца раунда |
+| <img src="screen/boosts/FireUp.png" width="40"> | **+радиус** | Взрыв на клетку дальше | до конца раунда |
+| <img src="screen/boosts/FullFire.png" width="40"> | **Максимум огня** | Сразу максимальный радиус | до конца раунда |
+| <img src="screen/boosts/SpeedUp.png" width="40"> | **+скорость** | Бег ×1.5, гасит «огонь» | 25 с |
+| <img src="screen/boosts/Fire.png" width="40"> | **Огонь** | Медленнее (×0.7), но касание убивает соперника | 25 с |
+| <img src="screen/boosts/Shield.png" width="40"> | **Щит** | Спасает от одного взрыва | 50 с |
+| <img src="screen/boosts/Crazy.png" width="40"> | **Шальная бомба** | Фитиль от 0.5 до 5 с, радиус до ×5, шанс 10% не взорваться. С детонатором бомба ждёт кнопку, но взрыв всё равно шальной | 30 с |
+| <img src="screen/boosts/Kick.png" width="40"> | **Пинок** | Бомба катится, пока не упрётся | 35 с |
+| <img src="screen/boosts/Glove.png" width="40"> | **Перчатка** | Схватить бомбу и перебросить через стены и кирпичи | 35 с |
+| <img src="screen/boosts/Punch.png" width="40"> | **Удар** | Отбить бомбу перед собой на 3 клетки | 35 с |
+| <img src="screen/boosts/Remote.png" width="40"> | **Детонатор** | Свои бомбы взрываются по кнопке «Действие» | 30 с |
+| <img src="screen/boosts/Pierce.png" width="40"> | **Пробивной огонь** | Огонь проходит сквозь кирпичи | 30 с |
+| <img src="screen/boosts/LineBomb.png" width="40"> | **Линия бомб** | Встань на свою бомбу и нажми «Бомба»: все остальные лягут в ряд | 35 с |
+| <img src="screen/boosts/BombPass.png" width="40"> | **Сквозь бомбы** | Ходишь сквозь бомбы | 30 с |
+| <img src="screen/boosts/Ghost.png" width="40"> | **Призрак** | Ходишь сквозь кирпичи | 30 с |
+| <img src="screen/boosts/Heart.png" width="40"> | **Сердце** | Дополнительная жизнь | до конца раунда |
+| <img src="screen/boosts/Skull.png" width="40"> | **Череп** | Случайное проклятие, которое передаётся касанием | 15 с |
+| <img src="screen/boosts/Teleport.png" width="40"> | **Телепорт** | +2 заряда (до 5): прыжок в случайное свободное место | заряды |
+| <img src="screen/boosts/Random.png" width="40"> | **Случайный** | Любой буст из списка | — |
 
 Проклятия черепа: инверсия управления, бомбы сыплются сами, нельзя ставить бомбы, замедление,
 неуправляемое ускорение, крошечный радиус.
 
 ## Герои
 
-![Герои](screen/v2/heroes.png)
+![Герои](screen/heroes.png)
 
 ## Скриншоты
 
-![Наблюдение за ареной](screen/v2/spectate.png)
+![Наблюдение за ареной](screen/spectate.png)
 
 <p align="center">
-  <img src="screen/v2/mobile-menu.png" width="280" alt="Меню на телефоне">
+  <img src="screen/mobile-menu.png" width="280" alt="Меню на телефоне">
   &nbsp;&nbsp;
-  <img src="screen/v2/mobile-play.png" width="280" alt="Игра на телефоне">
+  <img src="screen/mobile-play.png" width="280" alt="Игра на телефоне">
 </p>
-
-<details>
-<summary>Как выглядела первая версия</summary>
-
-![v1](screen/v1/5.png)
-![v1](screen/v1/1.png)
-
-</details>
 
 ## Разработка
 
