@@ -31,6 +31,7 @@ export interface HudPlayer {
 }
 
 export interface HudMe extends HudPlayer {
+  controls: G.ControlHints;
   lives: number;           // extra lives (Heart)
   teleports: number;       // Teleport charges
   bombs: number;           // max simultaneous bombs
@@ -137,6 +138,7 @@ export function buildHud(world: WorldState, localId: string, ping = 0): HudSnaps
     const timed = new Set(kinds);
     me = {
       ...toPlayer(lp, localId),
+      controls: G.controlHints(world, lp),
       lives: lp.lives,
       teleports: lp.teleports,
       bombs: lp.bombs,

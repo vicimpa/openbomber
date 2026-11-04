@@ -8,5 +8,6 @@ export { TIMED_ABILITIES, emptyEffects, syncAbilities } from './effects';
 export { PICKUP_WEIGHTS, rollPickup } from './pickups';
 export { mergeShape } from './flames';
 export { FALL_WARNING } from './round';
+export { controlHints, type ControlHints, type ControlHint, type ControlKind, type ControlReason } from './controls';
 export { Rng, hashString, nextFloat, randInt } from './rng';
 export { cloneWorld, clonePlayer, createWorld, tileAt, inBounds, bombAtTile, bombIsGrounded } from './world';

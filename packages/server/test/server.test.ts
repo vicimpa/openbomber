@@ -147,6 +147,35 @@ describe('room', () => {
     await waitFor(() => !a.state.bombs.has(String(bombId)), 500, 'bomb removed');
   });
 
+  test('Punch and Detonate inputs reach the simulation independently of Glove', async () => {
+    if (useStub) return;
+    const client = await join('create', ROOM_NAME, { private: true, bots: 0, play: true });
+    const sr = serverRoom(client.roomId);
+    const sim = sr.sim as Game.Simulation;
+    sim.holdRound = true;
+    sim.loadMap(['...........', '...........', '...........']);
+    sim.state.phase = Game.Phase.Playing;
+    const p = sim.state.players.get(client.sessionId)!;
+    Object.assign(p, { alive: true, inRound: true, x: 2, y: 1, dir: Game.Dir.Right });
+    p.effects.glove = p.effects.punch = p.effects.remote = 10000;
+    p.effects.invulnerable = 10000;
+    Game.syncAbilities(p);
+    const events: GameEvent[] = [];
+    client.onMessage(MSG.events, (batch: GameEvent[]) => events.push(...batch));
+    const tap = (button: Button) => { sendFrames(client, 1, 0, 0, button); sendFrames(client, 1, 0, 0, 0); };
+    tap(Button.Bomb);
+    await waitFor(() => events.some((e) => e.type === 'bombPlaced'), 1000, 'remote bomb');
+    await hold(client, 300, -1, 0);
+    sendFrames(client, 1, 1, 0, Button.Punch);
+    sendFrames(client, 1, 0, 0, 0);
+    await waitFor(() => events.some((e) => e.type === 'bombPunched'), 1000, 'independent Punch input');
+    expect(events.some((e) => e.type === 'bombGrabbed')).toBe(false);
+    await waitFor(() => events.some((e) => e.type === 'bombLanded'), 1500, 'punched bomb landing');
+    tap(Button.Detonate);
+    await waitFor(() => events.some((e) => e.type === 'explosion'), 1000, 'independent Detonate input');
+    await client.leave();
+  });
+
   test('spectator first; play true/false; canon system chat', async () => {
     const sr = serverRoom(a.roomId);
     const seen = chatsOf(a);

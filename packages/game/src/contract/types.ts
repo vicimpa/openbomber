@@ -44,7 +44,7 @@ export enum PickupType {
   Kick = 4,
   Glove = 5,       // grab a bomb (Action) and throw it over walls/bricks
   Punch = 6,       // Action facing an adjacent bomb punches it 3 tiles
-  Remote = 7,      // own bombs wait for Action to detonate
+  Remote = 7,      // own bombs wait for Detonate
   Pierce = 8,      // flames go through bricks
   LineBomb = 9,    // Bomb while standing on own bomb drops a line of bombs
   BombPass = 10,   // walk through bombs

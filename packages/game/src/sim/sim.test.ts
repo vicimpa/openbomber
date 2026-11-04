@@ -409,13 +409,13 @@ describe('bombs', () => {
     a.x = 1;
     a.dir = Dir.Right;
     h.step(); // leave passer state
-    const punched = ev(h.tap('a', Button.Action), 'bombPunched')[0]!;
+    const punched = ev(h.tap('a', Button.Punch), 'bombPunched')[0]!;
     expect([punched.toX, punched.toY]).toEqual([5, 1]);
     h.until((e) => ev(e, 'bombLanded').length > 0, 120);
     expect([onlyBomb(h).x, onlyBomb(h).y]).toEqual([5, 1]);
   });
 
-  test('remote: waits for Action, oldest first, auto after max fuse', () => {
+  test('remote: waits for Detonate, oldest first, auto after max fuse', () => {
     const h = new Harness(['.........', '.........', '.........'], [['a', 1, 1]]);
     const a = h.p('a');
     h.give('a', ['remote']);
@@ -431,7 +431,7 @@ describe('bombs', () => {
     a.y = 0;
     h.step(BOMB_FUSE + 10);
     expect(h.state.bombs.size).toBe(2);
-    const e1 = ev(h.tap('a', Button.Action), 'explosion');
+    const e1 = ev(h.tap('a', Button.Detonate), 'explosion');
     expect(e1.map((e) => e.bomb)).toEqual([first!.id]);
     expect(h.state.bombs.has(second!.id)).toBe(true);
     const t = h.until((e) => ev(e, 'explosion').length > 0, REMOTE_BOMB_MAX_FUSE);
@@ -487,12 +487,12 @@ describe('bombs', () => {
     h.tap('a', Button.Bomb);
     const b = onlyBomb(h);
     expect(b.kind).toBe(BombKind.Remote);
-    expect(b.fuse).toBeLessThan(0); // waits for Action
+    expect(b.fuse).toBeLessThan(0); // waits for Detonate
     expect(b.dud).toBe(false);
     expect(b.radius).toBeGreaterThanOrEqual(2);
     h.step(CRAZY_FUSE_MAX + 5);
     expect(h.state.bombs.size).toBe(1); // a crazy fuse would have gone off by now
-    h.tap('a', Button.Action);
+    h.tap('a', Button.Detonate);
     h.until((e) => ev(e, 'explosion').length > 0, 30);
     expect(ev(h.events, 'explosion').length).toBe(1);
   });
@@ -587,7 +587,7 @@ describe('players & effects', () => {
     expect(ev(h.events, 'playerDied')[0]).toMatchObject({ player: 'b', killer: 'a', cause: 'fire' });
   });
 
-  test('teleport: a pickup gives charges, R jumps to a random free tile', () => {
+  test('teleport: a pickup gives charges, Teleport jumps to a random free tile', () => {
     const h = new Harness(PILLARS, [['a', 0, 0], ['b', 6, 4]]);
     const a = h.p('a');
     h.sim.spawnPickup(0, 0, PickupType.Teleport);

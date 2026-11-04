@@ -34,13 +34,13 @@ export const PICKUPS: PickupInfo[] = [
     desc: { ru: 'Упритесь в бомбу, и она покатится до препятствия. 35 с.', en: 'Walk into a bomb to kick it until it hits something. 35 s.' } },
   { type: PickupType.Glove, group: 'ability', color: '#8e5bd6',
     name: { ru: 'Перчатка', en: 'Glove' },
-    desc: { ru: '«Действие» у бомбы: схватить, отпустить — бросить через стены. 35 с.', en: 'Action near a bomb grabs it; release to throw it over walls. 35 s.' } },
+    desc: { ru: 'Зажать «Поднять» у бомбы: схватить, отпустить — бросить через стены. 35 с.', en: 'Hold Grab near a bomb, release to throw it over walls. 35 s.' } },
   { type: PickupType.Punch, group: 'ability', color: '#d63b6a',
     name: { ru: 'Кулак', en: 'Punch' },
-    desc: { ru: '«Действие» лицом к бомбе отбрасывает её на 3 клетки. 35 с.', en: 'Action facing a bomb punches it 3 tiles away. 35 s.' } },
+    desc: { ru: '«Удар» лицом к бомбе отбрасывает её на 3 клетки. 35 с.', en: 'Punch facing a bomb knocks it 3 tiles away. 35 s.' } },
   { type: PickupType.Remote, group: 'ability', color: '#2f9fd6',
     name: { ru: 'Пульт', en: 'Remote' },
-    desc: { ru: 'Бомбы ждут сигнала: «Действие» взрывает самую старую. 30 с.', en: 'Bombs wait for a signal: Action detonates the oldest one. 30 s.' } },
+    desc: { ru: 'Бомбы ждут сигнала: «Детонатор» взрывает самую старую. 30 с.', en: 'Bombs wait for a signal: Detonator sets off the oldest one. 30 s.' } },
   { type: PickupType.Pierce, group: 'ability', color: '#d6a12f',
     name: { ru: 'Пробивной огонь', en: 'Pierce' },
     desc: { ru: 'Пламя проходит сквозь кирпичи. 30 с.', en: 'Flames go through bricks. 30 s.' } },
@@ -74,7 +74,7 @@ export const PICKUPS: PickupInfo[] = [
     desc: { ru: 'Превращается в случайный бонус.', en: 'Turns into a random power-up.' } },
   { type: PickupType.Teleport, group: 'timed', color: '#5fd0e8',
     name: { ru: 'Телепорт', en: 'Teleport' },
-    desc: { ru: '+2 заряда (до 5): R переносит в случайное свободное место карты.', en: '+2 charges (up to 5): R jumps to a random free spot on the map.' } },
+    desc: { ru: '+2 заряда (до 5): «Телепорт» переносит в случайное свободное место карты.', en: '+2 charges (up to 5): Teleport jumps to a random free spot on the map.' } },
 ];
 
 export const PICKUP_BY_TYPE = new Map(PICKUPS.map((p) => [p.type, p]));

@@ -5,8 +5,10 @@ import type { Curse, Dir, DropKind, FlameShape, PickupType } from './types';
 export enum Button {
   None = 0,
   Bomb = 1 << 0,
-  Action = 1 << 1,   // grab / throw (Glove), punch (Punch), detonate (Remote) — context sensitive
+  Action = 1 << 1,   // hold to grab (Glove), release to throw
   Teleport = 1 << 2, // spend a Teleport charge: jump to a random free tile
+  Punch = 1 << 3,    // punch an adjacent bomb
+  Detonate = 1 << 4, // detonate the oldest own remote bomb
 }
 
 /**

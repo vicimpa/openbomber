@@ -12,18 +12,21 @@
 //   - The same element is published as `stage.value` in ./store.
 // The HUD reads `hud.value` (buildHud), `chat`, `killFeed`, `room`, `fps` from the store.
 import { useEffect, useRef } from 'preact/hooks';
+import { Ability, PickupType } from '@ob/game';
 import { lastDevice } from '$/input/device';
 import { installPlayGuards } from '$/input/guards';
 import { isTextTarget } from '$/input/keyboard';
 import { TouchControls } from '$/input/TouchControls';
 import { Chat } from './hud/Chat';
 import { Hint } from './hud/Hint';
+import { Controls } from './hud/Controls';
 import { Banners, BottomPill, CornerButtons, Countdown, DebugInfo, KillFeed, RoundResult, Scoreboard, StatsStrip, TopPill } from './hud/Hud';
 import { t } from './i18n';
 import { Icon } from './icons';
 import { MenuDrawer } from './MenuDrawer';
 import { chatOpen, hud, menuOpen, modals, scoreboardOpen, screen, settings, stage } from './store';
 import { viewport } from './viewport';
+import { PickupIcon } from './sprites';
 
 export interface GameScreenProps {
   /** Called once with the #stage element after mount; may return a cleanup. */
@@ -48,7 +51,7 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
 
   useEffect(() => (inWorld ? installPlayGuards(rootRef.current!) : undefined), [inWorld]);
 
-  // Desktop shortcuts: Enter / T chat (Minecraft style), hold Tab scoreboard, Esc menu.
+  // Desktop shortcuts: Enter chat, hold Tab scoreboard, Esc menu.
   useEffect(() => {
     if (!inWorld) return;
     const down = (e: KeyboardEvent) => {
@@ -60,7 +63,7 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
         else menuOpen.value = true;
         return;
       }
-      if (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'KeyT') {
+      if (e.code === 'Enter' || e.code === 'NumpadEnter') {
         e.preventDefault();
         chatOpen.value = true;
       }
@@ -94,8 +97,15 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
           leftHanded={s.touch.leftHanded}
           bombLabel={<Icon name="bomb" size={50 * tc} />}
           actionLabel={<Icon name="hand" size={34 * tc} />}
+          punchLabel={<PickupIcon type={PickupType.Punch} size={28 * tc} />}
+          detonateLabel={<PickupIcon type={PickupType.Remote} size={28 * tc} />}
           bombTitle={t('bind.bomb')}
           actionTitle={t('bind.action')}
+          punchTitle={t('bind.punch')}
+          detonateTitle={t('bind.detonate')}
+          showPunch={!!me?.effects.some((e) => e.kind === 'punch') || !!me?.abilities.includes(Ability.Punch)}
+          showDetonate={!!me?.effects.some((e) => e.kind === 'remote') || !!me?.abilities.includes(Ability.Remote)}
+          available={me && Object.fromEntries(Object.entries(me.controls).map(([k, v]) => [k, v.reason === 'ready']))}
           teleportLabel={<Icon name="sparkle" size={26 * tc} />}
           teleportTitle={t('bind.teleport')}
           showTeleport={(h?.me?.teleports ?? 0) > 0}
@@ -107,7 +117,10 @@ export function GameScreen({ onStageReady }: GameScreenProps) {
           <DebugInfo ping={h?.ping ?? 0} />
           <TopPill h={h} />
           {h && <>
-            <div class="hud__left">{me && playing && <StatsStrip me={me} compact={touch} />}</div>
+            <div class="hud__left">{me && playing && <>
+              {!touch && !chatOpen.value && !menuOpen.value && !modals.value.length && !scoreboardOpen.value && <Controls hints={me.controls} />}
+              <StatsStrip me={me} compact={touch} />
+            </>}</div>
             <div class="hud__right"><KillFeed /></div>
             <div class="hud__center"><Banners h={h} /><RoundResult h={h} /></div>
             <Countdown h={h} />

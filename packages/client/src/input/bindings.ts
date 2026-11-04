@@ -7,7 +7,9 @@ export const KEY_BINDINGS = {
   right: ['KeyD', 'ArrowRight'],
   bomb: ['Space'],
   action: ['KeyE', 'ShiftLeft', 'ShiftRight', 'KeyJ'],
-  teleport: ['KeyR', 'KeyK'],
+  punch: ['KeyF'],
+  detonate: ['KeyR'],
+  teleport: ['KeyT', 'KeyK'],
 } as const;
 
 export type BindingName = keyof typeof KEY_BINDINGS;
@@ -20,7 +22,9 @@ export const PAD = {
 
 export const PAD_BINDINGS = {
   bomb: [PAD.A, PAD.RT],
-  action: [PAD.B, PAD.X, PAD.RB],
+  action: [PAD.B],
+  punch: [PAD.X],
+  detonate: [PAD.RB],
   teleport: [PAD.Y, PAD.LB],
 } as const;
 

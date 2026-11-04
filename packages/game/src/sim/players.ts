@@ -31,6 +31,7 @@ import { applyCurse, CURSE_IMMUNITY, freeTiles, scatterPickups } from './pickups
 import { applyMovement } from './movement';
 import { randInt } from './rng';
 import { bombAtTile } from './world';
+import { teleportTiles } from './controls';
 
 /** After a shield soaks a hit, the rest of that blast can't hurt you. */
 const SHIELD_GRACE = FLAME_TIME + 2;
@@ -231,11 +232,10 @@ function runFrame(ctx: SimCtx, p: PlayerState, pi: PlayerInternal, frame: InputF
   if (p.carrying >= 0) {
     if (released & Button.Action) throwBomb(ctx, p);
   } else if (pressed & Button.Action) {
-    const a = p.abilities;
-    if (!((a & Ability.Glove && tryGrab(ctx, p)) || (a & Ability.Punch && tryPunch(ctx, p)))) {
-      if (a & Ability.Remote) detonateRemote(ctx, p);
-    }
+    if (p.abilities & Ability.Glove) tryGrab(ctx, p);
   }
+  if (pressed & Button.Punch && p.carrying < 0 && p.abilities & Ability.Punch) tryPunch(ctx, p);
+  if (pressed & Button.Detonate && p.abilities & Ability.Remote) detonateRemote(ctx, p);
   if (pressed & Button.Teleport && p.teleports > 0) teleport(ctx, p);
   const bombPressed = (pressed & Button.Bomb) !== 0;
   if (ctx.bombsAllowed && (bombPressed || p.curse === Curse.Diarrhea)) tryPlaceBomb(ctx, p, bombPressed);
@@ -250,19 +250,7 @@ function teleport(ctx: SimCtx, p: PlayerState) {
   const W = w.width;
   const fromX = Math.round(p.x);
   const fromY = Math.round(p.y);
-  const falling = new Set(w.falling.map((f) => f.y * W + f.x));
-  const spots: number[] = [];
-  for (let i = 0; i < w.tiles.length; i++) {
-    if (w.tiles[i] !== Tile.Floor || ctx.bombGrid[i] || ctx.flameGrid[i] || falling.has(i)) continue;
-    const x = i % W;
-    const y = (i / W) | 0;
-    if (x === fromX && y === fromY) continue;
-    let near = false;
-    for (const o of w.players.values()) {
-      if (o !== p && o.alive && Math.abs(o.x - x) < 1.5 && Math.abs(o.y - y) < 1.5) { near = true; break; }
-    }
-    if (!near) spots.push(i);
-  }
+  const spots = teleportTiles(w, p);
   if (spots.length === 0) return;
   const i = spots[randInt(ctx.secret, spots.length)]!;
   dropGuesses(ctx, p);

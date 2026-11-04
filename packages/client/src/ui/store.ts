@@ -80,7 +80,7 @@ export const roomSettings = signal<(RoomSettings & { isHost: boolean }) | null>(
 export const onlineCount = signal<number | null>(null);
 export const stage = signal<HTMLElement | null>(null);
 
-/** Chat drawer open (T / chat button); its input gets focus. */
+/** Chat drawer open (Enter / chat button); its input gets focus. */
 export const chatOpen = signal(false);
 /** Menu drawer open (menu button / Esc / gamepad Start). */
 export const menuOpen = signal(false);

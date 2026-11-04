@@ -27,6 +27,7 @@ import { pickupAt } from './pickups';
 import { nextFloat, randInt } from './rng';
 import { bombAtTile, bombIsGrounded } from './world';
 import { insideShape } from './shapes';
+import { grabTarget, punchTarget, remoteTarget } from './controls';
 
 /** Punch flight duration. */
 export const PUNCH_FLIGHT = THROW_TIME;
@@ -244,18 +245,8 @@ function startFlight(ctx: SimCtx, b: BombState, fx: number, fy: number, dx: numb
 }
 
 export function tryGrab(ctx: SimCtx, p: PlayerState): boolean {
-  const w = ctx.world;
-  const cx = Math.round(p.x);
-  const cy = Math.round(p.y);
-  let b = bombAtTile(w, cx, cy);
-  if (!b || b.motion !== BombMotion.Idle) {
-    const [dx, dy] = DIR_VEC[p.dir];
-    b = bombAtTile(w, cx + dx, cy + dy);
-    if (!b || b.motion !== BombMotion.Idle) return false;
-    const ddx = b.x - p.x;
-    const ddy = b.y - p.y;
-    if (ddx * ddx + ddy * ddy > 1.05 * 1.05) return false;
-  }
+  const b = grabTarget(ctx.world, p);
+  if (!b) return false;
   b.motion = BombMotion.Carried;
   b.passers.length = 0;
   b.x = p.x;
@@ -292,11 +283,8 @@ export function dropCarried(ctx: SimCtx, p: PlayerState) {
 
 export function tryPunch(ctx: SimCtx, p: PlayerState): boolean {
   const [dx, dy] = DIR_VEC[p.dir];
-  const b = bombAtTile(ctx.world, Math.round(p.x) + dx, Math.round(p.y) + dy);
-  if (!b || b.motion !== BombMotion.Idle) return false;
-  const ddx = b.x - p.x;
-  const ddy = b.y - p.y;
-  if (ddx * ddx + ddy * ddy > 1.05 * 1.05) return false;
+  const b = punchTarget(ctx.world, p);
+  if (!b) return false;
   startFlight(ctx, b, b.x, b.y, dx, dy, PUNCH_DISTANCE, PUNCH_FLIGHT);
   ctx.bombs.get(b.id)!.credit = p.id;
   emit(ctx, { type: 'bombPunched', bomb: b.id, by: p.id, toX: b.toX, toY: b.toY });
@@ -305,12 +293,10 @@ export function tryPunch(ctx: SimCtx, p: PlayerState): boolean {
 
 /** Remote: the oldest own waiting bomb goes off this tick. */
 export function detonateRemote(ctx: SimCtx, p: PlayerState): boolean {
-  for (const b of ctx.world.bombs.values()) {
-    if (b.owner !== p.id || b.fuse >= 0 || !bombIsGrounded(b)) continue;
-    b.fuse = 1;
-    return true;
-  }
-  return false;
+  const b = remoteTarget(ctx.world, p);
+  if (!b) return false;
+  b.fuse = 1;
+  return true;
 }
 
 function landingBlocked(ctx: SimCtx, b: BombState, x: number, y: number): boolean {

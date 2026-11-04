@@ -1,5 +1,5 @@
-// On-screen controls for touch devices: a floating analog joystick on one half of the screen
-// and two big buttons (Bomb, Action) on the other. Multi-touch via Pointer Events.
+// On-screen controls for touch devices: a floating eight-way joystick on one half of the screen
+// and separate Bomb, Grab, Punch, Detonate and Teleport buttons. Multi-touch via Pointer Events.
 //
 // Mounting: the game screen renders <TouchControls .../> above the canvas and BELOW the
 // interactive HUD layer when `lastDevice.value === 'touch'`. It writes into `touchState`
@@ -8,6 +8,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { vibrate } from './haptics';
 import { resetTouch, touchState } from './touch';
+import { snapStick } from './stick';
 import s from './TouchControls.module.css';
 
 export interface TouchControlsProps {
@@ -20,8 +21,15 @@ export interface TouchControlsProps {
   /** Labels for the buttons (localised by the caller). */
   bombLabel?: ComponentChildren;
   actionLabel?: ComponentChildren;
+  punchLabel?: ComponentChildren;
+  detonateLabel?: ComponentChildren;
   bombTitle?: string;
   actionTitle?: string;
+  punchTitle?: string;
+  detonateTitle?: string;
+  showPunch?: boolean;
+  showDetonate?: boolean;
+  available?: Partial<Record<BtnName, boolean>>;
   /** Teleport button: shown only while the hero holds charges (null = hidden). */
   teleportLabel?: ComponentChildren;
   teleportTitle?: string;
@@ -29,17 +37,18 @@ export interface TouchControlsProps {
 }
 
 const STICK_RADIUS = 58;      // px at size 1 (knob travel)
-const STICK_DEADZONE = 0.16;  // fraction of radius
 
-type BtnName = 'bomb' | 'action' | 'teleport';
+type BtnName = 'bomb' | 'action' | 'punch' | 'detonate' | 'teleport';
 
-export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bombLabel = 'B', actionLabel = 'A', bombTitle = 'Bomb', actionTitle = 'Action', teleportLabel = 'R', teleportTitle = 'Teleport', showTeleport = false }: TouchControlsProps) {
+export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bombLabel = 'B', actionLabel = 'E', punchLabel = 'F', detonateLabel = 'R', bombTitle = 'Bomb', actionTitle = 'Grab / throw', punchTitle = 'Punch', detonateTitle = 'Detonate', showPunch = false, showDetonate = false, available = {}, teleportLabel = 'T', teleportTitle = 'Teleport', showTeleport = false }: TouchControlsProps) {
   const stickZone = useRef<HTMLDivElement>(null);
   const btnZone = useRef<HTMLDivElement>(null);
   const base = useRef<HTMLDivElement>(null);
   const knob = useRef<HTMLDivElement>(null);
   const bombEl = useRef<HTMLDivElement>(null);
   const actionEl = useRef<HTMLDivElement>(null);
+  const punchEl = useRef<HTMLDivElement>(null);
+  const detonateEl = useRef<HTMLDivElement>(null);
   const teleportEl = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,6 +56,7 @@ export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bom
     const baseEl = base.current!, knobEl = knob.current!;
     const R = STICK_RADIUS * size;
     let stickId = -1, ox = 0, oy = 0;
+    let direction = -1;
 
     const setKnob = (x: number, y: number) => { knobEl.style.transform = `translate(${x}px, ${y}px)`; };
     const placeBase = (x: number, y: number) => {
@@ -58,6 +68,8 @@ export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bom
       baseEl.style.left = '';
       baseEl.style.top = '';
       baseEl.removeAttribute('data-active');
+      baseEl.removeAttribute('data-direction');
+      direction = -1;
       setKnob(0, 0);
     };
 
@@ -70,11 +82,20 @@ export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bom
         placeBase(ox, oy);
         vx /= m; vy /= m; m = 1;
       }
-      setKnob(vx * R, vy * R);
-      if (m < STICK_DEADZONE) { touchState.dx = 0; touchState.dy = 0; return; }
-      const k = (m - STICK_DEADZONE) / (1 - STICK_DEADZONE) / m;
-      touchState.dx = vx * k;
-      touchState.dy = vy * k;
+      const input = snapStick(vx, vy, direction);
+      direction = input.direction;
+      touchState.dx = input.dx;
+      touchState.dy = input.dy;
+      if (direction < 0) {
+        baseEl.removeAttribute('data-direction');
+        setKnob(vx * R, vy * R);
+      } else {
+        baseEl.setAttribute('data-direction', String(direction));
+        const half = direction % 2 ? 15 : 30;
+        baseEl.style.setProperty('--stick-start', `${direction * 45 + 90 - half}deg`);
+        baseEl.style.setProperty('--stick-span', `${half * 2}deg`);
+        setKnob(input.dx * m * R, input.dy * m * R);
+      }
     };
 
     const onStickDown = (e: PointerEvent) => {
@@ -102,7 +123,7 @@ export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bom
     // ---- buttons: each pointer is bound to the button under it; sliding onto the other
     // button switches (classic arcade thumb roll), sliding off keeps the current one.
     const owners = new Map<number, BtnName>();
-    const btns: [BtnName, HTMLDivElement][] = [['bomb', bombEl.current!], ['action', actionEl.current!], ['teleport', teleportEl.current!]];
+    const btns: [BtnName, HTMLDivElement][] = [['bomb', bombEl.current!], ['action', actionEl.current!], ['punch', punchEl.current!], ['detonate', detonateEl.current!], ['teleport', teleportEl.current!]];
     const hit = (x: number, y: number, slack: number): BtnName | null => {
       let best: BtnName | null = null, bestD = Infinity;
       for (const [name, el] of btns) {
@@ -117,7 +138,7 @@ export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bom
       const held = new Set(owners.values());
       for (const [name, el] of btns) {
         const was = touchState[name];
-        const now = held.has(name);
+        const now = held.has(name) && !el.hidden;
         touchState[name] = now;
         if (now !== was) {
           el.toggleAttribute('data-down', now);
@@ -151,6 +172,7 @@ export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bom
     zone.addEventListener('pointermove', onStickMove);
     zone.addEventListener('pointerup', onStickUp);
     zone.addEventListener('pointercancel', onStickUp);
+    zone.addEventListener('lostpointercapture', onStickUp);
     bz.addEventListener('pointerdown', onBtnDown);
     bz.addEventListener('pointermove', onBtnMove);
     bz.addEventListener('pointerup', onBtnUp);
@@ -162,13 +184,14 @@ export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bom
       zone.removeEventListener('pointermove', onStickMove);
       zone.removeEventListener('pointerup', onStickUp);
       zone.removeEventListener('pointercancel', onStickUp);
+      zone.removeEventListener('lostpointercapture', onStickUp);
       bz.removeEventListener('pointerdown', onBtnDown);
       bz.removeEventListener('pointermove', onBtnMove);
       bz.removeEventListener('pointerup', onBtnUp);
       bz.removeEventListener('pointercancel', onBtnUp);
       window.removeEventListener('blur', resetAll);
       document.removeEventListener('visibilitychange', resetAll);
-      resetTouch();
+      resetAll();
     };
   }, [size, leftHanded]);
 
@@ -185,9 +208,11 @@ export function TouchControls({ size = 1, opacity = 0.8, leftHanded = false, bom
         </div>
       </div>
       <div class={s.btnZone} ref={btnZone}>
-        <div class={`${s.btn} ${s.action}`} ref={actionEl} title={actionTitle}><span>{actionLabel}</span></div>
-        <div class={`${s.btn} ${s.teleport}`} ref={teleportEl} title={teleportTitle} hidden={!showTeleport}><span>{teleportLabel}</span></div>
-        <div class={`${s.btn} ${s.bomb}`} ref={bombEl} title={bombTitle}><span>{bombLabel}</span></div>
+        <div class={`${s.btn} ${s.action}`} ref={actionEl} title={actionTitle} data-unavailable={available.action === false ? '' : undefined}><span>{actionLabel}</span></div>
+        <div class={`${s.btn} ${s.punch}`} ref={punchEl} title={punchTitle} hidden={!showPunch} data-unavailable={available.punch === false ? '' : undefined}><span>{punchLabel}</span></div>
+        <div class={`${s.btn} ${s.detonate}`} ref={detonateEl} title={detonateTitle} hidden={!showDetonate} data-unavailable={available.detonate === false ? '' : undefined}><span>{detonateLabel}</span></div>
+        <div class={`${s.btn} ${s.teleport}`} ref={teleportEl} title={teleportTitle} hidden={!showTeleport} data-unavailable={available.teleport === false ? '' : undefined}><span>{teleportLabel}</span></div>
+        <div class={`${s.btn} ${s.bomb}`} ref={bombEl} title={bombTitle} data-unavailable={available.bomb === false ? '' : undefined}><span>{bombLabel}</span></div>
       </div>
     </div>
   );

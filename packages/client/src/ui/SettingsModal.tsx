@@ -13,9 +13,11 @@ export function KeyBindings() {
   const rows: [string, preact.ComponentChildren, preact.ComponentChildren, preact.ComponentChildren][] = [
     [t('bind.move'), <>{kb(['KeyW', 'KeyA', 'KeyS', 'KeyD'])} / {kb(['ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'])}</>, t('bind.stick'), t('bind.joystick')],
     [t('bind.bomb'), kb(KEY_BINDINGS.bomb.slice(0, 2)), <><Kbd>A</Kbd><Kbd>RT</Kbd></>, t('bind.touchBomb')],
-    [t('bind.action'), kb(['KeyE', 'ShiftLeft', 'KeyJ']), <><Kbd>B</Kbd><Kbd>X</Kbd><Kbd>RB</Kbd></>, t('bind.touchAction')],
-    [t('bind.teleport'), kb(['KeyR', 'KeyK']), <><Kbd>Y</Kbd><Kbd>LB</Kbd></>, t('bind.touchTeleport')],
-    [t('bind.chat'), kb(['KeyT']), '—', <Icon name="chat" title={t('hud.chat')} />],
+    [t('bind.action'), kb(KEY_BINDINGS.action.filter((k) => k !== 'ShiftRight')), <Kbd>B</Kbd>, t('bind.touchAction')],
+    [t('bind.punch'), kb(KEY_BINDINGS.punch), <Kbd>X</Kbd>, <Icon name="hand" />],
+    [t('bind.detonate'), kb(KEY_BINDINGS.detonate), <Kbd>RB</Kbd>, <Icon name="bomb" />],
+    [t('bind.teleport'), kb(KEY_BINDINGS.teleport), <><Kbd>Y</Kbd><Kbd>LB</Kbd></>, t('bind.touchTeleport')],
+    [t('bind.chat'), kb(['Enter']), '—', <Icon name="chat" title={t('hud.chat')} />],
     [t('bind.score'), <>{kb(['Tab'])} <small>({t('bind.hold')})</small></>, <><Kbd>Back</Kbd> <small>({t('bind.hold')})</small></>, <Icon name="trophy" title={t('hud.scoreboard')} />],
     [t('bind.menu'), kb(['Escape']), <Kbd>Start</Kbd>, <Icon name="menu" title={t('hud.menu')} />],
   ];

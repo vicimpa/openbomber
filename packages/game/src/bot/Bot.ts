@@ -571,7 +571,7 @@ export class Bot implements IBot {
       return this.out(sx, sy, hold);
     }
     let buttons = hold;
-    if (!hold && !this.wantBomb && !(this.held & Button.Action) && this.shouldDetonate(a, p)) buttons |= Button.Action;
+    if (!this.wantBomb && !(this.held & Button.Detonate) && this.shouldDetonate(a, p)) buttons |= Button.Detonate;
     let [dx, dy] = this.steer(p, W);
     if (!inDanger && this.ram(world, p)) {
       dx = this.rx;
@@ -944,7 +944,6 @@ export class Bot implements IBot {
       this.remoteHit = 0;
       return false;
     }
-    if (p.abilities & (Ability.Glove | Ability.Punch) && this.wouldGrab(a, p)) return false;
     const stamp = ++bStamp;
     const bricks = this.stampBlast(a, first, stamp, 0);
     // every tile our (generous) hitbox touches must be clear, and the next step too
@@ -1011,20 +1010,6 @@ export class Bot implements IBot {
     return bricks;
   }
 
-  /** An Action press now would grab (Glove) or punch (Punch) a bomb instead of detonating. */
-  private wouldGrab(a: Analysis, p: PlayerState): boolean {
-    const W = a.width;
-    const cx = Math.round(p.x);
-    const cy = Math.round(p.y);
-    if (p.abilities & Ability.Glove && a.bomb[cy * W + cx]) return true;
-    const [dx, dy] = DIR_VEC[p.dir];
-    const fx = cx + dx;
-    const fy = cy + dy;
-    if (fx < 0 || fy < 0 || fx >= W || fy >= a.height) return false;
-    const b = a.bomb[fy * W + fx] ? a.world.bombs.get(a.bomb[fy * W + fx]!) : undefined;
-    return b !== undefined && (b.x - p.x) ** 2 + (b.y - p.y) ** 2 <= 1.1;
-  }
-
   // ------------------------------------------------------------ tricks
 
   /** Kick a bomb at an enemy, grab-and-throw / punch one their way, or lay a line at them. */
@@ -1040,7 +1025,7 @@ export class Bot implements IBot {
     if (foes.length === 0) return false;
     let script: Step[] | null = null;
     if (k & K_GLOVE) script = this.gloveTrick(a, p, cur, foes);
-    if (!script && k & K_PUNCH && !(p.abilities & Ability.Glove)) script = this.punchTrick(a, p, cur, foes, true);
+    if (!script && k & K_PUNCH) script = this.punchTrick(a, p, cur, foes, true);
     if (!script && k & K_KICK) script = this.kickTrick(a, p, cur, foes, true);
     if (script) {
       if (!this.rng.chance(this.tune.skill)) {
@@ -1185,7 +1170,7 @@ export class Bot implements IBot {
       // trapped (no aim): only worth it if the bomb's blast no longer reaches us
       if (!aim && at >= 0 && inBlast(a, at % W, (at / W) | 0, blastRadius(a, b, p.id), bombPierces(a.world, b), x, y)) continue;
       this.tried(b);
-      return [[dx, dy, Button.Action], [0, 0, 0]];
+      return [[dx, dy, Button.Punch], [0, 0, 0]];
     }
     return null;
   }
@@ -1313,7 +1298,7 @@ export class Bot implements IBot {
       }
     }
     if (!s && k & K_KICK) s = this.kickTrick(a, p, cur, foes, false);
-    if (!s && k & K_PUNCH && !(p.abilities & Ability.Glove)) s = this.punchTrick(a, p, cur, foes, false);
+    if (!s && k & K_PUNCH) s = this.punchTrick(a, p, cur, foes, false);
     if (s) this.script = s;
   }
 

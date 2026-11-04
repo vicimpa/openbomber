@@ -115,7 +115,7 @@ function ChatButton() {
       onMouseDown={(e) => e.preventDefault()}
       onClick={() => { actions.uiSound('click'); chatOpen.value = !chatOpen.value; }}
       aria-label={t('hud.chat')}
-      title={`${t('hud.chat')} (T)`}
+      title={`${t('hud.chat')} (Enter)`}
       aria-pressed={chatOpen.value}
     >
       <Icon name="chat" />
