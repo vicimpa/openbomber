@@ -373,15 +373,15 @@ function blastMask(ctx: SimCtx): Uint8Array {
 
 /**
  * A free, currently safe floor tile. Prefers (px, py) when it qualifies, otherwise the
- * tile farthest from other living players.
+ * tile farthest from other living players. Null when there is nowhere to respawn.
  */
-export function findSafeTile(ctx: SimCtx, self: PlayerState, px: number, py: number): { x: number; y: number } {
+export function findSafeTile(ctx: SimCtx, self: PlayerState, px: number, py: number): { x: number; y: number } | null {
   const w = ctx.world;
   const free = freeTiles(ctx);
   const danger = blastMask(ctx);
   const ok = free.filter((i) => !danger[i]);
   const pool = ok.length ? ok : free;
-  if (pool.length === 0) return { x: px, y: py };
+  if (pool.length === 0) return null;
   const pref = py * w.width + px;
   if (px >= 0 && py >= 0 && px < w.width && py < w.height && pool.includes(pref)) return { x: px, y: py };
   let best = pool[0]!;
@@ -417,6 +417,12 @@ export function spawnPlayerAt(p: PlayerState, x: number, y: number, invulnerable
 function respawn(ctx: SimCtx, p: PlayerState) {
   dropGuesses(ctx, p);
   const t = findSafeTile(ctx, p, -1, -1);
+  // The zone may have closed over every free tile during the respawn delay. Stay eliminated
+  // so the round can finish; the preferred-position sentinel is not a spawn location.
+  if (!t) {
+    scatterPickups(ctx, p);
+    return;
+  }
   spawnPlayerAt(p, t.x, t.y, SPAWN_INVULNERABLE);
   emit(ctx, { type: 'playerRespawned', player: p.id, x: t.x, y: t.y });
 }

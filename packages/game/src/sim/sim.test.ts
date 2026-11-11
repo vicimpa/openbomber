@@ -543,6 +543,48 @@ describe('players & effects', () => {
     expect(h.state.phase).toBe(Phase.Playing);
   });
 
+  test('heart: the final zone ring cannot respawn its victims outside the arena or stall the round', () => {
+    const h = new Harness(['###', '#.#', '###'], [['a', 1, 1], ['b', 1, 1]], { live: true });
+    for (const p of h.state.players.values()) p.lives = 2;
+    h.state.phase = Phase.SuddenDeath;
+    h.state.zoneRing = 2; // the last ring is already falling
+    h.state.falling.push({ x: 1, y: 1, ttl: 1 });
+    h.step();
+    expect(ev(h.events, 'playerDied')).toHaveLength(2);
+    expect(phaseOf(h.sim)).toBe(Phase.SuddenDeath); // extra lives are still pending
+
+    h.step(RESPAWN_DELAY);
+    expect(ev(h.events, 'playerRespawned')).toHaveLength(0);
+    for (const p of h.state.players.values()) {
+      expect(p.alive).toBe(false);
+      expect(p.respawnIn).toBe(0);
+      expect(Math.round(p.x)).toBe(1);
+      expect(Math.round(p.y)).toBe(1);
+    }
+    expect(phaseOf(h.sim)).toBe(Phase.RoundOver);
+    expect(h.state.winner).toBe('');
+    h.step(ROUND_OVER_TIME);
+    expect(phaseOf(h.sim)).toBe(Phase.Countdown);
+    for (const p of h.state.players.values()) {
+      expect(p.alive).toBe(true);
+      expect(tileAt(h.state, p.x, p.y)).toBe(Tile.Floor);
+    }
+  });
+
+  test('heart: no respawn into the only floor tile while a zone block is falling onto it', () => {
+    const h = new Harness(['###', '#.#', '###'], [['a', 1, 1]]);
+    const a = h.p('a');
+    a.alive = false;
+    a.respawnIn = 1;
+    h.state.falling.push({ x: 1, y: 1, ttl: 2 });
+
+    h.step();
+    expect(a.alive).toBe(false);
+    expect(a.respawnIn).toBe(0);
+    expect([a.x, a.y]).toEqual([1, 1]);
+    expect(ev(h.events, 'playerRespawned')).toHaveLength(0);
+  });
+
   test('curses spread on touch', () => {
     const h = new Harness(OPEN, [['a', 1, 1], ['b', 3, 1]]);
     h.p('a').curse = Curse.Slow;
