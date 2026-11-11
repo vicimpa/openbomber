@@ -22,14 +22,12 @@ function Control({ slot, hint }: { slot: typeof SLOTS[number]; hint: ControlHint
     : hint.reason === 'ready' ? t(hint.kind === 'throw' ? 'control.release' : hint.kind === 'grab' ? 'control.hold' : 'control.press')
       : t(`control.${hint.reason}`);
   return (
-    <div class={`control-hint ${ready ? 'is-ready' : 'is-unavailable'}`} aria-disabled={!ready} title={`${label}: ${detail}`}>
-      <div class="control-hint__top">
-        <PickupIcon type={ICON[hint.kind]} size={28} />
+    <div class={`control-hint ${ready ? 'is-ready' : 'is-unavailable'}`} role="group" aria-disabled={!ready} aria-label={`${label} (${binding}): ${detail}`} title={`${label} (${binding}): ${detail}`}>
+      <div class="control-hint__icon">
+        <PickupIcon type={ICON[hint.kind]} size={32} />
         {hint.count !== undefined && <span class="control-hint__count">{hint.count}</span>}
-        <Kbd>{binding}</Kbd>
       </div>
-      <span class="control-hint__label">{label}</span>
-      <span class="control-hint__detail">{detail}</span>
+      <Kbd>{binding}</Kbd>
     </div>
   );
 }

@@ -155,7 +155,7 @@ function EffectPill({ e, compact }: { e: HudEffect; compact?: boolean }) {
   const curse = e.kind === 'curse';
   return (
     <div class={`fx ${curse ? 'fx--curse' : ''} ${e.left < 3 ? 'is-ending' : ''}`} title={name} style={{ '--frac': e.frac }}>
-      {typeof icon === 'number' ? <PickupIcon type={icon} size={compact ? 16 : 20} /> : <Icon name={icon} size={compact ? 10 : 20} />}
+      {typeof icon === 'number' ? <PickupIcon type={icon} size={compact ? 24 : 30} /> : <Icon name={icon} size={20} />}
       {curse && <span class="fx__name">{name}</span>}
       <span class="fx__time">{Math.ceil(e.left)}</span>
       <i class="fx__bar" aria-hidden="true" />
@@ -166,7 +166,7 @@ function EffectPill({ e, compact }: { e: HudEffect; compact?: boolean }) {
 function Stat({ type, children, label, compact }: { type: PickupType; children: ComponentChildren; label: string; compact?: boolean }) {
   return (
     <div class="stat" title={label}>
-      <PickupIcon type={type} size={compact ? 16 : 20} />
+      <PickupIcon type={type} size={compact ? 24 : 30} />
       <b class="stat__val">{children}</b>
     </div>
   );
@@ -181,7 +181,7 @@ export function StatsStrip({ me, compact }: { me: HudMe; compact?: boolean }) {
       <Stat compact={compact} type={PickupType.FireUp} label={t('hud.radius')}><span key={me.radius} class="pop">{me.radius}</span></Stat>
       {hearts > 0 && (
         <div class="stat" title={t('hud.lives')}>
-          {Array.from({ length: Math.min(hearts, 3) }, () => <Icon name="heart" size={compact ? 10 : 20} />)}{hearts > 3 && <b class="stat__val">×{hearts}</b>}
+          {Array.from({ length: Math.min(hearts, 3) }, () => <Icon name="heart" size={20} />)}{hearts > 3 && <b class="stat__val">×{hearts}</b>}
         </div>
       )}
       {me.teleports > 0 && (
@@ -190,7 +190,7 @@ export function StatsStrip({ me, compact }: { me: HudMe; compact?: boolean }) {
       {me.abilities.map((a) => {
         const p = ABILITY_PICKUP.get(a)!;
         const info = PICKUP_BY_TYPE.get(p);
-        return <div class="stat" key={a}><PickupIcon type={p} size={compact ? 16 : 20} title={info ? tr(info.name) : ''} /></div>;
+        return <div class="stat" key={a}><PickupIcon type={p} size={compact ? 24 : 30} title={info ? tr(info.name) : ''} /></div>;
       })}
       {me.effects.map((e) => <EffectPill key={e.kind} e={e} compact={compact} />)}
     </div>
