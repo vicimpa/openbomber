@@ -88,15 +88,6 @@ export function applyCurse(ctx: SimCtx, p: PlayerState, curse: Curse, from: stri
   emit(ctx, { type: 'curseApplied', player: p.id, curse, from });
 }
 
-/** "+speed" and "-speed / fire" cancel each other's time (legacy SpeedEffect.append). */
-function addOpposed(ctx: SimCtx, p: PlayerState, add: 'speed' | 'fire', against: 'speed' | 'fire', time: number) {
-  const e = p.effects;
-  if (e[against] > 0) {
-    e[against] = Math.max(0, e[against] - time);
-    if (e[against] === 0) emit(ctx, { type: 'effectEnded', player: p.id, effect: against });
-  } else e[add] += time;
-}
-
 /** Apply a pickup's effect. Returns the kind actually applied (Random resolves). */
 export function applyPickup(ctx: SimCtx, p: PlayerState, type: PickupType): PickupType {
   if (type === PickupType.Random) type = rollPickup(ctx.secret, true);
@@ -112,10 +103,10 @@ export function applyPickup(ctx: SimCtx, p: PlayerState, type: PickupType): Pick
       p.radius = MAX_RADIUS;
       break;
     case PickupType.SpeedUp:
-      addOpposed(ctx, p, 'speed', 'fire', SPEED_TIME);
+      e.speed += SPEED_TIME;
       break;
     case PickupType.Fire:
-      addOpposed(ctx, p, 'fire', 'speed', FIRE_TIME);
+      e.fire += FIRE_TIME;
       break;
     case PickupType.Shield:
       e.shield += SHIELD_TIME;

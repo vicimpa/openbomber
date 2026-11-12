@@ -5,7 +5,7 @@
 // placeholder canvas (grass, grey walls, bricks, dots for players; the local dot follows input).
 import {
   Ability, Button, COUNTDOWN_TIME, Curse, Dir, Phase, type GameEvent, type PlayerState, RESPAWN_DELAY,
-  ROUND_OVER_TIME, sec, SPAWN_INVULNERABLE, TICK_RATE, Tile, type WorldState,
+  ROUND_OVER_TIME, sec, SPAWN_INVULNERABLE, TICK_RATE, Tile, playerSpeed, type WorldState,
 } from '@ob/game';
 import { effect } from '@preact/signals';
 import type { InputManager } from '$/contracts';
@@ -180,7 +180,7 @@ function step(m: Mock, input: { dx: number; dy: number; buttons: number }) {
   const me = w.players.get(LOCAL);
 
   if (me?.alive && w.phase === Phase.Playing) {
-    const sp = (2.8 + me.speedLevel * 0.35) / TICK_RATE;
+    const sp = playerSpeed(me);
     me.x = Math.max(0, Math.min(w.width - 1, me.x + input.dx * sp));
     me.y = Math.max(0, Math.min(w.height - 1, me.y + input.dy * sp));
     me.moving = !!(input.dx || input.dy);

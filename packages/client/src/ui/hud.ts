@@ -76,8 +76,8 @@ export interface HudSnapshot {
 
 /** Fallback durations (ticks) when the contract has no `<KIND>_TIME` constant. Canon values. */
 const FALLBACK_TOTAL: Record<string, number> = {
-  shield: 50, ghost: 30, crazy: 30, fire: 25, curse: 15, invulnerable: 2, stun: 1.2,
-  speed: 25, slow: 25, kick: 35, glove: 35, punch: 35, remote: 35, pierce: 35, lineBomb: 35, bombPass: 35,
+  shield: 50, ghost: 30, crazy: 30, fire: 100 / 3, curse: 15, invulnerable: 2, stun: 1.2,
+  speed: 50, slow: 25, kick: 35, glove: 35, punch: 35, remote: 35, pierce: 35, lineBomb: 35, bombPass: 35,
 };
 
 const constName = (kind: string) => `${kind.replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase()}_TIME`;

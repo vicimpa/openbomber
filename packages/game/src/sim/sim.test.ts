@@ -8,7 +8,6 @@ import {
   CRAZY_FUSE_MAX,
   CRAZY_FUSE_MIN,
   FALL_TIME,
-  FIRE_TIME,
   KICK_TIME,
   PICKUP_FILL,
   REMOTE_BOMB_MAX_FUSE,
@@ -1009,17 +1008,9 @@ describe('canon pickups', () => {
     expect(ev(h.events, 'effectEnded')).toContainEqual({ type: 'effectEnded', player: 'a', effect: 'kick' });
   });
 
-  test('SpeedUp is timed and cancels Fire (and vice versa); BombUp / FireUp persist', () => {
+  test('SpeedUp is timed; BombUp / FireUp persist', () => {
     const h = new Harness(OPEN, [['a', 1, 1]]);
     const a = h.p('a');
-    h.sim.spawnPickup(1, 1, PickupType.Fire);
-    h.step();
-    expect(a.effects.fire).toBeGreaterThan(FIRE_TIME - 3);
-    h.sim.spawnPickup(1, 1, PickupType.SpeedUp);
-    h.step();
-    expect(a.effects.fire).toBe(0); // 25 s of speed eats 25 s of fire
-    expect(a.effects.speed).toBe(0);
-    expect(ev(h.events, 'effectEnded')).toContainEqual({ type: 'effectEnded', player: 'a', effect: 'fire' });
     h.sim.spawnPickup(1, 1, PickupType.SpeedUp);
     h.step();
     expect(a.speedLevel).toBe(1);
@@ -1032,6 +1023,83 @@ describe('canon pickups', () => {
       h.step();
     }
     expect([a.bombs, a.radius]).toEqual([2, 2]);
+  });
+
+  test.each([
+    [PickupType.Fire, PickupType.SpeedUp],
+    [PickupType.SpeedUp, PickupType.Fire],
+  ])('Fire and SpeedUp coexist, stack independently and keep fire touch lethal (order %s, %s)', (first, second) => {
+    const h = new Harness(OPEN, [['a', 1, 1], ['b', 8, 2]]);
+    const a = h.p('a');
+    for (const type of [first, second]) {
+      h.sim.spawnPickup(1, 1, type);
+      h.step();
+    }
+    expect(a.effects.speed).toBe(50 * TICK_RATE - (first === PickupType.SpeedUp ? 2 : 1));
+    expect(a.effects.fire).toBe(2000 - (first === PickupType.Fire ? 2 : 1));
+    expect(a.speedLevel).toBe(1);
+    expect(ev(h.events, 'effectEnded')).toHaveLength(0);
+
+    const predicted = clonePlayer(a);
+    const x = a.x;
+    h.set('a', 1, 0);
+    for (let i = 0; i < 10; i++) {
+      predictMovement(h.state, predicted, { seq: i + 1, dx: 1, dy: 0, buttons: 0 });
+      h.step();
+    }
+    expect(a.x - x).toBeCloseTo(10 * BASE_SPEED * 0.65 / TICK_RATE, 5);
+    expect(predicted.x).toBeCloseTo(a.x, 5);
+    h.set('a', 0, 0);
+
+    const fire = a.effects.fire, speed = a.effects.speed;
+    h.sim.spawnPickup(1, 1, PickupType.SpeedUp);
+    h.step();
+    expect(a.effects.speed).toBe(speed + 50 * TICK_RATE - 1);
+    expect(a.effects.fire).toBe(fire - 1);
+    h.sim.spawnPickup(1, 1, PickupType.Fire);
+    h.step();
+    expect(a.effects.speed).toBe(speed + 50 * TICK_RATE - 2);
+    expect(a.effects.fire).toBe(fire + 2000 - 2);
+
+    h.p('b').x = a.x + 0.52;
+    h.p('b').y = a.y;
+    h.step();
+    expect(h.p('b').alive).toBe(false);
+    expect(ev(h.events, 'playerDied')).toContainEqual(expect.objectContaining({ player: 'b', killer: 'a', cause: 'fire' }));
+  });
+
+  test('Fire and SpeedUp expire separately and movement follows the remaining effect', () => {
+    const h = new Harness(OPEN, [['a', 1, 1]]);
+    const a = h.p('a');
+    h.give('a', ['fire'], 2);
+    h.give('a', ['speed'], 5);
+    h.step(2);
+    expect(a.effects.fire).toBe(0);
+    expect(a.effects.speed).toBe(3);
+    expect(a.speedLevel).toBe(1);
+    h.set('a', 1, 0);
+    let x = a.x;
+    h.step();
+    expect(a.x - x).toBeCloseTo(BASE_SPEED * 1.3 / TICK_RATE, 5);
+
+    h.give('a', ['speed'], 2);
+    h.give('a', ['fire'], 5);
+    h.step(2);
+    expect(a.effects.speed).toBe(0);
+    expect(a.effects.fire).toBe(3);
+    expect(a.speedLevel).toBe(0);
+    x = a.x;
+    h.step();
+    expect(a.x - x).toBeCloseTo(BASE_SPEED * 0.5 / TICK_RATE, 5);
+    h.step(2);
+    x = a.x;
+    h.step();
+    expect(a.x - x).toBeCloseTo(BASE_SPEED / TICK_RATE, 5);
+    expect(ev(h.events, 'effectEnded')).toEqual([
+      { type: 'effectEnded', player: 'a', effect: 'fire' },
+      { type: 'effectEnded', player: 'a', effect: 'speed' },
+      { type: 'effectEnded', player: 'a', effect: 'fire' },
+    ]);
   });
 
   test('remote running out gives waiting bombs a normal fuse', () => {

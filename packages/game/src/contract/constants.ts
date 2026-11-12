@@ -17,8 +17,8 @@ export const BOMB_RELEASE_DISTANCE = 0.625;
 
 // --- movement
 export const BASE_SPEED = 3;                 // tiles / second (legacy calcSpeed: 0.003 tiles/ms)
-export const SPEED_MULT = 1.5;               // SpeedUp active (legacy SpeedEffect 1.5)
-export const FIRE_SPEED_MULT = 0.7;          // Fire / "-speed" active (legacy SpeedEffect 0.7)
+export const SPEED_MULT = 1.3;               // new-openbomber Hero.speedMulty; both effects multiply
+export const FIRE_SPEED_MULT = 0.5;
 /** @deprecated speed is timed now (effects.speed); speedLevel is 1 while it runs. */
 export const SPEED_STEP = 0.35;
 /** @deprecated see SPEED_STEP */
@@ -47,9 +47,9 @@ export const CRAZY_DUD_CHANCE = 0.1;
 
 // --- timed effects (canon: README + legacy/shared/config.ts). Picking the same one again adds its time.
 export const SHIELD_TIME = sec(50);
-export const SPEED_TIME = sec(25);            // cancels / is cancelled by Fire time
+export const SPEED_TIME = sec(50);            // new-openbomber: 3000 ticker frames at 60 Hz
 export const CRAZY_TIME = sec(30);
-export const FIRE_TIME = sec(25);             // slow + touching you kills
+export const FIRE_TIME = sec(100 / 3);         // new-openbomber: 2000 ticker frames; independent of SpeedUp
 export const KICK_TIME = sec(35);
 export const GLOVE_TIME = sec(35);
 export const PUNCH_TIME = sec(35);

@@ -1,6 +1,6 @@
 // Player views: hero skins with idle/run/carry animations, status overlays, name tags.
 import { BitmapText, Container, Sprite, Texture } from 'pixi.js';
-import { Ability, BASE_SPEED, Curse, Dir, SPEED_STEP, TICK_RATE, type PlayerState } from '@ob/game';
+import { Ability, BASE_SPEED, Curse, Dir, playerSpeed, TICK_RATE, type PlayerState } from '@ob/game';
 
 import { Anim } from './anim';
 import type { GameAssets } from './assets';
@@ -219,8 +219,7 @@ export class PlayerView {
     const src = this.a.heroes[skin];
     const moving = p.moving && p.effects.stun <= 0;
     const tagName = `${moving ? 'Run' : 'Idle'}${DIR_NAME[p.dir]}${carriedBomb ? 'Bomb' : ''}`;
-    const speed = (BASE_SPEED + SPEED_STEP * p.speedLevel) / BASE_SPEED * (p.effects.fire > 0 ? 0.6 : 1)
-      * (p.curse === Curse.Slow ? 0.6 : p.curse === Curse.Fast ? 1.5 : 1);
+    const speed = playerSpeed(p) * TICK_RATE / BASE_SPEED;
     this.hero.fps = moving ? 12 * speed : 4; // before setFrames: a restart is timed in the new rate
     if (tagName !== this.tagName || skin !== this.skin) {
       const sameKind = this.tagName.startsWith(moving ? 'Run' : 'Idle');

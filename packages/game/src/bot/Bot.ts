@@ -202,9 +202,9 @@ function pickupValue(p: PlayerState, t: PickupType): number {
     case PickupType.FullFire:
       return p.radius >= MAX_RADIUS ? 0 : Math.min(60, 20 + 5 * (MAX_RADIUS - p.radius));
     case PickupType.SpeedUp:
-      return e.fire > 0 ? 5 : e.speed > sec(10) ? 15 : 35; // it would cancel our Fire
+      return e.speed > sec(10) ? 15 : 35;
     case PickupType.Fire:
-      return e.speed > 0 ? 10 : e.fire > sec(10) ? 15 : 35;
+      return e.fire > sec(10) ? 15 : 35;
     case PickupType.Heart:
       return p.lives >= MAX_LIVES ? 0 : 50;
     case PickupType.Crazy:
